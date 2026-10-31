@@ -1,0 +1,107 @@
+/* =============================================================
+ * css/base.css — Variables de tema, modos de accesibilidad,
+ * reinicio de estilos y carcasa (barra superior, contenedor).
+ *
+ * Los colores se definen como variables en :root[data-theme].
+ * Para cambiar la paleta, edita sólo este bloque.
+ * ============================================================= */
+:root {
+  --font: 'Outfit', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --radius: 16px; --radius-sm: 10px; --radius-lg: 22px;
+  --primary: #6d5dfc; --primary-2: #8f84ff; --on-primary: #fff;
+  --hp: #22c55e; --hp-mid: #eab308; --hp-low: #ef4444; --mp: #3b82f6; --exp: #f59e0b;
+  --good: #16a34a; --bad: #ef4444; --warn: #f59e0b;
+  --r-comun: #94a3b8; --r-raro: #3b82f6; --r-epico: #a855f7; --r-legendario: #f59e0b;
+  --ease: cubic-bezier(.2, .8, .2, 1);
+}
+:root, :root[data-theme="dark"] {
+  --bg: #0b0d1a; --bg-2: #12152a;
+  --surface: #161a30; --surface-2: #1d2240; --surface-3: #282e52;
+  --border: #2b3158; --text: #eceefb; --muted: #9aa1c8;
+  --shadow: 0 1px 2px rgba(0,0,0,.35), 0 12px 32px rgba(0,0,0,.35);
+  --overlay: rgba(4, 5, 14, .7);
+  --glass: rgba(16, 19, 38, .78);
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  --bg: #f2f3fa; --bg-2: #e8eaf6;
+  --surface: #ffffff; --surface-2: #f3f4fb; --surface-3: #e6e9f5;
+  --border: #e0e3f0; --text: #161a2e; --muted: #626987;
+  --shadow: 0 1px 2px rgba(25,30,70,.06), 0 10px 28px rgba(25,30,70,.09);
+  --overlay: rgba(18, 22, 48, .45);
+  --glass: rgba(255, 255, 255, .86);
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  font-family: var(--font); color: var(--text); font-size: 15px; line-height: 1.45;
+  background: radial-gradient(1200px 700px at 85% -10%, color-mix(in srgb, var(--primary) 16%, transparent), transparent 60%),
+              radial-gradient(900px 600px at -10% 110%, color-mix(in srgb, #0ea5e9 12%, transparent), transparent 60%), var(--bg);
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, h4 { margin: 0; line-height: 1.2; }
+h2 { font-size: 1.45rem; } h3 { font-size: 1.1rem; } h4 { font-size: .98rem; display: flex; align-items: center; gap: 6px; margin: 14px 0 8px; }
+p { margin: 6px 0; }
+button { font-family: inherit; color: inherit; }
+.icon { display: inline-flex; flex: none; }
+.muted { color: var(--muted); } .small { font-size: .82rem; } .center { text-align: center; }
+.error { color: var(--bad); font-weight: 500; } .error:empty { display: none; }
+.row { display: flex; align-items: center; } .row.end { justify-content: flex-end; } .row.between { justify-content: space-between; }
+.row.wrap { flex-wrap: wrap; } .gap { gap: 12px; } .gap-s { gap: 8px; } .grow { flex: 1; min-width: 0; } .mt { margin-top: 14px; }
+
+/* ---------- Carcasa ---------- */
+#app { min-height: 100%; display: flex; flex-direction: column; }
+.topbar {
+  position: sticky; top: 0; z-index: 20; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center;
+  padding: 10px 18px; background: var(--glass); backdrop-filter: blur(14px); border-bottom: 1px solid var(--border);
+}
+.topbar-title { display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; font-size: 1.05rem; white-space: nowrap; min-width: 0; overflow: hidden; }
+.topbar-title > span, .topbar-title .crumb.current { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+/* Con poco ancho, los botones de la barra superior se quedan sólo con el icono */
+@media (max-width: 1280px) { .topbar-actions .btn-label, :root .topbar-actions .hotkey { display: none; } }
+.topbar-right { display: flex; justify-content: flex-end; }
+.topbar .btn { white-space: nowrap; }
+.screen-host { flex: 1; width: 100%; max-width: 1180px; margin: 0 auto; padding: 22px 18px 40px; }
+.screen { display: flex; flex-direction: column; gap: 18px; }
+.screen.narrow { max-width: 640px; margin: 0 auto; width: 100%; }
+.screen-enter { animation: screenIn .28s var(--ease); }
+@keyframes screenIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.center-screen { align-items: center; justify-content: center; text-align: center; min-height: 60vh; }
+
+
+/* ---------- Tamaño de texto (Ajustes) ---------- */
+html[data-textsize="sm"] { font-size: 14px; }
+html[data-textsize="md"] { font-size: 15px; }
+html[data-textsize="lg"] { font-size: 17px; }
+html[data-textsize="xl"] { font-size: 19px; }
+body { font-size: 1rem; }
+
+/* ---------- Alto contraste ---------- */
+:root[data-contrast="high"][data-theme="dark"] { --bg: #000; --surface: #0a0a0a; --surface-2: #151515; --surface-3: #262626; --border: #8a8a8a; --text: #fff; --muted: #d4d4d4; --primary: #8b7dff; --primary-2: #a59cff; }
+:root[data-contrast="high"][data-theme="light"] { --bg: #fff; --surface: #fff; --surface-2: #f2f2f2; --surface-3: #e0e0e0; --border: #222; --text: #000; --muted: #333; --primary: #4b3bd9; --primary-2: #5f50e6; }
+:root[data-contrast="high"] .btn, :root[data-contrast="high"] .card, :root[data-contrast="high"] .tile, :root[data-contrast="high"] .dk-row { border-width: 2px; }
+:root[data-contrast="high"] :focus-visible { outline: 3px solid var(--primary-2) !important; outline-offset: 3px; }
+
+/* ---------- Modo daltónico: paleta segura y patrones en barras ---------- */
+:root[data-colorblind="on"] { --hp: #0072b2; --hp-mid: #e69f00; --hp-low: #d55e00; --mp: #cc79a7; --good: #0072b2; --bad: #d55e00; }
+:root[data-colorblind="on"] .bar-hp .bar-fill { background-image: repeating-linear-gradient(45deg, rgba(255,255,255,.25) 0 4px, transparent 4px 8px), linear-gradient(90deg, var(--hp), var(--hp)) !important; }
+:root[data-colorblind="on"] .bar-mp .bar-fill { background-image: repeating-linear-gradient(-45deg, rgba(255,255,255,.3) 0 2px, transparent 2px 6px), linear-gradient(90deg, var(--mp), var(--mp)) !important; }
+:root[data-colorblind="on"] .bar-hp.low .bar-fill { background-image: repeating-linear-gradient(90deg, rgba(255,255,255,.35) 0 3px, transparent 3px 6px), linear-gradient(90deg, var(--hp-low), var(--hp-low)) !important; }
+
+/* ---------- Reducir movimiento ---------- */
+:root[data-motion="reduced"] *, :root[data-motion="reduced"] *::before, :root[data-motion="reduced"] *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+
+/* ---------- Utilidades ---------- */
+.hidden { display: none !important; }
+.skip-link { position: absolute; left: -999px; top: 8px; z-index: 300; padding: 8px 12px; background: var(--primary); color: #fff; border-radius: 8px; }
+.skip-link:focus { left: 8px; }
+.topbar-actions { display: flex; gap: 4px; }
+.topbar-more { display: none !important; }
+.enter-forward { animation: inRight .28s var(--ease); }
+.enter-back { animation: inLeft .28s var(--ease); }
+.enter-fade { animation: screenIn .3s var(--ease); }
+@keyframes inRight { from { opacity: 0; transform: translateX(28px); } }
+@keyframes inLeft { from { opacity: 0; transform: translateX(-28px); } }

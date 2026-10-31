@@ -1,0 +1,16 @@
+{
+  "name": "Daskai",
+  "short_name": "Daskai",
+  "description": "Roguelike de combates por turnos con criaturas de cinco casas.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0b0d1a",
+  "theme_color": "#6d5dfc",
+  "lang": "es",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

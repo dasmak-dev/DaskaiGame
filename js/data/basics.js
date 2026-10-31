@@ -1,0 +1,94 @@
+/* =============================================================
+ * data/basics.js — Atributos, casas, naturalezas, pasivas,
+ * estados alterados y rarezas.
+ *
+ * Para traducir nombres/descripciones a otro idioma usa el apartado
+ * `data` del archivo de idioma (js/lang/en.js); no hace falta tocar aquí.
+ * ============================================================= */
+(function () {
+  const D = DK.data;
+
+  D.statKeys = ['hp', 'mp', 'atk', 'matk', 'def', 'mdef', 'spd'];
+  D.stats = {
+    hp: { name: 'Vida', short: 'PV', icon: 'heart' },
+    mp: { name: 'Maná', short: 'PM', icon: 'sparkle' },
+    atk: { name: 'Ataque físico', short: 'ATQ', icon: 'sword' },
+    matk: { name: 'Ataque mágico', short: 'ATQ.M', icon: 'wand' },
+    def: { name: 'Defensa física', short: 'DEF', icon: 'shield' },
+    mdef: { name: 'Defensa mágica', short: 'DEF.M', icon: 'shieldStar' },
+    spd: { name: 'Velocidad', short: 'VEL', icon: 'wind' },
+    regen: { name: 'Regeneración', short: 'REG', icon: 'regen' },
+  };
+
+  /* Cada casa es fuerte contra `strongVs`. Ciclo:
+     Luz > Oscuridad > Agua > Fuego > Tierra > Luz */
+  D.houses = {
+    luz: { id: 'luz', name: 'Luz', color: '#f2b705', cbColor: '#f0e442', icon: 'sun', strongVs: 'oscuridad' },
+    oscuridad: { id: 'oscuridad', name: 'Oscuridad', color: '#8b5cf6', cbColor: '#cc79a7', icon: 'moon', strongVs: 'agua' },
+    agua: { id: 'agua', name: 'Agua', color: '#0ea5e9', cbColor: '#0072b2', icon: 'droplet', strongVs: 'fuego' },
+    fuego: { id: 'fuego', name: 'Fuego', color: '#f97316', cbColor: '#e69f00', icon: 'flame', strongVs: 'tierra' },
+    tierra: { id: 'tierra', name: 'Tierra', color: '#65a30d', cbColor: '#7f7f7f', icon: 'mountain', strongVs: 'luz' },
+  };
+
+  /* Naturaleza: al subir de nivel cada atributo gana 1-3 puntos "de nivel".
+     boost → además +1/+2 puntos por naturaleza (▲)
+     lower → la naturaleza le quita 0/1 punto (▼)
+     el resto no cambia (=). Ver config.growth. */
+  D.natures = {
+    tranquila: { name: 'Tranquila', boost: ['hp', 'def'], lower: ['spd'], desc: 'Más vida y defensa física; menos velocidad.' },
+    feroz: { name: 'Feroz', boost: ['atk', 'spd'], lower: ['mdef'], desc: 'Más ataque físico y velocidad; menos defensa mágica.' },
+    sabia: { name: 'Sabia', boost: ['matk', 'mp'], lower: ['atk'], desc: 'Más ataque mágico y maná; menos ataque físico.' },
+    astuta: { name: 'Astuta', boost: ['spd', 'matk'], lower: ['def'], desc: 'Más velocidad y ataque mágico; menos defensa física.' },
+    firme: { name: 'Firme', boost: ['def', 'mdef'], lower: ['matk'], desc: 'Más defensa física y mágica; menos ataque mágico.' },
+    valiente: { name: 'Valiente', boost: ['atk', 'hp'], lower: ['mp'], desc: 'Más ataque físico y vida; menos maná.' },
+    serena: { name: 'Serena', boost: ['mdef', 'mp'], lower: ['spd'], desc: 'Más defensa mágica y maná; menos velocidad.' },
+    impetuosa: { name: 'Impetuosa', boost: ['atk', 'matk'], lower: ['hp'], desc: 'Más ataque físico y mágico; menos vida.' },
+    equilibrada: { name: 'Equilibrada', boost: [], lower: [], desc: 'Todos los atributos crecen por igual.' },
+  };
+
+  /** Efecto de una naturaleza sobre un atributo: 1 (▲), -1 (▼) o 0 (=). */
+  D.natureEffect = (natureId, stat) => {
+    const n = D.natures[natureId];
+    if (!n) return 0;
+    if (n.boost.includes(stat)) return 1;
+    if ((n.lower || []).includes(stat)) return -1;
+    return 0;
+  };
+
+  /* Pasivas: modificadores porcentuales de atributos (0.1 = +10%) */
+  D.passives = {
+    furia: { name: 'Furia contenida', mods: { atk: 0.12, spd: -0.08 }, desc: '+12% ataque físico, -8% velocidad.' },
+    instinto: { name: 'Instinto salvaje', mods: { atk: 0.02, spd: -0.02 }, desc: '+2% ataque físico, velocidad ligeramente reducida.' },
+    mente_arcana: { name: 'Mente arcana', mods: { matk: 0.2, atk: -0.15 }, desc: '+20% ataque mágico, -15% ataque físico.' },
+    caparazon: { name: 'Caparazón', mods: { def: 0.15, spd: -0.1 }, desc: '+15% defensa física, -10% velocidad.' },
+    pies_ligeros: { name: 'Pies ligeros', mods: { spd: 0.15, def: -0.1 }, desc: '+15% velocidad, -10% defensa física.' },
+    vitalidad: { name: 'Vitalidad', mods: { hp: 0.1 }, regen: 1, desc: '+10% vida y +1% de regeneración.' },
+    pozo_mana: { name: 'Pozo de maná', mods: { mp: 0.25, hp: -0.05 }, desc: '+25% maná, -5% vida.' },
+    espiritu_ferreo: { name: 'Espíritu férreo', mods: { mdef: 0.15, matk: -0.05 }, desc: '+15% defensa mágica, -5% ataque mágico.' },
+    sangre_caliente: { name: 'Sangre caliente', mods: { atk: 0.08, matk: 0.08, def: -0.08, mdef: -0.08 }, desc: '+8% ataques, -8% defensas.' },
+    regeneracion: { name: 'Regeneración', mods: { atk: -0.05 }, regen: 2, desc: '+2% de regeneración, -5% ataque físico.' },
+    equilibrio: { name: 'Equilibrio', mods: { hp: 0.03, mp: 0.03, atk: 0.03, matk: 0.03, def: 0.03, mdef: 0.03, spd: 0.03 }, desc: '+3% a todos los atributos.' },
+  };
+
+  /* Estados alterados */
+  D.statuses = {
+    veneno: { name: 'Envenenado', icon: 'poison', color: '#a855f7', dot: 0.06, desc: 'Pierde un 6% de vida por turno.' },
+    quemadura: { name: 'Quemado', icon: 'flame', color: '#f97316', dot: 0.05, atkMult: 0.8, desc: 'Pierde un 5% de vida por turno y su ataque físico baja un 20%.' },
+  };
+
+  D.rarities = {
+    comun: { name: 'Común', order: 1 },
+    raro: { name: 'Raro', order: 2 },
+    epico: { name: 'Épico', order: 3 },
+    legendario: { name: 'Legendario', order: 4 },
+  };
+
+  // Añade `id` a cada entrada para poder traducirlas con DK.tr()
+  [D.stats, D.natures, D.passives, D.statuses, D.rarities].forEach((group) => Object.entries(group).forEach(([id, o]) => (o.id = id)));
+
+  /** Color de una casa según el modo daltónico. */
+  D.houseColor = (id) => {
+    const hs = D.houses[id];
+    return DK.settings && DK.settings.get('colorblind') ? hs.cbColor : hs.color;
+  };
+})();

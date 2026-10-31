@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#6d5dfc">
+  <meta name="description" content="Daskai: roguelike de combates por turnos con criaturas de cinco casas.">
+  <title>Daskai</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Pixelify+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/screens.css">
+  <link rel="stylesheet" href="css/battle.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="css/theme.css">
+  <script>
+    // Aplica tema y tamaño de texto antes de pintar para evitar parpadeos
+    try {
+      var s = JSON.parse(localStorage.getItem('daskai.settings') || '{}');
+      var d = document.documentElement;
+      d.dataset.theme = s.theme || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+      d.dataset.textsize = s.textSize || 'md';
+    } catch (e) {}
+  </script>
+</head>
+<body>
+  <div id="app"></div>
+
+  <!--
+    ORDEN DE CARGA (importa: cada capa usa las anteriores)
+    1. core       → base reutilizable (sin lógica de juego)
+    2. lang       → textos de la interfaz
+    3. data       → datos editables del juego
+    4. systems    → reglas y lógica (sin interfaz)
+    5. components → piezas visuales compartidas
+    6. screens    → pantallas (cada una registra su entrada de menú)
+    7. main.js    → arranque
+  -->
+
+  <!-- 1. Núcleo -->
+  <script src="js/core/dk.js"></script>
+  <script src="js/core/i18n.js"></script>
+  <script src="js/core/settings.js"></script>
+  <script src="js/core/keys.js"></script>
+  <script src="js/core/icons.js"></script>
+  <script src="js/core/ui.js"></script>
+  <script src="js/core/router.js"></script>
+  <script src="js/core/menus.js"></script>
+  <script src="js/core/store.js"></script>
+  <script src="js/core/app.js"></script>
+
+  <!-- 2. Idiomas -->
+  <script src="js/lang/es.js"></script>
+  <script src="js/lang/en.js"></script>
+
+  <!-- 3. Datos -->
+  <script src="js/data/config.js"></script>
+  <script src="js/data/basics.js"></script>
+  <script src="js/data/talents.js"></script>
+  <script src="js/data/moves.js"></script>
+  <script src="js/data/items.js"></script>
+  <script src="js/data/recipes.js"></script>
+  <script src="js/data/shop.js"></script>
+  <script src="js/data/species.js"></script>
+  <script src="js/data/evolutions.js"></script>
+  <script src="js/data/zones.js"></script>
+  <script src="js/data/species2.js"></script>
+  <script src="js/data/missions.js"></script>
+  <script src="js/data/achievements.js"></script>
+  <script src="js/data/events.js"></script>
+  <script src="js/data/relics.js"></script>
+  <script src="js/data/difficulties.js"></script>
+  <script src="js/data/upgrades.js"></script>
+  <script src="js/data/curses.js"></script>
+  <script src="js/data/bossPhases.js"></script>
+
+  <!-- 4. Sistemas -->
+  <script src="js/systems/audio.js"></script>
+  <script src="js/systems/sprites.js"></script>
+  <script src="js/systems/daskai.js"></script>
+  <script src="js/systems/rules.js"></script>
+  <script src="js/systems/inventory.js"></script>
+  <script src="js/systems/world.js"></script>
+  <script src="js/systems/expedition.js"></script>
+  <script src="js/systems/training.js"></script>
+  <script src="js/systems/curses.js"></script>
+  <script src="js/systems/battle.js"></script>
+  <script src="js/systems/progress.js"></script>
+
+  <!-- 5. Componentes -->
+  <script src="js/components/common.js"></script>
+  <script src="js/components/daskaiViews.js"></script>
+  <script src="js/components/itemViews.js"></script>
+  <script src="js/components/fx.js"></script>
+  <script src="js/components/scenes.js"></script>
+  <script src="js/components/guides.js"></script>
+  <script src="js/components/celebrations.js"></script>
+  <script src="js/components/talentViews.js"></script>
+  <script src="js/components/todoCard.js"></script>
+  <script src="js/components/daskaiPanel.js"></script>
+  <script src="js/components/palette.js"></script>
+  <script src="js/components/avatar.js"></script>
+  <script src="js/components/shareCard.js"></script>
+
+  <!-- 6. Pantallas -->
+  <script src="js/screens/mainMenu.js"></script>
+  <script src="js/screens/newGame.js"></script>
+  <script src="js/screens/hub.js"></script>
+  <script src="js/screens/team.js"></script>
+  <script src="js/screens/inventory.js"></script>
+  <script src="js/screens/craft.js"></script>
+  <script src="js/screens/codex.js"></script>
+  <script src="js/screens/zones.js"></script>
+  <script src="js/screens/expedition.js"></script>
+  <script src="js/screens/expPrepare.js"></script>
+  <script src="js/screens/expSummary.js"></script>
+  <script src="js/screens/gameOver.js"></script>
+  <script src="js/screens/camp.js"></script>
+  <script src="js/screens/training.js"></script>
+  <script src="js/screens/battle.js"></script>
+  <script src="js/screens/progress.js"></script>
+  <script src="js/screens/profile.js"></script>
+  <script src="js/screens/settings.js"></script>
+
+  <!-- 7. Arranque -->
+  <script src="js/main.js"></script>
+</body>
+</html>

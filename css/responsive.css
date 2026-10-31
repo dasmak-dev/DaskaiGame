@@ -1,0 +1,44 @@
+/* =============================================================
+ * css/responsive.css — Adaptación a tablet y móvil.
+ * ============================================================= */
+/* ---------- Responsive ---------- */
+@media (max-width: 900px) {
+  .split, .battle-bottom, .stats-compare { grid-template-columns: 1fr; }
+  .starter-grid { grid-template-columns: repeat(3, 1fr); }
+  .stat-row { grid-template-columns: 1fr 60px 1fr; } .stat-break { grid-column: 1 / -1; text-align: left; }
+  .detail-head, .starter-detail-head, .codex-detail-head { flex-direction: column; text-align: center; }
+  .detail-info .row { justify-content: center; }
+}
+@media (max-width: 600px) {
+  body { font-size: 14px; }
+  .screen-host { padding: 14px 12px 30px; }
+  .topbar { padding: 8px 10px; }
+  .starter-grid { grid-template-columns: repeat(2, 1fr); }
+  .arena { height: 400px; }
+  .hud { width: 56%; padding: 8px 10px; gap: 4px; }
+  .hud-title { font-size: .92rem; }
+  .hud-enemy { left: 8px; top: 8px; } .hud-ally { right: 8px; bottom: 8px; }
+  .combatant.enemy { right: 3%; top: 16%; } .combatant.enemy .sprite { width: 120px !important; height: 120px !important; }
+  .combatant.ally { left: 1%; bottom: 30%; } .combatant.ally .sprite { width: 140px !important; height: 140px !important; }
+  .p-enemy { width: 170px; height: 50px; right: 0; top: 40%; } .p-ally { width: 210px; height: 60px; left: -6%; bottom: 30%; }
+  .float-num.enemy { right: 18%; top: 14%; } .float-num.ally { left: 16%; bottom: 62%; }
+  .topbar .btn { padding: 8px 10px; }
+  .action-grid .btn { min-height: 70px; padding: 10px; } .action-grid .btn-lg .icon { width: 32px; height: 32px; }
+  .menu-grid { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+
+@media (max-width: 1000px) {
+  .topbar-actions { display: none; }
+  .topbar-more { display: inline-flex !important; }
+}
+@media (max-width: 900px) {
+  .help-houses, .compare-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .action-grid.five { grid-template-columns: 1fr 1fr; } .action-grid.five > .btn { grid-column: auto !important; } .action-grid.five > .btn:first-child { grid-column: span 2 !important; }
+  .turn-order { top: auto; bottom: 46%; font-size: .7rem; }
+  .lu-row { grid-template-columns: 1fr 34px 14px 40px 36px; font-size: .85rem; }
+  .battle-toolbar { padding: 6px 8px; }
+  .input-sm { min-width: 0; flex: 1; }
+}

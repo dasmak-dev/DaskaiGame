@@ -1,0 +1,191 @@
+/* =============================================================
+ * core/store.js — Estado de la partida, ranuras de guardado,
+ * exportar e importar.
+ *
+ *   DK.store.state          → objeto con toda la partida actual
+ *   DK.store.save()         → guarda la ranura activa
+ *   DK.store.load(n)        → carga la ranura n (1..3)
+ *   DK.store.slotMeta(n)    → resumen para la pantalla de partidas
+ *   DK.store.exportSlot(n)  → descarga un .json
+ *   DK.store.importFile(file, n) → promesa
+ *
+ * Si añades campos nuevos al estado, dales valor por defecto en
+ * `migrate()` para que las partidas antiguas sigan funcionando.
+ * ============================================================= */
+(function () {
+  const SLOT_KEY = (n) => `daskai.slot.${n}`;
+  const LEGACY_KEY = 'daskai.save.v1';
+  const SLOTS = 3;
+
+  const ls = {
+    get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } },
+    del(k) { try { localStorage.removeItem(k); } catch (e) { /* */ } },
+  };
+
+  // Partida de la versión 1 → ranura 1
+  if (ls.get(LEGACY_KEY) && !ls.get(SLOT_KEY(1))) { ls.set(SLOT_KEY(1), ls.get(LEGACY_KEY)); ls.del(LEGACY_KEY); }
+
+  DK.store = {
+    state: null,
+    slot: null,
+    slots: SLOTS,
+
+    /** Lee la partida guardada en una ranura (sin activarla). */
+    read(n) { const raw = ls.get(SLOT_KEY(n)); if (!raw) return null; try { return JSON.parse(raw); } catch (e) { return null; } },
+
+    /** ¿Hay alguna partida guardada? */
+    hasAnySave() { for (let i = 1; i <= SLOTS; i++) if (ls.get(SLOT_KEY(i))) return true; return false; },
+
+    /** Resumen de una ranura para mostrarla. */
+    slotMeta(n) {
+      const s = this.read(n);
+      if (!s) return { slot: n, exists: false };
+      const party = s.party || [];
+      const best = party.slice().sort((a, b) => b.level - a.level)[0];
+      return {
+        slot: n, exists: true, name: s.player && s.player.name, updated: s.updated || s.created,
+        playTime: (s.stats && s.stats.playTime) || 0, count: party.length,
+        bestSpecies: best && best.species, bestLevel: best ? best.level : 0, coins: s.coins || 0,
+        zones: Object.values(s.zones || {}).filter((z) => z.unlocked).length, gameOver: !!s.gameOver, fallen: (s.graveyard || []).length,
+        avatar: s.player && s.player.avatar, frame: s.player && s.player.frame,
+      };
+    },
+
+    /** Activa la partida de la ranura n. */
+    load(n) {
+      const s = this.read(n);
+      if (!s) return false;
+      this.state = s; this.slot = n;
+      this.migrate();
+      DK.settings.set('lastSlot', n);
+      DK.emit('game:loaded', { slot: n });
+      return true;
+    },
+
+    /** Guarda la partida activa en su ranura. */
+    save() {
+      if (!this.state || !this.slot) return;
+      this.state.updated = Date.now();
+      ls.set(SLOT_KEY(this.slot), JSON.stringify(this.state));
+    },
+
+    /** Cierra la partida activa (sin borrarla). */
+    close() { this.save(); this.state = null; this.slot = null; },
+
+    /** Borra una ranura. */
+    deleteSlot(n) { ls.del(SLOT_KEY(n)); if (this.slot === n) { this.state = null; this.slot = null; } },
+
+    /**
+     * Crea una partida nueva en la ranura indicada.
+     * @param {number} n        ranura 1..3
+     * @param {string} name     nombre del aventurero
+     * @param {string} starterId especie inicial
+     * @param {string} [difficulty] id de data/difficulties.js
+     */
+    newGame(n, name, starterId, difficulty) {
+      const firstZone = Object.values(DK.data.zones)[0].id;
+      this.slot = n;
+      this.state = {
+        version: 2, created: Date.now(), updated: Date.now(),
+        player: { name },
+        difficulty: difficulty || DK.data.defaultDifficulty,
+        party: [], team: [],
+        bag: Object.assign({}, DK.config.startingBag),
+        coins: DK.config.startingCoins,
+        codex: {},
+        zones: { [firstZone]: { unlocked: true, wins: 0 } },
+      };
+      this.migrate();
+      const d = DK.daskai.create(starterId, DK.config.starterLevel);
+      DK.party.add(d);
+      DK.settings.set('lastSlot', n);
+      this.save();
+      DK.emit('game:new', { slot: n });
+      return d;
+    },
+
+    /** Rellena campos que falten (partidas antiguas o nuevas). */
+    migrate() {
+      const s = this.state;
+      s.version = 2;
+      s.bag = s.bag || {}; s.codex = s.codex || {}; s.zones = s.zones || {};
+      if (s.coins == null) s.coins = DK.config.startingCoins; // partidas de la v1 no tenían monedas
+      s.bosses = s.bosses || {};
+      s.favorites = s.favorites || [];
+      s.graveyard = s.graveyard || [];
+      s.essences = s.essences || [];      // esencias de caídos (DK.legacy)
+      s.camp = s.camp || {};              // mejoras del campamento (DK.camp)
+      s.expHistory = s.expHistory || [];  // resúmenes de expediciones (Perfil)
+      s.difficulty = s.difficulty || DK.data.defaultDifficulty;
+      // Máximo de ataques reducido: los que sobran pasan a la reserva (siguen en learned)
+      (s.party || []).forEach((d) => { if (d.moves && d.moves.length > DK.config.maxMoves) d.moves = d.moves.slice(0, DK.config.maxMoves); });
+      // Recetas conocidas: partidas antiguas conocen las básicas y sus favoritas
+      if (!s.recipesKnown) s.recipesKnown = [...new Set([...(DK.data.starterRecipes || []), ...s.favorites])];
+      s.notifiedReady = s.notifiedReady || [];
+      s.achievements = s.achievements || {};
+      s.missions = s.missions || {};
+      s.expedition = s.expedition || null;
+      if (s.expedition && DK.expedition) { DK.expedition.ensureMap(); DK.expedition.ensureFields(); } // expediciones de versiones anteriores
+      // Partidas que quedaron con todo el equipo debilitado tras una expedición (bug de la v3.7)
+      if (!s.expedition && DK.expedition && s.party && s.party.length && (s.party || []).every((d) => d.cur && d.cur.hp <= 0)) setTimeout(() => { DK.expedition.afterEnd(); DK.store.save(); }, 0);
+      s.stats = Object.assign({
+        battles: 0, wins: 0, losses: 0, flees: 0, captures: 0, crafts: 0, itemsUsed: 0,
+        damageDealt: 0, damageTaken: 0, crits: 0, expeditions: 0, bossesDefeated: 0,
+        coinsEarned: 0, coinsSpent: 0, evolutions: 0, shinies: 0, released: 0, playTime: 0, usage: {},
+        streak: 0, bestStreak: 0, biggestHit: 0, bestDepth: 0, defeatedHouses: {}, history: [],
+      }, s.stats || {});
+      // Perfil del jugador (avatar: null = el líder del equipo; ver components/avatar.js)
+      s.player = Object.assign({ avatar: null, frame: 'none', title: null, motto: '' }, s.player);
+      (s.party || []).forEach((d) => {
+        d.learned = d.learned || d.moves.slice();
+        d.equip = d.equip || [null, null];
+        // Partidas antiguas: estima la parte de naturaleza de lo ya crecido (de media 1,5 de cada 3,5 puntos)
+        if (!d.natureGrowth) {
+          d.natureGrowth = {};
+          DK.data.statKeys.forEach((k) => { d.natureGrowth[k] = DK.data.natureEffect(d.nature, k) > 0 ? Math.round(d.growth[k] * (1.5 / 3.5)) : 0; });
+        }
+      });
+    },
+
+    /** Descarga la ranura n como archivo .json. */
+    exportSlot(n) {
+      const raw = ls.get(SLOT_KEY(n));
+      if (!raw) return false;
+      const meta = this.slotMeta(n);
+      const blob = new Blob([raw], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `daskai-${(meta.name || 'partida').replace(/[^\w-]+/g, '_')}-${DK.util.today()}.json`;
+      document.body.append(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      return true;
+    },
+
+    /**
+     * Importa un archivo .json en la ranura n.
+     * @returns {Promise<boolean>}
+     */
+    importFile(file, n) {
+      return new Promise((resolve) => {
+        const r = new FileReader();
+        r.onload = () => {
+          try {
+            const s = JSON.parse(r.result);
+            if (!s || !Array.isArray(s.party) || !s.player) throw new Error('formato');
+            ls.set(SLOT_KEY(n), JSON.stringify(s));
+            resolve(true);
+          } catch (e) { resolve(false); }
+        };
+        r.onerror = () => resolve(false);
+        r.readAsText(file);
+      });
+    },
+  };
+
+  // Tiempo de juego: suma 10 s cada 10 s mientras haya partida y la pestaña esté visible
+  setInterval(() => {
+    if (DK.store.state && document.visibilityState === 'visible') { DK.store.state.stats.playTime += 10; }
+  }, 10000);
+  window.addEventListener('beforeunload', () => DK.store.save());
+})();

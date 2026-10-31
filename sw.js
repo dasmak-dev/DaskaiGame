@@ -1,0 +1,115 @@
+/* =============================================================
+ * sw.js — Service worker: guarda el juego en caché para jugar sin
+ * conexión cuando se instala como app.
+ *
+ * IMPORTANTE: si añades o renombras archivos, añádelos a FILES y
+ * sube el número de CACHE para que los jugadores reciban la versión
+ * nueva. (Sólo funciona servido por http/https, no con file://).
+ * ============================================================= */
+const CACHE = 'daskai-v4.0.0';
+const FILES = [
+    './',
+    './css/base.css',
+    './css/battle.css',
+    './css/components.css',
+    './css/layout.css',
+    './css/responsive.css',
+    './css/screens.css',
+    './css/theme.css',
+    './icons/icon-192.png',
+    './icons/icon-512.png',
+    './icons/icon.svg',
+    './index.html',
+    './js/components/celebrations.js',
+    './js/components/talentViews.js',
+    './js/components/todoCard.js',
+    './js/components/common.js',
+    './js/components/daskaiPanel.js',
+    './js/components/daskaiViews.js',
+    './js/components/fx.js',
+    './js/components/guides.js',
+    './js/components/itemViews.js',
+    './js/components/palette.js',
+    './js/components/avatar.js',
+    './js/components/shareCard.js',
+    './js/components/scenes.js',
+    './js/core/app.js',
+    './js/core/dk.js',
+    './js/core/i18n.js',
+    './js/core/icons.js',
+    './js/core/keys.js',
+    './js/core/menus.js',
+    './js/core/router.js',
+    './js/core/settings.js',
+    './js/core/store.js',
+    './js/core/ui.js',
+    './js/data/achievements.js',
+    './js/data/basics.js',
+    './js/data/talents.js',
+    './js/data/config.js',
+    './js/data/events.js',
+    './js/data/relics.js',
+    './js/data/difficulties.js',
+    './js/data/upgrades.js',
+    './js/data/curses.js',
+    './js/data/bossPhases.js',
+    './js/data/evolutions.js',
+    './js/data/items.js',
+    './js/data/missions.js',
+    './js/data/moves.js',
+    './js/data/recipes.js',
+    './js/data/shop.js',
+    './js/data/species.js',
+    './js/data/zones.js',
+    './js/data/species2.js',
+    './js/lang/en.js',
+    './js/lang/es.js',
+    './js/main.js',
+    './js/screens/battle.js',
+    './js/screens/codex.js',
+    './js/screens/expedition.js',
+    './js/screens/expPrepare.js',
+    './js/screens/expSummary.js',
+    './js/screens/gameOver.js',
+    './js/screens/camp.js',
+    './js/screens/training.js',
+    './js/screens/hub.js',
+    './js/screens/inventory.js',
+    './js/screens/craft.js',
+    './js/screens/mainMenu.js',
+    './js/screens/newGame.js',
+    './js/screens/progress.js',
+    './js/screens/profile.js',
+    './js/screens/settings.js',
+    './js/screens/team.js',
+    './js/screens/zones.js',
+    './js/systems/audio.js',
+    './js/systems/battle.js',
+    './js/systems/daskai.js',
+    './js/systems/rules.js',
+    './js/systems/expedition.js',
+    './js/systems/training.js',
+    './js/systems/curses.js',
+    './js/systems/inventory.js',
+    './js/systems/progress.js',
+    './js/systems/sprites.js',
+    './js/systems/world.js',
+    './manifest.webmanifest',
+];
+
+self.addEventListener('install', (e) => {
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting()));
+});
+
+self.addEventListener('activate', (e) => {
+  e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
+});
+
+// Primero la caché; si no está, red (y se guarda para la próxima vez)
+self.addEventListener('fetch', (e) => {
+  if (e.request.method !== 'GET') return;
+  e.respondWith(caches.match(e.request).then((hit) => hit || fetch(e.request).then((res) => {
+    if (res.ok && new URL(e.request.url).origin === location.origin) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(e.request, copy)); }
+    return res;
+  }).catch(() => caches.match('./index.html'))));
+});
