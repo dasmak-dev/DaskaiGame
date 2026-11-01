@@ -68,6 +68,7 @@ DK.i18n.register('es', {
   },
 
   team: {
+    fights: 'Lucha', healAllShort: 'Curar', emptyExpTip: 'Hueco libre: pulsa para meter a alguien que va contigo', 
     barTitle: 'Tu equipo', barHint: 'Pulsa una tarjeta para elegir quién lucha el siguiente combate.', healOne: 'Curar a {name}', healAll: 'Curar a todos',
     healed: '{name} se cura ({items}).', pickNext: 'Elegir a {name} para el siguiente combate',
     sheet: 'Ficha del daskai', expReserve: 'Banquillo de la expedición ({n})', expReserveHint: 'Sólo los que salieron contigo y tus reclutas',
@@ -208,6 +209,7 @@ DK.i18n.register('es', {
   },
 
   zones: {
+    heroNew: 'Nueva expedición', heroLine: 'Mapas al azar entre tus zonas, cada vez más difíciles. Tras cada jefe decides si seguir o cobrar.', heroOnLine: 'Tu equipo sigue en el camino. Vuelve al mapa para continuar.', hardMode: 'Modo difícil', moreShort: 'Por descubrir', pickHint: 'Pulsa una zona · ← →', winsShort: 'Victorias', codexShort: 'Códice', 
     worldMap: 'Mapa del mundo', moreHidden: '{n} zonas por descubrir', records: 'Récords',
     recMaps: 'Mapas superados', recDepth: 'Más profundo', recXl: 'Mapas XL', recSecret: 'Jefe oculto', recFast: 'Mapa más rápido',
     preview: 'Ver el primer mapa', zonesTitle: 'Zonas', unlockedN: '{n}/{total} zonas',
@@ -350,6 +352,7 @@ DK.i18n.register('es', {
   },
 
   battle: {
+    curtainEliteTitle: '¡Mini jefe!', curtainBoss: '¡Jefe! {name} · Nv. {n}', curtainSecret: '¡Jefe oculto! {name} · Nv. {n}', curtainElite: 'Mini jefe · Nv. {n}',
     autoHealed: 'Automático: {name} está en zona crítica, usa {item}.',
     dmgStab: 'Misma casa', dmgBroken: 'Ruptura',
     broken: '¡{name} rompe su guardia! No actuará hasta el final del turno siguiente y recibe +{n}% de daño.', stunned: '{name} está aturdido y no puede actuar.', recovered: '{name} se recupera de la ruptura.',
@@ -532,7 +535,7 @@ DK.i18n.register('es', {
   nav: {
     more: 'Más',
     training: 'Entrenamiento',
-    home: 'Inicio', team: 'Equipo', inventory: 'Inventario', battle: 'Batalla', codex: 'Códice', progress: 'Progreso', profile: 'Perfil', camp: 'Mejoras', craft: 'Crafteo', pack: 'Mochila', expMap: 'Mapa',
+    home: 'Campamento', team: 'Equipo', inventory: 'Inventario', battle: 'Batalla', codex: 'Códice', progress: 'Progreso', profile: 'Perfil', camp: 'Mejoras', craft: 'Crafteo', pack: 'Mochila', expMap: 'Mapa',
     main: 'Navegación principal', breadcrumb: 'Estás en',
   },
   home: {
@@ -707,6 +710,7 @@ DK.i18n.register('es', {
     tool: { pen: 'Lápiz', eraser: 'Goma', note: 'Nota' },
   },
   brief: {
+    unlocks: 'Reliquias · pactos', unlocksTip: 'Desbloqueados: {r} reliquias y {c} pactos. Sólo esos pueden salir al empezar. Se desbloquean con emblemas en el menú de Mejoras, al terminar una expedición.', 
     mod: 'Clima del mapa',
     size: 'Tamaño', sizeFloors: 'Tamaño · {n} pisos', levels: 'Rivales', levelsTip: 'Nivel de los daskai salvajes de este mapa', difficulty: 'Dificultad',
     reward: 'Por jefe', rewardValue: '+{n} emblemas', rewardTip: 'Emblemas que da cada jefe de este mapa (también los ocultos de las cuevas). Cuanto más grande el mapa, más emblemas.',
@@ -739,9 +743,24 @@ DK.i18n.register('es', {
     noFaint: { name: 'Sin bajas', desc: 'Supera el mapa sin que caiga ninguno de tus daskai.' },
   },
   unlock: {
-    training: '¡Campo de entrenamiento desbloqueado! Ya puedes dejar daskai entrenando (Inicio → Entrenamiento).',
+    training: '¡Campo de entrenamiento desbloqueado! Ya puedes dejar daskai entrenando (el muñeco del campamento).',
     trainingLocked: 'Se desbloquea al derrotar a tu primer jefe en una expedición.',
   },
+  pause: { title: 'Pausa', resume: 'Continuar', menu: 'Menú', menuTip: 'Menú de pausa (Esc)' },
+  scene: {
+    title: 'Campamento', path: 'Expediciones', board: 'Misiones', tent: 'Inventario', anvil: 'Crafteo', fire: 'Equipo', lectern: 'Códice', dummy: 'Entrenamiento', locked: 'Bloqueado',
+    greet: { day: 'Un buen día para explorar', dawn: 'Amanece en el campamento', dusk: 'Cae la tarde en el campamento', night: 'La hoguera calienta la noche' },
+  },
+  box: {
+    dragHintExp: 'Arrastra entre tu equipo y quienes van contigo (en el móvil, mantén pulsado).', 
+    withYou: 'Contigo en la expedición', withYouN: '{n} daskai', withYouEmpty: 'Todos los que salieron contigo están en el equipo.', locked: 'Las cajas se quedan en el campamento: durante la expedición sólo puedes cambiar el equipo con quien va contigo y con tus reclutas.', 
+    name: 'Caja {n}', count: '{n}/{max}', prev: 'Caja anterior', next: 'Caja siguiente', rename: 'Cambiar nombre', renameTitle: 'Nombre de la caja',
+    bg: 'Cambiar fondo', bgTitle: 'Fondo de la caja', add: 'Nueva caja', sort: 'Ordenar caja', matches: '{n} coinciden', atHome: 'se quedó en casa',
+    dragHint: 'Arrastra entre la caja y el equipo (en el móvil, mantén pulsado). Pulsa uno para ver su ficha.',
+    sortBy: { level: 'Por nivel', house: 'Por casa', species: 'Por especie', name: 'Por nombre' },
+    bgName: { noche: 'Noche estrellada', nieve: 'Nieve', arena: 'Desierto', cristal: 'Cristal', lava: 'Lava' },
+  },
+  party: { toReserve: 'Sacar del equipo (sigue contigo)', emptyHintExp: 'Arrastra aquí a quien va contigo', title: 'Tu equipo', empty: 'Hueco libre', emptyHint: 'Arrastra aquí un daskai de la caja', toBox: 'Guardar en la caja' },
   craft: {
     tabRecipes: 'Recetas', tabMaterials: 'Materiales', searchMat: 'Buscar material…', type: 'Tipo', recipesN: '{n} recetas', readyN: '{n} listas',
     canN: 'Puedes hacer {n}', chainShort: 'Con pasos', missingN: 'Faltan {n}', usedInShort: 'En {n} recetas', usedIn: 'Se usa en {n} recetas', usedInOne: 'Se usa en 1 receta', whereGet: 'Dónde conseguirlo',
@@ -783,8 +802,8 @@ DK.i18n.register('es', {
   sum: {
     timeline: 'Cronología', moments: '{n} momentos', floorN: 'piso {n}', compare: 'Frente a tu mejor expedición', newRecord: '¡Nuevo récord!', bestWas: 'récord {v}',
     cmpDepth: 'Profundidad', cmpCoins: 'Monedas', cmpTime: 'Duración',
-    shopTitle: 'Mejoras permanentes', shopHide: 'Ocultar', shopShow: 'Ver mejoras', shopEarned: 'Has ganado {n} emblemas en esta expedición.', shopEarnedOne: 'Has ganado 1 emblema en esta expedición.', secretsOne: '1 jefe oculto vencido', shopCanOne: 'Puedes comprar 1 mejora ahora.', shopNone: 'No has derrotado ningún jefe en esta expedición.',
-    shopCan: 'Puedes comprar {n} mejoras ahora.', shopSave: 'Guarda tus emblemas para la próxima.', secrets: '{n} jefes ocultos vencidos',
+    shopTitle: 'Mejoras permanentes', shopHide: 'Ocultar', shopShow: 'Ver mejoras', shopEarned: 'Has ganado {n} emblemas en esta expedición.', shopEarnedOne: 'Has ganado 1 emblema en esta expedición.', secretsOne: '1 jefe oculto vencido', shopCanOne: 'Tienes emblemas para 1 mejora o desbloqueo.', shopNone: 'No has derrotado ningún jefe en esta expedición.',
+    shopCan: 'Tienes emblemas para {n} mejoras o desbloqueos.', shopSave: 'Guarda tus emblemas para la próxima.', secrets: '{n} jefes ocultos vencidos',
     campfireLost: 'Al volver desde una hoguera se pierde el {pct}% del botín ({coins} monedas).',
     fallen: 'Caídos en esta expedición',
     title: 'Resumen de la expedición', empty: 'Aún no has terminado ninguna expedición', none: 'Nada',
@@ -816,6 +835,7 @@ campfire: 'Volviste a casa desde una hoguera: te llevas la mitad del botín y to
   },
   /* Campamento (data/upgrades.js) */
   camp: {
+    tabUpgrades: 'Mejoras', tabRelics: 'Reliquias', tabCurses: 'Pactos', unlock: 'Desbloquear · {n}', unlocked: '¡Desbloqueado: {name}!', unlockedTag: 'Desbloqueado', canNow: 'Puedes pagar {n}', costEach: '· {n} cada una', relicsText: 'Desbloquea reliquias para que puedan salir al empezar una expedición (eliges 1 de 3 entre las desbloqueadas). Las raras y épicas necesitan el Cartógrafo. Las que encuentras por el camino salen de todas.', cursesText: 'Desbloquea pactos para que se ofrezcan al empezar cada mapa: más dificultad a cambio de monedas o reliquias. Sin ninguno desbloqueado, no hay pactos.', 
     title: 'Mejoras', text: 'Mejoras permanentes entre expediciones. Se pagan con emblemas (1 por cada jefe derrotado) y se compran al terminar cada expedición.',
     buy: 'Mejorar · {n}', bought: '¡Mejora conseguida: {name}!', noMoney: 'No tienes monedas suficientes', missing: 'Te faltan {n} emblemas', closeMenu: 'Hecho', saveHint: 'Si no te alcanza, guarda los emblemas: podrás gastarlos al terminar la próxima expedición.', noEmblems: 'No tienes emblemas suficientes', buyAtEnd: 'Se compra al terminar una expedición', howTo: 'Derrota jefes para ganar emblemas y cámbialos por mejoras en el resumen de cada expedición.',
     now: 'Ahora:', nextLevel: 'Siguiente nivel:', firstLevel: 'Al comprarla:', maxed: 'Al máximo', levelTip: 'Nivel actual / máximo',
@@ -831,7 +851,7 @@ campfire: 'Volviste a casa desde una hoguera: te llevas la mitad del botín y to
       atajo: { name: 'Atajos', desc: 'Cada mapa tiene más atajos para saltarte pisos.', effect: '+{n} atajos por mapa' },
       equipaje: { name: 'Equipaje', desc: 'Te caben más objetos en la mochila al salir de expedición.', effect: '+{n} huecos en la mochila' },
       provisiones: { name: 'Provisiones', desc: 'Empiezas cada expedición con pociones gratis en la mochila (no ocupan hueco).', effect: '+{n} pociones al empezar' },
-      cartografo: { name: 'Cartógrafo', desc: 'Mejores reliquias al empezar la expedición.', effect: 'Nivel {n}', lv1: 'La reliquia inicial puede ser rara', lv2: 'Reliquia inicial rara + una común gratis' },
+      cartografo: { name: 'Cartógrafo', desc: 'Mejores reliquias al empezar la expedición.', effect: 'Nivel {n}', lv1: 'La reliquia inicial puede ser rara', lv2: 'Reliquia inicial rara o épica + una común gratis' },
       reclutador: { name: 'Reclutador', desc: 'En los nodos de reclutamiento hay un candidato más y llegan con más nivel.', effect: '+1 candidato · +{n} niveles' },
       hoguera: { name: 'Hoguera mejorada', desc: 'Las hogueras del mapa de la expedición curan más.', effect: '+{n}% al descansar' },
       comercio: { name: 'Contactos comerciales', desc: 'Los mercaderes traen más mercancía.', effect: '+{n} ofertas por mercader' },

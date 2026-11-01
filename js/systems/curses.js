@@ -1,7 +1,8 @@
 /* =============================================================
  * systems/curses.js — Pactos de expedición (data/curses.js).
  *
- *   DK.curses.offer()        → los 3 que se ofrecen al empezar un mapa
+ *   DK.curses.offer()        → los 3 que se ofrecen al empezar un mapa (sólo
+ *                              entre los desbloqueados con emblemas: DK.camp.unlock)
  *   DK.curses.accept([ids])  → acepta (y transforma el mapa si hace falta)
  *   DK.curses.active()       → pactos del mapa actual
  *   DK.curses.effect('clave')→ valor del efecto (suma / producto / true)
@@ -25,10 +26,10 @@
     coinBonus() { return this.active().reduce((a, id) => a + (D.curses[id].reward.coins || 0), 0); },
     relicReward() { return this.active().reduce((a, id) => a + (D.curses[id].reward.relic || 0), 0); },
 
-    /** n pactos al azar para ofrecer. */
-    roll(n = 3) { const pool = Object.keys(D.curses); const out = []; while (out.length < n && pool.length) out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]); return out; },
-    /** Ofrece pactos para el mapa que empieza. */
-    offer() { const e = exp(); if (!e) return; e.curseOffer = this.roll(DK.config.expedition.curseChoices); e.curses = []; },
+    /** n pactos al azar entre los desbloqueados (DK.camp.unlock). */
+    roll(n = 3) { const pool = DK.camp.unlocked('curse'); const out = []; while (out.length < n && pool.length) out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]); return out; },
+    /** Ofrece pactos para el mapa que empieza (ninguno si aún no has desbloqueado ninguno). */
+    offer() { const e = exp(); if (!e) return; const list = this.roll(DK.config.expedition.curseChoices); e.curseOffer = list.length ? list : null; e.curses = []; },
 
     /**
      * Acepta los pactos elegidos (puede ser ninguno) y aplica los que

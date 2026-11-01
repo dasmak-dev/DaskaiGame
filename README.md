@@ -15,7 +15,7 @@ La partida se guarda automáticamente en el navegador (3 ranuras). Desde el men�
 
 **Comodidades:** atajos de teclado en todo el juego, velocidad de combate x1/x2/x4, combate automático, repetir último ataque, vista previa del daño en la barra enemiga, indicador de eficacia y de orden de turno, cambiar de daskai en combate, arrastrar y soltar en el equipo, filtros y comparador, vista previa de cambios al equipar, curar con objetos en un clic, crafteo en cadena y recetas favoritas, apodos, liberar daskai, tutorial guiado, ayuda con el ciclo de casas, tooltips y avisos antes de combatir.
 
-**Interfaz:** navegación siempre visible (barra lateral o inferior), Inicio con botón «Jugar», secciones con lista y ficha a la vez, paneles laterales en lugar de ventanas, acciones rápidas con clic derecho o pulsación larga, arrastrar objetos sobre daskai, buscador con Ctrl+K y combate con los ataques siempre a la vista.
+**Interfaz:** aspecto de juego: un campamento en pixel art como pantalla principal (día y noche según la hora real), HUD con tus recursos, barra de accesos abajo, menú de pausa (Esc), cortinillas al entrar en cada zona y ante los jefes, secciones con lista y ficha a la vez, paneles laterales en lugar de ventanas, acciones rápidas con clic derecho o pulsación larga, arrastrar objetos sobre daskai, buscador con Ctrl+K y combate con los ataques siempre a la vista.
 
 **Sensación moderna:** música y efectos sintetizados (sin archivos), partículas por casa, escenarios animados por zona, pantalla de subida de nivel y de evolución, transiciones entre pantallas y vibración en móvil.
 

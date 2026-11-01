@@ -2,7 +2,9 @@
  * data/relics.js — Reliquias de expedición.
  *
  * Bonificaciones que sólo duran la expedición en curso. Se eligen al
- * empezarla (1 de 3), tras vencer a un rival de élite y en algunos cofres.
+ * empezarla (1 de 3 entre las DESBLOQUEADAS con emblemas en el menú de
+ * Mejoras: DK.camp.unlock), tras vencer a un rival de élite y en algunos
+ * cofres (éstas, de todas).
  *
  *   { id, name, icon, rarity, effect: { tipo, ...valores } }
  *

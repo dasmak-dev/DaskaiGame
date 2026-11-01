@@ -54,6 +54,7 @@
       return;
     }
     // Esc sin manejador en la pantalla → volver atrás
-    if (k === 'Escape' && layers.length === 1 && DK.router) DK.router.back();
+    // Esc: volver; si no hay a dónde, abre el menú de pausa (dentro de una partida)
+    if (k === 'Escape' && layers.length === 1 && DK.router && !DK.router.back() && DK.store && DK.store.state && document.body.dataset.nav === 'on' && DK.app.openMenu) DK.app.openMenu();
   });
 })();

@@ -6,6 +6,10 @@
  * V.upgradeCard con canBuy). Esta pantalla es el catálogo: lo que tienes,
  * lo que cuesta cada nivel y cuántos emblemas guardas.
  *
+ * El menú tiene tres pestañas: Mejoras, Reliquias y Pactos. Las reliquias
+ * iniciales y los pactos se DESBLOQUEAN aquí uno a uno (DK.camp.unlock):
+ * sólo los desbloqueados se ofrecen al empezar una expedición / un mapa.
+ *
  * Cada tarjeta muestra el nivel actual, lo que da el siguiente nivel
  * y su precio. Para añadir una mejora: data/upgrades.js + textos en
  * lang → camp.up.<id> + leer DK.camp.value('<id>') donde se aplique.
@@ -67,20 +71,71 @@
     render() { setTimeout(() => DK.router.reset('hub'), 0); return h('div'); },
   });
 
-  /** Contenido del menú de Mejoras (emblemas + tarjetas con «Mejorar»). */
+  /**
+   * Tarjeta de un pacto o una reliquia por desbloquear (pestañas Pactos y
+   * Reliquias). Desbloqueados, pueden salir al empezar las expediciones.
+   */
+  function unlockCard(kind, id, refresh) {
+    const D = DK.data;
+    const own = DK.camp.isUnlocked(kind, id), cost = DK.camp.unlockCost(kind, id), canPay = DK.camp.emblems() >= cost;
+    const r = kind === 'relic' ? D.relics[id] : null, c = kind === 'curse' ? D.curses[id] : null;
+    const name = r ? r.name : t('curse.' + id + '.name');
+    const buy = () => {
+      if (!DK.camp.unlock(kind, id)) { DK.audio.sfx('error'); DK.ui.toast(t('camp.noEmblems'), { icon: 'emblem', kind: 'bad' }); return; }
+      DK.audio.sfx('levelup'); DK.ui.toast(t('camp.unlocked', { name }), { icon: r ? r.icon : c.icon, kind: 'good' });
+      DK.app.renderNav(); refresh();
+    };
+    const reward = c ? [c.reward.coins ? t('curse.rewardCoins', { n: Math.round(c.reward.coins * 100) }) : null, c.reward.relic ? t('curse.rewardRelic', { n: c.reward.relic }) : null].filter(Boolean).join(' · ') : '';
+    return h('div', { class: 'card unlock-card ' + (r ? 'r-' + r.rarity : 'is-curse') + (own ? ' owned' : ' locked') },
+      h('span', { class: 'unlock-icon' }, DK.icon(r ? r.icon : c.icon, 26), own ? null : h('span', { class: 'unlock-lock' }, DK.icon('lock', 11))),
+      h('div', { class: 'unlock-body' },
+        h('div', { class: 'row gap-s wrap' }, h('b', null, name), r ? V.rarity(r.rarity) : null),
+        h('p', { class: 'small' }, r ? DK.views.relicText(r) : t('curse.' + id + '.desc')),
+        c ? h('span', { class: 'curse-reward small' }, DK.icon('gift', 13), reward) : null),
+      own ? h('span', { class: 'badge good unlock-done' }, DK.icon('check', 13), t('camp.unlockedTag'))
+        : btn({ icon: 'emblem', label: t('camp.unlock', { n: cost }), size: 'sm', variant: canPay ? 'primary' : 'tone', disabled: !canPay, tip: canPay ? null : t('camp.missing', { n: cost - DK.camp.emblems() }), onClick: buy }));
+  }
+
+  /** Pestaña del menú de Mejoras (se recuerda mientras dure la partida). */
+  let shopTab = 'upgrades';
+
+  /** Contenido del menú de Mejoras: pestañas Mejoras · Reliquias · Pactos. */
   V.upgradeShop = (refresh) => {
-    const U = DK.data.upgrades;
+    const D = DK.data, U = D.upgrades;
     const total = U.reduce((a, u) => a + u.levels.length, 0);
     const have = U.reduce((a, u) => a + DK.camp.level(u.id), 0);
-    const n = DK.camp.affordable();
+    const upN = U.filter((u) => { const nx = DK.camp.next(u.id); return nx && DK.camp.emblems() >= nx.cost; }).length;
+    const relN = DK.camp.unlockable('relic'), curN = DK.camp.unlockable('curse');
+    const n = upN + relN + curN;
+    const relics = Object.values(D.relics), curses = Object.keys(D.curses);
+    const tab = (id, icon, label, count, owned) => h('button', { class: 'shop-tab' + (shopTab === id ? ' on' : ''), type: 'button', role: 'tab', 'aria-selected': String(shopTab === id),
+      onClick: () => { shopTab = id; DK.audio.sfx('select'); refresh(); } }, DK.icon(icon, 16), h('span', null, label), h('small', { class: 'muted' }, owned), count ? h('span', { class: 'shop-tab-dot', tip: t('camp.canNow', { n: count }) }, String(count)) : null);
+    let body;
+    if (shopTab === 'relics') {
+      body = h('div', { class: 'stack' },
+        h('p', { class: 'muted small' }, t('camp.relicsText')),
+        ['comun', 'raro', 'epico'].map((rar) => h('section', { class: 'stack-s' },
+          h('h4', { class: 'camp-group' }, DK.tr('rarities', D.rarities[rar]), ' ', h('span', { class: 'muted small' }, DK.icon('emblem', 12), t('camp.costEach', { n: DK.config.expedition.unlockCost[rar] }))),
+          h('div', { class: 'unlock-grid' }, relics.filter((r) => r.rarity === rar).map((r) => unlockCard('relic', r.id, refresh))))));
+    } else if (shopTab === 'curses') {
+      body = h('div', { class: 'stack' },
+        h('p', { class: 'muted small' }, t('camp.cursesText')),
+        h('div', { class: 'unlock-grid' }, curses.map((id) => unlockCard('curse', id, refresh))));
+    } else {
+      body = DK.data.upgradeGroups.map((g) => h('section', { class: 'stack-s' },
+        h('h4', { class: 'camp-group' }, t('camp.group.' + g)),
+        h('div', { class: 'camp-grid' }, U.filter((u) => u.group === g).map((u) => upgradeCard(u, refresh, true)))));
+    }
     return h('div', { class: 'stack upgrade-shop' },
       h('div', { class: 'row between wrap gap-s upgrade-shop-head' },
         h('p', { class: 'muted small grow' }, t('camp.text')),
-        h('div', { class: 'row gap-s' }, h('span', { class: 'chip' }, DK.icon('star', 13), t('camp.levels', { n: have, total })), V.emblems(DK.camp.emblems()))),
+        h('div', { class: 'row gap-s' }, V.emblems(DK.camp.emblems()))),
       h('div', { class: 'warning ' + (n ? 'good' : '') }, DK.icon('emblem', 16), h('span', null, n ? t(n === 1 ? 'sum.shopCanOne' : 'sum.shopCan', { n }) : t('camp.saveHint'))),
-      DK.data.upgradeGroups.map((g) => h('section', { class: 'stack-s' },
-        h('h4', { class: 'camp-group' }, t('camp.group.' + g)),
-        h('div', { class: 'camp-grid' }, U.filter((u) => u.group === g).map((u) => upgradeCard(u, refresh, true))))));
+      h('div', { class: 'shop-tabs', role: 'tablist' },
+        tab('upgrades', 'star', t('camp.tabUpgrades'), upN, `${have}/${total}`),
+        tab('relics', 'amulet', t('camp.tabRelics'), relN, `${DK.camp.unlocked('relic').length}/${relics.length}`),
+        tab('curses', 'skull', t('camp.tabCurses'), curN, `${DK.camp.unlocked('curse').length}/${curses.length}`)),
+      body);
   };
 
   /** Abre el menú de Mejoras (panel; hoja inferior en el móvil). onChange tras cada compra. */

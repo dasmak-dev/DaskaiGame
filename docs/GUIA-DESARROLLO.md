@@ -61,7 +61,8 @@ css/
   battle.css               arena, escenarios, efectos y panel de mando del combate
   layout.css               navegación, paneles laterales y pantallas nuevas
   responsive.css           tablet y móvil
-  theme.css                estética oscura, tipografía pixel de títulos, pixel art y espaciados (se carga la última)
+  theme.css                estética oscura, tipografía pixel de títulos, pixel art y espaciados
+  game.css                 aspecto de juego: HUD, barra de accesos, pausa, campamento, cortinillas (se carga la última)
 js/core/
   dk.js                    DK, DK.util (azar, fechas, semillas) y bus de eventos
   i18n.js                  DK.t('clave') y DK.tr(tipo, objeto)
@@ -72,7 +73,7 @@ js/core/
   router.js                DK.screens.register, DK.router.go/replace/reset/back
   menus.js                 DK.menus.add('nav' | 'hub' | 'main', {...})
   store.js                 DK.store (3 ranuras, migraciones, exportar/importar)
-  app.js                   barra superior, navegación lateral/inferior, campana de avisos
+  app.js                   carcasa de juego: HUD superior, barra de accesos, menú de pausa, campana de avisos
 js/data/
   config.js                TODOS los números del juego (experiencia, daño, expediciones...)
   basics.js                casas, atributos, naturalezas, pasivas, estados, rarezas
@@ -89,6 +90,7 @@ js/data/
   upgrades.js              mejoras permanentes (pantalla Mejoras)
 js/systems/
   daskai.js                DK.daskai (atributos, niveles) y DK.party (equipo, muerte)
+  boxes.js                 DK.boxes: cajas donde se guardan los daskai que no están en el equipo
   rules.js                 DK.rules (dificultad), DK.camp (Mejoras), DK.legacy (herencia)
   inventory.js             DK.bag, DK.wallet, DK.shop, DK.crafting (Crafteo), DK.healer
   world.js                 DK.codex, DK.world (zonas, jefes, desbloqueos)
@@ -98,9 +100,9 @@ js/systems/
   battle.js                DK.battle (motor de combate sin interfaz)
   progress.js              misiones, logros y estadísticas
   audio.js / sprites.js    sprites.js: dibujo SVG de cada especie y su versión pixel art (DK.sprites.pixel, ajuste «pixelArt»)
-js/components/             common, daskaiViews (fichas, tarjetas, tablas), daskaiPanel, itemViews,
+js/components/             camp (escena del campamento y DK.pix), common, daskaiViews (fichas, tarjetas, tablas), daskaiPanel, itemViews,
                            avatar, shareCard, palette (Ctrl+K), guides (ayuda), celebrations, talentViews, todoCard (Qué hacer ahora), fx, scenes
-js/screens/                mainMenu, newGame, hub (Inicio), camp (Mejoras), training (Entrenamiento), team, inventory, craft (Crafteo),
+js/screens/                mainMenu, newGame, hub (Campamento), camp (Mejoras), training (Entrenamiento), team, inventory, craft (Crafteo),
                            codex, zones (Batalla), expPrepare (mochila), expedition, expSummary, battle, progress, profile, gameOver, settings
 ```
 
@@ -122,8 +124,8 @@ Cada receta indica los archivos que hay que tocar. Después, ejecuta `node tools
   const { h, btn } = DK.ui;
   const t = (k, v) => DK.t(k, v);
 
-  // Entrada en la navegación. En el móvil: si hay más de 5, la barra inferior muestra sólo las
-  // marcadas con pin: true (Inicio, Equipo, Inventario, Batalla) y el resto va en la hoja «Más»
+  // Entrada en la barra de accesos (abajo). En el móvil: si hay más de 5, sólo salen las
+  // marcadas con pin: true (Campamento, Equipo, Inventario, Batalla) y el resto va en la hoja «Más»
   DK.menus.add('nav', { id: 'mipantalla', icon: 'star', order: 35, screen: 'mipantalla', label: () => t('nav.mipantalla') });
 
   DK.screens.register('mipantalla', {
@@ -278,12 +280,12 @@ Huecos `config.training.slots` + mejora «Instructor». Al entrar se paga `cost(
   - **Cronología:** `DK.expedition.logEvent(clave, valor)` guarda momentos en `e.log.timeline` (`{ k, v, d: mapa, f: piso, at }`): salida, mapas, jefes, élites, cuevas, atajos, sucesos, reclutas, reliquias, caídos, hogueras, final. `snapshot()` la copia y `expSummary` la pinta (`timeline()`, iconos en `TL_ICON`, textos `tl.<clave>`). El resumen compara además con la mejor expedición anterior de `expHistory` (`compare()`).
   - **Encargos** (`data/quests.js`): cada mapa trae `e.quest = { id, target, prog, failed, done, claimed, item }` (`pickQuest(tamaño)` en `start()` y `continueRun()`). `questTrack(kind)` suma progreso (élites y reclutas en `battle.rewards`, ruptura en `addBreak`, golpes eficaces en `act`), `questFail(kind)` lo falla (objetos curativos: oyente de `item:used`; descanso: `rest()`; caídos: `battle.resolve`). Al vencer al jefe del mapa, `questClaim()` añade `questReward()` (monedas × tamaño × profundidad, `config.expedition.quest`, y un objeto) al botín y lo apunta en `e.lastQuest` (sale en la elección tras el jefe) y en la cronología. Vistas: `V.questChip`, `V.questCard`, `V.questResult` (en `screens/expedition.js`).
   - **Barra de estado** (`hudBar`): fija y opaca sobre el mapa; cada icono abre su detalle en una ventanita flotante (`.exp-hud-pop`) que no empuja el mapa y se cierra al pulsar fuera o con Esc. La barra y la del equipo se rehacen solas (`redraw`) en vez de repintar la pantalla, para que el mapa no parpadee.
-  - **Barra del equipo** (`teamBar` en `screens/expedition.js`): vida y maná con números, estado y un botón por miembro que cura con `DK.healer.plan([d])` sin abrir menús; pulsar la tarjeta lo elige para el siguiente combate.
+  - **Barra del equipo** (`teamBar` en `screens/expedition.js`, estilos en `css/game.css` §9): siempre `config.maxTeam` huecos (`.tb-slot`) del mismo ancho, como el equipo de Pokémon, así que con uno o dos daskai no se estira nada. Cada ficha (`.tb-card`, con el color de su casa): retrato, nombre y nivel, vida fina con números y maná aún más fino; el que lucha el siguiente combate lleva marco dorado y la cinta «Lucha»; el frasco verde (`.tb-heal`, sólo si está herido y hay objetos que sirvan) cura con `DK.healer.plan([d])`. Los huecos libres llevan a Equipo (con «+» si alguien que va contigo puede entrar). A la derecha, «Curar» a todos (`V.healDialog`). En el móvil las fichas se vuelven verticales (retrato + barras, sin nombre).
   - **Récords por zona:** `bossCleared()` actualiza `DK.world.progress(zona).rec = { maps, best, sizes: { tamaño: n }, fastest: ms }` (el tiempo cuenta desde `e.mapStartedAt`). Se ven en el panel de la zona (`recordsBlock`).
   - `DK.expedition.preview()` enseña el primer mapa de la próxima expedición; `start()` usa esa misma zona, semilla y tamaño.
   - **Dibujar en el mapa** (`screens/expedition.js`): botón «Dibujar» o clic derecho en el mapa. Lápiz de colores, goma, notas de texto, deshacer y borrar. Se guarda por mapa en `e.marks = { lines: [{ c, pts: [[x 0..1, y px]] }], notes: [{ x, y, text, c }] }` (`DK.expedition.addLine/addNote/removeMark/undoMark/clearMarks`) y se ve también en el resumen.
   - Mientras hay un nodo sin combate pendiente o una reliquia por elegir, el mapa se oculta (vista centrada).
-- **Preparar (briefing):** `screens/expPrepare.js` enseña en la cabecera la zona, el tamaño, el nivel de los rivales, la dificultad, tus emblemas y los emblemas por jefe; debajo, Equipo · Mochila · Bolsa. Mochila y bolsa son LISTAS (`.pk-row`): − / + por objeto en la mochila, + en la bolsa (Mayús = todas) y arrastrar entre ambas (`DK.ui.pointerDrag`, también con el dedo).
+- **Preparar (briefing):** `screens/expPrepare.js` enseña en la cabecera la zona, el tamaño, el nivel de los rivales, la dificultad, tus emblemas y los emblemas por jefe; debajo, Equipo · Mochila · Bolsa en `.brief-grid`: tres bloques **del mismo tamaño** (540 px de alto en columnas; 440 px apilados en ≤900 px; `css/game.css` §7) con la lista desplazándose por dentro, y los objetivos debajo. Mochila y bolsa son LISTAS (`.pk-row`): − / + por objeto en la mochila, + en la bolsa (Mayús = todas) y arrastrar entre ambas (`DK.ui.pointerDrag`, también con el dedo).
 - **Mapa en pantalla:** los nodos se separan hacia los lados al pintarlos (`xOf` en `mapView`) y cada piso mide `ROW_FULL` px (los dibujos se guardan en esos px).
 - **Mochila:** antes de salir, `screens/expPrepare.js` elige qué objetos de casa te llevas (`packCapacity()` = `config.expedition.packCapacity` + Mejora «Equipaje»; categorías en `packCategories`). `DK.expedition.start(pack)` los pasa a `e.pack`.
   - Mientras hay expedición, **`DK.bag` trabaja sobre la mochila** (`DK.bag.raw()`); la bolsa de casa es `DK.bag.home()`. Así combate, curar, mercader, sucesos y equipar usan la mochila sin cambios.
@@ -294,11 +296,12 @@ Huecos `config.training.slots` + mejora «Instructor». Al entrar se paga `cost(
 - **Modo expedición:** `DK.router.guard` (en `screens/expedition.js`) sólo deja ir a las pantallas de `EXP_SCREENS`; la navegación muestra sólo las opciones con `expedition: true` (o `'only'`) en `DK.menus.add('nav', ...)` (`DK.app.navItems()`). Si tu pantalla nueva debe verse durante una expedición, añádela a `EXP_SCREENS` y marca su entrada con `expedition: true`. En el equipo sólo pueden entrar los que salieron (`e.members`) y los reclutas (`DK.party.canJoin`).
 - **Caer contra el jefe** (`fail({ boss: true })` → `failAtBoss`): sólo se pierde `config.expedition.bossDeathLoss` del botín y la mochila, y la próxima expedición empieza con `config.expedition.consolation` (reliquia rara/épica y pociones).
 - **Mini jefes:** cada mapa tiene al menos un nodo élite; al vencerlo se elige una reliquia (`DK.relics.offer`).
-- **Pactos** (`data/curses.js`, `systems/curses.js`): al empezar cada mapa se ofrecen `curseChoices` pactos; los aceptados (`e.curses`) duran ese mapa. Cada sistema pregunta `DK.curses.effect('clave')` (niveles, curación, huida, vínculo, velocidad, fase extra) y las recompensas salen de `coinBonus()` / `relicReward()`.
+- **Pactos** (`data/curses.js`, `systems/curses.js`): al empezar cada mapa se ofrecen `curseChoices` pactos **entre los desbloqueados** (si no hay ninguno, `curseOffer` = null y no se pregunta); los aceptados (`e.curses`) duran ese mapa. Cada sistema pregunta `DK.curses.effect('clave')` (niveles, curación, huida, vínculo, velocidad, fase extra) y las recompensas salen de `coinBonus()` / `relicReward()`.
 - **Sin curación gratis** (`config.expedition.noFreeHeal`): en expedición no hay regeneración base por turno y subir de nivel no cura (sólo suma lo que crece el máximo).
 - **Botín:** los consumibles (`config.expedition.directToBag`) van directos a la mochila; el resto y las monedas se entregan al terminar.
 - **Reclutas:** son temporales (`d.temp`) y se quedan al derrotar al jefe de su mapa o al volver desde una hoguera (`settleRecruits`). Si pierdes, se van los del mapa actual.
 - **Emblemas y Mejoras:** cada jefe derrotado en expedición (también los ocultos) da `DK.expedition.bossEmblems()` = `emblemsPerBoss` × `sizes[tamaño].emblems` (pequeño 1, mediano 2, XL 3) (`DK.camp.addEmblems`, en `state.emblems`). Las Mejoras (`data/upgrades.js`) cuestan emblemas y **sólo aparecen al terminar una expedición**: el resumen abre solo el menú (`V.upgradeMenu`, en `screens/camp.js`) la primera vez que se ve (`lastExpedition.shopShown`) y tiene una tarjeta para reabrirlo. No están en la navegación, ni en el Inicio, ni en el buscador; la pantalla `camp` redirige al Inicio.
+- **Desbloqueos de reliquias y pactos** (`systems/rules.js` → `DK.camp.unlock(kind, id)`, `isUnlocked`, `unlocked(kind)`, `unlockCost`, `unlockable`; estado `state.vault = { curse: [], relic: [] }`): el menú de Mejoras tiene tres pestañas (`V.upgradeShop`: Mejoras · Reliquias · Pactos, `shopTab`) y en las dos últimas cada reliquia o pacto se desbloquea con emblemas (`config.expedition.unlockCost`: pacto 2; reliquia común 1, rara 2, épica 4). Sólo los desbloqueados se ofrecen **al empezar**: la reliquia inicial (`DK.relics.roll(rarezas, 3, { unlocked: true })`: comunes; raras con el Cartógrafo 1; también épicas y una común gratis con el Cartógrafo 2) y los pactos de cada mapa. Si no hay ninguna desbloqueada, no hay elección. Las reliquias que se encuentran por el camino (élites, cofres, jefes, consuelo, mapas siguientes) salen de todas. `DK.camp.affordable()` cuenta mejoras y desbloqueos que puedes pagar. La cabecera de Preparar enseña cuántas tienes desbloqueadas.
 - **Muerte permanente:** se aplica si `DK.rules.permadeath()`.
   - Al acabar un combate, `DK.expedition.trySave(d)` intenta salvarlo: bendición del santuario, pluma de fénix o Altar del fénix (Mejoras).
   - Si no se salva, `DK.party.kill()`: el daskai pasa al cementerio y deja una esencia (`DK.legacy`).
@@ -313,7 +316,13 @@ Huecos `config.training.slots` + mejora «Instructor». Al entrar se paga `cost(
 
 ### Mapa del mundo (pantalla Batalla, `screens/zones.js`)
 
-Camino de zonas: sólo las desbloqueadas, la siguiente como «???» con la pista para abrirla y el resto resumido como «+N». Al pulsar una zona se abre su panel (al lado en escritorio, en hoja en móvil) con sus récords y el combate libre.
+Tres bloques, de arriba abajo (estilos en `css/game.css` §8):
+
+- **Cartel de la expedición** (`expeditionHero`, `.bt-hero`): la escena de la zona de fondo, una línea de texto, chips (primer mapa, tamaño, clima, récord, modo difícil) y un único botón grande (empezar / ver mapa). Los avisos (equipo herido…) salen debajo sólo si los hay.
+- **Mapa del mundo** (`worldMap`, `.wm2-*`): un camino de tierra en pixel art (SVG con curvas entre paradas) sobre franjas de terreno (`DK.pix.terrain` con los colores de cada zona) y adornos (`DK.pix.sprites`). Paradas: las zonas desbloqueadas, la siguiente «???» (con la pista para abrirla en el `tip`) y el resto «+N», con niebla gris. La corona marca el jefe derrotado; «Recomendada» o «En expedición» van encima. Tu líder salta sobre la zona elegida. Las posiciones son relativas al centro (`calc(50% ± px)`), así que el mapa llena la tarjeta con pocas zonas y se desplaza en horizontal con muchas (centrado en la elegida). Constantes: `STEP` (separación), `MAP_H`, `yAt(i)` (zigzag).
+- **Ficha de la zona elegida** (`zoneCard`, `.bz-*`): dibujo con sus daskai (siluetas si no están en el códice), nivel, jefe, descripción, una tira de récords (`recordsStrip`: victorias, códice, mapas, profundidad, XL, jefe oculto, mapa más rápido) y el combate libre.
+
+← / → cambian de zona, Enter empieza o continúa la expedición. Ya no hay panel lateral ni hoja en el móvil: la ficha va siempre debajo del mapa (en el móvil se desplaza hasta ella al elegir).
 
 ### Combate: intención, defensa y fases de jefe
 
@@ -366,6 +375,16 @@ El modo automático arranca si el ajuste `autoBattle` está activo y se pausa co
 
 ### Interfaz
 
+- **Carcasa de juego** (`core/app.js`, estilos en `css/game.css`): no hay barra lateral ni migas de pan.
+  - **HUD superior:** a la izquierda tu perfil (en el campamento), «Volver» si hay pantalla anterior o un atajo al Campamento (al Mapa durante una expedición); en el centro el título como cinta; a la derecha monedas, emblemas (y botín en expedición), avisos y **Menú**.
+  - **Menú de pausa** (`DK.app.openMenu()`; también Esc cuando no hay a dónde volver): perfil, buscar (Ctrl K), ayuda, ajustes, tema, instalar y guardar y salir.
+  - **Barra de accesos** abajo (`.game-dock`): las entradas de `DK.menus.add('nav', …)`; Batalla/Mapa destacada.
+- **Campamento** (`components/camp.js` + `screens/hub.js`): escena en pixel art con lugares pulsables (`SPOTS`: hoguera → Equipo, tienda → Inventario, yunque → Crafteo, muñeco → Entrenamiento, atril → Códice, tablón → Progreso, cartel → Batalla) y tu equipo junto a la hoguera. El cielo cambia con la hora real (`campTimeOfDay`: día, amanecer, atardecer, noche). Los dibujos se hacen con `DK.pix.canvas(w, h)` (`set`, `rect`, `tri`, `circle`) y `DK.pix.svg(lienzo, escala)`. Para un lugar nuevo: un dibujo en `SPRITES` y una entrada en `SPOTS` (`x, y` en % para escritorio y `xs, ys` para móvil; `unlock` si depende de `DK.unlocks`).
+- **Cortinillas** (`DK.fx.cover({ title, subtitle, icon, colors, kind }, mid)`): en tres tiempos (las franjas cierran la pantalla, con ella tapada se llama a `mid()` y sale la cinta del título, y se abren). No bloquean los clics. `DK.fx.curtain(o)` es lo mismo sin `mid`. Una pantalla puede tener su propia transición con `transition(params, go)` en `DK.screens.register`: el router la llama en vez de cambiar de pantalla y `go()` hace el cambio. El combate la usa: barrido a rayas en los combates normales y cinta con el título en jefes y mini jefes, con el combate montándose detrás. Al llegar a cada mapa sale la del nombre de la zona (una vez por mapa, `e.introShown`). Se acortan con «Animaciones rápidas» y son un fundido con «Reducir movimiento».
+- **Mapa de la expedición** (`mapView` en `screens/expedition.js`, estilos en `css/game.css` §5): terreno en pixel art con los colores de la zona (`DK.pix.terrain(colores)`), árboles, matas y rocas siempre iguales para cada mapa (`mapDecor`, con semilla; nunca encima de un nodo), caminos de tierra (`.road-base` + `.road`: recorridos en dorado, disponibles animados), nodos como fichas con relieve (el jefe, grande con marco dorado), el número de piso a la izquierda y tu líder de pie sobre el nodo en el que estás (`.exp-hero`).
+- **Iconos:** se pintan con `DK.icon(nombre, tamaño)`, pero `css/game.css` (§2b) fija tamaños mayores en botones, chips, barra de accesos, HUD y combate. Cambia ahí el tamaño de una zona entera en vez de tocar cada llamada.
+- **Estilo de las piezas** (`css/game.css`): botones con relieve que se hunden al pulsar, paneles con marco y sombra sólida, títulos y botones principales en letra pixel (`--font-pixel`), barras de vida y maná con segmentos.
+
 - **Botones:** `DK.ui.btn({ icon, label, onClick, variant, size, hotkey, tip })`.
 - **Paneles laterales:** `DK.ui.drawer({...})`. En el móvil (≤ 600 px) los paneles y las ventanas (`modal`) son **hojas inferiores** con asa: se cierran deslizando hacia abajo (`swipeToClose` en `core/ui.js`).
 - **Avisos:** `DK.ui.toast(texto, { icon, kind })`. Se agrupan solos; en el móvil sale uno a la vez (el resto en «+N avisos»), encima de la barra inferior, se quitan tocándolos y suben arriba si hay una hoja abierta.
@@ -373,7 +392,11 @@ El modo automático arranca si el ajuste `autoBattle` está activo y se pausa co
 - **Arrastrar:** `DK.ui.pointerDrag(el, { zones, onDrop, touch: true })`. Con `touch`, el dedo arrastra tras mantener pulsado ~0,26 s (si se mueve antes, es desplazar la página). Lo usan la mochila y el Equipo.
 - **Crafteo** (`screens/craft.js`): barra única (Recetas | Materiales, buscador, tipo, «Sólo fabricables»); recetas en lista por secciones plegables según `kindOf` (equipo con ataque, con pasiva, de atributos, tónicos, consumibles) y arriba los **objetivos**; detalle en tres bloques (qué hace · materiales · fabricar), a la derecha o en hoja inferior en el móvil. Los objetivos son las favoritas de `DK.crafting` (`goals`, `goalsReady`, `goalNeeds`): salen al preparar la expedición, en «Qué hacer ahora» y en el resumen. Al fabricar equipo se abre `V.equipChooser(id)` (a quién ponérselo, con la diferencia de atributos). El aviso del menú cuenta sólo tónicos y equipo nuevo fabricable. Cada material tiene su icono (`data/items.js`).
 - **Inventario** (`screens/inventory.js`): filtros por tipo en horizontal (`.inv-tabs`), buscador y lista agrupada por tipo; al pulsar un objeto, su ficha grande con todas las opciones (usar en cada daskai con lo que le hace, equipar en un hueco con la diferencia de atributos, recetas en las que se usa y venta). A la derecha en escritorio; hoja inferior en el móvil.
-- **Qué hacer ahora** (Inicio): `components/todoCard.js`. Cada aviso es una función en `SOURCES` que devuelve `{ id, icon, kind, text, cta, run }` o null; los textos en `todo.*` (con variante `…One` para el singular).
+- **Qué hacer ahora** (Campamento): `components/todoCard.js`. Cada aviso es una función en `SOURCES` que devuelve `{ id, icon, kind, text, cta, run }` o null; los textos en `todo.*` (con variante `…One` para el singular).
+- **Equipo y cajas** (`screens/team.js`, `systems/boxes.js`, estilos en `css/game.css` §6): a la derecha tu equipo (hasta `config.maxTeam` = 5, el primero es el líder) y a la izquierda las **cajas**, como el PC de Pokémon: `DK.boxes.SIZE` (30) huecos por caja, hasta `MAX` (16) cajas, cada una con nombre (`rename`) y fondo (`setBg`: los colores de una zona o un tema extra, pintados con `DK.pix.terrain`). Estado en `state.boxes = { cur, list: [{ name, bg, slots }] }`.
+  - **Colocación perezosa:** `DK.boxes.sync()` saca de las cajas a quien ya no existe o está en el equipo y guarda a quien no esté en ninguna (en la caja actual si cabe). Se llama antes de pintar; no hace falta tocarlo al reclutar, liberar o morir.
+  - **En expedición** las cajas se quedan en el campamento: en lugar de `.pc-box` sale `.pc-away` («Contigo en la expedición»), con los daskai que salieron contigo o reclutaste y no están en el equipo (`DK.party.canJoin`). Es una zona de arrastre `reserve`: soltar ahí saca del equipo (`removeFromTeam`) sin guardar en ninguna caja. No hay pestañas, Q / E ni renombrar.
+  - **Mover:** `toTeam(uid, índice)` (si el equipo está lleno, se intercambian), `moveTo(uid, caja, hueco)` (desde el equipo o entre huecos, con intercambio) y `sort(caja, 'level'|'house'|'species'|'name')`. En pantalla se arrastra (ratón o mantener pulsado) entre huecos de la caja y del equipo; Q / E cambian de caja; el buscador resalta en las cajas y marca en qué pestaña hay coincidencias. Pulsar un daskai abre su ficha en un panel deslizante.
 - **Ficha del daskai:** 3 pestañas (Atributos + talentos · Ataques + aprender/evolución · Equipo). `daskaiPanel(d, { onNav })` añade Anterior/Siguiente y deslizar la cabecera.
 - **Atajos:** `DK.keys.on('tecla', fn)`. Duran lo que dure la pantalla.
 - Prefiere acciones en línea a ventanas. `DK.ui.modal` / `DK.ui.confirm` sólo para confirmar.

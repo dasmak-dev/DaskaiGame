@@ -182,6 +182,26 @@
    * @param {Object} [src]   expedición a dibujar (por defecto la activa; el resumen pasa la terminada)
    * @param {boolean} [readonly]  sin nodos pulsables (resumen)
    */
+  /**
+   * Decorados del mapa: árboles, matas y rocas en pixel art, siempre los
+   * mismos para cada mapa (semilla), en los márgenes y en los huecos
+   * entre nodos (nunca encima de uno).
+   */
+  function mapDecor(e, H, pts, compact) {
+    const rnd = DK.util.seeded('decor-' + e.seed);
+    const kinds = ['pine', 'pine', 'bush', 'rock', 'pine', 'bush'];
+    const out = [], n = Math.round(H / (compact ? 90 : 60));
+    const free = (x, y) => pts.every(([px, py]) => Math.abs(px - x) > 9 || Math.abs(py - y) > 44);
+    const put = (x, y) => {
+      const k = kinds[Math.floor(rnd() * kinds.length)], shade = Math.floor(rnd() * 3);
+      const art = DK.pix.svg(DK.pix.sprites[k](shade), compact ? 1.6 : 2.4);
+      out.push(h('span', { class: 'exp-deco d-' + k, style: { left: x + '%', top: y + 'px' }, 'aria-hidden': 'true' }, art));
+    };
+    for (let i = 0; i < n; i++) put(i % 2 ? -9 + rnd() * 6 : 103 + rnd() * 6, rnd() * H);
+    for (let i = 0, tries = 0; i < n && tries < n * 6; tries++) { const x = 4 + rnd() * 92, y = 20 + rnd() * (H - 40); if (free(x, y)) { put(x, y); i++; } }
+    return out;
+  }
+
   function mapView(refresh, src, readonly, { compact = false } = {}) {
     const e = src || E().active();
     const ROW_H = compact ? ROW_COMPACT : ROW_FULL;
@@ -199,14 +219,16 @@
     const all = rows.flat();
     const byId = Object.fromEntries(all.map((n) => [n.id, n]));
 
-    // Líneas: recorridas, disponibles y el resto
-    let lines = '';
+    // Caminos (tierra con borde oscuro): recorridos, disponibles y el resto
+    let lines = '', base = '';
     all.forEach((n) => n.links.forEach((lid) => {
       const m = byId[lid];
       const walked = cleared.has(n.id) && (cleared.has(lid) || e.pending === lid);
       const open = (e.pos === n.id && avail.includes(lid)) || (!e.pos && false);
       const cls = walked ? 'walked' : open ? 'open' : (cleared.has(n.id) || n.row < (byId[e.pos] ? byId[e.pos].row : -1)) ? 'gone' : '';
-      lines += `<line x1="${xOf(n) * 100}" y1="${yOf(n.row)}" x2="${xOf(m) * 100}" y2="${yOf(m.row)}" class="${cls}${fogged(m) ? ' fog' : ''}"/>`;
+      const xy = `x1="${xOf(n) * 100}" y1="${yOf(n.row)}" x2="${xOf(m) * 100}" y2="${yOf(m.row)}"`;
+      base += `<line ${xy} class="road-base ${cls}${fogged(m) ? ' fog' : ''}"/>`;
+      lines += `<line ${xy} class="road ${cls}${fogged(m) ? ' fog' : ''}"/>`;
     }));
     // Atajos: línea discontinua hasta el nodo al que saltan
     all.filter((n) => n.jump && byId[n.jump]).forEach((n) => {
@@ -215,7 +237,7 @@
       lines += `<line x1="${xOf(n) * 100}" y1="${yOf(n.row)}" x2="${xOf(m) * 100}" y2="${yOf(m.row)}" class="jump${used ? ' walked' : ''}"/>`;
     });
     const svg = h('div', { class: 'exp-lines' });
-    svg.innerHTML = `<svg viewBox="0 0 100 ${H}" preserveAspectRatio="none" width="100%" height="${H}">${lines}</svg>`;
+    svg.innerHTML = `<svg viewBox="0 0 100 ${H}" preserveAspectRatio="none" width="100%" height="${H}">${base}${lines}</svg>`;
 
     // Nodos (teclas 1-n para los disponibles, de izquierda a derecha)
     const order = avail.slice().sort((a, b) => byId[a].x - byId[b].x);
@@ -231,18 +253,26 @@
         style: { left: xOf(n) * 100 + '%', top: yOf(n.row) + 'px' }, disabled: state !== 'open',
         tip: n.secret ? `${t('exp.node.secretBoss')} — ${D.secretBosses[e.zone].title}` : `${t('exp.node.' + n.type)} — ${t('exp.nodeDesc.' + n.type)}`, 'aria-label': t('exp.node.' + n.type),
         onClick: () => go(n.id, refresh),
-      }, DK.icon(state === 'done' ? 'check' : ty.icon, n.type === 'boss' ? 30 : 22),
+      }, DK.icon(state === 'done' ? 'check' : ty.icon, n.type === 'boss' ? 40 : 28),
       key >= 0 && key < 9 ? h('kbd', { class: 'hotkey' }, key + 1) : null,
       // Los mini jefes (élite) dan una reliquia: se marca en el mapa
       n.type === 'elite' && state !== 'done' ? h('span', { class: 'node-relic' }, DK.icon('amulet', 12)) : null);
       return b;
     });
     const zone = D.zones[e.zone];
+    // Tu daskai líder, de pie sobre el nodo en el que estás (o al que vas)
+    const heroId = e.pending || e.pos;
+    const leader = !readonly && heroId && byId[heroId] ? fighter() : null;
+    const hero = leader ? h('span', { class: 'exp-hero', style: { left: xOf(byId[heroId]) * 100 + '%', top: yOf(byId[heroId].row) + 'px' }, 'aria-hidden': 'true' },
+      V.sprite(leader.species, { size: compact ? 34 : 50, shiny: leader.shiny })) : null;
+    // Número de piso a la izquierda y decorados (árboles, rocas, matas) en los márgenes
+    const floors = compact ? [] : rows.map((r, i) => h('span', { class: 'exp-floor', style: { top: yOf(i) + 'px' }, 'aria-hidden': 'true' }, String(i + 1)));
+    const decor = mapDecor(e, H, all.map((n) => [xOf(n) * 100, yOf(n.row)]), compact);
     const editing = !readonly && draw.on;
     const marks = readonly ? e.marks || { lines: [], notes: [] } : E().marks();
     // Los dibujos se guardan en px del mapa normal: en la vista compacta se escalan
     const layer = compact ? marksLayer({ lines: (marks.lines || []).map((l) => ({ c: l.c, pts: l.pts.map(([x, y]) => [x, (y * ROW_COMPACT) / ROW_FULL]) })), notes: [] }, H, refresh, false) : marksLayer(marks, H, refresh, editing);
-    const map = h('div', { class: 'exp-map' + (compact ? ' compact' : '') + (editing ? ' is-drawing' : ''), style: { height: H + 'px', '--z1': zone.colors[0], '--z2': zone.colors[1] } }, svg, nodes, layer);
+    const map = h('div', { class: 'exp-map' + (compact ? ' compact' : '') + (editing ? ' is-drawing' : ''), style: { height: H + 'px', '--z1': zone.colors[0], '--z2': zone.colors[1] } }, decor, floors, svg, nodes, hero, layer);
     // Clic derecho en el mapa: dibujar, nota aquí, deshacer, borrar
     if (!readonly) map.addEventListener('contextmenu', (ev) => {
       ev.preventDefault();
@@ -268,7 +298,8 @@
     // Mientras se dibuja, se conserva la posición del mapa entre repintados
     if (!readonly) setTimeout(() => { const box = map.parentElement; if (box) box.addEventListener('scroll', () => { if (draw.on) keepScroll = box.scrollTop; }, { passive: true }); }, 40);
     if (!readonly && !draw.on) keepScroll = null;
-    if (compact) return h('div', { class: 'exp-map-compact' }, h('div', { class: 'exp-scroll' }, map), legend());
+    const terrain = { backgroundImage: `url(${DK.pix.terrain(zone.colors, e.zone)})`, '--z1': zone.colors[0], '--z2': zone.colors[1] };
+    if (compact) return h('div', { class: 'exp-map-compact' }, h('div', { class: 'exp-scroll terrain', style: terrain }, map), legend());
     return h('div', { class: 'card exp-map-card' },
       h('div', { class: 'panel-head' }, DK.icon(zone.icon, 18), h('h3', null, zone.name),
         V.sizeChip(e.size || (e.map && e.map.size)), V.modChip(e.mod || (e.map && e.map.mod)),
@@ -278,7 +309,7 @@
         readonly ? null : btn({ icon: 'edit', label: draw.on ? t('draw.stop') : t('draw.start'), size: 'sm', variant: draw.on ? 'primary' : 'ghost', tip: t('draw.tip'), onClick: () => { draw.on = !draw.on; draw.tool = 'pen'; refresh(); } })),
       readonly ? null : relicBar(),
       editing ? drawBar(refresh) : null,
-      h('div', { class: 'exp-scroll' }, map),
+      h('div', { class: 'exp-scroll terrain', style: terrain }, map),
       legend());
   }
   /** Mapa de sólo lectura (resumen, vista previa en Zonas). opts: { compact } */
@@ -696,31 +727,47 @@
     DK.ui.toast(t('team.healed', { name: DK.daskai.name(d), items: used }), { icon: 'heart', kind: 'good' });
     refresh();
   }
+  /*
+   * Siempre DK.config.maxTeam huecos (como el equipo de Pokémon): con uno
+   * o dos daskai no se estiran, y los huecos libres llevan a Equipo para
+   * meter a quien va contigo. Cada ficha: retrato, nombre y nivel, vida y
+   * maná finos, y un frasco para curarlo de un toque. El que lucha el
+   * siguiente combate lleva el marco dorado y la cinta «Lucha».
+   */
   function teamBar(refresh) {
     const e = E().active(), cur = fighter();
     const team = DK.party.active();
     const hurt = (d) => !DK.daskai.isFainted(d) && (DK.daskai.hpPct(d) < 1 || d.cur.mp < DK.daskai.stats(d).mp || !!d.status);
     const canHeal = (d) => hurt(d) && DK.healer.plan([d]).uses.length > 0;   // herido y con objetos que sirvan
     const anyHurt = team.some(canHeal);
-    const cards = team.map((d) => {
-      const s = DK.daskai.stats(d), dead = DK.daskai.isFainted(d), lead = cur && cur.uid === d.uid;
+    const waiting = DK.party.all().some((d) => !DK.party.isActive(d.uid) && DK.party.canJoin(d.uid));
+    const slots = [];
+    for (let i = 0; i < DK.config.maxTeam; i++) {
+      const d = team[i];
+      if (!d) {
+        slots.push(h('button', { class: 'tb-slot tb-empty', type: 'button', tip: waiting ? t('team.emptyExpTip') : t('party.empty'), 'aria-label': t('party.empty'), onClick: () => DK.router.go('team') },
+          h('span', { class: 'tb-ball', 'aria-hidden': 'true' }), waiting ? DK.icon('plus', 14) : null));
+        continue;
+      }
+      const sp = DK.daskai.species(d), s = DK.daskai.stats(d), dead = DK.daskai.isFainted(d), lead = cur && cur.uid === d.uid;
       const hp = DK.util.percent(d.cur.hp, s.hp), mp = DK.util.percent(d.cur.mp, s.mp);
       const pick = () => { if (dead) return; e.leader = d.uid; DK.store.save(); DK.audio.sfx('select'); refresh(); };
-      return h('div', { class: 'tb-card' + (lead ? ' leader' : '') + (dead ? ' ko' : hp < 35 ? ' low' : '') + (d.status ? ' has-status' : ''), role: 'button', tabindex: dead ? '-1' : '0', 'aria-pressed': String(!!lead),
-        tip: dead ? t('common.fainted') : lead ? t('battle.nextFighter') : t('team.pickNext', { name: DK.daskai.name(d) }), onClick: pick, onKeydown: (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); pick(); } } },
-        h('span', { class: 'tb-sprite' }, V.sprite(d.species, { size: 40, shiny: d.shiny }), lead ? h('span', { class: 'tb-lead' }, DK.icon('swords', 10)) : null),
-        h('div', { class: 'tb-body' },
-          h('div', { class: 'tb-name' }, h('b', null, DK.daskai.name(d)), h('span', { class: 'muted' }, `${t('common.lvl')} ${d.level}`), d.status ? V.statusTag(d.status) : null, dead ? h('span', { class: 'badge bad' }, DK.icon('skull', 11)) : null),
-          h('div', { class: 'tb-bar hp' + (hp < 25 ? ' crit' : hp < 50 ? ' mid' : '') }, h('span', { style: { width: hp + '%' } }), h('em', null, `${d.cur.hp}/${s.hp}`)),
-          h('div', { class: 'tb-bar mp' }, h('span', { style: { width: mp + '%' } }), h('em', null, `${d.cur.mp}/${s.mp}`))),
-        h('button', { class: 'tb-heal', type: 'button', disabled: !canHeal(d), 'aria-label': t('team.healOne', { name: DK.daskai.name(d) }), tip: canHeal(d) ? t('team.healOne', { name: DK.daskai.name(d) }) : hurt(d) ? t('heal.noItems') : t('heal.nothingToHeal'),
-          onClick: (ev) => { ev.stopPropagation(); quickHeal(d, refresh); } }, DK.icon('flask', 16)));
-    });
-    return h('div', { class: 'tb-wrap card' },
-      h('div', { class: 'tb-head' }, DK.icon('users', 14), h('b', null, t('team.barTitle')), h('span', { class: 'muted small tb-hint' }, t('team.barHint')),
-        h('span', { class: 'grow' }),
-        btn({ icon: 'flask', label: t('team.healAll'), size: 'sm', variant: 'ghost', disabled: !anyHurt, onClick: async () => { if (await V.healDialog(team)) refresh(); } })),
-      h('div', { class: 'tb-grid' }, cards));
+      slots.push(h('div', { class: 'tb-slot tb-card' + (lead ? ' leader' : '') + (dead ? ' ko' : hp < 35 ? ' low' : '') + (d.status ? ' has-status' : ''), role: 'button', tabindex: dead ? '-1' : '0', 'aria-pressed': String(!!lead), style: { '--c': D.houseColor(sp.house) },
+        tip: `${DK.daskai.name(d)} · ${t('common.lvl')} ${d.level} · ${t('common.hpShort')} ${d.cur.hp}/${s.hp}` + (dead ? ' · ' + t('common.fainted') : lead ? ' · ' + t('battle.nextFighter') : ' · ' + t('team.pickNext', { name: DK.daskai.name(d) })),
+        onClick: pick, onKeydown: (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); pick(); } } },
+        lead ? h('span', { class: 'tb-lead' }, DK.icon('swords', 11), h('span', null, t('team.fights'))) : null,
+        h('span', { class: 'tb-sprite' }, V.sprite(d.species, { size: 44, shiny: d.shiny }), dead ? h('span', { class: 'tb-ko' }, DK.icon('skull', 14)) : null),
+        h('span', { class: 'tb-body' },
+          h('span', { class: 'tb-name' }, h('b', null, DK.daskai.name(d)), h('small', null, `${t('common.lvl')} ${d.level}`), d.status ? V.statusTag(d.status) : null),
+          h('span', { class: 'tb-bar hp' + (hp < 25 ? ' crit' : hp < 50 ? ' mid' : '') }, h('span', { style: { width: hp + '%' } })),
+          h('span', { class: 'tb-nums' }, h('em', null, `${d.cur.hp}/${s.hp}`), h('i', { class: 'tb-bar mp' }, h('span', { style: { width: mp + '%' } })))),
+        canHeal(d) ? h('button', { class: 'tb-heal', type: 'button', 'aria-label': t('team.healOne', { name: DK.daskai.name(d) }), tip: t('team.healOne', { name: DK.daskai.name(d) }),
+          onClick: (ev) => { ev.stopPropagation(); quickHeal(d, refresh); } }, DK.icon('flask', 15)) : null));
+    }
+    return h('section', { class: 'tb-wrap', 'aria-label': t('team.barTitle') },
+      h('div', { class: 'tb-grid' }, slots),
+      h('button', { class: 'tb-all', type: 'button', disabled: !anyHurt, tip: anyHurt ? t('team.healAll') : t('heal.nothingToHeal'), 'aria-label': t('team.healAll'),
+        onClick: async () => { if (await V.healDialog(team)) refresh(); } }, DK.icon('flask', 18), h('span', null, t('team.healAllShort'))));
   }
 
   /**
@@ -818,6 +865,14 @@
       if (!e) return h('div', { class: 'screen' }, DK.ui.empty('flag', t('exp.none'), t('exp.noneText')),
         btn({ icon: 'map', label: t('nav.battle'), variant: 'primary', onClick: () => DK.router.reset('zones') }));
       E().ensureMap(); E().ensureFields();
+      // Cortinilla al llegar a un mapa nuevo (una vez por mapa)
+      const introKey = `${e.depth || 1}|${e.seed}`;
+      if (e.introShown !== introKey) {
+        e.introShown = introKey; DK.store.save();
+        const z = D.zones[e.zone];
+        const sub = [t('exp.depth', { n: e.depth || 1 }), t('size.label', { name: t('size.' + (e.size || 'small') + '.name'), n: E().sizeFloors(e.size) }), e.mod ? t('mod.' + e.mod + '.name') : null].filter(Boolean).join(' · ');
+        DK.fx.curtain({ title: z.name, subtitle: sub, icon: z.icon, colors: z.colors, kind: 'zone' });
+      }
       const pend = E().pendingNode();
       // Vista centrada: mientras eliges una reliquia o estás en un nodo sin combate
       // (mercader, suceso, descanso, cofre, reclutas) el mapa se oculta.

@@ -75,7 +75,9 @@
             fact(dd.icon, t('brief.difficulty'), t('difficulty.' + diff + '.name'), t('difficulty.' + diff + '.desc'), 'diff d-' + diff),
             fact('emblem', t('emblem.title'), String(DK.camp.emblems()), t('emblem.help'), 'emblem'),
             pv.mod ? fact(D.mapMods[pv.mod].icon, t('brief.mod'), t('mod.' + pv.mod + '.name'), `${t('mod.' + pv.mod + '.desc')}\n${t('mod.reward', { n: Math.round((D.mapMods[pv.mod].coins || 0) * 100) })}`, 'mod m-' + pv.mod) : null,
-            fact('crown', t('brief.reward'), t('brief.rewardValue', { n: E().bossEmblems(pv.size) }), t('brief.rewardTip'))),
+            fact('crown', t('brief.reward'), t('brief.rewardValue', { n: E().bossEmblems(pv.size) }), t('brief.rewardTip')),
+            // Reliquias y pactos desbloqueados (menú de Mejoras): sólo esos pueden salir al empezar
+            fact('amulet', t('brief.unlocks'), `${DK.camp.unlocked('relic').length} · ${DK.camp.unlocked('curse').length}`, t('brief.unlocksTip', { r: DK.camp.unlocked('relic').length, c: DK.camp.unlocked('curse').length }), 'unlocks')),
           h('p', { class: 'small muted' }, t('size.' + pv.size + '.desc', { n: E().sizeFloors(pv.size) })),
           pv.mod ? h('div', { class: 'warning mod-note m-' + pv.mod }, DK.icon(D.mapMods[pv.mod].icon, 16), h('span', null, h('b', null, t('mod.' + pv.mod + '.name') + ': '), t('mod.' + pv.mod + '.desc'), ' ', t('mod.reward', { n: Math.round((D.mapMods[pv.mod].coins || 0) * 100) }))) : null,
           h('div', { class: 'brief-notes' },
@@ -159,7 +161,9 @@
           : h('div', { class: 'warning good' }, DK.icon('check', 16), h('span', null, t('craft.goalsAllReady')))) : null;
 
       return h('div', { class: 'screen brief-screen' }, hero,
-        h('div', { class: 'brief-grid' }, teamPanel, packPanel, h('div', { class: 'stack brief-right' }, bagPanel, goalsPanel)),
+        // Equipo, mochila y bolsa: tres bloques del mismo tamaño (cada uno con su propio desplazamiento)
+        h('div', { class: 'brief-grid' }, teamPanel, packPanel, bagPanel),
+        goalsPanel,
         h('div', { class: 'brief-sticky' }, goBtn('')));
     },
   });

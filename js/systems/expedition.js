@@ -368,10 +368,13 @@
       this.logEvent('start', { zone: n.zone, size: n.size, mod: n.mod || null });
       // Pactos opcionales del primer mapa (se eligen antes que la reliquia)
       DK.curses.offer();
-      // Al empezar eliges una reliquia (común, o también rara con el Cartógrafo)
-      st().expedition.relicChoice = DK.relics.roll(DK.camp.value('cartografo') ? ['comun', 'raro'] : ['comun'], 3);
-      // Cartógrafo nivel 2: además una reliquia común gratis
-      if (DK.camp.value('cartografo') >= 2) DK.relics.give(DK.relics.roll(['comun'], 1)[0]);
+      // Al empezar eliges una reliquia entre las DESBLOQUEADAS (DK.camp.unlock):
+      // comunes; con el Cartógrafo también raras (nivel 1) y épicas (nivel 2)
+      const carto = DK.camp.value('cartografo');
+      const rar = carto >= 2 ? ['comun', 'raro', 'epico'] : carto ? ['comun', 'raro'] : ['comun'];
+      st().expedition.relicChoice = DK.relics.roll(rar, 3, { unlocked: true });
+      // Cartógrafo nivel 2: además una reliquia común (desbloqueada) gratis
+      if (carto >= 2) { const free = DK.relics.roll(['comun'], 1, { unlocked: true })[0]; if (free) DK.relics.give(free); }
       // Provisiones (Mejoras)
       const pots = DK.camp.value('provisiones');
       if (pots) DK.bag.add('pocion', pots);
@@ -1075,11 +1078,11 @@
     sum(type) { return this.list().filter((r) => r.effect.type === type).reduce((a, r) => a + (r.effect.pct || r.effect.add || 0), 0); },
     houseDmg(house) { return this.list().filter((r) => r.effect.type === 'dmgHouse' && r.effect.house === house).reduce((a, r) => a + r.effect.pct, 0); },
     statPct(stat) { return this.list().filter((r) => r.effect.type === 'stat' && r.effect.stat === stat).reduce((a, r) => a + r.effect.pct, 0); },
-    /** n reliquias al azar de esas rarezas que aún no tengas. */
-    roll(rarities, n) {
+    /** n reliquias al azar de esas rarezas que aún no tengas (con unlocked: sólo las desbloqueadas). */
+    roll(rarities, n, { unlocked = false } = {}) {
       const e = DK.expedition.active();
       const have = (e && e.relics) || [];
-      const pool = Object.values(D.relics).filter((r) => rarities.includes(r.rarity) && !have.includes(r.id)).map((r) => r.id);
+      const pool = Object.values(D.relics).filter((r) => rarities.includes(r.rarity) && !have.includes(r.id) && (!unlocked || DK.camp.isUnlocked('relic', r.id))).map((r) => r.id);
       const out = [];
       while (out.length < n && pool.length) out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
       return out;

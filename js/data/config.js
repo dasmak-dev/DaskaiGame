@@ -8,7 +8,7 @@
     maxLevel: 100,
     maxMoves: 4,          // ataques activos por daskai
     maxEquip: 2,          // objetos equipados por daskai
-    maxTeam: 4,           // daskai en el equipo de batalla
+    maxTeam: 5,           // daskai en el equipo de batalla
     starterLevel: 5,
     regenPct: 2,          // % de vida máxima regenerada por turno
 
@@ -104,6 +104,8 @@
       tonicDrops: { chest: 0.04, chestPerDepth: 0.03, chestMax: 0.3, elite: 0.35, boss: 1, elixirBoss: 0.25 },
       consolation: { relic: ['raro', 'epico'], items: { superpocion: 2 } }, // y la próxima expedición empieza con esto
       curseChoices: 3,     // pactos que se ofrecen al empezar cada mapa (data/curses.js)
+      // Pactos y reliquias iniciales se desbloquean con emblemas en el menú de Mejoras (DK.camp.unlock)
+      unlockCost: { curse: 2, comun: 1, raro: 2, epico: 4 },
       noFreeHeal: true,    // en expedición no hay regeneración base ni curación al subir de nivel
       // Expediciones infinitas
       depthZoneStep: 0.8,  // cuánto avanza la zona "objetivo" por cada mapa superado (pickZone)

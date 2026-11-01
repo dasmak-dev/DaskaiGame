@@ -67,6 +67,7 @@ DK.i18n.register('en', {
   },
 
   team: {
+    fights: 'Fights', healAllShort: 'Heal', emptyExpTip: 'Empty slot: tap to add someone who came along', 
     barTitle: 'Your team', barHint: 'Tap a card to choose who fights the next battle.', healOne: 'Heal {name}', healAll: 'Heal all',
     healed: '{name} is healed ({items}).', pickNext: 'Choose {name} for the next battle',
     sheet: 'Daskai sheet', expReserve: 'Expedition bench ({n})', expReserveHint: 'Only those who left with you and your recruits',
@@ -207,6 +208,7 @@ DK.i18n.register('en', {
   },
 
   zones: {
+    heroNew: 'New expedition', heroLine: 'Random maps among your zones, harder each time. After each boss you choose to go on or cash in.', heroOnLine: 'Your team is still on the road. Go back to the map to continue.', hardMode: 'Hard mode', moreShort: 'Undiscovered', pickHint: 'Tap a zone · ← →', winsShort: 'Wins', codexShort: 'Codex', 
     worldMap: 'World map', moreHidden: '{n} zones to discover', records: 'Records',
     recMaps: 'Maps cleared', recDepth: 'Deepest', recXl: 'XL maps', recSecret: 'Hidden boss', recFast: 'Fastest map',
     preview: 'See the first map', zonesTitle: 'Zones', unlockedN: '{n}/{total} zones',
@@ -349,6 +351,7 @@ DK.i18n.register('en', {
   },
 
   battle: {
+    curtainEliteTitle: 'Mini boss!', curtainBoss: 'Boss! {name} · Lv. {n}', curtainSecret: 'Hidden boss! {name} · Lv. {n}', curtainElite: 'Mini boss · Lv. {n}',
     autoHealed: 'Auto: {name} is in critical condition, uses {item}.',
     dmgStab: 'Same house', dmgBroken: 'Break',
     broken: '{name}\'s guard breaks! It cannot act until the end of next turn and takes +{n}% damage.', stunned: '{name} is stunned and cannot act.', recovered: '{name} recovers from the break.',
@@ -530,7 +533,7 @@ DK.i18n.register('en', {
   nav: {
     more: 'More',
     training: 'Training',
-    home: 'Home', team: 'Team', inventory: 'Inventory', battle: 'Battle', codex: 'Codex', progress: 'Progress', profile: 'Profile', camp: 'Upgrades', craft: 'Crafting', pack: 'Backpack', expMap: 'Map',
+    home: 'Camp', team: 'Team', inventory: 'Inventory', battle: 'Battle', codex: 'Codex', progress: 'Progress', profile: 'Profile', camp: 'Upgrades', craft: 'Crafting', pack: 'Backpack', expMap: 'Map',
     main: 'Main navigation', breadcrumb: 'You are in',
   },
   home: {
@@ -703,6 +706,7 @@ DK.i18n.register('en', {
     tool: { pen: 'Pen', eraser: 'Eraser', note: 'Note' },
   },
   brief: {
+    unlocks: 'Relics · pacts', unlocksTip: 'Unlocked: {r} relics and {c} pacts. Only those can appear at the start. Unlock them with emblems in the Upgrades menu, at the end of an expedition.', 
     mod: 'Map weather',
     size: 'Size', sizeFloors: 'Size · {n} floors', levels: 'Foes', levelsTip: 'Level of the wild daskai on this map', difficulty: 'Difficulty',
     reward: 'Per boss', rewardValue: '+{n} emblems', rewardTip: 'Emblems each boss on this map gives (hidden cave bosses too). The bigger the map, the more emblems.',
@@ -735,9 +739,24 @@ DK.i18n.register('en', {
     noFaint: { name: 'No losses', desc: 'Clear the map without any of your daskai fainting.' },
   },
   unlock: {
-    training: 'Training grounds unlocked! You can now leave daskai training (Home → Training).',
+    training: 'Training grounds unlocked! You can now leave daskai training (the training dummy at camp).',
     trainingLocked: 'Unlocks when you defeat your first boss in an expedition.',
   },
+  pause: { title: 'Paused', resume: 'Resume', menu: 'Menu', menuTip: 'Pause menu (Esc)' },
+  scene: {
+    title: 'Camp', path: 'Expeditions', board: 'Missions', tent: 'Inventory', anvil: 'Crafting', fire: 'Team', lectern: 'Codex', dummy: 'Training', locked: 'Locked',
+    greet: { day: 'A fine day to explore', dawn: 'Dawn breaks over the camp', dusk: 'Evening falls over the camp', night: 'The campfire warms the night' },
+  },
+  box: {
+    dragHintExp: 'Drag between your team and those with you (on mobile, long press).', 
+    withYou: 'With you on the expedition', withYouN: '{n} daskai', withYouEmpty: 'Everyone who came with you is in the team.', locked: 'The boxes stay at camp: during an expedition you can only swap your team with those who came along and your recruits.', 
+    name: 'Box {n}', count: '{n}/{max}', prev: 'Previous box', next: 'Next box', rename: 'Rename', renameTitle: 'Box name',
+    bg: 'Change wallpaper', bgTitle: 'Box wallpaper', add: 'New box', sort: 'Sort box', matches: '{n} match', atHome: 'stayed at home',
+    dragHint: 'Drag between the box and your team (on mobile, press and hold). Tap one to see its sheet.',
+    sortBy: { level: 'By level', house: 'By house', species: 'By species', name: 'By name' },
+    bgName: { noche: 'Starry night', nieve: 'Snow', arena: 'Desert', cristal: 'Crystal', lava: 'Lava' },
+  },
+  party: { toReserve: 'Take out of the team (stays with you)', emptyHintExp: 'Drag here someone who came along', title: 'Your team', empty: 'Empty slot', emptyHint: 'Drag a daskai here from the box', toBox: 'Put in the box' },
   craft: {
     tabRecipes: 'Recipes', tabMaterials: 'Materials', searchMat: 'Search material…', type: 'Type', recipesN: '{n} recipes', readyN: '{n} ready',
     canN: 'Can make {n}', chainShort: 'In steps', missingN: '{n} missing', usedInShort: 'In {n} recipes', usedIn: 'Used in {n} recipes', usedInOne: 'Used in 1 recipe', whereGet: 'Where to get it',
@@ -777,8 +796,8 @@ DK.i18n.register('en', {
   sum: {
     timeline: 'Timeline', moments: '{n} moments', floorN: 'floor {n}', compare: 'Against your best expedition', newRecord: 'New record!', bestWas: 'best {v}',
     cmpDepth: 'Depth', cmpCoins: 'Coins', cmpTime: 'Duration',
-    shopTitle: 'Permanent upgrades', shopHide: 'Hide', shopShow: 'Show upgrades', shopEarned: 'You earned {n} emblems this expedition.', shopEarnedOne: 'You earned 1 emblem this expedition.', secretsOne: '1 hidden boss defeated', shopCanOne: 'You can buy 1 upgrade now.', shopNone: 'You did not defeat any boss this expedition.',
-    shopCan: 'You can buy {n} upgrades now.', shopSave: 'Save your emblems for next time.', secrets: '{n} hidden bosses defeated',
+    shopTitle: 'Permanent upgrades', shopHide: 'Hide', shopShow: 'Show upgrades', shopEarned: 'You earned {n} emblems this expedition.', shopEarnedOne: 'You earned 1 emblem this expedition.', secretsOne: '1 hidden boss defeated', shopCanOne: 'You have emblems for 1 upgrade or unlock.', shopNone: 'You did not defeat any boss this expedition.',
+    shopCan: 'You have emblems for {n} upgrades or unlocks.', shopSave: 'Save your emblems for next time.', secrets: '{n} hidden bosses defeated',
     campfireLost: 'Going home from a campfire loses {pct}% of the loot ({coins} coins).',
     fallen: 'Fallen in this expedition',
     title: 'Expedition summary', empty: 'You have not finished an expedition yet', none: 'Nothing',
@@ -807,6 +826,7 @@ campfire: 'You went home from a campfire: you keep half the loot and all your re
     pesadilla: { name: 'Nightmare', desc: 'Permanent death, no going home from campfires, no fixed rest before the boss and stronger foes.' },
   },
   camp: {
+    tabUpgrades: 'Upgrades', tabRelics: 'Relics', tabCurses: 'Pacts', unlock: 'Unlock · {n}', unlocked: 'Unlocked: {name}!', unlockedTag: 'Unlocked', canNow: 'You can afford {n}', costEach: '· {n} each', relicsText: 'Unlock relics so they can appear when an expedition starts (you pick 1 of 3 among the unlocked ones). Rare and epic ones need the Cartographer. Relics found along the way come from all of them.', cursesText: 'Unlock pacts so they are offered at the start of each map: more difficulty in exchange for coins or relics. With none unlocked, there are no pacts.', 
     title: 'Upgrades', text: 'Permanent upgrades between expeditions. Pay with emblems (1 per boss defeated) and buy them when each expedition ends.',
     buy: 'Upgrade · {n}', bought: 'Upgrade bought: {name}!', noMoney: 'Not enough coins', missing: 'You need {n} more emblems', closeMenu: 'Done', saveHint: 'If you cannot afford one, save your emblems: you can spend them when your next expedition ends.', noEmblems: 'Not enough emblems', buyAtEnd: 'Bought when an expedition ends', howTo: 'Defeat bosses to earn emblems and trade them for upgrades in each expedition summary.',
     now: 'Now:', nextLevel: 'Next level:', firstLevel: 'When bought:', maxed: 'Maxed', levelTip: 'Current / max level',
@@ -822,7 +842,7 @@ campfire: 'You went home from a campfire: you keep half the loot and all your re
       atajo: { name: 'Shortcuts', desc: 'Each map has more shortcuts to skip floors.', effect: '+{n} shortcuts per map' },
       equipaje: { name: 'Luggage', desc: 'Fit more items in your backpack when you leave on an expedition.', effect: '+{n} backpack slots' },
       provisiones: { name: 'Provisions', desc: 'Start every expedition with free potions in your backpack (they take no slot).', effect: '+{n} potions at start' },
-      cartografo: { name: 'Cartographer', desc: 'Better relics at the start of an expedition.', effect: 'Level {n}', lv1: 'Starting relic can be rare', lv2: 'Rare starting relic + a free common one' },
+      cartografo: { name: 'Cartographer', desc: 'Better relics at the start of an expedition.', effect: 'Level {n}', lv1: 'Starting relic can be rare', lv2: 'Rare or epic starting relic + a free common one' },
       reclutador: { name: 'Recruiter', desc: 'Recruit nodes have one more candidate and they come at a higher level.', effect: '+1 candidate · +{n} levels' },
       hoguera: { name: 'Better campfire', desc: 'Campfires on the expedition map heal more.', effect: '+{n}% when resting' },
       comercio: { name: 'Trade contacts', desc: 'Merchants bring more goods.', effect: '+{n} offers per merchant' },

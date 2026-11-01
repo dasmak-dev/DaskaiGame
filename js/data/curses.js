@@ -1,7 +1,8 @@
 /* =============================================================
  * data/curses.js — Pactos (maldiciones opcionales) de expedición.
  *
- * Al empezar cada mapa se ofrecen 3 al azar. Puedes aceptar los que
+ * Al empezar cada mapa se ofrecen 3 al azar entre los DESBLOQUEADOS con
+ * emblemas en el menú de Mejoras (DK.camp.unlock; ninguno → no hay pactos). Puedes aceptar los que
  * quieras (o ninguno): te ponen las cosas más difíciles en ese mapa a
  * cambio de una recompensa. Duran sólo ese mapa.
  *

@@ -743,44 +743,7 @@ button.sum-goals { display: flex; align-items: center; gap: 14px; width: 100%; t
 .quest-reward { color: #fcd34d; display: inline-flex; align-items: center; gap: 2px; }
 .stack-xs { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 
-.tb-wrap { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; margin-bottom: 10px; }
-.tb-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.tb-hint { min-width: 0; }
-.tb-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 8px; }
-.tb-card { position: relative; display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); cursor: pointer; min-width: 0; transition: border-color .15s, background .15s; }
-.tb-card:hover { border-color: color-mix(in srgb, var(--primary) 45%, var(--border)); }
-.tb-card:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-.tb-card.leader { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 12%, var(--surface-2)); }
-.tb-card.low { border-color: color-mix(in srgb, #ef4444 45%, var(--border)); }
-.tb-card.ko { opacity: .5; cursor: default; filter: grayscale(.8); }
-.tb-sprite { position: relative; width: 44px; height: 44px; flex: none; display: grid; place-items: center; border-radius: 10px; background: var(--surface-3); }
-.tb-lead { position: absolute; bottom: -4px; right: -4px; width: 18px; height: 18px; display: grid; place-items: center; border-radius: 50%; background: var(--primary); color: #fff; box-shadow: 0 0 0 2px var(--surface-2); }
-.tb-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-.tb-name { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: .84rem; }
-.tb-name b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tb-name .muted { font-size: .74rem; white-space: nowrap; }
-.tb-bar { position: relative; height: 13px; border-radius: 7px; background: var(--surface-3); overflow: hidden; }
-.tb-bar > span { position: absolute; inset: 0 auto 0 0; border-radius: 7px; background: var(--hp); transition: width .3s; }
-.tb-bar.hp.mid > span { background: var(--hp-mid); } .tb-bar.hp.crit > span { background: var(--hp-low); }
-.tb-bar.mp { height: 9px; } .tb-bar.mp > span { background: var(--mp); }
-.tb-bar em { position: relative; display: block; padding: 0 6px; font-style: normal; font-size: .64rem; font-weight: 700; line-height: 13px; text-align: right; color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, .7); font-variant-numeric: tabular-nums; }
-.tb-bar.mp em { line-height: 9px; font-size: .58rem; }
-.tb-heal { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-3); color: #4ade80; cursor: pointer; }
-.tb-heal:hover:not(:disabled) { background: color-mix(in srgb, #22c55e 22%, var(--surface-3)); border-color: color-mix(in srgb, #22c55e 50%, var(--border)); }
-.tb-heal:disabled { color: var(--muted); opacity: .45; cursor: default; }
 @media (max-width: 600px) {
-  .tb-wrap { padding: 8px; }
-  .tb-hint { display: none; }
-  .tb-grid { grid-template-columns: none; grid-auto-columns: minmax(0, 1fr); grid-auto-flow: column; gap: 6px; }
-  .tb-card { display: grid; grid-template-columns: 34px minmax(0, 1fr); grid-template-areas: 'sp heal' 'body body'; align-items: center; gap: 6px; padding: 6px; }
-  .tb-sprite { grid-area: sp; width: 34px; height: 34px; }
-  .tb-heal { grid-area: heal; justify-self: end; width: 30px; height: 30px; }
-  .tb-body { grid-area: body; gap: 3px; }
-  .tb-name { font-size: .76rem; gap: 4px; }
-  .tb-name .muted, .tb-name .status-tag, .tb-name .badge { display: none; }
-  .tb-bar { height: 12px; } .tb-bar em { line-height: 12px; font-size: .6rem; padding: 0 4px; }
-  .tb-bar.mp { height: 6px; } .tb-bar.mp em { display: none; }
-  .tb-card.has-status .tb-sprite::after { content: ''; position: absolute; top: -2px; left: -2px; width: 9px; height: 9px; border-radius: 50%; background: #a855f7; box-shadow: 0 0 0 2px var(--surface-2); }
   .bmove-top .badge.eff { font-size: 0; gap: 0; padding: 2px 4px; }
   .quest-chip .quest-name { display: none; }
   .pv-tag { font-size: .64rem; padding: 1px 4px; }

@@ -116,6 +116,57 @@
       else { slash(layer, to, crit); if (house) burst(layer, to, house, 10); }
     },
 
+    /**
+     * Cortinilla de juego a pantalla completa, en tres tiempos:
+     *   1. dos franjas cierran la pantalla;
+     *   2. con la pantalla tapada se llama a `mid()` (p. ej. cambiar de
+     *      pantalla) y, si hay título, sale su cinta;
+     *   3. las franjas se abren y aparece lo nuevo.
+     * No bloquea la interfaz (pointer-events: none). Se acorta con
+     * «Animaciones rápidas»; con «Reducir movimiento» sólo funde el título.
+     * @param {Object} o  title, subtitle, icon, colors: [claro, oscuro], kind: 'zone'|'boss'|'elite'|'battle'
+     * @param {Function} [mid]  se ejecuta con la pantalla tapada
+     * @returns {Promise<void>} cuando termina
+     */
+    cover({ title = '', subtitle = '', icon = null, colors = ['#6d5dfc', '#1e1b4b'], kind = 'zone' } = {}, mid) {
+      const { h } = DK.ui;
+      document.querySelectorAll('.curtain').forEach((c) => c.remove());
+      const reduced = DK.settings.reducedMotion();
+      const fast = DK.settings.get('skipAnims');
+      // [cerrar, mantener, abrir] en ms
+      let [tc, th, to] = { battle: [200, 80, 300], elite: [240, 750, 320], boss: [280, 1150, 360], zone: [280, 1000, 360] }[kind] || [260, 800, 340];
+      if (!title) th = Math.min(th, 120);
+      if (fast) { tc = Math.round(tc * 0.7); th = Math.round(th * 0.5); to = Math.round(to * 0.8); }
+      const el = h('div', { class: `curtain k-${kind}` + (reduced ? ' reduced' : '') + (title ? ' titled' : ''), 'aria-hidden': 'true',
+        style: { '--c1': colors[0], '--c2': colors[1], '--tc': tc + 'ms', '--to': to + 'ms' } },
+        h('div', { class: 'curtain-band top' }), h('div', { class: 'curtain-band bottom' }),
+        title ? h('div', { class: 'curtain-card' },
+          icon ? h('span', { class: 'curtain-icon' }, DK.icon(icon, 30)) : null,
+          h('div', { class: 'curtain-text' }, subtitle ? h('small', null, subtitle) : null, h('b', null, title))) : null);
+      document.body.append(el);
+      const run = (fn) => { try { if (fn) fn(); } catch (e) { console.error(e); } };
+      if (reduced) {
+        run(mid);
+        if (!title) { el.remove(); return Promise.resolve(); }
+        el.classList.add('show');
+        return new Promise((r) => setTimeout(() => { el.remove(); r(); }, th + 500));
+      }
+      if (kind !== 'battle') DK.audio.sfx(kind === 'boss' ? 'crit' : 'swap'); else DK.audio.sfx('select');
+      return new Promise((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('closed')));
+        setTimeout(() => {
+          run(mid);
+          if (title) el.classList.add('show');
+          setTimeout(() => {
+            el.classList.add('opening'); el.classList.remove('show');
+            setTimeout(() => { el.remove(); resolve(); }, to + 40);
+          }, th);
+        }, tc + 20);
+      });
+    },
+    /** Cortinilla sin cambio de pantalla (título de zona sobre lo que ya se ve). */
+    curtain(o = {}) { return DK.fx.cover(o); },
+
     /** Brillo verde ascendente (curación). */
     heal(layer, target, color = '#4ade80') {
       if (!enabled() || !layer || !target) return;

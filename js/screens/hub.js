@@ -1,19 +1,20 @@
 /* =============================================================
- * screens/hub.js — Inicio (resumen de la partida).
+ * screens/hub.js — El campamento (pantalla principal).
  *
- *  - Botón grande "Jugar": entra directo en la zona recomendada o
- *    continúa la expedición en curso (tecla Enter).
- *  - Tu equipo (clic → ficha; clic derecho → acciones rápidas).
- *  - Misiones del día con su botón de cobrar.
- *  - Acciones rápidas: curar con objetos, Mejoras, Crafteo y lo que se añada
- *    al menú 'hub':  DK.menus.add('hub', { id, icon, label, desc, action | screen })
+ *  - Arriba, la escena del campamento (components/camp.js): cada lugar
+ *    lleva a una sección y tu equipo descansa junto a la hoguera.
+ *  - Debajo: la próxima expedición (Enter), «Qué hacer ahora», tu equipo
+ *    y las misiones del día.
+ *  - Acciones extra que añadan otros archivos con
+ *    DK.menus.add('hub', { id, icon, label, desc, action | screen })
+ *    salen como botones bajo la expedición.
  * ============================================================= */
 (function () {
   const { h, btn } = DK.ui;
   const D = DK.data, V = DK.views;
   const { t } = DK;
 
-  DK.menus.add('nav', { id: 'home', icon: 'home', order: 10, screen: 'hub', pin: true, label: () => t('nav.home') });
+  DK.menus.add('nav', { id: 'home', icon: 'campfire', order: 10, screen: 'hub', pin: true, label: () => t('nav.home') });
 
   // Menú de acciones rápidas: otros archivos pueden añadir opciones con
   // DK.menus.add('hub', { id, icon, label, desc, action | screen }).
@@ -47,10 +48,9 @@
   }
 
   DK.screens.register('hub', {
-    title: () => t('nav.home'), icon: 'home', section: 'home', back: false, music: 'menu', tutorial: 'hub',
+    title: () => t('nav.home'), icon: 'campfire', section: 'home', back: false, music: 'menu', tutorial: 'hub',
     render(params) {
       const refresh = () => DK.router.refresh();
-      const st = DK.store.state;
       params.todo = params.todo || {};
       const team = DK.party.active();
       DK.keys.on('Enter', () => DK.play.quick());
@@ -71,34 +71,15 @@
           btn({ icon: 'next', label: t('home.allMissions'), size: 'sm', variant: 'ghost', onClick: () => DK.router.reset('progress', { tab: 'missions' }) })),
         h('div', { class: 'list' }, daily.map((m) => V.missionCard(m, refresh, { compact: true }))));
 
-      const quick = h('div', { class: 'card quick-card' },
-        h('div', { class: 'panel-head' }, DK.icon('bolt', 18), h('h3', null, t('home.quick'))),
-        h('div', { class: 'quick-grid' },
-          btn({ icon: 'flask', label: t('heal.button'), variant: 'tone', tip: t('heal.tip'), onClick: async () => { if (await V.healDialog(team)) refresh(); } }),
-          btn({ icon: 'anvil', label: t('nav.craft'), variant: 'tone', onClick: () => DK.router.reset('craft') }),
-          DK.unlocks.has('training')
-            ? btn({ icon: 'dumbbell', label: t('nav.training'), variant: 'tone', tip: t('train.text'), onClick: () => DK.router.reset('training') })
-            : btn({ icon: 'lock', label: t('nav.training'), variant: 'ghost', disabled: true, tip: t('unlock.trainingLocked') }),
-          ...DK.menus.items('hub').map((it) => btn({ icon: it.icon, label: typeof it.label === 'function' ? it.label() : it.label, variant: it.variant || 'tone', tip: typeof it.desc === 'function' ? it.desc() : it.desc, onClick: () => DK.menus.activate(it) })),
-          btn({ icon: 'search', label: t('top.search'), variant: 'ghost', hotkey: 'Ctrl K', onClick: () => DK.palette.open() }),
-          btn({ icon: 'exit', label: t('hub.saveExit'), variant: 'ghost', cls: 'quick-exit', onClick: () => { DK.store.save(); DK.router.reset('mainMenu'); } })));
+      const extra = DK.menus.items('hub');
+      const extraRow = extra.length ? h('div', { class: 'row gap-s wrap' }, extra.map((it) => btn({ icon: it.icon, label: typeof it.label === 'function' ? it.label() : it.label, variant: it.variant || 'tone', tip: typeof it.desc === 'function' ? it.desc() : it.desc, onClick: () => DK.menus.activate(it) }))) : null;
 
-      return h('div', { class: 'screen hub' },
-        h('div', { class: 'hub-head card' },
-          h('button', { class: 'hub-avatar', type: 'button', tip: t('nav.profile'), onClick: () => DK.router.reset('profile') }, V.avatar(st.player, { size: 56 })),
-          h('div', { class: 'grow' }, h('span', { class: 'muted small' }, DK.avatars.titleText(st.player)), h('h2', null, st.player.name),
-            st.player.motto ? h('p', { class: 'muted small' }, '«', st.player.motto, '»') : null),
-          h('div', { class: 'hub-stats' },
-            stat('coin', DK.wallet.get().toLocaleString(DK.i18n.lang), t('hub.coins')),
-            stat('trophy', st.stats.wins, t('hub.wins')),
-            stat('paw', st.party.length, t('hub.daskai')),
-            stat('award', DK.achievements.unlockedCount() + '/' + D.achievements.length, t('hub.achievements')))),
-        V.todoCard(refresh, params.todo),
-        h('div', { class: 'home-grid' }, h('div', { class: 'stack' }, playCard(refresh), teamCard), h('div', { class: 'stack' }, missionsCard, quick)));
+      return h('div', { class: 'screen hub camp-screen' },
+        V.campScene({ team }),
+        h('div', { class: 'camp-panels' },
+          h('div', { class: 'stack' }, playCard(refresh), extraRow, V.todoCard(refresh, params.todo)),
+          h('div', { class: 'stack' }, teamCard, missionsCard)));
     },
   });
 
-  function stat(icon, val, label) {
-    return h('div', { class: 'hub-stat', tip: label }, DK.icon(icon, 16), h('b', null, val), h('span', { class: 'muted small' }, label));
-  }
 })();

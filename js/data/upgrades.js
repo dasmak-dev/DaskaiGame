@@ -20,8 +20,9 @@
  *  Expedición
  *   equipaje    +N unidades en la mochila al salir                (expedition.packCapacity)
  *   provisiones pociones con las que empiezas cada expedición     (expedition.start)
- *   cartografo  1: la reliquia inicial puede ser rara · 2: además
- *               empiezas con una reliquia común gratis            (expedition.start)
+ *   cartografo  1: la reliquia inicial puede ser rara · 2: también
+ *               épica y empiezas con una común gratis (siempre entre
+ *               las reliquias desbloqueadas)                       (expedition.start)
  *   reclutador  +1 candidato y +N niveles en los reclutas         (expedition.makeCandidates)
  *   hoguera     +% de curación en las hogueras del mapa           (expedition.rest)
  *   comercio    ofertas extra en cada mercader                    (expedition.makeOffers)

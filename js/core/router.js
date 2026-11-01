@@ -74,6 +74,9 @@
     go(id, params = {}, opts = {}) {
       const g = this.guard && this.guard(id, params);
       if (g) { id = g.id; params = g.params || {}; }
+      // Transición propia de la pantalla (p. ej. la cortinilla del combate): llama a go() de nuevo cuando toca
+      const def = screens[id];
+      if (def && def.transition && !opts.now) { def.transition(params, () => this.go(id, params, Object.assign({}, opts, { now: true }))); return; }
       leave();
       if (opts.reset) stack.length = 0;
       else if (opts.replace) stack.pop();
@@ -82,13 +85,15 @@
     },
     reset(id, params = {}) { this.go(id, params, { reset: true }); },
     replace(id, params = {}) { this.go(id, params, { replace: true }); },
+    /** Vuelve a la pantalla anterior. Devuelve false si no hay a dónde volver. */
     back() {
-      if (stack.length <= 1) return;
+      if (stack.length <= 1) return false;
       const d = screens[current().id];
-      if (d.back === false) return;
+      if (d.back === false) return false;
       leave();
       stack.pop();
       render('back');
+      return true;
     },
     refresh() { render('none'); },
     current,

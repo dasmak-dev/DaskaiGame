@@ -23,6 +23,22 @@
   DK.screens.register('battle', {
     title: (p) => D.zones[p.zone].name, icon: 'swords', back: false, nav: false, section: 'battle', tutorial: 'battle',
     music: (p) => (p.boss ? 'boss' : D.zones[p.zone].scene),
+    /**
+     * Entrada al combate: la pantalla se tapa con una cortinilla, el
+     * combate se monta detrás y se descubre. Jefes y mini jefes llevan
+     * su cinta de título; los combates normales, un barrido rápido.
+     */
+    transition(p, go) {
+      const z = D.zones[p.zone];
+      if (p.state) return go();   // volver a un combate ya empezado
+      if (p.boss) {
+        const info = p.secret && D.secretBosses ? D.secretBosses[p.zone] : z.boss;
+        const sp = D.species[info.species];
+        return DK.fx.cover({ title: info.title, subtitle: t(p.secret ? 'battle.curtainSecret' : 'battle.curtainBoss', { name: sp.name, n: info.level + (DK.expedition.active() ? DK.expedition.levelBonus() : 0) }), icon: p.secret ? 'cave' : 'crown', colors: ['#f59e0b', '#7f1d1d'], kind: 'boss' }, go);
+      }
+      if (p.elite) return DK.fx.cover({ title: t('battle.curtainEliteTitle'), subtitle: z.name, icon: 'skull', colors: ['#f43f5e', '#4c0519'], kind: 'elite' }, go);
+      return DK.fx.cover({ colors: z.colors, kind: 'battle' }, go);
+    },
     render(params) {
       if (!params.state) params.state = B().start(params.zone, params.leaderUid, { boss: params.boss, elite: params.elite, secret: params.secret, final: params.final });
       return buildBattle(params);

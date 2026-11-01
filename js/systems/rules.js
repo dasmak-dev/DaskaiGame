@@ -4,6 +4,7 @@
  *
  *   DK.rules     → dificultad elegida y lo que implica
  *   DK.camp      → mejoras permanentes del campamento (data/upgrades.js)
+ *                  y pactos / reliquias iniciales desbloqueados (unlock)
  *   DK.legacy    → esencias que dejan los daskai caídos (herencia)
  *
  * Regla de oro: el resto del juego NO lee la dificultad directamente,
@@ -58,8 +59,8 @@
       DK.emit('emblems', { n, total: st().emblems });
       return n;
     },
-    /** ¿Hay alguna mejora que se pueda pagar con los emblemas que tienes? */
-    affordable() { return D.upgrades.filter((u) => { const n = this.next(u.id); return n && this.emblems() >= n.cost; }).length; },
+    /** ¿Cuántas cosas se pueden pagar con los emblemas que tienes? (mejoras + pactos y reliquias por desbloquear) */
+    affordable() { return D.upgrades.filter((u) => { const n = this.next(u.id); return n && this.emblems() >= n.cost; }).length + this.unlockable('curse') + this.unlockable('relic'); },
     /**
      * Compra el siguiente nivel de una mejora con emblemas.
      * @returns {boolean} false si no hay emblemas o ya está al máximo
@@ -75,6 +76,45 @@
       return true;
     },
   };
+
+  /* ============ PACTOS Y RELIQUIAS DESBLOQUEADOS ============
+   * Los pactos (data/curses.js) y las reliquias que se eligen al empezar
+   * una expedición (data/relics.js) hay que desbloquearlos antes, uno a
+   * uno, con emblemas en el menú de Mejoras (V.upgradeShop → pestañas
+   * Pactos y Reliquias). Estado: state.vault = { curse: [ids], relic: [ids] }.
+   *   kind: 'curse' | 'relic'
+   * Las reliquias que se encuentran por el camino (élites, cofres, jefes)
+   * no lo necesitan: siguen saliendo de todas.
+   */
+  const vault = () => { const s = st(); s.vault = s.vault || {}; s.vault.curse = s.vault.curse || []; s.vault.relic = s.vault.relic || []; return s.vault; };
+  Object.assign(DK.camp, {
+    /** Precio en emblemas (los pactos, uno fijo; las reliquias, según su rareza). */
+    unlockCost(kind, id) {
+      const c = DK.config.expedition.unlockCost;
+      if (kind === 'curse') return c.curse;
+      const r = D.relics[id]; return r ? c[r.rarity] || c.comun : 0;
+    },
+    isUnlocked(kind, id) { return !!st() && vault()[kind].includes(id); },
+    /** Ids desbloqueados (sólo los que siguen existiendo en data/). */
+    unlocked(kind) { if (!st()) return []; const all = kind === 'curse' ? D.curses : D.relics; return vault()[kind].filter((id) => all[id]); },
+    /** ¿Cuántos se pueden pagar ahora con los emblemas que tienes? */
+    unlockable(kind) {
+      const all = Object.keys(kind === 'curse' ? D.curses : D.relics);
+      return all.filter((id) => !this.isUnlocked(kind, id) && this.emblems() >= this.unlockCost(kind, id)).length;
+    },
+    /** Desbloquea un pacto o una reliquia. @returns {boolean} */
+    unlock(kind, id) {
+      const all = kind === 'curse' ? D.curses : D.relics;
+      if (!all[id] || this.isUnlocked(kind, id)) return false;
+      const cost = this.unlockCost(kind, id);
+      if (this.emblems() < cost) return false;
+      st().emblems -= cost;
+      vault()[kind].push(id);
+      DK.emit('camp:unlocked', { kind, id });
+      DK.store.save();
+      return true;
+    },
+  });
 
   /* ======================= HERENCIA ======================= */
   DK.legacy = {
