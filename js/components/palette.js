@@ -8,7 +8,7 @@
 (function () {
   const { h } = DK.ui;
   const D = DK.data;
-  const t = (k, v) => DK.t(k, v);
+  const { t } = DK;
   const val = (x) => (typeof x === 'function' ? x() : x);
   const norm = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 

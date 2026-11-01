@@ -84,15 +84,15 @@
    * Las conexiones van al nodo "de enfrente" (y a veces al vecino) para
    * que no se crucen, y se garantiza que todo nodo tenga entrada y salida.
    */
-  function generate(zoneId, seed) {
+  function generate(zoneId, seed, size = 'small', mod = null) {
     const rnd = U.seeded(seed);
-    const pick = (weights) => {
-      const total = Object.values(weights).reduce((a, b) => a + b, 0);
-      let r = rnd() * total;
-      for (const [k, w] of Object.entries(weights)) { if ((r -= w) < 0) return k; }
-      return 'fight';
-    };
-    const c = cfg();
+    const pick = (weights) => U.weightedKey(weights, rnd, 'fight');
+    // Tamaño del mapa (config.expedition.sizes): pisos, cuevas, atajos y hogueras
+    const sz = cfg().sizes[size] || cfg().sizes.small;
+    const c = Object.assign({}, cfg(), { rows: sz.rows, caveMin: sz.caves, shortcuts: sz.shortcuts, rests: sz.rests });
+    // Modificador del mapa: cambia el peso de algunos nodos (p. ej. luna llena → más mini jefes)
+    const md = mod && D.mapMods[mod];
+    if (md && md.weights) { c.weights = Object.assign({}, c.weights); Object.entries(md.weights).forEach(([k, m]) => { c.weights[k] = (c.weights[k] || 0) * m; }); }
     const rows = [];
     for (let r = 0; r < c.rows; r++) {
       const n = r === 0 ? 3 : 2 + Math.floor(rnd() * 3);
@@ -117,23 +117,24 @@
       const pool = rows.slice(a, b + 1).flat();
       if (!pool.length || pool.some((n) => n.type === 'recruit')) return;
       const swap = pool.filter((n) => n.type === 'fight' || n.type === 'event');
-      (swap.length ? swap : pool)[Math.floor(rnd() * (swap.length || pool.length))].type = 'recruit';
+      U.pick(swap.length ? swap : pool, rnd).type = 'recruit';
     });
-    // Hoguera a mitad de camino (para descansar o volver a casa)
-    const mid = Math.floor(c.rows / 2);
-    if (rows[mid] && !rows[mid].some((n) => n.type === 'rest')) {
+    // Hogueras repartidas por el camino (para descansar o volver a casa): 1, 2 o 3 según el tamaño
+    for (let k = 1; k <= (c.rests || 1); k++) {
+      const mid = Math.round((c.rows * k) / ((c.rests || 1) + 1));
+      if (!rows[mid] || rows[mid].some((n) => n.type === 'rest')) continue;
       const sw = rows[mid].filter((n) => n.type === 'fight' || n.type === 'event');
-      (sw.length ? sw : rows[mid])[Math.floor(rnd() * (sw.length || rows[mid].length))].type = 'rest';
+      U.pick(sw.length ? sw : rows[mid], rnd).type = 'rest';
     }
     // Cuevas garantizadas (guarida del jefe oculto)
     for (let k = rows.flat().filter((n) => n.type === 'cave').length; k < (c.caveMin || 0); k++) {
       const pool = rows.slice(2, c.rows).flat().filter((n) => n.type === 'fight' && !rows[n.row].some((x) => x.type === 'cave'));
-      if (pool.length) pool[Math.floor(rnd() * pool.length)].type = 'cave';
+      if (pool.length) U.pick(pool, rnd).type = 'cave';
     }
     // Siempre hay al menos un mini jefe (élite) en el camino: da reliquia
     if (!rows.flat().some((n) => n.type === 'elite')) {
       const pool = rows.slice(c.eliteFrom).flat().filter((n) => n.type === 'fight');
-      if (pool.length) pool[Math.floor(rnd() * pool.length)].type = 'elite';
+      if (pool.length) U.pick(pool, rnd).type = 'elite';
     }
     // Penúltimo piso: hoguera de descanso (salvo en Pesadilla, donde puede ser un combate); último: el jefe
     rows.push([{ id: `${c.rows}-0`, row: c.rows, x: 0.5, type: DK.rules.fixedRest() ? 'rest' : (rnd() < 0.5 ? 'elite' : 'fight'), links: [] }]);
@@ -164,11 +165,11 @@
     for (let k = 0; k < nShort; k++) {
       const pool = rows.slice(1, c.rows - skip).flat().filter((n) => (n.type === 'fight' || n.type === 'event') && !rows.flat().some((x) => x.type === 'shortcut' && x.row === n.row));
       if (!pool.length) break;
-      const n = pool[Math.floor(rnd() * pool.length)];
+      const n = U.pick(pool, rnd);
       const target = rows[n.row + skip].slice().sort((p, q) => Math.abs(p.x - n.x) - Math.abs(q.x - n.x))[0];
       n.type = 'shortcut'; n.jump = target.id;
     }
-    return { rows };
+    return { rows, size, mod };
   }
 
   /** Nodo por id. */
@@ -179,6 +180,20 @@
 
     /** Expedición en curso o null. */
     active() { return st() && st().expedition; },
+
+    /**
+     * Línea de tiempo de la expedición (resumen): los momentos importantes.
+     * k = tipo (start, newMap, elite, boss, secret, recruit, relic, cave, shortcut,
+     *     event, saved, fallen, mapCleared, emblem, campfire, cashout, lost); v = datos.
+     */
+    logEvent(k, v = {}) {
+      const e = this.active(); if (!e) return;
+      e.log = e.log || {};
+      e.log.timeline = e.log.timeline || [];
+      const here = e.pending || e.pos;
+      e.log.timeline.push({ k, v, d: e.depth || 1, f: here ? +here.split('-')[0] + 1 : 0, at: Date.now() });
+      if (e.log.timeline.length > 200) e.log.timeline.shift();
+    },
 
     /**
      * Zona al azar para el mapa número `depth`, entre las desbloqueadas.
@@ -195,12 +210,85 @@
       for (let i = 0; i < list.length; i++) if ((r -= weights[i]) < 0) return list[i].id;
       return list[list.length - 1].id;
     },
+    /** Modificador de mapa al azar (o null): config.expedition.modChance y pesos de data/mapMods.js. */
+    pickMod(rnd = Math.random) {
+      if (rnd() >= cfg().modChance) return null;
+      return U.weightedKey(U.weightsOf(D.mapMods), rnd, null);
+    },
+    /** Modificador del mapa actual (datos) o null. */
+    mod() { const e = this.active(); return e && e.mod ? D.mapMods[e.mod] : null; },
+    /** +/-% de daño para los ataques de una casa por el modificador del mapa. */
+    modHouse(house) { const m = this.mod(); return m && m.houseDmg && house ? m.houseDmg[house] || 0 : 0; },
+
+    /** Tamaño de mapa al azar según su peso (config.expedition.sizes). */
+    /* ---------------- Encargos del mapa (data/quests.js) ---------------- */
+    /** Encargo al azar para un mapa de ese tamaño. */
+    pickQuest(size = 'small', rnd = Math.random) {
+      const id = U.weightedKey(U.weightsOf(D.mapQuests || {}), rnd, null);
+      if (!id) return null;
+      const q = D.mapQuests[id];
+      return { id, target: q.track ? (q.target[size] || q.target.small) : 0, prog: 0, failed: false, done: false, claimed: false };
+    },
+    /** Encargo del mapa actual con su definición, o null. */
+    quest() { const e = this.active(); return e && e.quest && D.mapQuests[e.quest.id] ? Object.assign({ def: D.mapQuests[e.quest.id] }, e.quest) : null; },
+    /** ¿Está cumplido (o, si es de «no hacer», sigue sin fallar)? */
+    questOk(q = this.quest()) { return !!q && !q.failed && (q.def.track ? q.done : true); },
+    /** Premio del encargo actual: { coins, item }. */
+    questReward(q = this.quest()) {
+      const e = this.active(); if (!q || !e) return null;
+      const Q = cfg().quest;
+      const coins = Math.round(q.def.coins * (Q.sizeMult[this.size()] || 1) * (1 + Q.depthMult * ((e.depth || 1) - 1)));
+      if (!e.quest.item) { e.quest.item = this.size() === 'small' ? this.expItem() : this.tonic(); DK.store.save(); }
+      return { coins, item: e.quest.item };
+    },
+    /** Suma progreso a un encargo de tipo `track`. */
+    questTrack(kind, n = 1) {
+      const e = this.active(), q = e && e.quest, def = q && D.mapQuests[q.id];
+      if (!def || def.track !== kind || q.failed || q.done) return;
+      q.prog = Math.min(q.target, q.prog + n);
+      if (q.prog >= q.target) { q.done = true; DK.emit('quest:done', { id: q.id }); }
+      else DK.emit('quest:progress', { id: q.id, prog: q.prog, target: q.target });
+      DK.store.save();
+    },
+    /** Falla un encargo de «no hacer». */
+    questFail(kind) {
+      const e = this.active(), q = e && e.quest, def = q && D.mapQuests[q.id];
+      if (!def || def.fail !== kind || q.failed) return;
+      q.failed = true;
+      DK.emit('quest:failed', { id: q.id });
+      DK.store.save();
+    },
+    /** Cobra el encargo al superar el mapa (si se cumplió). */
+    questClaim() {
+      const e = this.active(), q = this.quest();
+      if (!q || q.claimed || !this.questOk(q)) return null;
+      const r = this.questReward(q);
+      e.quest.claimed = true;
+      e.loot.coins += r.coins;
+      if (r.item) this.addLoot([r.item]);
+      e.log.quests = (e.log.quests || 0) + 1;
+      st().stats.questsDone = (st().stats.questsDone || 0) + 1;
+      this.logEvent('quest', { id: q.id, coins: r.coins });
+      return r;
+    },
+
+    pickSize(rnd = Math.random) {
+      return U.weightedKey(U.weightsOf(cfg().sizes), rnd, Object.keys(cfg().sizes)[0]);
+    },
+    /** Pisos totales de un tamaño (incluye la hoguera final y el jefe). */
+    sizeFloors(size) { return (cfg().sizes[size] || cfg().sizes.small).rows + 2; },
+    /** Emblemas que da cada jefe en un mapa de ese tamaño (pequeño 1, mediano 2, XL 3). */
+    bossEmblems(size) { size = size || this.size(); return cfg().emblemsPerBoss * ((cfg().sizes[size] || {}).emblems || 1); },
+    /** Tamaño del mapa actual. */
+    size() { const e = this.active(); return (e && (e.size || (e.map && e.map.size))) || 'small'; },
+
     /** Niveles extra de los rivales según la profundidad (sólo en expedición). */
     levelBonus(depth) {
       const e = this.active();
       const d = depth || (e ? e.depth || 1 : 1);
       const over = Math.max(0, d - Object.keys(D.zones).length);
-      return (d - 1) * cfg().depthLevel + over * cfg().depthLevelOver + (DK.curses ? DK.curses.effect('enemyLevels') : 0);
+      const md = depth ? null : this.mod();
+      return (d - 1) * cfg().depthLevel + over * cfg().depthLevelOver + (DK.curses ? DK.curses.effect('enemyLevels') : 0) + ((md && md.levels) || 0);
     },
     /** Multiplicador de monedas al terminar tras superar `maps` mapas. */
     bonusMult(maps) { return DK.config.expeditionBonus + Math.max(0, (maps || 1) - 1) * cfg().depthCoinBonus; },
@@ -213,14 +301,16 @@
      */
     nextStart() {
       let n = st().nextExpedition;
-      if (!n || !DK.world.isUnlocked(n.zone)) { const zone = this.pickZone(1); n = st().nextExpedition = { zone, seed: `${zone}-${Date.now()}` }; DK.store.save(); }
+      if (!n || !DK.world.isUnlocked(n.zone)) { const zone = this.pickZone(1); n = st().nextExpedition = { zone, seed: `${zone}-${Date.now()}`, size: this.pickSize(), mod: this.pickMod() }; DK.store.save(); }
+      if (!n.size) { n.size = this.pickSize(); DK.store.save(); } // vistas previas guardadas antes de los tamaños
+      if (n.mod === undefined) { n.mod = this.pickMod(); DK.store.save(); }
       return n;
     },
     /** Mapa de la próxima expedición (vista previa en Batalla). */
     preview() {
       const n = this.nextStart();
-      const map = generate(n.zone, n.seed);
-      return { zone: n.zone, map, cleared: [], pending: null, pos: null, step: 1, total: map.rows.length };
+      const map = generate(n.zone, n.seed, n.size, n.mod);
+      return { zone: n.zone, size: n.size, mod: n.mod, map, cleared: [], pending: null, pos: null, step: 1, total: map.rows.length };
     },
 
     /* ---------- Mochila ---------- */
@@ -264,16 +354,18 @@
       });
       st().lastPack = Object.assign({}, chosen); // para repetir la próxima vez
       st().nextExpedition = null; // la próxima vista previa será otra
-      const map = generate(n.zone, n.seed);
+      const map = generate(n.zone, n.seed, n.size, n.mod);
       st().expedition = {
-        zone: n.zone, seed: n.seed, map, pos: null, pending: null, cleared: [], recruits: [], step: 1, total: map.rows.length,
-        loot: { items: {}, coins: 0 }, startedAt: Date.now(),
+        zone: n.zone, seed: n.seed, size: n.size, mod: n.mod || null, map, marks: { lines: [], notes: [] }, pos: null, pending: null, cleared: [], recruits: [], step: 1, total: map.rows.length,
+        loot: { items: {}, coins: 0 }, startedAt: Date.now(), mapStartedAt: Date.now(),
         relics: [], relicChoice: null,
         depth: 1, zones: [], awaitingChoice: false, next: null,
         pack: chosen, packed: Object.assign({}, chosen), members: DK.party.active().map((d) => d.uid),
         log: { nodes: {}, toBag: {}, lootSpent: 0, recipes: [], kept: [] }, // para el resumen final
         revivesUsed: 0, blessed: null, // salvaciones de la muerte (DK.expedition.trySave)
+        quest: this.pickQuest(n.size || 'small'),
       };
+      this.logEvent('start', { zone: n.zone, size: n.size, mod: n.mod || null });
       // Pactos opcionales del primer mapa (se eligen antes que la reliquia)
       DK.curses.offer();
       // Al empezar eliges una reliquia (común, o también rara con el Cartógrafo)
@@ -313,10 +405,20 @@
       // Recompensa de los pactos: reliquias raras o épicas
       for (let i = 0; i < DK.curses.relicReward(); i++) { const r = DK.relics.roll(['raro', 'epico'], 1)[0]; if (r) { DK.relics.give(r); e.log.curseRelics = (e.log.curseRelics || []).concat(r); } }
       e.recruits = [];
+      // Récords de la zona (Mapa del mundo): mapas superados, profundidad, tamaños y el más rápido
+      const pr = DK.world.progress(e.zone);
+      pr.rec = pr.rec || { maps: 0, best: 0, sizes: {}, fastest: null };
+      pr.rec.maps++; pr.rec.best = Math.max(pr.rec.best, e.depth || 1);
+      pr.rec.sizes[this.size()] = (pr.rec.sizes[this.size()] || 0) + 1;
+      if (this.size() === 'xl') st().stats.xlCleared = (st().stats.xlCleared || 0) + 1;
+      const dt = Date.now() - (e.mapStartedAt || e.startedAt);
+      if (!pr.rec.fastest || dt < pr.rec.fastest) pr.rec.fastest = dt;
+      e.lastQuest = e.quest ? Object.assign({}, e.quest, { reward: this.questClaim() }) : null;
       e.zones.push(e.zone);
+      this.logEvent('mapCleared', { zone: e.zone });
       e.awaitingChoice = true;
       const zone = this.pickZone(e.depth + 1, e.zone);
-      e.next = { zone, seed: `${zone}-${Date.now()}` };
+      e.next = { zone, seed: `${zone}-${Date.now()}`, size: this.pickSize(), mod: this.pickMod() };
       const s = st().stats;
       s.expeditions++;
       s.bestDepth = Math.max(s.bestDepth || 0, e.depth);
@@ -328,17 +430,19 @@
     choiceInfo() {
       const e = this.active(); if (!e || !e.awaitingChoice) return null;
       const mult = this.bonusMult(e.zones.length);
-      return { zone: e.zone, depth: e.depth, maps: e.zones.length, next: e.next, mult, coins: Math.round(e.loot.coins * mult), items: this.lootCount(), nextBonus: this.levelBonus(e.depth + 1) };
+      if (e.next && !e.next.size) e.next.size = this.pickSize();
+      return { zone: e.zone, depth: e.depth, maps: e.zones.length, next: e.next, mult, coins: Math.round(e.loot.coins * mult), items: this.lootCount(), nextBonus: this.levelBonus(e.depth + 1), quest: e.lastQuest || null };
     },
     /** Continuar: siguiente mapa (más profundo) con una reliquia a elegir. */
     continueRun() {
       const e = this.active(); if (!e || !e.awaitingChoice) return null;
-      const n = e.next || { zone: this.pickZone(e.depth + 1, e.zone), seed: `${Date.now()}` };
-      const map = generate(n.zone, n.seed);
-      Object.assign(e, { zone: n.zone, seed: n.seed, map, pos: null, pending: null, cleared: [], step: 1, total: map.rows.length,
-        depth: e.depth + 1, awaitingChoice: false, next: null, altarUsed: false });
+      const n = e.next || { zone: this.pickZone(e.depth + 1, e.zone), seed: `${Date.now()}`, size: this.pickSize() };
+      const map = generate(n.zone, n.seed, n.size || 'small', n.mod || null);
+      Object.assign(e, { zone: n.zone, seed: n.seed, size: n.size || 'small', mod: n.mod || null, map, marks: { lines: [], notes: [] }, pos: null, pending: null, cleared: [], step: 1, total: map.rows.length,
+        depth: e.depth + 1, awaitingChoice: false, next: null, altarUsed: false, mapStartedAt: Date.now(), quest: this.pickQuest(n.size || 'small') });
       delete e.offers; delete e.event; delete e.result; delete e.candidates;
       DK.codex.discoverZone(n.zone);
+      this.logEvent('newMap', { zone: n.zone, size: n.size || 'small', mod: n.mod || null });
       // Pactos nuevos y reliquia nueva (mejores cuanto más profundo)
       DK.curses.offer();
       e.relicChoice = DK.relics.roll(e.depth >= 4 ? ['raro', 'epico'] : ['comun', 'raro'], 3);
@@ -352,7 +456,7 @@
       const e = this.active();
       if (!e || e.map) return;
       e.seed = `${e.zone}-${Date.now()}`;
-      e.map = generate(e.zone, e.seed);
+      e.map = generate(e.zone, e.seed, e.size || 'small');
       Object.assign(e, { pos: null, pending: null, cleared: [], step: 1, total: e.map.rows.length });
     },
     /** Rellena campos nuevos en expediciones guardadas con versiones anteriores. */
@@ -362,6 +466,7 @@
       e.log = e.log || { nodes: {}, toBag: {}, lootSpent: 0, recipes: [] };
       e.log.kept = e.log.kept || [];
       e.depth = e.depth || 1;
+      if (e.quest === undefined && e.map) e.quest = this.pickQuest(e.size || 'small');
       e.zones = e.zones || [];
     },
 
@@ -405,6 +510,17 @@
       return n;
     },
 
+    /* ---------- Dibujos y notas del jugador sobre el mapa ----------
+     * e.marks = { lines: [{ c: color, pts: [[x 0..1, y px]] }], notes: [{ x, y, text, c }] }
+     * Son de cada mapa: al pasar al siguiente se empieza en blanco.
+     */
+    marks() { const e = this.active(); if (!e) return { lines: [], notes: [] }; e.marks = e.marks || { lines: [], notes: [] }; return e.marks; },
+    addLine(line) { if (line && line.pts && line.pts.length > 1) { this.marks().lines.push(line); DK.store.save(); } },
+    addNote(note) { if (note && note.text) { this.marks().notes.push(note); DK.store.save(); } },
+    removeMark(kind, i) { const m = this.marks()[kind]; if (m && m[i]) { m.splice(i, 1); DK.store.save(); } },
+    undoMark() { const m = this.marks(); if (m.lines.length) m.lines.pop(); else m.notes.pop(); DK.store.save(); },
+    clearMarks() { const e = this.active(); if (e) { e.marks = { lines: [], notes: [] }; DK.store.save(); } },
+
     /* ---------- Atajos y cuevas ---------- */
 
     /** Toma el atajo del nodo pendiente: el equipo pierde vida y el siguiente paso es node.jump. */
@@ -416,6 +532,7 @@
       const target = n.jump;
       this.completeNode();
       e.jumpTo = target;
+      this.logEvent('shortcut', { n: nodeOf(e, target).row - n.row - 1 });
       e.log.shortcuts = (e.log.shortcuts || 0) + 1;
       DK.store.save();
       return { skipped: nodeOf(e, target).row - n.row - 1 };
@@ -437,12 +554,14 @@
         rec.found = (rec.found || 0) + 1;
         DK.codex.seeEnemy(e.zone, sb.species);
         e.result = { key: rec.defeated ? 'lairAgain' : 'lair', fight: 'secret', vars: { title: sb.title } };
+        this.logEvent('cave', { title: sb.title });
       } else {
         const items = [U.pick(this.zoneLoot('raro')), U.pick(this.zoneLoot('raro')), this.expItem()];
         if (U.chance(0.3)) items.push(this.tonic());
         const coins = Math.round(D.zones[e.zone].levels[1] * U.rand(10, 16) + 40);
         this.addLoot(items, coins);
         e.result = { key: 'caveTreasure', items, coins };
+        this.logEvent('caveTreasure', { coins });
       }
       DK.store.save();
       return e.result;
@@ -477,7 +596,8 @@
         if (this.toBag(id)) { DK.bag.add(id); e.log.toBag[id] = (e.log.toBag[id] || 0) + 1; out.bag.push(id); }
         else { e.loot.items[id] = (e.loot.items[id] || 0) + 1; out.loot.push(id); }
       });
-      e.loot.coins += Math.round(coins * (1 + DK.relics.sum('coins') + DK.camp.value('mochila') + DK.curses.coinBonus()));
+      const md = this.mod();
+      e.loot.coins += Math.round(coins * (1 + DK.relics.sum('coins') + DK.camp.value('mochila') + DK.curses.coinBonus() + ((md && md.coins) || 0)));
       return out;
     },
 
@@ -515,6 +635,7 @@
     /** Descanso: cura un % de vida y maná y los estados. */
     rest() {
       const pct = Math.min(1, cfg().restHeal + DK.camp.value('hoguera'));
+      this.questFail('rest');
       DK.party.active().forEach((d) => {
         const s = DK.daskai.stats(d);
         d.cur.hp = Math.min(s.hp, d.cur.hp + Math.ceil(s.hp * pct));
@@ -675,6 +796,7 @@
       if (ch.req && !ch.req(ctx)) return null;
       const res = ch.run(ctx) || {};
       e.result = { event: ev.id, choice: ch.id, key: res.key || 'done', vars: res.vars || {}, fight: res.fight || null };
+      this.logEvent('event', { id: ev.id });
       DK.store.save();
       return e.result;
     },
@@ -721,6 +843,7 @@
       DK.codex.seeEnemy(e.zone, c.species);
       this.addRecruit(c);
       e.result = { key: 'exp.recruited', vars: { name: DK.daskai.name(c) }, uid: c.uid };
+      this.logEvent('recruit', { name: DK.daskai.name(c), species: c.species });
       DK.store.save();
       return c;
     },
@@ -750,6 +873,7 @@
     claim(bonus) {
       const e = this.active(); if (!e) return null;
       this.ensureFields();
+      this.logEvent(bonus ? 'cashout' : 'retreat', { coins: Math.round(e.loot.coins * (bonus ? this.bonusMult(e.zones.length) : 1)) });
       const left = this.settleRecruits(false).map((x) => Object.assign(x, { kept: false }));
       const recruits = e.log.kept.map((x) => Object.assign({}, x, { kept: true })).concat(left);
       const mult = bonus ? this.bonusMult(e.zones.length) : 1;
@@ -780,7 +904,8 @@
         map: e.map, cleared: e.cleared.slice(), pending: e.pending, step: e.step, total: e.total,
         relics: e.relics.slice(), nodes: e.log.nodes, toBag: e.log.toBag, lootSpent: e.log.lootSpent, recipes: e.log.recipes.slice(),
         fallen: (e.log.fallen || []).slice(), difficulty: DK.rules.difficulty(),
-        emblems: e.log.emblems || 0, secrets: (e.log.secrets || []).slice(), shortcuts: e.log.shortcuts || 0,
+        size: e.size || 'small', mod: e.mod || null, marks: e.marks || null,
+        emblems: e.log.emblems || 0, timeline: (e.log.timeline || []).slice(), secrets: (e.log.secrets || []).slice(), shortcuts: e.log.shortcuts || 0,
       }, extra);
       // Historial de expediciones (Perfil): las últimas config.expHistorySize
       st().expHistory = st().expHistory || [];
@@ -826,6 +951,7 @@
       const e = this.active(); if (!this.canCampfireExit()) return null;
       this.ensureFields();
       const keep = cfg().campfireKeep;
+      this.logEvent('campfire', { coins: Math.round(e.loot.coins * keep) });
       const [keptLoot, lostLoot] = this.split(e.loot.items, keep);
       const coins = Math.round(e.loot.coins * keep);
       // Mochila: lo que llevabas al salir vuelve entero; lo ganado, a medias
@@ -864,6 +990,7 @@
       else if (this.revivesLeft() > 0 && DK.camp.value('fenix') && !e.altarUsed) { how = 'altar'; e.altarUsed = true; }
       if (!how) return null;
       e.revivesUsed = (e.revivesUsed || 0) + 1;
+      this.logEvent('saved', { name: DK.daskai.name(d), how });
       const s = DK.daskai.stats(d);
       d.cur.hp = Math.max(1, Math.ceil(s.hp * DK.config.reviveHpPct));
       d.status = null;
@@ -882,6 +1009,7 @@
     fail(o = {}) {
       const e = this.active(); if (!e) return null;
       this.ensureFields();
+      this.logEvent('lost', { boss: !!o.boss });
       if (o.boss) return this.failAtBoss();
       const lost = Object.assign({ recruits: this.settleRecruits(false) }, e.loot);
       const recruits = e.log.kept.map((x) => Object.assign({}, x, { kept: true })).concat(lost.recruits.map((x) => Object.assign({}, x, { kept: false })));
@@ -971,9 +1099,14 @@
       const e = DK.expedition.active(); if (!e || !e.relicChoice) return null;
       const id = i == null ? null : e.relicChoice[i];
       e.relicChoice = null;
-      if (id) this.give(id);
+      if (id) { this.give(id); DK.expedition.logEvent('relic', { id }); }
       DK.store.save();
       return id;
     },
   };
+  // Encargo «sin objetos»: usar un objeto curativo (en combate o fuera) lo falla
+  DK.on('item:used', ({ id }) => {
+    const u = D.items[id] && D.items[id].use;
+    if (u && !u.capture && (u.heal || u.healPct || u.mana || u.manaPct || u.cure) && DK.expedition.active()) DK.expedition.questFail('item');
+  });
 })();

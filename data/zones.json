@@ -1,0 +1,218 @@
+{
+  "pradera": {
+    "name": "Pradera Verde",
+    "levels": [1,5],
+    "icon": "leaf",
+    "colors": ["#86efac","#16a34a"],
+    "scene": "meadow",
+    "desc": "Campos abiertos donde los daskai jóvenes juegan al sol.",
+    "enemies": [["brotin",3],["chispon",3],["gotin",3],["plumin",2],["ratonchi",2],["charquito",2]],
+    "boss": {
+      "species": "hojaral",
+      "level": 8,
+      "title": "Guardián de la Pradera",
+      "coins": 120,
+      "drops": [["amuleto_arcano",1],["polvo_brillante",1],["superpocion",0.6]],
+      "phases": [{"at":0.5,"type":"enrage"}]
+    },
+    "secretBoss": {
+      "species": "ratonix",
+      "level": 11,
+      "title": "Rey de las Madrigueras",
+      "coins": 200,
+      "drops": [["tonico_viento",1],["amuleto_arcano",0.6],["superpocion",1]],
+      "phases": [{"at":0.6,"type":"frenzy"},{"at":0.3,"type":"enrage"}]
+    }
+  },
+  "bosque": {
+    "name": "Bosque Susurrante",
+    "levels": [5,10],
+    "icon": "leaf",
+    "colors": ["#4ade80","#14532d"],
+    "scene": "forest",
+    "unlock": "pradera",
+    "desc": "Un bosque denso donde los árboles parecen hablar.",
+    "enemies": [["musguin",3],["sombrilo",2],["hojaral",3],["lucibicho",2],["setabruja",2],["ardillama",2]],
+    "boss": {
+      "species": "sombrilo",
+      "level": 13,
+      "title": "Sombra del Bosque",
+      "coins": 220,
+      "drops": [["velo_mistico",1],["esencia_sombria",1],["cristal_vinculo",0.6]],
+      "phases": [{"at":0.5,"type":"regen"}]
+    },
+    "secretBoss": {
+      "species": "hongoscuro",
+      "level": 16,
+      "title": "Seta Ancestral",
+      "coins": 340,
+      "drops": [["tonico_magia",1],["esencia_sombria",1],["velo_mistico",0.5]],
+      "phases": [{"at":0.6,"type":"regen"},{"at":0.3,"type":"frenzy"}]
+    }
+  },
+  "costa": {
+    "name": "Costa Marea",
+    "levels": [10,16],
+    "icon": "droplet",
+    "colors": ["#7dd3fc","#0369a1"],
+    "scene": "beach",
+    "unlock": "bosque",
+    "desc": "Playas y arrecifes golpeados por las olas.",
+    "enemies": [["coralin",3],["cangrejon",2],["salpicon",3],["gaviolux",2],["medusina",2],["tortuarena",2],["ratonix",1]],
+    "boss": {
+      "species": "cangrejon",
+      "level": 19,
+      "title": "Rey de la Marea",
+      "coins": 340,
+      "drops": [["escama_dura",1],["perla_marina",0.8],["superpocion",1]],
+      "phases": [{"at":0.6,"type":"shield"}]
+    },
+    "secretBoss": {
+      "species": "tortumonte",
+      "level": 22,
+      "title": "Tortuga Milenaria",
+      "coins": 500,
+      "drops": [["tonico_mana",1],["perla_marina",1],["superpocion",1]],
+      "phases": [{"at":0.66,"type":"shield"},{"at":0.33,"type":"regen"}]
+    }
+  },
+  "cavernas": {
+    "name": "Cavernas Umbrías",
+    "levels": [16,24],
+    "icon": "mountain",
+    "colors": ["#a78bfa","#1e1b4b"],
+    "scene": "cave",
+    "unlock": "costa",
+    "desc": "Túneles oscuros iluminados por cristales.",
+    "enemies": [
+      ["murcisombra",3], ["rocadon",2], ["gemolito",2], ["lavagusano",3], ["topazio",2],
+      ["aranuria",2], ["hongoscuro",1]
+    ],
+    "boss": {
+      "species": "gemolito",
+      "level": 27,
+      "title": "Corazón de Cristal",
+      "coins": 480,
+      "drops": [["nucleo_arcano",1],["corazon_roca",0.8],["cristal_mayor",0.4]],
+      "phases": [{"at":0.6,"type":"shield"},{"at":0.3,"type":"enrage"}]
+    },
+    "secretBoss": {
+      "species": "golemar",
+      "level": 30,
+      "title": "Golem de las Profundidades",
+      "coins": 700,
+      "drops": [["tonico_hierro",1],["nucleo_arcano",1],["cristal_mayor",0.6]],
+      "phases": [{"at":0.66,"type":"frenzy"},{"at":0.33,"type":"shield"}]
+    }
+  },
+  "volcan": {
+    "name": "Volcán Ígneo",
+    "levels": [24,34],
+    "icon": "flame",
+    "colors": ["#fdba74","#7f1d1d"],
+    "scene": "volcano",
+    "unlock": "cavernas",
+    "desc": "Ríos de lava y ceniza ardiente.",
+    "enemies": [
+      ["magmon",3], ["cenizon",2], ["ignisaurio",3], ["obsidiano",2], ["salamandrox",2],
+      ["geyseron",2], ["fogardilla",1]
+    ],
+    "boss": {
+      "species": "ignisaurio",
+      "level": 37,
+      "title": "Señor de la Lava",
+      "coins": 650,
+      "drops": [["anillo_brasas",1],["coraza_obsidiana",0.5],["nucleo_arcano",1]],
+      "phases": [{"at":0.6,"type":"enrage"},{"at":0.3,"type":"frenzy"}]
+    },
+    "secretBoss": {
+      "species": "llamasanta",
+      "level": 41,
+      "title": "Llama Sagrada",
+      "coins": 950,
+      "drops": [["tonico_fuerza",1],["anillo_brasas",1],["coraza_obsidiana",0.6]],
+      "phases": [{"at":0.66,"type":"enrage"},{"at":0.33,"type":"frenzy"}]
+    }
+  },
+  "templo": {
+    "name": "Templo Áureo",
+    "levels": [34,46],
+    "icon": "sun",
+    "colors": ["#fde68a","#a16207"],
+    "scene": "temple",
+    "unlock": "volcan",
+    "desc": "Ruinas sagradas bañadas en luz dorada.",
+    "enemies": [
+      ["aurelion",2], ["guardian_solar",3], ["esfinxa",2], ["llamasanta",3], ["sacerdon",2],
+      ["golemar",2], ["tortumonte",1]
+    ],
+    "boss": {
+      "species": "aurelion",
+      "level": 49,
+      "title": "León del Sol",
+      "coins": 850,
+      "drops": [["orbe_solar",1],["amuleto_vida",0.5],["hiperpocion",1]],
+      "phases": [{"at":0.66,"type":"regen"},{"at":0.33,"type":"shield"}]
+    },
+    "secretBoss": {
+      "species": "celestor",
+      "level": 54,
+      "title": "Celestor Ascendido",
+      "coins": 1250,
+      "drops": [["tonico_espiritu",1],["orbe_solar",1],["hiperpocion",1]],
+      "phases": [{"at":0.7,"type":"shield"},{"at":0.4,"type":"regen"},{"at":0.2,"type":"enrage"}]
+    }
+  },
+  "abismo": {
+    "name": "Abismo Eterno",
+    "levels": [46,62],
+    "icon": "moon",
+    "colors": ["#6366f1","#020617"],
+    "scene": "abyss",
+    "unlock": "templo",
+    "desc": "Profundidades donde nunca ha llegado la luz.",
+    "enemies": [["abisalto",3],["nocturnis",2],["espectron",2],["leviatan",2],["kraknoir",2],["fuegofatuo",2]],
+    "boss": {
+      "species": "leviatan",
+      "level": 65,
+      "title": "Leviatán Primordial",
+      "coins": 1100,
+      "drops": [["colmillo_umbrio",1],["lagrima_estelar",0.6],["elixir",0.5]],
+      "phases": [{"at":0.66,"type":"frenzy"},{"at":0.33,"type":"shield"}]
+    },
+    "secretBoss": {
+      "species": "vacuo",
+      "level": 70,
+      "title": "El Vacío",
+      "coins": 1600,
+      "drops": [["tonico_vida",1],["lagrima_estelar",0.8],["colmillo_umbrio",0.6]],
+      "phases": [{"at":0.7,"type":"frenzy"},{"at":0.4,"type":"shield"},{"at":0.2,"type":"enrage"}]
+    }
+  },
+  "cumbre": {
+    "name": "Cumbre Celeste",
+    "levels": [62,90],
+    "icon": "star",
+    "colors": ["#e0f2fe","#4338ca"],
+    "scene": "sky",
+    "unlock": "abismo",
+    "desc": "La cima del mundo, morada de los daskai legendarios.",
+    "enemies": [["celestor",2],["draconyx",2],["titanor",2],["vacuo",2],["tempestis",2],["auroris",2],["petrodraco",2]],
+    "boss": {
+      "species": "draconyx",
+      "level": 90,
+      "title": "Dragón de la Cumbre",
+      "coins": 2000,
+      "drops": [["corona_celeste",1],["lagrima_estelar",1],["elixir",1]],
+      "phases": [{"at":0.75,"type":"shield"},{"at":0.5,"type":"enrage"},{"at":0.25,"type":"frenzy"}]
+    },
+    "secretBoss": {
+      "species": "kraknoir",
+      "level": 94,
+      "title": "Kraken de la Tormenta",
+      "coins": 2800,
+      "drops": [["tonico_fuerza",1],["tonico_hierro",1],["lagrima_estelar",1]],
+      "phases": [{"at":0.75,"type":"shield"},{"at":0.5,"type":"frenzy"},{"at":0.25,"type":"enrage"}]
+    }
+  }
+}

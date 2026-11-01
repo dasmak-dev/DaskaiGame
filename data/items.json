@@ -1,0 +1,628 @@
+{
+  "pocion": {
+    "name": "Poción",
+    "category": "batalla",
+    "rarity": "comun",
+    "icon": "flask",
+    "color": "#22c55e",
+    "use": {"heal":30},
+    "desc": "Restaura 30 PV."
+  },
+  "superpocion": {
+    "name": "Superpoción",
+    "category": "batalla",
+    "rarity": "raro",
+    "icon": "flask",
+    "color": "#16a34a",
+    "use": {"heal":90},
+    "desc": "Restaura 90 PV."
+  },
+  "hiperpocion": {
+    "name": "Hiperpoción",
+    "category": "batalla",
+    "rarity": "epico",
+    "icon": "flask",
+    "color": "#15803d",
+    "use": {"heal":250},
+    "desc": "Restaura 250 PV."
+  },
+  "eter": {
+    "name": "Éter",
+    "category": "batalla",
+    "rarity": "comun",
+    "icon": "sparkle",
+    "color": "#3b82f6",
+    "use": {"mana":20},
+    "desc": "Restaura 20 PM."
+  },
+  "supereter": {
+    "name": "Superéter",
+    "category": "batalla",
+    "rarity": "raro",
+    "icon": "sparkle",
+    "color": "#2563eb",
+    "use": {"mana":60},
+    "desc": "Restaura 60 PM."
+  },
+  "antidoto": {
+    "name": "Antídoto",
+    "category": "batalla",
+    "rarity": "comun",
+    "icon": "poison",
+    "color": "#a855f7",
+    "use": {"cure":["veneno"]},
+    "desc": "Cura el envenenamiento."
+  },
+  "balsamo": {
+    "name": "Bálsamo",
+    "category": "batalla",
+    "rarity": "comun",
+    "icon": "droplet",
+    "color": "#f97316",
+    "use": {"cure":["quemadura"]},
+    "desc": "Cura las quemaduras."
+  },
+  "panacea": {
+    "name": "Panacea",
+    "category": "batalla",
+    "rarity": "raro",
+    "icon": "sparkles",
+    "color": "#ec4899",
+    "use": {"cure":["veneno","quemadura"],"healPct":0.25},
+    "desc": "Cura cualquier estado y restaura un 25% de la vida."
+  },
+  "elixir": {
+    "name": "Elixir",
+    "category": "batalla",
+    "rarity": "legendario",
+    "icon": "star",
+    "color": "#f59e0b",
+    "use": {"healPct":1,"manaPct":1,"cure":["veneno","quemadura"]},
+    "desc": "Restaura por completo vida y maná."
+  },
+  "cristal_vinculo": {
+    "name": "Cristal de vínculo",
+    "category": "batalla",
+    "rarity": "raro",
+    "icon": "orb",
+    "color": "#06b6d4",
+    "use": {"capture":0.35},
+    "battleOnly": true,
+    "desc": "Intenta vincularte a un daskai salvaje para que se una a ti. Funciona mejor si está debilitado."
+  },
+  "cristal_mayor": {
+    "name": "Cristal mayor",
+    "category": "batalla",
+    "rarity": "epico",
+    "icon": "orb",
+    "color": "#8b5cf6",
+    "use": {"capture":0.6},
+    "battleOnly": true,
+    "desc": "Cristal de vínculo de gran potencia."
+  },
+  "baya_saber": {
+    "name": "Baya del saber",
+    "category": "mejora",
+    "rarity": "comun",
+    "icon": "leaf",
+    "color": "#84cc16",
+    "use": {"exp":80},
+    "desc": "Una baya que da 80 puntos de experiencia."
+  },
+  "tonico_exp": {
+    "name": "Tónico de experiencia",
+    "category": "mejora",
+    "rarity": "raro",
+    "icon": "flask",
+    "color": "#f59e0b",
+    "use": {"exp":300},
+    "desc": "Da 300 puntos de experiencia."
+  },
+  "cristal_sabio": {
+    "name": "Cristal de sabiduría",
+    "category": "mejora",
+    "rarity": "epico",
+    "icon": "gem",
+    "color": "#a855f7",
+    "use": {"exp":1200},
+    "desc": "Da 1.200 puntos de experiencia."
+  },
+  "pluma_fenix": {
+    "name": "Pluma de fénix",
+    "category": "mejora",
+    "rarity": "legendario",
+    "icon": "sparkles",
+    "color": "#f97316",
+    "use": {"guardian":true},
+    "desc": "Se activa sola: si un daskai va a morir en una expedición, lo salva con un 10% de vida (una vez por expedición)."
+  },
+  "tonico_fuerza": {
+    "name": "Tónico de fuerza",
+    "category": "mejora",
+    "rarity": "epico",
+    "icon": "swords",
+    "color": "#ef4444",
+    "use": {"perm":"atk"},
+    "noShop": true,
+    "desc": "Sube para siempre el ataque de un daskai. Cada daskai admite como mucho 15 tónicos."
+  },
+  "tonico_magia": {
+    "name": "Tónico de magia",
+    "category": "mejora",
+    "rarity": "epico",
+    "icon": "wand",
+    "color": "#8b5cf6",
+    "use": {"perm":"matk"},
+    "noShop": true,
+    "desc": "Sube para siempre la magia de un daskai. Cada daskai admite como mucho 15 tónicos."
+  },
+  "tonico_hierro": {
+    "name": "Tónico de hierro",
+    "category": "mejora",
+    "rarity": "epico",
+    "icon": "shield",
+    "color": "#64748b",
+    "use": {"perm":"def"},
+    "noShop": true,
+    "desc": "Sube para siempre la defensa de un daskai. Cada daskai admite como mucho 15 tónicos."
+  },
+  "tonico_espiritu": {
+    "name": "Tónico de espíritu",
+    "category": "mejora",
+    "rarity": "epico",
+    "icon": "shieldStar",
+    "color": "#a855f7",
+    "use": {"perm":"mdef"},
+    "noShop": true,
+    "desc": "Sube para siempre la defensa mágica de un daskai. Cada daskai admite como mucho 15 tónicos."
+  },
+  "tonico_viento": {
+    "name": "Tónico de viento",
+    "category": "mejora",
+    "rarity": "epico",
+    "icon": "wind",
+    "color": "#14b8a6",
+    "use": {"perm":"spd"},
+    "noShop": true,
+    "desc": "Sube para siempre la velocidad de un daskai. Cada daskai admite como mucho 15 tónicos."
+  },
+  "tonico_vida": {
+    "name": "Tónico de vida",
+    "category": "mejora",
+    "rarity": "epico",
+    "icon": "heart",
+    "color": "#e11d48",
+    "use": {"perm":"hp"},
+    "noShop": true,
+    "desc": "Sube para siempre la vida de un daskai. Cada daskai admite como mucho 15 tónicos."
+  },
+  "tonico_mana": {
+    "name": "Tónico de maná",
+    "category": "mejora",
+    "rarity": "epico",
+    "icon": "sparkle",
+    "color": "#0ea5e9",
+    "use": {"perm":"mp"},
+    "noShop": true,
+    "desc": "Sube para siempre el maná de un daskai. Cada daskai admite como mucho 15 tónicos."
+  },
+  "elixir_olvido": {
+    "name": "Elixir de olvido",
+    "category": "mejora",
+    "rarity": "raro",
+    "icon": "chalice",
+    "color": "#94a3b8",
+    "use": {"resetPerm":true},
+    "noShop": true,
+    "desc": "Un daskai olvida sus tónicos: vuelven a tu bolsa para dárselos a quien quieras."
+  },
+  "esencia_ancestral": {
+    "name": "Esencia ancestral",
+    "category": "mejora",
+    "rarity": "legendario",
+    "icon": "star",
+    "color": "#eab308",
+    "use": {"levels":1},
+    "desc": "Sube un nivel completo a un daskai."
+  },
+  "garra_afilada": {
+    "name": "Garra afilada",
+    "category": "equipo",
+    "rarity": "raro",
+    "icon": "sword",
+    "color": "#ef4444",
+    "stats": {"atk":6},
+    "desc": "Una garra pulida que aumenta el ataque físico."
+  },
+  "colmillo_umbrio": {
+    "name": "Colmillo umbrío",
+    "category": "equipo",
+    "rarity": "epico",
+    "icon": "sword",
+    "color": "#7c3aed",
+    "stats": {"atk":12,"def":-3},
+    "desc": "Colmillo imbuido en sombra. Gran ataque a costa de defensa."
+  },
+  "amuleto_arcano": {
+    "name": "Amuleto arcano",
+    "category": "equipo",
+    "rarity": "raro",
+    "icon": "wand",
+    "color": "#6366f1",
+    "stats": {"matk":6,"mp":10},
+    "desc": "Canaliza la energía mágica."
+  },
+  "orbe_solar": {
+    "name": "Orbe solar",
+    "category": "equipo",
+    "rarity": "epico",
+    "icon": "sun",
+    "color": "#f59e0b",
+    "stats": {"matk":12,"mdef":4},
+    "desc": "Un orbe que arde con luz propia."
+  },
+  "escama_dura": {
+    "name": "Escama dura",
+    "category": "equipo",
+    "rarity": "raro",
+    "icon": "shield",
+    "color": "#0ea5e9",
+    "stats": {"def":7},
+    "desc": "Escama endurecida que protege del daño físico."
+  },
+  "coraza_obsidiana": {
+    "name": "Coraza de obsidiana",
+    "category": "equipo",
+    "rarity": "epico",
+    "icon": "shield",
+    "color": "#334155",
+    "stats": {"def":14,"spd":-4},
+    "desc": "Protección enorme pero pesada."
+  },
+  "velo_mistico": {
+    "name": "Velo místico",
+    "category": "equipo",
+    "rarity": "raro",
+    "icon": "shieldStar",
+    "color": "#a855f7",
+    "stats": {"mdef":7},
+    "desc": "Tela encantada contra la magia."
+  },
+  "pluma_veloz": {
+    "name": "Pluma veloz",
+    "category": "equipo",
+    "rarity": "raro",
+    "icon": "wind",
+    "color": "#14b8a6",
+    "stats": {"spd":6},
+    "desc": "Una pluma ligera como el viento."
+  },
+  "botas_viento": {
+    "name": "Botas de viento",
+    "category": "equipo",
+    "rarity": "epico",
+    "icon": "wind",
+    "color": "#0d9488",
+    "stats": {"spd":12,"hp":10},
+    "desc": "Permiten moverse a gran velocidad."
+  },
+  "corazon_roca": {
+    "name": "Corazón de roca",
+    "category": "equipo",
+    "rarity": "raro",
+    "icon": "heart",
+    "color": "#78716c",
+    "stats": {"hp":25,"spd":-2},
+    "desc": "Late con la fuerza de la montaña."
+  },
+  "anillo_brasas": {
+    "name": "Anillo de brasas",
+    "category": "equipo",
+    "rarity": "raro",
+    "icon": "flame",
+    "color": "#ea580c",
+    "stats": {"atk":4,"matk":4},
+    "desc": "Un anillo siempre caliente."
+  },
+  "perla_marina": {
+    "name": "Perla marina",
+    "category": "equipo",
+    "rarity": "raro",
+    "icon": "droplet",
+    "color": "#0284c7",
+    "stats": {"mp":20,"mdef":3},
+    "desc": "Perla que guarda la calma del mar."
+  },
+  "amuleto_vida": {
+    "name": "Amuleto de vida",
+    "category": "equipo",
+    "rarity": "epico",
+    "icon": "regen",
+    "color": "#22c55e",
+    "stats": {"hp":40,"regen":1},
+    "desc": "Aumenta la vida y la regeneración."
+  },
+  "corona_celeste": {
+    "name": "Corona celeste",
+    "category": "equipo",
+    "rarity": "legendario",
+    "icon": "crown",
+    "color": "#eab308",
+    "stats": {"hp":8,"mp":8,"atk":8,"matk":8,"def":8,"mdef":8,"spd":8},
+    "desc": "Reliquia de los cielos. Mejora todos los atributos."
+  },
+  "amuleto_curativo": {
+    "name": "Amuleto curativo",
+    "category": "equipo",
+    "rarity": "raro",
+    "icon": "heart",
+    "color": "#fde047",
+    "stats": {"mp":6},
+    "grants": {"move":"curacion"},
+    "desc": "Permite usar Curación en combate."
+  },
+  "tambor_guerra": {
+    "name": "Tambor de guerra",
+    "category": "equipo",
+    "rarity": "raro",
+    "icon": "bolt",
+    "color": "#ef4444",
+    "stats": {"hp":6},
+    "grants": {"move":"rugido"},
+    "desc": "Permite usar Rugido en combate."
+  },
+  "pluma_huracan": {
+    "name": "Pluma de huracán",
+    "category": "equipo",
+    "rarity": "raro",
+    "icon": "wind",
+    "color": "#14b8a6",
+    "stats": {"spd":2},
+    "grants": {"move":"agilidad"},
+    "desc": "Permite usar Agilidad en combate."
+  },
+  "raiz_maestra": {
+    "name": "Raíz maestra",
+    "category": "equipo",
+    "rarity": "raro",
+    "icon": "leaf",
+    "color": "#65a30d",
+    "stats": {"def":2},
+    "grants": {"move":"raiz_drenante"},
+    "desc": "Permite usar Raíz Drenante en combate."
+  },
+  "colmillo_vampiro": {
+    "name": "Colmillo vampírico",
+    "category": "equipo",
+    "rarity": "raro",
+    "icon": "moon",
+    "color": "#7c3aed",
+    "stats": {"matk":3},
+    "grants": {"move":"drenaje_vital"},
+    "desc": "Permite usar Drenaje Vital en combate."
+  },
+  "ascua_eterna": {
+    "name": "Brasa eterna",
+    "category": "equipo",
+    "rarity": "epico",
+    "icon": "flame",
+    "color": "#f97316",
+    "stats": {"matk":4},
+    "grants": {"move":"llamarada"},
+    "desc": "Permite usar Llamarada en combate."
+  },
+  "caracola_marea": {
+    "name": "Caracola de la marea",
+    "category": "equipo",
+    "rarity": "epico",
+    "icon": "droplet",
+    "color": "#0ea5e9",
+    "stats": {"mdef":4},
+    "grants": {"move":"maremoto"},
+    "desc": "Permite usar Maremoto en combate."
+  },
+  "prisma_juicio": {
+    "name": "Prisma del juicio",
+    "category": "equipo",
+    "rarity": "epico",
+    "icon": "sun",
+    "color": "#f2b705",
+    "stats": {"matk":4},
+    "grants": {"move":"juicio"},
+    "desc": "Permite usar Juicio en combate."
+  },
+  "martillo_tierra": {
+    "name": "Martillo sísmico",
+    "category": "equipo",
+    "rarity": "epico",
+    "icon": "mountain",
+    "color": "#78716c",
+    "stats": {"atk":4},
+    "grants": {"move":"terremoto"},
+    "desc": "Permite usar Terremoto en combate."
+  },
+  "corazon_musgo": {
+    "name": "Corazón de musgo",
+    "category": "equipo",
+    "rarity": "raro",
+    "icon": "regen",
+    "color": "#22c55e",
+    "grants": {"passive":"regeneracion"},
+    "desc": "Da la pasiva Regeneración."
+  },
+  "emblema_furia": {
+    "name": "Emblema de furia",
+    "category": "equipo",
+    "rarity": "raro",
+    "icon": "sword",
+    "color": "#dc2626",
+    "grants": {"passive":"furia"},
+    "desc": "Da la pasiva Furia contenida."
+  },
+  "caparazon_viejo": {
+    "name": "Caparazón ancestral",
+    "category": "equipo",
+    "rarity": "raro",
+    "icon": "shield",
+    "color": "#0369a1",
+    "grants": {"passive":"caparazon"},
+    "desc": "Da la pasiva Caparazón."
+  },
+  "pluma_ligera": {
+    "name": "Pluma ligerísima",
+    "category": "equipo",
+    "rarity": "raro",
+    "icon": "wind",
+    "color": "#5eead4",
+    "grants": {"passive":"pies_ligeros"},
+    "desc": "Da la pasiva Pies ligeros."
+  },
+  "cristal_vital": {
+    "name": "Cristal vital",
+    "category": "equipo",
+    "rarity": "raro",
+    "icon": "heart",
+    "color": "#4ade80",
+    "grants": {"passive":"vitalidad"},
+    "desc": "Da la pasiva Vitalidad."
+  },
+  "pendiente_arcano": {
+    "name": "Pendiente arcano",
+    "category": "equipo",
+    "rarity": "epico",
+    "icon": "wand",
+    "color": "#8b5cf6",
+    "grants": {"passive":"mente_arcana"},
+    "desc": "Da la pasiva Mente arcana."
+  },
+  "sello_equilibrio": {
+    "name": "Sello del equilibrio",
+    "category": "equipo",
+    "rarity": "epico",
+    "icon": "scale",
+    "color": "#eab308",
+    "grants": {"passive":"equilibrio"},
+    "desc": "Da la pasiva Equilibrio."
+  },
+  "brasero_vivo": {
+    "name": "Brasero vivo",
+    "category": "equipo",
+    "rarity": "epico",
+    "icon": "flame",
+    "color": "#fb923c",
+    "grants": {"passive":"sangre_caliente"},
+    "desc": "Da la pasiva Sangre caliente."
+  },
+  "pelaje": {
+    "name": "Pelaje suave",
+    "category": "pieza",
+    "rarity": "comun",
+    "icon": "fur",
+    "color": "#d6a36a",
+    "desc": "Pelo suave de un daskai."
+  },
+  "fragmento_garra": {
+    "name": "Fragmento de garra",
+    "category": "pieza",
+    "rarity": "comun",
+    "icon": "fang",
+    "color": "#e5e7eb",
+    "desc": "Trozo de garra afilada."
+  },
+  "escama": {
+    "name": "Escama",
+    "category": "pieza",
+    "rarity": "comun",
+    "icon": "scales",
+    "color": "#38bdf8",
+    "desc": "Escama resistente."
+  },
+  "pluma": {
+    "name": "Pluma ligera",
+    "category": "pieza",
+    "rarity": "comun",
+    "icon": "feather",
+    "color": "#a7f3d0",
+    "desc": "Una pluma casi ingrávida."
+  },
+  "hilo": {
+    "name": "Fibra resistente",
+    "category": "pieza",
+    "rarity": "comun",
+    "icon": "thread",
+    "color": "#84cc16",
+    "desc": "Fibra vegetal muy resistente."
+  },
+  "gota": {
+    "name": "Gota cristalina",
+    "category": "pieza",
+    "rarity": "comun",
+    "icon": "droplet",
+    "color": "#7dd3fc",
+    "desc": "Agua pura condensada."
+  },
+  "brasa": {
+    "name": "Brasa viva",
+    "category": "pieza",
+    "rarity": "comun",
+    "icon": "flame",
+    "color": "#fb923c",
+    "desc": "Una brasa que nunca se apaga."
+  },
+  "coral": {
+    "name": "Fragmento de coral",
+    "category": "pieza",
+    "rarity": "comun",
+    "icon": "coral",
+    "color": "#fb7185",
+    "desc": "Coral de la costa."
+  },
+  "polvo_brillante": {
+    "name": "Polvo brillante",
+    "category": "pieza",
+    "rarity": "raro",
+    "icon": "sparkle",
+    "color": "#fde047",
+    "desc": "Polvo que emite luz."
+  },
+  "esencia_sombria": {
+    "name": "Esencia sombría",
+    "category": "pieza",
+    "rarity": "raro",
+    "icon": "moon",
+    "color": "#7c3aed",
+    "desc": "Sombra solidificada."
+  },
+  "piedra_runica": {
+    "name": "Piedra rúnica",
+    "category": "pieza",
+    "rarity": "raro",
+    "icon": "rune",
+    "color": "#94a3b8",
+    "desc": "Piedra grabada con runas antiguas."
+  },
+  "obsidiana": {
+    "name": "Esquirla de obsidiana",
+    "category": "pieza",
+    "rarity": "raro",
+    "icon": "crystal",
+    "color": "#475569",
+    "desc": "Roca volcánica afilada."
+  },
+  "nucleo_arcano": {
+    "name": "Núcleo arcano",
+    "category": "pieza",
+    "rarity": "epico",
+    "icon": "orb",
+    "color": "#c084fc",
+    "desc": "Concentrado de energía pura."
+  },
+  "lagrima_estelar": {
+    "name": "Lágrima estelar",
+    "category": "pieza",
+    "rarity": "legendario",
+    "icon": "star",
+    "color": "#facc15",
+    "desc": "Fragmento caído de una estrella."
+  }
+}

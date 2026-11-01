@@ -11,7 +11,7 @@
 (function () {
   const { h, btn } = DK.ui;
   const D = DK.data, V = DK.views;
-  const t = (k, v) => DK.t(k, v);
+  const { t } = DK;
 
   DK.menus.add('nav', { id: 'home', icon: 'home', order: 10, screen: 'hub', pin: true, label: () => t('nav.home') });
 
@@ -35,6 +35,7 @@
         h('span', { class: 'muted small' }, exp ? t('home.expedition') : t('exp.firstMap')),
         h('h2', null, z.name),
         h('div', { class: 'chips' }, h('span', { class: 'chip' }, DK.icon('star', 13), `${t('common.lvl')} ${z.levels[0]}-${z.levels[1]}`),
+          V.sizeChip(exp ? DK.expedition.size() : DK.expedition.nextStart().size),
           exp ? h('span', { class: 'chip' }, DK.icon('compass', 13), t('exp.depth', { n: exp.depth || 1 })) : null,
           exp ? h('span', { class: 'chip' }, DK.icon('flag', 13), t('exp.progress', { step: exp.step, total: exp.total, items: DK.expedition.lootCount(), coins: exp.loot.coins })) : null,
           !exp && DK.expedition.bestDepth() ? h('span', { class: 'chip pos' }, DK.icon('trophy', 13), t('exp.best', { n: DK.expedition.bestDepth() })) : null),
@@ -74,9 +75,10 @@
         h('div', { class: 'panel-head' }, DK.icon('bolt', 18), h('h3', null, t('home.quick'))),
         h('div', { class: 'quick-grid' },
           btn({ icon: 'flask', label: t('heal.button'), variant: 'tone', tip: t('heal.tip'), onClick: async () => { if (await V.healDialog(team)) refresh(); } }),
-          btn({ icon: 'star', label: t('nav.camp'), variant: 'tone', tip: t('camp.text'), onClick: () => DK.router.reset('camp') }),
           btn({ icon: 'anvil', label: t('nav.craft'), variant: 'tone', onClick: () => DK.router.reset('craft') }),
-          btn({ icon: 'dumbbell', label: t('nav.training'), variant: 'tone', tip: t('train.text'), onClick: () => DK.router.reset('training') }),
+          DK.unlocks.has('training')
+            ? btn({ icon: 'dumbbell', label: t('nav.training'), variant: 'tone', tip: t('train.text'), onClick: () => DK.router.reset('training') })
+            : btn({ icon: 'lock', label: t('nav.training'), variant: 'ghost', disabled: true, tip: t('unlock.trainingLocked') }),
           ...DK.menus.items('hub').map((it) => btn({ icon: it.icon, label: typeof it.label === 'function' ? it.label() : it.label, variant: it.variant || 'tone', tip: typeof it.desc === 'function' ? it.desc() : it.desc, onClick: () => DK.menus.activate(it) })),
           btn({ icon: 'search', label: t('top.search'), variant: 'ghost', hotkey: 'Ctrl K', onClick: () => DK.palette.open() }),
           btn({ icon: 'exit', label: t('hub.saveExit'), variant: 'ghost', cls: 'quick-exit', onClick: () => { DK.store.save(); DK.router.reset('mainMenu'); } })));

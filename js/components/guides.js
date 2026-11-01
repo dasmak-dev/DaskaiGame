@@ -13,7 +13,7 @@
 (function () {
   const { h, btn, modal, tabs } = DK.ui;
   const D = DK.data;
-  const t = (k, v) => DK.t(k, v);
+  const { t } = DK;
 
   /* ======================= TUTORIAL ======================= */
   DK.tutorial = {

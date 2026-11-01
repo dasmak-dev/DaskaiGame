@@ -6,7 +6,7 @@
 (function () {
   const { h, btn, modal } = DK.ui;
   const D = DK.data;
-  const t = (k, v) => DK.t(k, v);
+  const { t } = DK;
   const V = (DK.views = DK.views || {});
 
   /**
@@ -228,7 +228,7 @@
   /** Texto del desglose: "56 base · 10 nivel · +4 naturaleza · +6 equipo · +12% pasiva". */
   V.breakdownText = (b) => {
     const sg = (n) => (n > 0 ? '+' : '') + n;
-    const parts = [t('stats.part.base', { n: b.base }), t('stats.part.level', { n: b.level })];
+    const parts = [t('stats.part.base', { n: b.base }) + (b.gene ? ' ' + t('stats.part.gene', { n: sg(Math.round(b.gene * 100)) }) : ''), t('stats.part.level', { n: b.level })];
     if (b.nature) parts.push(t('stats.part.nature', { n: sg(b.nature) }));
     if (b.evo) parts.push(t('stats.part.evo', { n: sg(b.evo) }));
     if (b.tonic) parts.push(t('stats.part.tonic', { n: sg(b.tonic) }));

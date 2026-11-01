@@ -12,9 +12,63 @@
 (function () {
   const { h, btn } = DK.ui;
   const D = DK.data, V = DK.views;
-  const t = (k, v) => DK.t(k, v);
+  const { t } = DK;
   const E = () => DK.expedition;
-  const ROW_FULL = 96, ROW_COMPACT = 58; // alto de cada piso en el mapa (px): normal y vista previa
+  const ROW_FULL = 112, ROW_COMPACT = 60; // alto de cada piso en el mapa (px): normal y vista previa
+
+  /** Etiqueta del tamaño de un mapa: «Mediano · 20 pisos». */
+  V.sizeChip = (size, { big = false } = {}) => {
+    size = size || 'small';
+    const sz = DK.config.expedition.sizes[size];
+    return h('span', { class: 'chip size-chip s-' + size + (big ? ' big' : ''), tip: t('size.' + size + '.desc', { n: E().sizeFloors(size) }) },
+      DK.icon(sz.icon, big ? 16 : 13), t('size.label', { name: t('size.' + size + '.name'), n: E().sizeFloors(size) }));
+  };
+  /** Etiqueta del modificador de un mapa (niebla, tormenta…) o null. */
+  V.modChip = (mod, { big = false } = {}) => {
+    if (!mod || !D.mapMods[mod]) return null;
+    const m = D.mapMods[mod];
+    return h('span', { class: 'chip mod-chip m-' + mod + (big ? ' big' : ''), tip: `${t('mod.' + mod + '.desc')}\n${t('mod.reward', { n: Math.round((m.coins || 0) * 100) })}` },
+      DK.icon(m.icon, big ? 16 : 13), t('mod.' + mod + '.name'));
+  };
+  /* ---------- Encargo del mapa ---------- */
+  /** Texto del progreso o estado de un encargo. */
+  const questState = (q) => q.failed ? t('quest.failed') : q.def.track ? (q.done ? t('quest.done') : `${q.prog}/${q.target}`) : t('quest.holding');
+  const itemName = (id) => (D.items[id] ? D.items[id].name : '—');
+  /** Pastilla compacta del encargo (barra de estado, cabeceras). */
+  V.questChip = (q = E().quest()) => {
+    if (!q) return null;
+    const cls = q.failed ? ' bad' : q.done ? ' good' : '';
+    const r = E().questReward(q);
+    return h('span', { class: 'chip quest-chip' + cls, tip: `${t('quest.title')}: ${t('quest.' + q.id + '.desc', { n: q.target })}\n${t('quest.reward', { coins: r.coins, item: itemName(r.item) })}` },
+      DK.icon(q.failed ? 'x' : q.done ? 'check' : q.def.icon, 13), h('span', { class: 'quest-name' }, t('quest.' + q.id + '.name')), h('b', null, questState(q)));
+  };
+  /** Tarjeta del encargo (detalle). */
+  V.questCard = (q = E().quest()) => {
+    if (!q) return null;
+    const r = E().questReward(q);
+    const pct = q.def.track ? Math.round((q.prog / q.target) * 100) : q.failed ? 0 : 100;
+    return h('div', { class: 'quest-card' + (q.failed ? ' bad' : q.done ? ' good' : '') },
+      h('span', { class: 'quest-icon' }, DK.icon(q.def.icon, 20)),
+      h('div', { class: 'grow stack-xs' },
+        h('div', { class: 'row gap-s between wrap' }, h('b', null, t('quest.title'), ': ', t('quest.' + q.id + '.name')), h('span', { class: 'badge' + (q.failed ? ' bad' : q.done ? ' good' : '') }, questState(q))),
+        h('span', { class: 'muted small' }, t('quest.' + q.id + '.desc', { n: q.target })),
+        q.def.track ? h('span', { class: 'mini-bar quest-bar' }, h('span', { style: { width: pct + '%' } })) : null,
+        h('span', { class: 'small quest-reward' }, DK.icon('gift', 12), ' ', t('quest.reward', { coins: r.coins, item: itemName(r.item) }))));
+  };
+  /** Resultado del encargo del mapa recién superado (tras el jefe). */
+  V.questResult = (lq) => {
+    if (!lq || !D.mapQuests[lq.id]) return null;
+    const ok = !!lq.reward;
+    return h('div', { class: 'quest-card ' + (ok ? 'good' : 'bad') },
+      h('span', { class: 'quest-icon' }, DK.icon(ok ? 'check' : 'x', 20)),
+      h('div', { class: 'grow stack-xs' }, h('b', null, t('quest.title'), ': ', t('quest.' + lq.id + '.name')),
+        h('span', { class: 'small' + (ok ? '' : ' muted') }, ok ? t('quest.paid', { coins: lq.reward.coins, item: itemName(lq.reward.item) }) : t('quest.missed'))));
+  };
+  DK.on('quest:done', ({ id }) => DK.ui.toast(t('quest.doneToast', { name: t('quest.' + id + '.name') }), { icon: 'check', kind: 'good' }));
+  DK.on('quest:failed', ({ id }) => DK.ui.toast(t('quest.failToast', { name: t('quest.' + id + '.name') }), { icon: 'x', kind: 'bad' }));
+
+  // Posición del mapa al dibujar (para no saltar al nodo disponible en cada trazo)
+  let keepScroll = null;
 
   /** Daskai que luchará en el siguiente combate (el elegido o el primero en pie). */
   function fighter() {
@@ -42,6 +96,85 @@
     else { refresh(); if (DK.ui.isNarrow()) setTimeout(() => { const p = document.querySelector('.exp-side'); if (p) p.scrollIntoView({ behavior: 'smooth' }); }, 50); }
   }
 
+  /* ---------- Dibujar en el mapa ----------
+   * Botón «Dibujar» (o clic derecho en el mapa): lápiz de colores, goma,
+   * notas de texto, deshacer y borrar todo. Lo dibujado se guarda en la
+   * expedición (DK.expedition.marks) y se ve también en el resumen.
+   * Mientras se dibuja, los nodos no se pueden pulsar (y en el móvil el
+   * dedo dibuja en vez de desplazar el mapa).
+   */
+  const PEN_COLORS = ['#facc15', '#f87171', '#4ade80', '#60a5fa', '#e879f9', '#f8fafc'];
+  const draw = { on: false, tool: 'pen', color: PEN_COLORS[0] };
+
+  /** Capa de dibujos y notas de un mapa (H = alto en px). editable = modo dibujo activo. */
+  function marksLayer(marks, H, refresh, editable) {
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(svgNS, 'svg');
+    svg.setAttribute('viewBox', `0 0 1000 ${H}`); svg.setAttribute('preserveAspectRatio', 'none');
+    svg.setAttribute('class', 'map-draw' + (editable ? ' editing t-' + draw.tool : ''));
+    svg.style.height = H + 'px';
+    const poly = (ln) => {
+      const p = document.createElementNS(svgNS, 'polyline');
+      p.setAttribute('points', ln.pts.map(([x, y]) => `${(x * 1000).toFixed(1)},${y.toFixed(1)}`).join(' '));
+      p.setAttribute('stroke', ln.c); return p;
+    };
+    (marks.lines || []).forEach((ln) => svg.append(poly(ln)));
+    const notes = (marks.notes || []).map((n, i) => h('div', { class: 'map-note', style: { left: n.x * 100 + '%', top: n.y + 'px', '--nc': n.c } },
+      h('span', null, n.text),
+      editable ? h('button', { class: 'map-note-x', type: 'button', 'aria-label': t('draw.delNote'), onClick: (ev) => { ev.stopPropagation(); E().removeMark('notes', i); refresh(); } }, DK.icon('x', 12)) : null));
+    if (!editable) return [svg, ...notes];
+
+    // Modo dibujo
+    const at = (ev) => { const r = svg.getBoundingClientRect(); return [Math.min(1, Math.max(0, (ev.clientX - r.left) / r.width)), Math.min(H, Math.max(0, ev.clientY - r.top))]; };
+    const erase = (ev) => {
+      const r = svg.getBoundingClientRect(), [x, y] = at(ev);
+      const lines = E().marks().lines;
+      const hit = lines.findIndex((ln) => ln.pts.some(([px, py]) => Math.hypot((px - x) * r.width, py - y) < 14));
+      if (hit >= 0) { E().removeMark('lines', hit); refresh(); }
+    };
+    let cur = null, el = null;
+    svg.addEventListener('pointerdown', async (ev) => {
+      if (ev.button === 2) return;
+      ev.preventDefault();
+      if (draw.tool === 'eraser') { erase(ev); return; }
+      if (draw.tool === 'note') {
+        const [x, y] = at(ev);
+        const text = await DK.ui.prompt(t('draw.noteTitle'), { placeholder: t('draw.notePh'), maxlength: 40, icon: 'edit' });
+        if (text) { E().addNote({ x, y, text, c: draw.color }); refresh(); }
+        return;
+      }
+      svg.setPointerCapture(ev.pointerId);
+      cur = { c: draw.color, pts: [at(ev)] };
+      el = poly(cur); el.classList.add('drawing'); svg.append(el);
+    });
+    svg.addEventListener('pointermove', (ev) => {
+      if (draw.tool === 'eraser' && ev.buttons) { erase(ev); return; }
+      if (!cur) return;
+      const p = at(ev), last = cur.pts[cur.pts.length - 1];
+      const r = svg.getBoundingClientRect();
+      if (Math.hypot((p[0] - last[0]) * r.width, p[1] - last[1]) < 3) return;
+      cur.pts.push(p);
+      el.setAttribute('points', cur.pts.map(([x, y]) => `${(x * 1000).toFixed(1)},${y.toFixed(1)}`).join(' '));
+    });
+    const end = () => { if (!cur) return; const ln = cur; cur = null; if (ln.pts.length > 1) E().addLine({ c: ln.c, pts: ln.pts.map(([x, y]) => [+x.toFixed(4), +y.toFixed(1)]) }); refresh(); };
+    svg.addEventListener('pointerup', end); svg.addEventListener('pointercancel', end);
+    return [svg, ...notes];
+  }
+
+  /** Barra de herramientas del modo dibujo. */
+  function drawBar(refresh) {
+    const tool = (id, icon) => h('button', { class: 'draw-tool' + (draw.tool === id ? ' on' : ''), type: 'button', tip: t('draw.tool.' + id), 'aria-label': t('draw.tool.' + id), onClick: () => { draw.tool = id; refresh(); } }, DK.icon(icon, 16), h('span', null, t('draw.tool.' + id)));
+    const m = E().marks();
+    return h('div', { class: 'draw-bar' },
+      tool('pen', 'edit'), tool('eraser', 'trash'), tool('note', 'tag'),
+      h('span', { class: 'draw-sep' }),
+      h('div', { class: 'draw-colors' }, PEN_COLORS.map((c) => h('button', { class: 'draw-color' + (draw.color === c ? ' on' : ''), type: 'button', style: { '--c': c }, 'aria-label': c, onClick: () => { draw.color = c; if (draw.tool === 'eraser') draw.tool = 'pen'; refresh(); } }))),
+      h('span', { class: 'grow' }),
+      btn({ icon: 'back', label: t('draw.undo'), size: 'sm', variant: 'ghost', disabled: !m.lines.length && !m.notes.length, onClick: () => { E().undoMark(); refresh(); } }),
+      btn({ icon: 'x', label: t('draw.clear'), size: 'sm', variant: 'ghost', disabled: !m.lines.length && !m.notes.length, onClick: async () => { if (await DK.ui.confirm(t('draw.clearQ'), t('draw.clearText'), { okLabel: t('draw.clear'), okIcon: 'trash', danger: true })) { E().clearMarks(); refresh(); } } }),
+      btn({ icon: 'check', label: t('draw.done'), size: 'sm', variant: 'primary', onClick: () => { draw.on = false; refresh(); } }));
+  }
+
   /* ---------- Mapa ---------- */
   /**
    * Mapa de la expedición.
@@ -57,6 +190,12 @@
     if (readonly && !e.pos && e.cleared.length) e.pos = e.cleared[e.cleared.length - 1];
     const cleared = new Set(e.cleared);
     const yOf = (row) => (rows.length - 1 - row) * ROW_H + ROW_H / 2;
+    // Niebla (modificador): sólo se ven los nodos hasta `fog` pisos por delante
+    const md = e.mod && D.mapMods[e.mod];
+    const here = e.pending ? +e.pending.split('-')[0] : e.pos ? +e.pos.split('-')[0] : -1;
+    const fogged = (n) => !!(md && md.fog && !readonly && n.type !== 'boss' && n.row > here + md.fog);
+    // Separa los nodos hacia los lados (los mapas se generan entre 0.2 y 0.8)
+    const xOf = (n) => Math.min(0.95, Math.max(0.05, 0.5 + (n.x - 0.5) * 1.45));
     const all = rows.flat();
     const byId = Object.fromEntries(all.map((n) => [n.id, n]));
 
@@ -67,27 +206,29 @@
       const walked = cleared.has(n.id) && (cleared.has(lid) || e.pending === lid);
       const open = (e.pos === n.id && avail.includes(lid)) || (!e.pos && false);
       const cls = walked ? 'walked' : open ? 'open' : (cleared.has(n.id) || n.row < (byId[e.pos] ? byId[e.pos].row : -1)) ? 'gone' : '';
-      lines += `<line x1="${n.x * 100}" y1="${yOf(n.row)}" x2="${m.x * 100}" y2="${yOf(m.row)}" class="${cls}"/>`;
+      lines += `<line x1="${xOf(n) * 100}" y1="${yOf(n.row)}" x2="${xOf(m) * 100}" y2="${yOf(m.row)}" class="${cls}${fogged(m) ? ' fog' : ''}"/>`;
     }));
     // Atajos: línea discontinua hasta el nodo al que saltan
     all.filter((n) => n.jump && byId[n.jump]).forEach((n) => {
       const m = byId[n.jump];
       const used = (cleared.has(n.id) && (e.jumpTo === n.jump || cleared.has(n.jump) || e.pending === n.jump));
-      lines += `<line x1="${n.x * 100}" y1="${yOf(n.row)}" x2="${m.x * 100}" y2="${yOf(m.row)}" class="jump${used ? ' walked' : ''}"/>`;
+      lines += `<line x1="${xOf(n) * 100}" y1="${yOf(n.row)}" x2="${xOf(m) * 100}" y2="${yOf(m.row)}" class="jump${used ? ' walked' : ''}"/>`;
     });
     const svg = h('div', { class: 'exp-lines' });
     svg.innerHTML = `<svg viewBox="0 0 100 ${H}" preserveAspectRatio="none" width="100%" height="${H}">${lines}</svg>`;
 
     // Nodos (teclas 1-n para los disponibles, de izquierda a derecha)
     const order = avail.slice().sort((a, b) => byId[a].x - byId[b].x);
-    if (!readonly) order.forEach((id, i) => DK.keys.on(String(i + 1), () => go(id, refresh)));
+    if (!readonly && !draw.on) order.forEach((id, i) => DK.keys.on(String(i + 1), () => go(id, refresh)));
+    if (!readonly && draw.on) DK.keys.on('Escape', () => { draw.on = false; refresh(); });
     const nodes = all.map((n) => {
+      if (fogged(n)) return h('span', { class: 'exp-node fog', style: { left: xOf(n) * 100 + '%', top: yOf(n.row) + 'px' }, tip: t('mod.fogNode') }, DK.icon('question', 18));
       const ty = E().TYPES[n.type];
       const state = cleared.has(n.id) ? 'done' : e.pending === n.id ? (readonly && e.outcome === 'lost' ? 'lost' : 'pending') : avail.includes(n.id) ? 'open' : 'locked';
       const key = order.indexOf(n.id);
       const b = h('button', {
         class: `exp-node t-${n.type} s-${state}` + (e.pos === n.id ? ' here' : '') + (n.secret ? ' secret' : ''), type: 'button',
-        style: { left: n.x * 100 + '%', top: yOf(n.row) + 'px' }, disabled: state !== 'open',
+        style: { left: xOf(n) * 100 + '%', top: yOf(n.row) + 'px' }, disabled: state !== 'open',
         tip: n.secret ? `${t('exp.node.secretBoss')} — ${D.secretBosses[e.zone].title}` : `${t('exp.node.' + n.type)} — ${t('exp.nodeDesc.' + n.type)}`, 'aria-label': t('exp.node.' + n.type),
         onClick: () => go(n.id, refresh),
       }, DK.icon(state === 'done' ? 'check' : ty.icon, n.type === 'boss' ? 30 : 22),
@@ -97,19 +238,46 @@
       return b;
     });
     const zone = D.zones[e.zone];
-    const map = h('div', { class: 'exp-map' + (compact ? ' compact' : ''), style: { height: H + 'px', '--z1': zone.colors[0], '--z2': zone.colors[1] } }, svg, nodes);
+    const editing = !readonly && draw.on;
+    const marks = readonly ? e.marks || { lines: [], notes: [] } : E().marks();
+    // Los dibujos se guardan en px del mapa normal: en la vista compacta se escalan
+    const layer = compact ? marksLayer({ lines: (marks.lines || []).map((l) => ({ c: l.c, pts: l.pts.map(([x, y]) => [x, (y * ROW_COMPACT) / ROW_FULL]) })), notes: [] }, H, refresh, false) : marksLayer(marks, H, refresh, editing);
+    const map = h('div', { class: 'exp-map' + (compact ? ' compact' : '') + (editing ? ' is-drawing' : ''), style: { height: H + 'px', '--z1': zone.colors[0], '--z2': zone.colors[1] } }, svg, nodes, layer);
+    // Clic derecho en el mapa: dibujar, nota aquí, deshacer, borrar
+    if (!readonly) map.addEventListener('contextmenu', (ev) => {
+      ev.preventDefault();
+      const r = map.getBoundingClientRect();
+      const x = (ev.clientX - r.left) / r.width, y = ev.clientY - r.top;
+      const m = E().marks(), any = m.lines.length || m.notes.length;
+      DK.ui.contextMenu({ x: ev.clientX, y: ev.clientY }, [
+        { icon: 'edit', label: draw.on ? t('draw.stop') : t('draw.start'), onClick: () => { draw.on = !draw.on; draw.tool = 'pen'; refresh(); } },
+        { icon: 'tag', label: t('draw.noteHere'), onClick: async () => { const text = await DK.ui.prompt(t('draw.noteTitle'), { placeholder: t('draw.notePh'), maxlength: 40, icon: 'edit' }); if (text) { E().addNote({ x, y, text, c: draw.color }); refresh(); } } },
+        null,
+        { icon: 'back', label: t('draw.undo'), disabled: !any, onClick: () => { E().undoMark(); refresh(); } },
+        { icon: 'trash', label: t('draw.clear'), danger: true, disabled: !any, onClick: () => { E().clearMarks(); refresh(); } },
+      ]);
+    });
     // Centra la vista en los nodos disponibles
     // (se desplaza sólo la caja del mapa, no la página)
     setTimeout(() => {
-      const el = map.querySelector('.s-open, .s-pending, .s-lost, .here'); const box = map.parentElement;
-      if (el && box) box.scrollTop = Math.max(0, el.offsetTop - box.clientHeight / 2);
+      const box = map.parentElement; if (!box) return;
+      if (!readonly && keepScroll != null) { box.scrollTop = keepScroll; return; }
+      const el = map.querySelector('.s-open, .s-pending, .s-lost, .here');
+      if (el) box.scrollTop = Math.max(0, el.offsetTop - box.clientHeight / 2);
     }, 30);
+    // Mientras se dibuja, se conserva la posición del mapa entre repintados
+    if (!readonly) setTimeout(() => { const box = map.parentElement; if (box) box.addEventListener('scroll', () => { if (draw.on) keepScroll = box.scrollTop; }, { passive: true }); }, 40);
+    if (!readonly && !draw.on) keepScroll = null;
     if (compact) return h('div', { class: 'exp-map-compact' }, h('div', { class: 'exp-scroll' }, map), legend());
     return h('div', { class: 'card exp-map-card' },
       h('div', { class: 'panel-head' }, DK.icon(zone.icon, 18), h('h3', null, zone.name),
+        V.sizeChip(e.size || (e.map && e.map.size)), V.modChip(e.mod || (e.map && e.map.mod)),
         h('span', { class: 'chip', tip: t('exp.depthTip') }, DK.icon('compass', 13), t('exp.depth', { n: e.depth || 1 })),
-        h('span', { class: 'chip' }, DK.icon('flag', 13), t('exp.floor', { step: Math.min(e.step, e.total), total: e.total }))),
+        h('span', { class: 'chip' }, DK.icon('flag', 13), t('exp.floor', { step: Math.min(e.step, e.total), total: e.total })),
+        readonly ? null : h('span', { class: 'grow' }),
+        readonly ? null : btn({ icon: 'edit', label: draw.on ? t('draw.stop') : t('draw.start'), size: 'sm', variant: draw.on ? 'primary' : 'ghost', tip: t('draw.tip'), onClick: () => { draw.on = !draw.on; draw.tool = 'pen'; refresh(); } })),
       readonly ? null : relicBar(),
+      editing ? drawBar(refresh) : null,
       h('div', { class: 'exp-scroll' }, map),
       legend());
   }
@@ -184,13 +352,15 @@
     return h('div', { class: 'card stack exp-choice' },
       h('div', { class: 'exp-node-head t-boss' }, h('span', { class: 'exp-node-big t-boss' }, DK.icon('crown', 28)),
         h('div', null, h('h3', null, t('exp.mapCleared', { n: c.depth })), h('p', { class: 'muted small' }, t('exp.choiceText')))),
+      V.questResult(c.quest),
       h('div', { class: 'exp-choice-grid' },
         h('div', { class: 'exp-choice-card go', style: { '--z1': nz.colors[0], '--z2': nz.colors[1] } },
           h('span', { class: 'muted small' }, t('exp.nextMap', { n: c.depth + 1 })),
           h('h3', null, DK.icon(nz.icon, 20), ' ', nz.name),
-          h('div', { class: 'chips' }, h('span', { class: 'chip' }, `${t('common.lvl')} ${nz.levels[0] + c.nextBonus}-${nz.levels[1] + c.nextBonus}`),
+          h('div', { class: 'chips' }, V.sizeChip(c.next.size, { big: true }), V.modChip(c.next.mod, { big: true }), h('span', { class: 'chip' }, `${t('common.lvl')} ${nz.levels[0] + c.nextBonus}-${nz.levels[1] + c.nextBonus}`),
             c.nextBonus ? h('span', { class: 'chip neg' }, DK.icon('skull', 12), t('exp.levelPlus', { n: c.nextBonus })) : null,
-            h('span', { class: 'chip pos' }, DK.icon('amulet', 12), t('exp.newRelic'))),
+            h('span', { class: 'chip pos' }, DK.icon('amulet', 12), t('exp.newRelic')),
+            h('span', { class: 'chip pos', tip: t('brief.rewardTip') }, DK.icon('emblem', 12), t('brief.rewardValue', { n: E().bossEmblems(c.next.size) }))),
           h('p', { class: 'small muted' }, t('exp.continueRisk')),
           btn({ icon: 'next', label: t('exp.continue'), variant: 'primary', hotkey: '1', disabled: !DK.party.aliveActive().length, onClick: goOn })),
         h('div', { class: 'exp-choice-card stop' },
@@ -384,7 +554,7 @@
           h('div', { class: 'stack-s' }, h('span', { class: 'badge leader' }, DK.icon('crown', 12), t('exp.secretBoss')),
             h('h3', null, sb.title), h('span', { class: 'muted small' }, `${D.species[sb.species].name} · ${t('common.lvl')} ${lvl}`),
             h('p', { class: 'small' }, t('exp.events.' + r.key, r.vars)),
-            h('div', { class: 'chips' }, h('span', { class: 'chip pos' }, DK.icon('emblem', 12), t('emblem.plus', { n: DK.config.expedition.emblemsPerBoss })),
+            h('div', { class: 'chips' }, h('span', { class: 'chip pos' }, DK.icon('emblem', 12), t('emblem.plus', { n: E().bossEmblems() })),
               rec.defeated ? null : h('span', { class: 'chip pos' }, DK.icon('crown', 12), t('exp.secretUnlockChip')),
               sb.drops.slice(0, 2).map(([id]) => h('span', { class: 'chip' }, DK.icon(D.items[id].icon, 12), D.items[id].name))))),
         h('p', { class: 'muted small' }, DK.icon('alert', 12), ' ', t('exp.secretRisk')),
@@ -505,44 +675,113 @@
       case 'emblems': return h('div', { class: 'stack-s' },
         h('p', { class: 'small' }, t('emblem.have', { n: DK.camp.emblems() }), (e.log.emblems ? ' · ' + t('emblem.thisRun', { n: e.log.emblems }) : '')),
         h('p', { class: 'muted small' }, t('emblem.help')));
+      case 'quest': return V.questCard();
       case 'curses': return h('div', { class: 'list' }, DK.curses.active().map((cid) => h('div', { class: 'relic-row' }, h('span', { class: 'relic-icon sm' }, DK.icon(D.curses[cid].icon, 18)),
         h('div', { class: 'grow' }, h('b', null, t('curse.' + cid + '.name')), h('div', { class: 'muted small' }, t('curse.' + cid + '.desc'))))));
       default: return null;
     }
   }
 
+  /* ---------- Barra del equipo ----------
+   * Vida y maná de cada miembro con números, su estado y un botón para
+   * curarlo con un toque (DK.healer elige los objetos más baratos que
+   * bastan). Pulsar la tarjeta lo elige para el siguiente combate.
+   */
+  function quickHeal(d, refresh) {
+    const plan = DK.healer.plan([d]);
+    if (!plan.uses.length) { DK.audio.sfx('error'); DK.ui.toast(t('heal.noItems'), { icon: 'flask', kind: 'bad' }); return; }
+    DK.healer.apply(plan);
+    DK.audio.sfx('heal');
+    const used = Object.entries(plan.totals).map(([id, n]) => `${D.items[id].name}${n > 1 ? ' x' + n : ''}`).join(', ');
+    DK.ui.toast(t('team.healed', { name: DK.daskai.name(d), items: used }), { icon: 'heart', kind: 'good' });
+    refresh();
+  }
+  function teamBar(refresh) {
+    const e = E().active(), cur = fighter();
+    const team = DK.party.active();
+    const hurt = (d) => !DK.daskai.isFainted(d) && (DK.daskai.hpPct(d) < 1 || d.cur.mp < DK.daskai.stats(d).mp || !!d.status);
+    const canHeal = (d) => hurt(d) && DK.healer.plan([d]).uses.length > 0;   // herido y con objetos que sirvan
+    const anyHurt = team.some(canHeal);
+    const cards = team.map((d) => {
+      const s = DK.daskai.stats(d), dead = DK.daskai.isFainted(d), lead = cur && cur.uid === d.uid;
+      const hp = DK.util.percent(d.cur.hp, s.hp), mp = DK.util.percent(d.cur.mp, s.mp);
+      const pick = () => { if (dead) return; e.leader = d.uid; DK.store.save(); DK.audio.sfx('select'); refresh(); };
+      return h('div', { class: 'tb-card' + (lead ? ' leader' : '') + (dead ? ' ko' : hp < 35 ? ' low' : '') + (d.status ? ' has-status' : ''), role: 'button', tabindex: dead ? '-1' : '0', 'aria-pressed': String(!!lead),
+        tip: dead ? t('common.fainted') : lead ? t('battle.nextFighter') : t('team.pickNext', { name: DK.daskai.name(d) }), onClick: pick, onKeydown: (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); pick(); } } },
+        h('span', { class: 'tb-sprite' }, V.sprite(d.species, { size: 40, shiny: d.shiny }), lead ? h('span', { class: 'tb-lead' }, DK.icon('swords', 10)) : null),
+        h('div', { class: 'tb-body' },
+          h('div', { class: 'tb-name' }, h('b', null, DK.daskai.name(d)), h('span', { class: 'muted' }, `${t('common.lvl')} ${d.level}`), d.status ? V.statusTag(d.status) : null, dead ? h('span', { class: 'badge bad' }, DK.icon('skull', 11)) : null),
+          h('div', { class: 'tb-bar hp' + (hp < 25 ? ' crit' : hp < 50 ? ' mid' : '') }, h('span', { style: { width: hp + '%' } }), h('em', null, `${d.cur.hp}/${s.hp}`)),
+          h('div', { class: 'tb-bar mp' }, h('span', { style: { width: mp + '%' } }), h('em', null, `${d.cur.mp}/${s.mp}`))),
+        h('button', { class: 'tb-heal', type: 'button', disabled: !canHeal(d), 'aria-label': t('team.healOne', { name: DK.daskai.name(d) }), tip: canHeal(d) ? t('team.healOne', { name: DK.daskai.name(d) }) : hurt(d) ? t('heal.noItems') : t('heal.nothingToHeal'),
+          onClick: (ev) => { ev.stopPropagation(); quickHeal(d, refresh); } }, DK.icon('flask', 16)));
+    });
+    return h('div', { class: 'tb-wrap card' },
+      h('div', { class: 'tb-head' }, DK.icon('users', 14), h('b', null, t('team.barTitle')), h('span', { class: 'muted small tb-hint' }, t('team.barHint')),
+        h('span', { class: 'grow' }),
+        btn({ icon: 'flask', label: t('team.healAll'), size: 'sm', variant: 'ghost', disabled: !anyHurt, onClick: async () => { if (await V.healDialog(team)) refresh(); } })),
+      h('div', { class: 'tb-grid' }, cards));
+  }
+
+  /**
+   * Barra del equipo + barra de estado. Ninguna de las dos repinta la
+   * pantalla entera al usarlas (así el mapa no parpadea): se rehacen solas
+   * con `redraw`. El detalle de cada icono se abre en una ventanita flotante
+   * bajo la barra (no empuja el mapa) y se cierra al pulsar fuera o con Esc.
+   */
+  let hudOutside = null;
   function hud(params, refresh) {
+    let teamEl, barEl;
+    const redraw = () => {
+      if (!teamEl.isConnected) return;
+      const t2 = teamBar(redraw), b2 = hudBar(params, redraw);
+      teamEl.replaceWith(t2); barEl.replaceWith(b2); teamEl = t2; barEl = b2;
+    };
+    teamEl = teamBar(redraw); barEl = hudBar(params, redraw);
+    return [teamEl, barEl];
+  }
+  function hudBar(params, redraw) {
     const e = E().active();
-    const cur = fighter();
-    const toggle = (id) => { params.hud = params.hud === id ? null : id; refresh(); };
-    const icon = (id, ic, value, label, cls = '') => h('button', { class: 'hud-btn ' + cls + (params.hud === id ? ' on' : ''), type: 'button', tip: label, 'aria-label': label, 'aria-expanded': params.hud === id, onClick: () => toggle(id) },
-      DK.icon(ic, 18), h('b', null, String(value)));
-    const pack = DK.bag.list().filter(({ item }) => item.category !== 'pieza').reduce((a, x) => a + x.qty, 0);
-    // Retratos del equipo: vida en un anillo; el elegido para el siguiente combate, resaltado
-    const team = h('div', { class: 'hud-team' }, DK.party.active().map((d) => {
-      const pct = Math.round(DK.daskai.hpPct(d) * 100), dead = DK.daskai.isFainted(d);
-      const b = h('button', { class: 'hud-mon' + (cur && cur.uid === d.uid ? ' leader' : '') + (dead ? ' ko' : pct < 35 ? ' low' : ''), type: 'button', style: { '--p': pct + '%' },
-        tip: `${DK.daskai.name(d)} · ${t('common.lvl')} ${d.level} · ${pct}% ${t('common.hpShort')}${cur && cur.uid === d.uid ? ' · ' + t('battle.nextFighter') : ''}`,
-        onClick: dead ? null : () => { e.leader = d.uid; DK.store.save(); DK.audio.sfx('select'); refresh(); } },
-        V.sprite(d.species, { size: 34, shiny: d.shiny }), h('span', { class: 'hud-hp' }, h('i')));
-      return b;
-    }));
-    const bar = h('div', { class: 'exp-hud card' },
-      team,
-      h('span', { class: 'hud-sep' }),
-      icon('loot', 'gift', e.loot.coins, t('exp.loot'), 'gold'),
-      icon('pack', 'bag', pack, t('nav.pack')),
-      icon('relics', 'amulet', DK.relics.list().length, t('relics.title')),
-      DK.rules.permadeath() || E().revivesLeft() ? icon('saves', 'sparkles', E().revivesLeft(), t('exp.revivesTitle')) : null,
-      E().recruits().length ? icon('recruits', 'paw', E().recruits().length, t('exp.recruits')) : null,
-      DK.curses.active().length ? icon('curses', 'skull', DK.curses.active().length, t('curse.active'), 'bad') : null,
-      icon('emblems', 'emblem', DK.camp.emblems(), t('emblem.title'), 'emblem'),
+    if (hudOutside) { document.removeEventListener('pointerdown', hudOutside, true); document.removeEventListener('keydown', hudOutside, true); hudOutside = null; }
+    const toggle = (id) => { params.hud = params.hud === id ? null : id; DK.audio.sfx('select'); redraw(); };
+    const item = (id, ic, value, label, cls = '') => h('button', { class: 'hud-btn ' + cls + (params.hud === id ? ' on' : ''), type: 'button', 'data-hud': id, tip: label, 'aria-label': `${label}: ${value}`, 'aria-expanded': String(params.hud === id), onClick: () => toggle(id) },
+      DK.icon(ic, 17), h('span', { class: 'hud-val' }, h('b', null, String(value)), h('small', { class: 'hud-cap' }, label)));
+    const pack = DK.bag.list().filter(({ item: it }) => it.category !== 'pieza').reduce((a, x) => a + x.qty, 0);
+    const bar = h('div', { class: 'exp-hud' },
+      h('div', { class: 'hud-group' },
+        item('loot', 'gift', e.loot.coins, t('exp.loot'), 'gold'),
+        item('pack', 'bag', pack, t('nav.pack')),
+        item('relics', 'amulet', DK.relics.list().length, t('relics.title')),
+        DK.rules.permadeath() || E().revivesLeft() ? item('saves', 'sparkles', E().revivesLeft(), t('exp.revivesTitle')) : null,
+        E().recruits().length ? item('recruits', 'paw', E().recruits().length, t('exp.recruits')) : null,
+        DK.curses.active().length ? item('curses', 'skull', DK.curses.active().length, t('curse.active'), 'bad') : null,
+        item('emblems', 'emblem', DK.camp.emblems(), t('emblem.title'), 'emblem')),
+      E().quest() ? h('button', { class: 'hud-quest' + (params.hud === 'quest' ? ' on' : ''), type: 'button', 'data-hud': 'quest', 'aria-expanded': String(params.hud === 'quest'), onClick: () => toggle('quest') }, V.questChip()) : null,
       h('span', { class: 'grow' }),
       // Ya no hay retirada en cualquier momento: se vuelve a casa desde las hogueras
       h('span', { class: 'hud-lock muted small', tip: DK.rules.canRetreat() ? t('exp.exitRuleTip') : t('exp.noRetreat') }, DK.icon(DK.rules.canRetreat() ? 'campfire' : 'lock', 14), h('span', { class: 'hud-label' }, DK.rules.canRetreat() ? t('exp.exitRule') : '')));
-    const detail = params.hud ? hudDetail(params.hud, refresh) : null;
-    return h('div', { class: 'exp-hud-wrap' }, bar, detail ? h('div', { class: 'card exp-hud-detail' }, detail) : null,
-      h('p', { class: 'muted small exp-hud-hint' }, DK.icon('swords', 12), ' ', t('exp.hudHint', { name: cur ? DK.daskai.name(cur) : '—' })));
+    const content = params.hud ? hudDetail(params.hud, redraw) : null;
+    const LABEL = { loot: t('exp.loot'), pack: t('nav.pack'), relics: t('relics.title'), saves: t('exp.revivesTitle'), recruits: t('exp.recruits'), curses: t('curse.active'), emblems: t('emblem.title'), quest: t('quest.title') };
+    const pop = content ? h('div', { class: 'exp-hud-pop', role: 'dialog', 'aria-label': LABEL[params.hud] || '' },
+      h('div', { class: 'hud-pop-head' }, h('b', null, LABEL[params.hud] || ''),
+        h('button', { class: 'icon-btn', type: 'button', 'aria-label': t('common.close'), onClick: () => toggle(params.hud) }, DK.icon('x', 15))),
+      content) : null;
+    const wrap = h('div', { class: 'exp-hud-wrap' }, bar, pop);
+    if (pop) {
+      // Coloca la ventanita bajo su botón (en móvil, a todo el ancho)
+      requestAnimationFrame(() => {
+        const b = bar.querySelector(`[data-hud="${params.hud}"]`);
+        if (!b || !wrap.isConnected) return;
+        const wr = wrap.getBoundingClientRect(), br = b.getBoundingClientRect();
+        if (wr.width > 640) pop.style.left = Math.max(0, Math.min(br.left - wr.left, wr.width - pop.offsetWidth)) + 'px';
+      });
+      hudOutside = (ev) => {
+        if (!wrap.isConnected) { document.removeEventListener('pointerdown', hudOutside, true); document.removeEventListener('keydown', hudOutside, true); hudOutside = null; return; }
+        if (ev.type === 'keydown' ? ev.key === 'Escape' : !wrap.contains(ev.target)) { params.hud = null; redraw(); if (ev.type === 'keydown') ev.stopPropagation(); }
+      };
+      setTimeout(() => { if (hudOutside) { document.addEventListener('pointerdown', hudOutside, true); document.addEventListener('keydown', hudOutside, true); } }, 0);
+    }
+    return wrap;
   }
 
   /* ---------- Modo expedición ----------
@@ -589,6 +828,7 @@
         return h('div', { class: 'screen exp-screen exp-focus' },
           h('div', { class: 'exp-focus-bar', style: { '--z1': zone.colors[0], '--z2': zone.colors[1] } },
             DK.icon(zone.icon, 18), h('b', null, zone.name),
+            V.sizeChip(e.size), V.modChip(e.mod), e.awaitingChoice ? null : V.questChip(),
             h('span', { class: 'chip', tip: t('exp.depthTip') }, DK.icon('compass', 13), t('exp.depth', { n: e.depth || 1 })),
             h('span', { class: 'chip' }, DK.icon('flag', 13), t('exp.floor', { step: Math.min(e.step, e.total), total: e.total })),
             h('span', { class: 'chip', tip: t('exp.lootCoinsTip') }, DK.icon('gift', 13), t('exp.lootNow', { items: E().lootCount(), coins: e.loot.coins })),

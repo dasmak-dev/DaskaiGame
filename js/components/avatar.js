@@ -18,7 +18,7 @@
 (function () {
   const { h } = DK.ui;
   const D = DK.data, V = DK.views;
-  const t = (k, v) => DK.t(k, v);
+  const { t } = DK;
   const st = () => DK.store.state;
 
   const icons = ['user', 'swords', 'crown', 'star', 'heart', 'shield', 'paw', 'gem', 'flame', 'droplet', 'leaf', 'moon', 'sun', 'mountain', 'bolt', 'compass'];
@@ -45,9 +45,9 @@
     /** Títulos: el de por defecto + el nombre de cada logro conseguido. */
     titles() {
       return [{ id: null, label: t('hub.adventurer') }].concat(
-        D.achievements.filter((a) => st().achievements[a.id]).map((a) => ({ id: a.id, label: t(`achievements.${a.id}.name`) })));
+        D.achievements.filter((a) => st().achievements[a.id]).map((a) => ({ id: a.id, label: DK.achievements.name(a) })));
     },
-    titleText(p) { return p.title && st().achievements[p.title] ? t(`achievements.${p.title}.name`) : t('hub.adventurer'); },
+    titleText(p) { const a = p.title && st().achievements[p.title] && D.achievements.find((x) => x.id === p.title); return a ? DK.achievements.name(a) : t('hub.adventurer'); },
     /** Especies que el jugador conoce (las suyas y las vistas en el códice). */
     knownSpecies() {
       const set = new Set(DK.party.all().map((d) => d.species));

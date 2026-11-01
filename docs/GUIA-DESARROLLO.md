@@ -2,13 +2,21 @@
 
 El juego es HTML + CSS + JavaScript puro: sin dependencias ni compilación. Abre `index.html` con doble clic, o usa `iniciar.bat` / `iniciar.sh` para un servidor local (necesario para instalarlo como app).
 
-Antes de publicar un cambio ejecuta:
+Los daskai, ataques, objetos y zonas se editan en **JSON** (carpeta `data/`). Tras editarlos:
 
 ```
-node tools/check.js
+node tools/data.js
 ```
 
-Comprueba la sintaxis de todos los archivos y que cada texto exista en español e inglés.
+Comprueba los datos (dice el archivo, la línea y qué está mal) y genera `js/data/gen/data.js`, que es lo que carga el juego.
+
+Antes de publicar un cambio ejecuta las pruebas:
+
+```
+npm test            (la primera vez: npm install && npx playwright install chromium)
+```
+
+Pasan `tools/check.js` (sintaxis, datos y que cada texto exista en español e inglés) y las pruebas de `tests/` en Chromium, en escritorio y en móvil. Sin Playwright puedes usar sólo `node tools/check.js`.
 
 ---
 
@@ -37,7 +45,15 @@ Cada capa sólo usa las que tiene por encima. El orden de carga está en `index.
 ```
 index.html                 orden de carga de todo
 sw.js                      caché sin conexión (añade aquí cada archivo nuevo y sube CACHE)
-tools/check.js             comprobación de sintaxis y textos
+package.json               npm test / npm run check / npm run data
+data/                      DATOS EDITABLES en JSON (ver «Contenido del juego»)
+  species.json             especies (con su evolución: "evolves" / "from")
+  moves.json               ataques
+  items.json               objetos
+  zones.json               zonas, su jefe (con fases) y su jefe oculto
+tools/check.js             comprobación de sintaxis, datos y textos
+tools/data.js              comprueba data/*.json y genera js/data/gen/data.js
+tests/                     pruebas automáticas (npm test): run.js, helpers.js y *.test.js
 css/
   base.css                 variables de color, temas, accesibilidad, carcasa
   components.css           botones, tarjetas, barras, modales, tooltips
@@ -61,7 +77,11 @@ js/data/
   config.js                TODOS los números del juego (experiencia, daño, expediciones...)
   basics.js                casas, atributos, naturalezas, pasivas, estados, rarezas
   talents.js               talentos (cada 10 niveles se elige 1 de 2)
-  species.js / species2.js (ampliación) / evolutions.js / moves.js / items.js / recipes.js / shop.js / zones.js
+  mapMods.js               climas del mapa (niebla, tormenta, luna llena, ola de calor, bonanza)
+  quests.js                encargos del mapa (objetivo opcional con premio)
+  gen/data.js              GENERADO desde data/*.json (no se edita: node tools/data.js)
+  species.js / moves.js / items.js / zones.js   cargadores: leen DK.raw y ponen los valores por defecto
+  recipes.js / shop.js
   missions.js / achievements.js
   events.js                sucesos de expedición
   relics.js                reliquias de expedición
@@ -130,19 +150,22 @@ Más opciones:
 
 | Quiero añadir... | Archivo | Cómo |
 |---|---|---|
-| Un daskai | `data/species.js` | `S('id', 'Nombre', 'casa', [vida, maná, atq, atqM, def, defM, vel], { learn, drops, passives, sprite, desc })` |
-| Una evolución | `data/evolutions.js` | `link('origen', nivel, 'destino')` |
-| Un ataque | `data/moves.js` | `def('id', { name, kind, house, power, mp, acc, effect, desc })` |
-| Un objeto | `data/items.js` + `data/shop.js` | `def('id', { name, category, rarity, icon, color, use / stats, grants, desc })` y su precio |
-| Un objeto que da un ataque o una pasiva | `data/items.js` + `data/recipes.js` | equipo con `grants: { move: 'ataque' }` o `grants: { passive: 'pasiva' }` y su receta. El daskai que lo lleva lo usa en combate (`DK.daskai.battleMoves`, `DK.daskai.passives`) |
+| Un daskai | `data/species.json` | `"id": { "name", "house", "base": { hp, mp, atk, matk, def, mdef, spd }, "learn": [[nivel, "ataque"], …], "drops", "passives", "sprite", "desc" }`. Por defecto: `exp` 40, sin botín y **cualquier pasiva** al azar. Para que aparezca, ponlo en `"enemies"` de una zona |
+| Una evolución | `data/species.json` | en la especie de origen `"evolves": { "to": "destino", "level": 20 }` y en la nueva `"from": "origen"`: hereda casa, pasivas, ataques (+ `"learnExtra"`) y `exp` + 25 |
+| Un ataque | `data/moves.json` | `"id": { "name", "kind": "fisico"\|"magico", "house", "power", "mp", "acc", "effect", "priority", "desc" }` (por defecto `acc` 100, `mp`/`power` 0, sin casa) |
+| Un objeto | `data/items.json` + `js/data/shop.js` | `"id": { "name", "category", "rarity", "icon", "color", "use" / "stats", "grants", "desc" }` y su precio. Un tónico es `"use": { "perm": "atributo" }` |
+| Una zona | `data/zones.json` | `"id": { "name", "levels", "colors", "scene", "unlock", "enemies": [["especie", peso]], "boss": { …, "phases": [{ "at", "type" }] }, "secretBoss" }` (el orden del archivo es el orden del juego) |
+| Un objeto que da un ataque o una pasiva | `data/items.json` + `data/recipes.js` | equipo con `grants: { move: 'ataque' }` o `grants: { passive: 'pasiva' }` y su receta. El daskai que lo lleva lo usa en combate (`DK.daskai.battleMoves`, `DK.daskai.passives`) |
 | Una receta | `data/recipes.js` | `def('resultado', cantidad, { ingrediente: n })` (todas se ven en Crafteo desde el principio) |
-| Una zona | `data/zones.js` | `def('id', { name, levels, colors, scene, unlock, enemies, boss })` |
 | Un suceso de expedición | `data/events.js` + `lang → events.<id>` | `{ id, icon, weight, minRow, choices: [{ id, icon, req(ctx), run(ctx) → { key, vars, fight } }] }` |
 | Una reliquia | `data/relics.js` | `def(id, nombre, icono, rareza, { type, pct / add, house / stat })` (tipos explicados en el archivo) |
 | Una dificultad | `data/difficulties.js` + `lang → difficulty.<id>` | `{ id, icon, permadeath, retreat, fixedRest, enemyMult, revives }` |
 | Una mejora permanente | `data/upgrades.js` + `lang → camp.up.<id>` | `{ id, icon, group, levels: [{ cost, value }] }` y lee `DK.camp.value('<id>')` donde se aplique (la lista de dónde se usa cada una está en el archivo) |
-| Una misión / un logro | `data/missions.js` / `data/achievements.js` | plantilla + textos en `missions.<id>` / `achievements.<id>` |
+| Una misión / un logro | `data/missions.js` / `data/achievements.js` | plantilla + textos en `missions.<id>` / `achievements.<id>`. Un logro puede ser **oculto** (`hidden: true`: se ve «???» hasta conseguirlo) y compartir textos con `text: '<clave>'` + `vars(state)` (así se generan los de cada jefe de zona, `boss_<zona>`). Usa siempre `DK.achievements.name(a)` / `desc(a)` para pintarlos |
+| Algo que se desbloquea al avanzar | `systems/progress.js` → `UNLOCKS` + `lang → unlock.<id>` | `{ icon, screen, when(state) }`. Pregunta con `DK.unlocks.has('<id>')` (menú: `visible`, pantalla bloqueada, botones). El aviso sale solo la primera vez (`state.unlocks`) |
 | Una pasiva o naturaleza | `data/basics.js` | una línea en `passives` o `natures` (las pasivas también cambian el ritmo de crecimiento, ver «Un daskai») |
+| Un encargo de mapa | `data/quests.js` + `lang → quest.<id>.{name,desc}` | `{ icon, weight, track: 'elite'\|'break'\|'strong'\|'capture', target: { small, medium, xl } }` o `{ fail: 'item'\|'rest'\|'faint' }`, más `coins`. Un `track` nuevo necesita su `DK.expedition.questTrack('<track>')` donde ocurra |
+| Un clima de mapa | `data/mapMods.js` + `lang → mod.<id>.{name,desc}` | `{ icon, weight, fog, houseDmg: { casa: pct }, weights: { tipoNodo: mult }, levels, coins }` |
 | Un talento | `data/talents.js` + `lang → talent.<id>.{name,desc}` | `{ icon, mods: { stat: pct }, regen }` |
 | Un tónico (mejora permanente) | `data/items.js` (lista `TON`) | `use: { perm: 'stat' }`, sin precio en la tienda (`noShop`); cuánto da cada uno y el máximo por daskai en `config.tonic` |
 | Un marco de perfil | `components/avatar.js` | un objeto en `FRAMES` con `req` y `reqText` |
@@ -212,6 +235,10 @@ Si añades un campo, dale un valor por defecto en `store.migrate()` para que las
   status, shiny, wild, boss, elite, temp }             // temp = recluta de la expedición en curso
 ```
 
+**Cada daskai es único:** nace con una pasiva al azar de las de su especie, una naturaleza al azar y unos **genes** (`d.genes`, ±`config.genes` sobre cada atributo base: `DK.daskai.baseOf(d, k)`), y crece de forma aleatoria al subir de nivel. Las partidas antiguas sin genes usan la base de la especie tal cual.
+
+**Caché de atributos:** `DK.daskai.stats(d)` guarda el resultado y sólo lo recalcula si cambia la revisión (la sube `DK.store.save()` y `DK.daskai.touch()`) o algo barato de comparar (nivel, especie, pasiva, equipo, reliquias, dificultad). Las funciones que cambian atributos sin tocar el nivel (tónicos, talentos, entrenamiento, herencia, evolución) ya llaman a `touch()`. **Si cambias a mano** `growth`, `tonics`, `trained`, `legacy`, `talents` o `genes`, llama a `DK.daskai.touch()`. `stats(d, equipo)` con un equipo de prueba no usa la caché.
+
 Atributo final = `(base + crecimiento + equipo + herencia + tónicos + entrenamiento) × (1 + pasivas + talentos) × multiplicadores` → `DK.daskai.stats(d)`.
 
 **Crecimiento al subir de nivel** (`rollGrowth`): cada atributo gana `growth.level` puntos × su **ritmo** (`DK.daskai.growthWeight`): la especie (sus atributos base altos crecen más) y las pasivas/talentos (+% crece más, −% menos), limitado por `growthBias`. Encima, la naturaleza suma o resta puntos. `growthRate(d, k)` lo resume en `high/up/normal/down/low` (▲▲ ▲ ● ▼ ▼▼ en la tabla de atributos y al subir de nivel).
@@ -224,7 +251,12 @@ Atributo final = `(base + crecimiento + equipo + herencia + tónicos + entrenami
 
 ### Campo de entrenamiento (`DK.training`)
 
-Huecos `config.training.slots` + mejora «Instructor». Al entrar se paga `cost(nivel, tipo)` y el daskai sale del equipo (`DK.party.canJoin` lo bloquea). Gana en tiempo real con rendimiento decreciente (`effHours`: 100% hasta `fullHours`, `halfRate` hasta `halfHours`, luego nada): experiencia hasta `levelCap()` (nivel más alto − `levelMargin` + Instructor) o puntos de un atributo (`statHours` por punto, máximo `statMax`). `progress(slot)` calcula sin aplicar y `collect(uid)` aplica y devuelve el daskai.
+Se desbloquea al derrotar al primer jefe (`DK.unlocks.has('training')`): hasta entonces no sale en el menú, el botón del Inicio está bloqueado y la pantalla explica cómo abrirlo.
+
+
+Huecos `config.training.slots` + mejora «Instructor». Al entrar se paga `cost(nivel, tipo)` y el daskai sale del equipo (`DK.party.canJoin` lo bloquea). Gana en tiempo real con rendimiento decreciente (`effHours`: 100% hasta `fullHours`, `halfRate` hasta `halfHours`, luego nada): experiencia (hasta el nivel máximo) o puntos de un atributo (`statHours` por punto, máximo `statMax`). `progress(slot)` calcula sin aplicar y `collect(uid)` aplica y devuelve el daskai.
+
+**Nivel recomendado** (`levelCap()` = nivel más alto − `levelMargin` + Instructor): no bloquea. Por encima, entrenar experiencia tiene una penalización `overMult(d)` = 1 + `overStep` × niveles de más (máx. `overMax`) y el jugador elige el plan: `'coins'` (paga ×mult, ritmo normal) o `'time'` (precio normal, las horas se estiran ×mult). Se guarda en el hueco (`slot.plan`, `slot.mult`) y `progress()` trabaja con horas «normales» (`norm = horas / stretch(slot)`).
 
 ### Expediciones
 
@@ -232,13 +264,27 @@ Huecos `config.training.slots` + mejora «Instructor». Al entrar se paga `cost(
 - **Tras cada jefe:** `bossCleared()` da sus premios, hace permanentes a los reclutas del mapa, elige la zona siguiente y pone `awaitingChoice`. El jugador decide en el panel final del combate (o en la pantalla del mapa):
   - `continueRun()` → mapa nuevo, más profundo, con una reliquia a elegir;
   - `complete()` → termina y cobra con `bonusMult(mapas)`.
-- **Mapa:** se genera por pisos con una semilla (`generate()`): `config.expedition.rows` pisos (10) + hoguera + jefe.
-  - Siempre hay una **hoguera a mitad de camino** y al menos `caveMin` **cuevas**.
+- **Mapa:** se genera por pisos con una semilla y un **tamaño** (`generate(zona, semilla, tamaño)`).
+  - Tamaños en `config.expedition.sizes`: `small` (12 pisos con el jefe), `medium` (20) y `xl` (31 = 30 + jefe), cada uno con su peso, cuevas mínimas, atajos y hogueras repartidas. Se elige al azar (`pickSize()`) cada vez que se prepara un mapa: la próxima expedición (`nextExpedition.size`) y el mapa siguiente tras cada jefe (`e.next.size`). Se enseña antes de entrar con `V.sizeChip(size)` (preparar, Batalla, Inicio, elección tras el jefe).
+  - Hay hogueras repartidas por el camino (1, 2 o 3 según el tamaño) y al menos `caves` **cuevas**.
   - **Atajos** (nodo `shortcut`, `node.jump`): saltan `shortcutSkip` pisos a cambio de `shortcutHpCost` de vida (`takeShortcut()` → `e.jumpTo`). En el mapa se dibujan con línea discontinua. La Mejora «Atajos» añade más.
   - **Cuevas** (nodo `cave`, `exploreCave()`): guarida del **jefe oculto** de la zona (`D.secretBosses` en `data/zones.js`) o un tesoro. El combate usa `DK.battle.start(zona, uid, { boss: true, secret: true, final: false })`. Vencerlo la primera vez lo **desbloquea** (`DK.world.secret(zona).defeated`): desde entonces el jefe final del mapa puede ser él (`node.secret`, probabilidad `secretFinalChance`).
   - Sucesos con **personajes** (`data/events.js`): viajera, ermitaño (tónicos), herrera (equipo/reliquia), cartógrafo (`revealCave` / `revealShortcut`: convierte un combate de más adelante en cueva o atajo), daskai perdido (`recruit`) y bandidos.
-  - `DK.expedition.preview()` enseña el primer mapa de la próxima expedición; `start()` usa esa misma zona y semilla.
+  - **Climas del mapa** (`data/mapMods.js`): cada mapa tiene `config.expedition.modChance` de traer uno (`pickMod()`; va en `nextExpedition.mod` / `e.next.mod` igual que el tamaño). `DK.expedition.mod()` da el del mapa actual.
+    - `fog`: la niebla oculta los nodos a más de `fog` pisos de donde estás (salvo el jefe) en `mapView` (`fogged(n)`).
+    - `houseDmg`: % de daño por casa (`modHouse(casa)`), aplicado en `factors()` del combate como parte `weather` («Clima»).
+    - `weights`: multiplica los pesos de nodos al generar; `levels`: rivales más fuertes (`levelBonus()`); `coins`: % extra de monedas del botín (`addLoot`).
+    - Se enseña con `V.modChip(mod)` en Batalla, preparar, cabecera del mapa y elección tras el jefe.
+  - **Cronología:** `DK.expedition.logEvent(clave, valor)` guarda momentos en `e.log.timeline` (`{ k, v, d: mapa, f: piso, at }`): salida, mapas, jefes, élites, cuevas, atajos, sucesos, reclutas, reliquias, caídos, hogueras, final. `snapshot()` la copia y `expSummary` la pinta (`timeline()`, iconos en `TL_ICON`, textos `tl.<clave>`). El resumen compara además con la mejor expedición anterior de `expHistory` (`compare()`).
+  - **Encargos** (`data/quests.js`): cada mapa trae `e.quest = { id, target, prog, failed, done, claimed, item }` (`pickQuest(tamaño)` en `start()` y `continueRun()`). `questTrack(kind)` suma progreso (élites y reclutas en `battle.rewards`, ruptura en `addBreak`, golpes eficaces en `act`), `questFail(kind)` lo falla (objetos curativos: oyente de `item:used`; descanso: `rest()`; caídos: `battle.resolve`). Al vencer al jefe del mapa, `questClaim()` añade `questReward()` (monedas × tamaño × profundidad, `config.expedition.quest`, y un objeto) al botín y lo apunta en `e.lastQuest` (sale en la elección tras el jefe) y en la cronología. Vistas: `V.questChip`, `V.questCard`, `V.questResult` (en `screens/expedition.js`).
+  - **Barra de estado** (`hudBar`): fija y opaca sobre el mapa; cada icono abre su detalle en una ventanita flotante (`.exp-hud-pop`) que no empuja el mapa y se cierra al pulsar fuera o con Esc. La barra y la del equipo se rehacen solas (`redraw`) en vez de repintar la pantalla, para que el mapa no parpadee.
+  - **Barra del equipo** (`teamBar` en `screens/expedition.js`): vida y maná con números, estado y un botón por miembro que cura con `DK.healer.plan([d])` sin abrir menús; pulsar la tarjeta lo elige para el siguiente combate.
+  - **Récords por zona:** `bossCleared()` actualiza `DK.world.progress(zona).rec = { maps, best, sizes: { tamaño: n }, fastest: ms }` (el tiempo cuenta desde `e.mapStartedAt`). Se ven en el panel de la zona (`recordsBlock`).
+  - `DK.expedition.preview()` enseña el primer mapa de la próxima expedición; `start()` usa esa misma zona, semilla y tamaño.
+  - **Dibujar en el mapa** (`screens/expedition.js`): botón «Dibujar» o clic derecho en el mapa. Lápiz de colores, goma, notas de texto, deshacer y borrar. Se guarda por mapa en `e.marks = { lines: [{ c, pts: [[x 0..1, y px]] }], notes: [{ x, y, text, c }] }` (`DK.expedition.addLine/addNote/removeMark/undoMark/clearMarks`) y se ve también en el resumen.
   - Mientras hay un nodo sin combate pendiente o una reliquia por elegir, el mapa se oculta (vista centrada).
+- **Preparar (briefing):** `screens/expPrepare.js` enseña en la cabecera la zona, el tamaño, el nivel de los rivales, la dificultad, tus emblemas y los emblemas por jefe; debajo, Equipo · Mochila · Bolsa. Mochila y bolsa son LISTAS (`.pk-row`): − / + por objeto en la mochila, + en la bolsa (Mayús = todas) y arrastrar entre ambas (`DK.ui.pointerDrag`, también con el dedo).
+- **Mapa en pantalla:** los nodos se separan hacia los lados al pintarlos (`xOf` en `mapView`) y cada piso mide `ROW_FULL` px (los dibujos se guardan en esos px).
 - **Mochila:** antes de salir, `screens/expPrepare.js` elige qué objetos de casa te llevas (`packCapacity()` = `config.expedition.packCapacity` + Mejora «Equipaje»; categorías en `packCategories`). `DK.expedition.start(pack)` los pasa a `e.pack`.
   - Mientras hay expedición, **`DK.bag` trabaja sobre la mochila** (`DK.bag.raw()`); la bolsa de casa es `DK.bag.home()`. Así combate, curar, mercader, sucesos y equipar usan la mochila sin cambios.
   - Al terminar, la mochila y el botín vuelven a casa (`DK.bag.addHome`); si pierdes, la mochila se pierde.
@@ -252,22 +298,37 @@ Huecos `config.training.slots` + mejora «Instructor». Al entrar se paga `cost(
 - **Sin curación gratis** (`config.expedition.noFreeHeal`): en expedición no hay regeneración base por turno y subir de nivel no cura (sólo suma lo que crece el máximo).
 - **Botín:** los consumibles (`config.expedition.directToBag`) van directos a la mochila; el resto y las monedas se entregan al terminar.
 - **Reclutas:** son temporales (`d.temp`) y se quedan al derrotar al jefe de su mapa o al volver desde una hoguera (`settleRecruits`). Si pierdes, se van los del mapa actual.
-- **Emblemas y Mejoras:** cada jefe derrotado en expedición (también los ocultos) da `emblemsPerBoss` emblemas (`DK.camp.addEmblems`, en `state.emblems`). Las Mejoras (`data/upgrades.js`) cuestan emblemas y **se compran en el resumen de la expedición** (`expSummary` → `V.upgradeCard(u, refresh, true)`); la pantalla Mejoras es sólo el catálogo.
+- **Emblemas y Mejoras:** cada jefe derrotado en expedición (también los ocultos) da `DK.expedition.bossEmblems()` = `emblemsPerBoss` × `sizes[tamaño].emblems` (pequeño 1, mediano 2, XL 3) (`DK.camp.addEmblems`, en `state.emblems`). Las Mejoras (`data/upgrades.js`) cuestan emblemas y **sólo aparecen al terminar una expedición**: el resumen abre solo el menú (`V.upgradeMenu`, en `screens/camp.js`) la primera vez que se ve (`lastExpedition.shopShown`) y tiene una tarjeta para reabrirlo. No están en la navegación, ni en el Inicio, ni en el buscador; la pantalla `camp` redirige al Inicio.
 - **Muerte permanente:** se aplica si `DK.rules.permadeath()`.
   - Al acabar un combate, `DK.expedition.trySave(d)` intenta salvarlo: bendición del santuario, pluma de fénix o Altar del fénix (Mejoras).
   - Si no se salva, `DK.party.kill()`: el daskai pasa al cementerio y deja una esencia (`DK.legacy`).
 - **Al terminar:** `DK.expedition.snapshot()` guarda el resumen (`lastExpedition` y `expHistory`) y se abre `expSummary`.
 
+### Códice (`DK.codex`, en `systems/world.js`)
+
+- Daskai: `seen/fought/defeated/captured` por especie. `DK.codex.species(sid)` junta todo para la ficha: estado (`unknown/seen/fought/defeated/captured`), zonas donde aparece, ataques por nivel, botín, el mejor ejemplar tuyo. La ficha se revela poco a poco: silueta → nombre y casa → zonas y ataques → punto débil y botín.
+- Objetos: `markItem(id)` se llama solo desde `DK.bag.add/addHome` (`state.codex.itemsSeen`); `itemKnown(id)`.
+- `DK.codex.totals()` = descubiertos / total de especies, objetos y jefes (incluidos los ocultos).
+- Pantalla `screens/codex.js`: pestañas Daskai · Objetos · Jefes, filtros por casa, zona y estado, cuadrícula con siluetas y ficha lateral (escritorio) o en hoja (móvil).
+
+### Mapa del mundo (pantalla Batalla, `screens/zones.js`)
+
+Camino de zonas: sólo las desbloqueadas, la siguiente como «???» con la pista para abrirla y el resto resumido como «+N». Al pulsar una zona se abre su panel (al lado en escritorio, en hoja en móvil) con sus récords y el combate libre.
+
 ### Combate: intención, defensa y fases de jefe
 
 - **Intención:** el rival elige su acción antes de tu turno (`st.intent`, de `enemyChoice`). `DK.battle.intentInfo(st)` dice el tipo (ataque, golpe fuerte, curación, mejora…) y el daño previsto al aliado actual; la pantalla lo pinta bajo su vida y avisa si es letal.
 - **Prioridad:** un ataque puede tener `priority: 1` (rápido) o `-1` (lento) en `data/moves.js`. `DK.battle.orderFor(st, tuAtaque)` decide quién va primero (prioridad y, si empatan, velocidad); la pantalla lo enseña en cada ataque (1º/2º) y en la línea de tiempo.
+- **Casas y daño:** la eficacia se calcula con la **casa del ataque** (`moveHouse(d, move)`: la del movimiento o, si no tiene, la del daskai) contra la casa del daskai que recibe (`houseMult`: ×`house.strongDamage` si es fuerte, −`house.weakDefense` si el defensor es fuerte contra ella). Si el ataque es de la misma casa que quien lo lanza suma ×`config.stab` (`isStab`). `effOf(st, moveId)` da la eficacia de un ataque concreto. Todo sale en el desglose (`factors().parts`: `stab`, `house`, `broken`…).
+- **Ruptura** (jefes y élites, `config.breakGauge`): `st.breakVal/breakMax`. Cada golpe tuyo suma `breakGain(st, move, r)` (golpe normal + eficaz + punto débil + crítico; un golpe poco eficaz no suma). Al llenarse (`addBreak`), `st.broken` = 1: el rival no actúa (`enemyAct`) hasta el final del turno siguiente, recibe ×`dmg` y la barra vuelve a 0 con un máximo ×`grow`. `intentInfo` devuelve `type: 'stunned'`.
+- **Previsión de daño** (`screens/battle.js`, `preview(mid)`): en cada botón de ataque, rango, % de la vida del rival, eficacia, «Su casa», «Remata/Puede rematar» y cuánto llena la ruptura; al pasar el ratón o enfocar, la barra de vida y la de ruptura enseñan el efecto.
+- **Automático:** `bestMove(st)` elige el ataque. Si el ajuste «Curar en automático» (`autoHeal`) está activo y el aliado baja de `config.autoHeal.at`, primero usa su ataque de curación y si no tiene, `autoHealItem(st)` (el objeto curativo más barato que recupere al menos la mitad de lo que falta; nunca legendarios), como mucho `autoHeal.max` veces por combate (`st.autoHeals`). Después actúa «Pausar el automático».
 - **Cambio táctico:** el daskai que entra al cambiar recibe `config.switchMult` del daño ese turno; el banquillo enseña cuánto le haría la intención del rival (`intentVs`).
 - **Punto débil:** cada especie recibe `config.weakMult` más de daño del tipo de ataque de su defensa más baja (`weakness`). Se descubre al golpearle con ese tipo (`state.weakKnown`).
 - **Desglose de daño:** `DK.battle.factors(st, lado, ataque)` devuelve todos los multiplicadores; `damage()` los usa y la pantalla los muestra al pasar por un ataque o por la intención.
 - **Información progresiva:** `knowledge(st)` = combates contra esa especie en la zona: con 1 ves su casa, con `revealMovesAt` sus ataques y con `revealStatsAt` sus atributos.
 - **Defender** (`{type:'guard'}`): actúa primero, recibe `config.guardMult` del daño y recupera `guardMana` de maná.
-- **Fases de jefe** (`data/bossPhases.js`): `st.phases` se comprueba tras cada golpe (`checkPhase`) y `enterPhase` aplica furia, regeneración, escudo (`st.shield`, lo rompe un ataque eficaz) o frenesí (`st.frenzy`). Para un tipo nuevo: añádelo a `phaseTypes`, impleméntalo en `enterPhase` y escribe `phase.<tipo>`, `phase.name.<tipo>` y `phase.desc.<tipo>`.
+- **Fases de jefe** (`data/zones.json` → `boss.phases` / `secretBoss.phases`; tipos en `data/basics.js` → `phaseTypes`): `st.phases` se comprueba tras cada golpe (`checkPhase`) y `enterPhase` aplica furia, regeneración, escudo (`st.shield`, lo rompe un ataque eficaz) o frenesí (`st.frenzy`). Para un tipo nuevo: añádelo a `phaseTypes`, impleméntalo en `enterPhase` y escribe `phase.<tipo>`, `phase.name.<tipo>` y `phase.desc.<tipo>`.
 
 ### Combate en pantalla
 
@@ -310,6 +371,8 @@ El modo automático arranca si el ajuste `autoBattle` está activo y se pausa co
 - **Avisos:** `DK.ui.toast(texto, { icon, kind })`. Se agrupan solos; en el móvil sale uno a la vez (el resto en «+N avisos»), encima de la barra inferior, se quitan tocándolos y suben arriba si hay una hoja abierta.
 - **Explicaciones (`tip`):** con ratón, al pasar por encima. Con el dedo: tocar algo que no es un botón la muestra; mantener pulsado un botón la muestra **sin pulsarlo** (p. ej. los ataques del combate). Dentro de elementos con menú contextual (`attachContextMenu` → `data-ctx`) no se usa.
 - **Arrastrar:** `DK.ui.pointerDrag(el, { zones, onDrop, touch: true })`. Con `touch`, el dedo arrastra tras mantener pulsado ~0,26 s (si se mueve antes, es desplazar la página). Lo usan la mochila y el Equipo.
+- **Crafteo** (`screens/craft.js`): barra única (Recetas | Materiales, buscador, tipo, «Sólo fabricables»); recetas en lista por secciones plegables según `kindOf` (equipo con ataque, con pasiva, de atributos, tónicos, consumibles) y arriba los **objetivos**; detalle en tres bloques (qué hace · materiales · fabricar), a la derecha o en hoja inferior en el móvil. Los objetivos son las favoritas de `DK.crafting` (`goals`, `goalsReady`, `goalNeeds`): salen al preparar la expedición, en «Qué hacer ahora» y en el resumen. Al fabricar equipo se abre `V.equipChooser(id)` (a quién ponérselo, con la diferencia de atributos). El aviso del menú cuenta sólo tónicos y equipo nuevo fabricable. Cada material tiene su icono (`data/items.js`).
+- **Inventario** (`screens/inventory.js`): filtros por tipo en horizontal (`.inv-tabs`), buscador y lista agrupada por tipo; al pulsar un objeto, su ficha grande con todas las opciones (usar en cada daskai con lo que le hace, equipar en un hueco con la diferencia de atributos, recetas en las que se usa y venta). A la derecha en escritorio; hoja inferior en el móvil.
 - **Qué hacer ahora** (Inicio): `components/todoCard.js`. Cada aviso es una función en `SOURCES` que devuelve `{ id, icon, kind, text, cta, run }` o null; los textos en `todo.*` (con variante `…One` para el singular).
 - **Ficha del daskai:** 3 pestañas (Atributos + talentos · Ataques + aprender/evolución · Equipo). `daskaiPanel(d, { onNav })` añade Anterior/Siguiente y deslizar la cabecera.
 - **Atajos:** `DK.keys.on('tecla', fn)`. Duran lo que dure la pantalla.
@@ -323,10 +386,13 @@ El modo automático arranca si el ajuste `autoBattle` está activo y se pausa co
 - Cada función pública tiene un comentario `/** ... */` con sus parámetros y lo que devuelve.
 - Cada archivo va envuelto en `(function () { ... })();`. Lo único global es `DK`.
 - Los números configurables van en `data/config.js`; los colores, como variables en `css/base.css`.
+- Utilidades comunes en `DK.util` (`core/dk.js`): `pick(arr, rnd)`, `weighted(lista, clave, rnd)`, `weightedKey({ id: peso }, rnd)`, `weightsOf(obj)`, `percent(a, b)`, `seeded(texto)`… Úsalas en vez de repetir el cálculo. Los textos: `const { t } = DK;`.
+- **Guardado:** `DK.store.save()` no escribe al momento: agrupa las peticiones de 400 ms en una escritura. Se escribe seguro al cerrar la partida, al salir o al cambiar de pestaña (`DK.store.flush()`). Si necesitas leer la ranura actual de `localStorage`, usa `DK.store.read(slot)` (vacía lo pendiente antes).
 - Las reglas de dificultad se consultan siempre con `DK.rules`, y las mejoras con `DK.camp.value()`.
 
 ## 5. Comprobar que todo funciona
 
-1. `node tools/check.js` debe terminar con «Todo correcto».
+1. `npm test` (o, sin Playwright, `node tools/check.js`) debe terminar sin fallos. Para una sola parte: `node tests/run.js battle`.
+   Para añadir una prueba crea `tests/<tema>.test.js` con `{ name, cases: [{ name, views: ['desktop', 'mobile'], run: (browser, view) => play(browser, view, async (page) => { … check(cond, 'mensaje') }) }] }`.
 2. Abre la consola del navegador (F12): no debe haber errores en rojo.
 3. Prueba con la ventana estrecha (móvil): todo debe caber sin desplazamiento horizontal.

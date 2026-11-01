@@ -23,6 +23,7 @@
     pixelArt: true,         // daskai en pixel art (false = dibujo suave)
     autoBattle: false,      // los combates empiezan en modo automático
     autoPause: true,        // el automático se pausa si tu daskai baja del 30% de vida
+    autoHeal: true,         // el automático usa un objeto curativo cuando tu daskai está en zona crítica
     skipAnims: false,
     showHotkeys: true,
     confirmFlee: false,

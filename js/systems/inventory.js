@@ -11,7 +11,7 @@
  * ============================================================= */
 (function () {
   const D = DK.data;
-  const t = (k, v) => DK.t(k, v);
+  const { t } = DK;
 
   /* ======================= BOLSA ======================= */
   DK.bag = {
@@ -27,10 +27,10 @@
     /** ¿Se está usando la mochila de la expedición? */
     inPack() { const e = DK.store.state.expedition; return !!(e && e.pack); },
     /** Pasa objetos { id: n } a la bolsa de casa. */
-    addHome(items) { const b = this.home(); Object.entries(items || {}).forEach(([id, n]) => { if (n > 0) b[id] = (b[id] || 0) + n; }); },
+    addHome(items) { const b = this.home(); Object.entries(items || {}).forEach(([id, n]) => { if (n > 0) { b[id] = (b[id] || 0) + n; DK.codex && DK.codex.markItem(id); } }); },
     /** Cantidad que tienes de un objeto. */
     count(id) { return this.raw()[id] || 0; },
-    add(id, n = 1) { if (n > 0) this.raw()[id] = this.count(id) + n; },
+    add(id, n = 1) { if (n > 0) { this.raw()[id] = this.count(id) + n; DK.codex && DK.codex.markItem(id); } },
     /** Quita n unidades. Devuelve false si no hay suficientes. */
     remove(id, n = 1) {
       const c = this.count(id);
@@ -308,6 +308,21 @@
       if (i >= 0) f.splice(i, 1); else f.push(id);
       DK.store.save();
       return i < 0;
+    },
+    /* ---- Objetivos (= favoritas, estrella en Crafteo) ---- */
+    goals() { return (DK.store.state.favorites || []).map((id) => this.get(id)).filter(Boolean); },
+    /** Objetivos que ya se pueden fabricar (directamente o en cadena). */
+    goalsReady() { return this.goals().filter((r) => this.plan(r).ok); },
+    /**
+     * Lo que falta para los objetivos: { material: cuántos faltan } (suma de todos,
+     * contando sólo los ingredientes directos).
+     */
+    goalNeeds() {
+      const need = {};
+      this.goals().forEach((r) => Object.entries(r.ingredients).forEach(([id, n]) => { need[id] = (need[id] || 0) + n; }));
+      const out = {};
+      Object.entries(need).forEach(([id, n]) => { const miss = n - DK.bag.count(id); if (miss > 0) out[id] = miss; });
+      return out;
     },
     /**
      * Comprueba favoritas que acaban de poder fabricarse.

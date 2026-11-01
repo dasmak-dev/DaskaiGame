@@ -23,7 +23,7 @@
  * ============================================================= */
 (function () {
   const U = DK.util, D = DK.data, C = () => DK.config;
-  const t = (k, v) => DK.t(k, v);
+  const { t } = DK;
   const other = (s) => (s === 'ally' ? 'enemy' : 'ally');
   const zeroStages = () => ({ atk: 0, matk: 0, def: 0, mdef: 0, spd: 0 });
   const cap = (x) => (x ? x.charAt(0).toUpperCase() + x.slice(1) : x);
@@ -68,6 +68,7 @@
         bossInfo: bossInfo ? { title: bossInfo.title, coins: bossInfo.coins, drops: bossInfo.drops } : null,
         stages: { ally: zeroStages(), enemy: zeroStages() }, turn: 0, outcome: null, needSwitch: false, finished: false, lastMove: null,
         phases: o.boss ? (secret ? secret.phases.map((p) => Object.assign({}, p)) : this.bossPhases(zoneId)) : [], phase: 0, shield: 0, frenzy: false, bossRegen: 0, guarding: false,
+        breakMax: o.boss ? C().breakGauge.boss : o.elite ? C().breakGauge.elite : 0, breakVal: 0, broken: 0, brokeAt: 0, breaks: 0,
       };
       // Pacto «Frenesí»: el rival empieza más rápido
       if (st.expedition && DK.curses.effect('enemySpd')) st.stages.enemy.spd = Math.min(3, DK.curses.effect('enemySpd'));
@@ -104,7 +105,7 @@
     /** Daño previsto de la intención del rival contra otro daskai tuyo si entrase ahora (con el colchón del cambio). */
     intentVs(st, d) {
       const m = st.intent && D.moves[st.intent];
-      if (!m || !m.power) return null;
+      if (!m || !m.power || st.broken) return null;
       const prev = st.switchCushion; st.switchCushion = true;
       const max = this.damage(st, 'enemy', m, { random: false, ignoreHouse: !st.known, target: d }).dmg;
       st.switchCushion = prev;
@@ -117,6 +118,7 @@
      * @returns {{move, type:'attack'|'heavy'|'heal'|'buff'|'debuff'|'status', dmg:[min,max]|null, twice:boolean}}
      */
     intentInfo(st) {
+      if (st.broken) return { move: null, type: 'stunned', dmg: null, twice: false, acc: 100, priority: 0 };
       const id = st.intent; if (!id || !D.moves[id]) return null;
       const m = D.moves[id], a = this.ally(st);
       let type = 'attack', dmg = null;
@@ -156,10 +158,19 @@
       return { mult: 1, eff: null };
     },
 
-    /** Eficacia del aliado contra el enemigo (null si aún no se conoce su casa). */
-    effOf(st) {
+    /**
+     * Casa de un ataque: la suya si la tiene; los ataques sin casa (Placaje…)
+     * usan la del daskai que los lanza.
+     */
+    moveHouse(d, move) { return (move && move.house) || D.species[d.species].house; },
+    /** ¿Misma casa que el daskai? (+stab de daño; sólo ataques con casa propia) */
+    isStab(d, move) { return !!(move && move.house && move.house === D.species[d.species].house); },
+
+    /** Eficacia de un ataque del aliado contra el enemigo (null si aún no se conoce su casa). */
+    effOf(st, moveId) {
       if (!st.known) return null;
-      return this.houseMult(D.species[this.ally(st).species].house, D.species[st.enemy.species].house).eff;
+      const a = this.ally(st), m = moveId ? D.moves[moveId] : null;
+      return this.houseMult(this.moveHouse(a, m), D.species[st.enemy.species].house).eff;
     },
 
     /** Fórmula de daño (también se usa fuera de combate para estimaciones). */
@@ -181,7 +192,11 @@
     factors(st, side, move, { ignoreHouse = false, target, hideWeak = false } = {}) {
       const A = this.get(st, side), T = target || this.get(st, other(side));
       const phys = move.kind === 'fisico';
-      const h = ignoreHouse ? { mult: 1, eff: null } : this.houseMult(D.species[A.species].house, D.species[T.species].house);
+      // Casas: la del ATAQUE contra la del que recibe, y bonus si es de la misma casa que quien lo lanza
+      const atkHouse = this.moveHouse(A, move);
+      const h = ignoreHouse ? { mult: 1, eff: null } : this.houseMult(atkHouse, D.species[T.species].house);
+      const stab = this.isStab(A, move) ? C().stab : 1;
+      const broken = side === 'ally' && st.broken && T === st.enemy ? C().breakGauge.dmg : 1; // rival roto
       // Reliquias y Mejoras de expedición: más daño para ti, menos daño recibido
       let bonus = 1, critP = C().critChance;
       if (st.expedition) {
@@ -193,17 +208,18 @@
       const guard = side === 'enemy' && st.guarding ? C().guardMult : 1;            // te estás defendiendo
       const switchIn = side === 'enemy' && st.switchCushion ? C().switchMult : 1;  // acaba de entrar al cambiar
       const shield = side === 'ally' && st.shield > 0 && h.eff !== 'strong' ? 0.35 : 1; // escudo del jefe
+      const weather = st.expedition && move.house ? 1 + DK.expedition.modHouse(move.house) : 1; // modificador del mapa (tormenta, calor…)
       const atk = this.stat(st, side, phys ? 'atk' : 'matk');
       const tSide = T === this.get(st, other(side)) ? other(side) : null;
       const def = tSide ? this.stat(st, tSide, phys ? 'def' : 'mdef') : DK.daskai.stats(T)[phys ? 'def' : 'mdef'];
-      const mult = h.mult * bonus * wk * guard * switchIn * shield;
+      const mult = h.mult * stab * bonus * wk * guard * switchIn * shield * weather * broken;
       const parts = [
         { k: 'power', v: move.power }, { k: 'atkdef', v: `${Math.round(atk)} / ${Math.round(def)}` }, { k: 'level', v: 1 + A.level / 100 },
-        h.mult !== 1 ? { k: 'house', v: h.mult } : null, bonus !== 1 ? { k: 'bonus', v: bonus } : null, wk !== 1 ? { k: 'weak', v: wk } : null,
-        guard !== 1 ? { k: 'guard', v: guard } : null, switchIn !== 1 ? { k: 'switchIn', v: switchIn } : null, shield !== 1 ? { k: 'shield', v: shield } : null,
+        stab !== 1 ? { k: 'stab', v: stab } : null, h.mult !== 1 ? { k: 'house', v: h.mult } : null, broken !== 1 ? { k: 'broken', v: broken } : null, bonus !== 1 ? { k: 'bonus', v: bonus } : null, wk !== 1 ? { k: 'weak', v: wk } : null,
+        guard !== 1 ? { k: 'guard', v: guard } : null, switchIn !== 1 ? { k: 'switchIn', v: switchIn } : null, shield !== 1 ? { k: 'shield', v: shield } : null, weather !== 1 ? { k: 'weather', v: weather } : null,
         A.status === 'quemadura' && phys ? { k: 'burn', v: D.statuses.quemadura.atkMult } : null,
       ].filter(Boolean);
-      return { power: move.power, atk, def, level: A.level, eff: h.eff, mult, critP, parts, weak: wk !== 1, burned: A.status === 'quemadura' };
+      return { power: move.power, atk, def, level: A.level, eff: h.eff, house: atkHouse, stab: stab !== 1, mult, critP, parts, weak: wk !== 1, burned: A.status === 'quemadura' };
     },
 
     /** Calcula el daño de un ataque de `side` contra el otro (o contra `o.target`). */
@@ -215,7 +231,37 @@
         power: move.power, kind: move.kind, attLevel: A.level, atk: f.atk, def: f.def,
         mult: f.mult, roll: random ? U.randf(0.88, 1) : 1, crit, burned: f.burned,
       });
-      return { dmg, crit, eff: f.eff, weak: f.weak };
+      return { dmg, crit, eff: f.eff, weak: f.weak, stab: f.stab };
+    },
+
+    /* ---------------- Ruptura (jefes y élites) ---------------- */
+    /** Cuánto llenaría la barra de ruptura un golpe (sin contar críticos si `r` no se da). */
+    breakGain(st, move, r) {
+      if (!st.breakMax || st.broken || !move || !move.power) return 0;
+      const G = C().breakGauge;
+      const eff = r ? r.eff : this.effOf(st, move.id);
+      if (eff === 'weak') return 0;
+      const weak = r ? r.weak : this.weakKnown(st.enemy.species) && this.weakness(st.enemy.species) === move.kind;
+      return G.hit + (eff === 'strong' ? G.strong : 0) + (weak ? G.weak : 0) + (r && r.crit ? G.crit : 0);
+    },
+    /** Suma a la barra y rompe al rival si se llena. */
+    addBreak(st, n, ev) {
+      if (!n || !st.breakMax || st.broken || st.enemy.cur.hp <= 0) return;
+      st.breakVal = Math.min(st.breakMax, st.breakVal + n);
+      if (st.breakVal < st.breakMax) return;
+      st.broken = 1; st.brokeAt = st.turn; st.breakVal = 0; st.breaks++;
+      DK.store.state.stats.breaks = (DK.store.state.stats.breaks || 0) + 1;
+      st.breakMax = Math.round(st.breakMax * C().breakGauge.grow);
+      this.push(st, ev, { text: t('battle.broken', { name: cap(this.name(st, 'enemy')), n: Math.round((C().breakGauge.dmg - 1) * 100) }), kind: 'level', anim: 'broken', side: 'enemy', cat: 'dmg' });
+      if (st.expedition) DK.expedition.questTrack('break');
+    },
+    /** El rival actúa (salvo si está roto). */
+    enemyAct(st, moveId, ev) {
+      if (st.broken) {
+        if (st._stunMsg !== st.turn) { st._stunMsg = st.turn; this.push(st, ev, { text: t('battle.stunned', { name: cap(this.name(st, 'enemy')) }), kind: 'muted', anim: 'stunned', side: 'enemy', cat: 'dmg' }); }
+        return;
+      }
+      this.act(st, 'enemy', moveId, ev);
     },
 
     /* ---------------- Punto débil e información del rival ---------------- */
@@ -283,6 +329,28 @@
     canUseMove(d, moveId) { return d.cur.mp >= this.mpCost(d, moveId); },
     hasUsableMove(d) { return DK.daskai.battleMoves(d).some((m) => this.canUseMove(d, m)); },
 
+    /**
+     * Objeto curativo para el automático cuando tu daskai está en zona crítica:
+     * el más barato que recupere al menos la mitad de lo que le falta (o el que más cure).
+     * Nunca usa objetos legendarios. Devuelve el id o null.
+     */
+    autoHealItem(st) {
+      const a = this.ally(st), s = DK.daskai.stats(a);
+      const missing = s.hp - a.cur.hp;
+      if (missing <= 0) return null;
+      const opts = DK.bag.list('batalla').map(({ item }) => item)
+        .filter((it) => it.use && !it.use.capture && it.rarity !== 'legendario' && DK.bag.potency(it.id, a).hp > 0)
+        .map((it) => ({ id: it.id, hp: DK.bag.potency(it.id, a).hp, price: D.prices[it.id] || 0 }));
+      if (!opts.length) return null;
+      const enough = opts.filter((o) => o.hp >= missing * 0.5).sort((x, y) => x.price - y.price || x.hp - y.hp)[0];
+      return (enough || opts.sort((x, y) => y.hp - x.hp)[0]).id;
+    },
+    /** ¿Debe el automático curar ahora? (zona crítica, ajuste activo, sin pasarse del máximo) */
+    autoShouldHeal(st) {
+      const a = this.ally(st);
+      return !!DK.settings.get('autoHeal') && DK.daskai.hpPct(a) < C().autoHeal.at && (st.autoHeals || 0) < C().autoHeal.max;
+    },
+
     /** Mejor ataque para el combate automático. */
     bestMove(st) {
       const a = this.ally(st);
@@ -300,7 +368,7 @@
     /** Foto de vida/maná/estado para la interfaz. */
     snap(st) {
       const a = this.ally(st), e = st.enemy;
-      return { aHp: a.cur.hp, aMp: a.cur.mp, aStatus: a.status, eHp: e.cur.hp, eMp: e.cur.mp, eStatus: e.status, aUid: a.uid };
+      return { aHp: a.cur.hp, aMp: a.cur.mp, aStatus: a.status, eHp: e.cur.hp, eMp: e.cur.mp, eStatus: e.status, aUid: a.uid, bVal: st.breakVal || 0, bMax: st.breakMax || 0, broken: st.broken || 0 };
     },
     push(st, ev, o) { ev.push(Object.assign({ cat: 'sys' }, o, { snap: this.snap(st) })); },
 
@@ -356,6 +424,8 @@
           st.shield = r.eff === 'strong' ? 0 : st.shield - 1;
           this.push(st, ev, { text: st.shield ? t('phase.shieldHit', { n: st.shield }) : t('phase.shieldBroken'), kind: st.shield ? 'muted' : 'good', cat: 'dmg' });
         }
+        if (side === 'ally' && st.expedition && r.eff === 'strong') DK.expedition.questTrack('strong');
+        if (side === 'ally') this.addBreak(st, this.breakGain(st, m, r), ev);
         if (side === 'ally') this.checkPhase(st, ev);
       }
 
@@ -445,15 +515,15 @@
           return ev;
         }
         this.push(st, ev, { text: t('battle.fleeFail'), kind: 'warn' });
-        this.act(st, 'enemy', enemyMove, ev);
+        this.enemyAct(st, enemyMove, ev);
       } else if (action.type === 'item') {
         if (this.useItem(st, action.itemId, ev)) return ev;
-        this.act(st, 'enemy', enemyMove, ev);
+        this.enemyAct(st, enemyMove, ev);
       } else if (action.type === 'switch') {
         // Cambio táctico: el que entra recibe menos daño este turno
         ev.push(...this.switchTo(st, action.uid, { voluntary: true }));
         st.switchCushion = true;
-        this.act(st, 'enemy', enemyMove, ev);
+        this.enemyAct(st, enemyMove, ev);
       } else if (action.type === 'guard') {
         // Defenderse: actúa siempre primero, recibe menos daño y recupera algo de maná
         const a = this.ally(st), s = DK.daskai.stats(a);
@@ -461,23 +531,25 @@
         const mp = Math.min(Math.round(s.mp * C().guardMana), s.mp - a.cur.mp);
         a.cur.mp += mp;
         this.push(st, ev, { text: t('battle.guarding', { name: DK.daskai.name(a), n: mp }), kind: 'good', anim: mp ? 'mana' : 'buff', side: 'ally', amount: mp || undefined, cat: 'dmg' });
-        this.act(st, 'enemy', enemyMove, ev);
+        this.enemyAct(st, enemyMove, ev);
       } else if (action.type === 'move') {
         const order = this.orderFor(st, action.moveId, enemyMove);
         const allyFirst = order.first === 'ally' || (order.first === 'tie' && U.chance(0.5));
         const seq = allyFirst ? [['ally', action.moveId], ['enemy', enemyMove]] : [['enemy', enemyMove], ['ally', action.moveId]];
         for (const [side, mv] of seq) {
           if (this.get(st, side).cur.hp <= 0 || this.get(st, other(side)).cur.hp <= 0) break;
-          this.act(st, side, mv, ev);
+          if (side === 'enemy') this.enemyAct(st, mv, ev); else this.act(st, side, mv, ev);
         }
       }
       // Frenesí del jefe: uno de cada dos turnos ataca otra vez
-      if (st.frenzy && st.turn % 2 === 0 && st.enemy.cur.hp > 0 && this.ally(st).cur.hp > 0 && !st.outcome) {
+      if (st.frenzy && !st.broken && st.turn % 2 === 0 && st.enemy.cur.hp > 0 && this.ally(st).cur.hp > 0 && !st.outcome) {
         this.push(st, ev, { text: t('phase.again', { name: cap(this.name(st, 'enemy')) }), kind: 'warn', cat: 'dmg' });
         this.act(st, 'enemy', this.enemyChoice(st), ev);
       }
       st.guarding = false; st.switchCushion = false;
       if (!this.resolve(st, ev)) this.endOfTurn(st, ev);
+      // La ruptura dura hasta el final del turno siguiente al que se rompió
+      if (st.broken && st.turn > st.brokeAt && !st.outcome) { st.broken = 0; this.push(st, ev, { text: t('battle.recovered', { name: cap(this.name(st, 'enemy')) }), kind: 'warn', cat: 'dmg' }); }
       if (!st.outcome) st.intent = this.enemyChoice(st);
       return ev;
     },
@@ -515,6 +587,7 @@
         return true;
       }
       if (a.cur.hp <= 0) {
+        if (st.expedition) DK.expedition.questFail('faint');
         this.push(st, ev, { text: t('battle.allyFainted', { name: DK.daskai.name(a) }), kind: 'bad', anim: 'faint', side: 'ally' });
         st.stages.ally = zeroStages();
         if (DK.party.aliveActive().length) st.needSwitch = true;
@@ -615,10 +688,17 @@
         if (ex && ex.log) (ex.log.secrets = ex.log.secrets || []).push(st.zoneId);
         DK.emit('secret:defeated', { zone: st.zoneId, first: out.secretUnlocked });
       }
+      // Línea de tiempo de la expedición
+      if (st.expedition) {
+        if (st.secret) DK.expedition.logEvent('secret', { title: st.bossInfo.title });
+        else if (st.boss) DK.expedition.logEvent('boss', { title: (st.bossInfo || zone.boss).title });
+        else if (st.elite) { DK.expedition.logEvent('elite', { species: e.species }); DK.expedition.questTrack('elite'); }
+        if (out.captured) { DK.expedition.logEvent('recruit', { name: DK.daskai.name(e), species: e.species }); DK.expedition.questTrack('capture'); }
+      }
       if (st.boss) {
         DK.store.state.stats.bossesDefeated++;
         // Emblemas para las Mejoras permanentes (sólo en expedición)
-        if (st.expedition) out.emblems = DK.camp.addEmblems(C().expedition.emblemsPerBoss);
+        if (st.expedition) out.emblems = DK.camp.addEmblems(DK.expedition.bossEmblems()); // más cuanto más grande es el mapa
         DK.emit('boss:defeated', { zone: st.zoneId, secret: st.secret });
       }
       DK.world.addWin(st.zoneId);
@@ -647,6 +727,7 @@
           const info = { name: DK.daskai.name(d), species: d.species, level: d.level };
           st.dead.push(info);
           if (e && e.log) (e.log.fallen = e.log.fallen || []).push(info);
+          DK.expedition.logEvent('fallen', { name: info.name });
           DK.party.kill(d.uid, st.zoneId);
         });
       }

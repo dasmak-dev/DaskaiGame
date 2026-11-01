@@ -7,7 +7,7 @@
  * ============================================================= */
 (function () {
   const { h, btn } = DK.ui;
-  const t = (k, v) => DK.t(k, v);
+  const { t } = DK;
   const V = DK.views;
 
   /* ---------- Opciones bajo las ranuras ---------- */

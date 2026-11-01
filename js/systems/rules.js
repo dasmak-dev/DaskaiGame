@@ -106,6 +106,7 @@
       const d = DK.party.get(uid);
       if (!es || !d) return null;
       const p = this.preview(es);
+      DK.daskai.touch();
       d.legacy = d.legacy || {};
       d.legacy[p.stat] = (d.legacy[p.stat] || 0) + p.points;
       const levelInfo = DK.daskai.gainExp(d, p.exp);

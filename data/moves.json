@@ -1,0 +1,330 @@
+{
+  "forcejeo": {
+    "power": 20,
+    "name": "Forcejeo",
+    "kind": "fisico",
+    "desc": "Ataque desesperado cuando no queda otra opción.",
+    "hidden": true
+  },
+  "placaje": {"power":30,"name":"Placaje","kind":"fisico","desc":"Embiste con todo el cuerpo."},
+  "aranazo": {"power":35,"priority":1,"name":"Arañazo","kind":"fisico","desc":"Araña con garras afiladas."},
+  "picotazo": {"power":38,"priority":1,"name":"Picotazo","kind":"fisico","desc":"Picotea con rapidez."},
+  "mordisco": {"power":45,"name":"Mordisco","kind":"fisico","desc":"Muerde con fuerza."},
+  "tenaza": {"power":52,"name":"Tenaza","kind":"fisico","desc":"Atrapa al rival con sus pinzas."},
+  "embestida": {"acc":95,"power":55,"name":"Embestida","kind":"fisico","desc":"Carga violenta contra el rival."},
+  "ala_cortante": {"acc":95,"power":68,"name":"Ala Cortante","kind":"fisico","desc":"Corta el aire con sus alas."},
+  "golpe_feroz": {"acc":90,"power":82,"priority":-1,"name":"Golpe Feroz","kind":"fisico","desc":"Un golpe brutal."},
+  "impacto_final": {
+    "acc": 80,
+    "power": 115,
+    "priority": -1,
+    "name": "Impacto Final",
+    "kind": "fisico",
+    "desc": "Ataque devastador pero impreciso."
+  },
+  "rugido": {
+    "mp": 4,
+    "name": "Rugido",
+    "kind": "magico",
+    "effect": {"type":"buff","stat":"atk","stages":1},
+    "desc": "Ruge para aumentar su ataque físico."
+  },
+  "concentracion": {
+    "mp": 4,
+    "name": "Concentración",
+    "kind": "magico",
+    "effect": {"type":"buff","stat":"matk","stages":1},
+    "desc": "Aumenta su ataque mágico."
+  },
+  "coraza": {
+    "mp": 4,
+    "priority": 1,
+    "name": "Coraza",
+    "kind": "magico",
+    "effect": {"type":"buff","stat":"def","stages":1},
+    "desc": "Endurece el cuerpo y sube su defensa física."
+  },
+  "agilidad": {
+    "mp": 5,
+    "priority": 1,
+    "name": "Agilidad",
+    "kind": "magico",
+    "effect": {"type":"buff","stat":"spd","stages":2},
+    "desc": "Aumenta mucho su velocidad."
+  },
+  "intimidar": {
+    "mp": 4,
+    "name": "Intimidar",
+    "kind": "magico",
+    "effect": {"type":"debuff","stat":"atk","stages":1},
+    "desc": "Reduce el ataque físico del rival."
+  },
+  "chispa": {
+    "mp": 5,
+    "power": 40,
+    "house": "fuego",
+    "name": "Chispa",
+    "kind": "magico",
+    "effect": {"type":"status","status":"quemadura","chance":0.1},
+    "desc": "Pequeña llama que puede quemar."
+  },
+  "colmillo_ardiente": {
+    "power": 50,
+    "house": "fuego",
+    "name": "Colmillo Ardiente",
+    "kind": "fisico",
+    "effect": {"type":"status","status":"quemadura","chance":0.25},
+    "desc": "Muerde con colmillos en llamas."
+  },
+  "puno_igneo": {
+    "power": 66,
+    "house": "fuego",
+    "name": "Puño Ígneo",
+    "kind": "fisico",
+    "effect": {"type":"status","status":"quemadura","chance":0.2},
+    "desc": "Puñetazo envuelto en fuego."
+  },
+  "lanzallamas": {
+    "mp": 14,
+    "power": 76,
+    "house": "fuego",
+    "name": "Lanzallamas",
+    "kind": "magico",
+    "effect": {"type":"status","status":"quemadura","chance":0.15},
+    "desc": "Chorro de fuego abrasador."
+  },
+  "llamarada": {
+    "mp": 22,
+    "power": 100,
+    "house": "fuego",
+    "priority": -1,
+    "name": "Llamarada",
+    "kind": "magico",
+    "effect": {"type":"status","status":"quemadura","chance":0.3},
+    "desc": "Explosión de fuego intenso."
+  },
+  "infierno": {
+    "acc": 90,
+    "mp": 32,
+    "power": 130,
+    "house": "fuego",
+    "priority": -1,
+    "name": "Infierno",
+    "kind": "magico",
+    "effect": {"type":"status","status":"quemadura","chance":0.5},
+    "desc": "Desata un mar de llamas."
+  },
+  "burbuja": {"mp":5,"power":40,"house":"agua","name":"Burbuja","kind":"magico","desc":"Lanza burbujas a presión."},
+  "acua_cola": {"power":60,"house":"agua","name":"Acua Cola","kind":"fisico","desc":"Golpe de cola cargado de agua."},
+  "hidrochorro": {"mp":14,"power":76,"house":"agua","name":"Hidrochorro","kind":"magico","desc":"Potente chorro de agua."},
+  "aguas_curativas": {
+    "mp": 10,
+    "house": "agua",
+    "name": "Aguas Curativas",
+    "kind": "magico",
+    "effect": {"type":"heal","pct":0.3},
+    "desc": "Recupera un 30% de su vida máxima."
+  },
+  "maremoto": {
+    "mp": 22,
+    "power": 104,
+    "house": "agua",
+    "priority": -1,
+    "name": "Maremoto",
+    "kind": "magico",
+    "desc": "Una gran ola arrasa al rival."
+  },
+  "diluvio": {
+    "acc": 90,
+    "mp": 32,
+    "power": 130,
+    "house": "agua",
+    "priority": -1,
+    "name": "Diluvio",
+    "kind": "magico",
+    "effect": {"type":"debuff","stat":"spd","stages":1,"chance":0.5},
+    "desc": "Lluvia torrencial que puede ralentizar."
+  },
+  "lodo": {
+    "mp": 5,
+    "power": 40,
+    "house": "tierra",
+    "name": "Lodo",
+    "kind": "magico",
+    "effect": {"type":"debuff","stat":"spd","stages":1,"chance":0.4},
+    "desc": "Barro que puede ralentizar."
+  },
+  "golpe_roca": {"power":60,"house":"tierra","name":"Golpe Roca","kind":"fisico","desc":"Golpea con un puño de piedra."},
+  "raiz_drenante": {
+    "mp": 10,
+    "power": 55,
+    "house": "tierra",
+    "name": "Raíz Drenante",
+    "kind": "magico",
+    "effect": {"type":"drain","pct":0.5},
+    "desc": "Absorbe vida: recupera el 50% del daño."
+  },
+  "polen_toxico": {
+    "acc": 90,
+    "mp": 8,
+    "house": "tierra",
+    "name": "Polen Tóxico",
+    "kind": "magico",
+    "effect": {"type":"status","status":"veneno","chance":1},
+    "desc": "Envenena al rival."
+  },
+  "terremoto": {
+    "mp": 22,
+    "power": 100,
+    "house": "tierra",
+    "priority": -1,
+    "name": "Terremoto",
+    "kind": "magico",
+    "desc": "Sacude el suelo con violencia."
+  },
+  "avalancha": {
+    "acc": 85,
+    "power": 115,
+    "house": "tierra",
+    "priority": -1,
+    "name": "Avalancha",
+    "kind": "fisico",
+    "desc": "Sepulta al rival bajo rocas."
+  },
+  "destello": {
+    "mp": 5,
+    "power": 40,
+    "house": "luz",
+    "priority": 1,
+    "name": "Destello",
+    "kind": "magico",
+    "desc": "Ráfaga de luz cegadora."
+  },
+  "golpe_aureo": {"power":60,"house":"luz","name":"Golpe Áureo","kind":"fisico","desc":"Golpe envuelto en luz dorada."},
+  "rayo_luz": {"mp":14,"power":76,"house":"luz","name":"Rayo de Luz","kind":"magico","desc":"Haz de luz concentrada."},
+  "curacion": {
+    "mp": 12,
+    "house": "luz",
+    "name": "Curación",
+    "kind": "magico",
+    "effect": {"type":"heal","pct":0.35},
+    "desc": "Recupera un 35% de su vida máxima."
+  },
+  "juicio": {
+    "mp": 22,
+    "power": 100,
+    "house": "luz",
+    "priority": -1,
+    "name": "Juicio",
+    "kind": "magico",
+    "desc": "Columna de luz sagrada."
+  },
+  "supernova": {
+    "acc": 90,
+    "mp": 32,
+    "power": 130,
+    "house": "luz",
+    "priority": -1,
+    "name": "Supernova",
+    "kind": "magico",
+    "desc": "Estallido de luz estelar."
+  },
+  "sombra_vil": {
+    "mp": 5,
+    "power": 40,
+    "house": "oscuridad",
+    "priority": 1,
+    "name": "Sombra Vil",
+    "kind": "magico",
+    "desc": "Ataca desde las sombras."
+  },
+  "colmillo_venenoso": {
+    "power": 50,
+    "house": "oscuridad",
+    "name": "Colmillo Venenoso",
+    "kind": "fisico",
+    "effect": {"type":"status","status":"veneno","chance":0.3},
+    "desc": "Muerde y puede envenenar."
+  },
+  "garra_umbria": {"power":66,"house":"oscuridad","name":"Garra Umbría","kind":"fisico","desc":"Zarpazo de pura sombra."},
+  "drenaje_vital": {
+    "mp": 12,
+    "power": 60,
+    "house": "oscuridad",
+    "name": "Drenaje Vital",
+    "kind": "magico",
+    "effect": {"type":"drain","pct":0.5},
+    "desc": "Roba vida: recupera el 50% del daño."
+  },
+  "pulso_umbrio": {
+    "mp": 14,
+    "power": 76,
+    "house": "oscuridad",
+    "name": "Pulso Umbrío",
+    "kind": "magico",
+    "effect": {"type":"debuff","stat":"mdef","stages":1,"chance":0.3},
+    "desc": "Onda oscura que puede bajar la defensa mágica."
+  },
+  "eclipse": {
+    "acc": 90,
+    "mp": 32,
+    "power": 130,
+    "house": "oscuridad",
+    "priority": -1,
+    "name": "Eclipse",
+    "kind": "magico",
+    "desc": "Apaga toda luz a su alrededor."
+  },
+  "telarana": {
+    "mp": 5,
+    "house": "oscuridad",
+    "name": "Telaraña",
+    "kind": "magico",
+    "effect": {"type":"debuff","stat":"spd","stages":2},
+    "desc": "Atrapa al rival en hilos pegajosos: baja mucho su velocidad."
+  },
+  "esporas": {
+    "mp": 7,
+    "power": 35,
+    "house": "oscuridad",
+    "name": "Esporas",
+    "kind": "magico",
+    "effect": {"type":"status","status":"veneno","chance":0.6},
+    "desc": "Nube de esporas que suele envenenar."
+  },
+  "vapor": {
+    "mp": 9,
+    "power": 55,
+    "house": "agua",
+    "name": "Chorro de Vapor",
+    "kind": "magico",
+    "effect": {"type":"status","status":"quemadura","chance":0.3},
+    "desc": "Agua hirviendo que puede quemar."
+  },
+  "muralla": {
+    "mp": 6,
+    "house": "tierra",
+    "priority": 1,
+    "name": "Muralla",
+    "kind": "magico",
+    "effect": {"type":"buff","stat":"def","stages":2},
+    "desc": "Se encierra en roca: sube mucho su defensa física."
+  },
+  "velo_aurora": {
+    "mp": 6,
+    "house": "luz",
+    "priority": 1,
+    "name": "Velo Aurora",
+    "kind": "magico",
+    "effect": {"type":"buff","stat":"mdef","stages":2},
+    "desc": "Un velo de luz que sube mucho su defensa mágica."
+  },
+  "mordisco_brasa": {
+    "power": 70,
+    "house": "fuego",
+    "name": "Mordisco Brasa",
+    "kind": "fisico",
+    "effect": {"type":"drain","pct":0.3},
+    "desc": "Muerde con dientes ardientes y recupera parte del daño."
+  }
+}

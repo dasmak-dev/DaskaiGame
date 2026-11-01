@@ -12,7 +12,7 @@
 (function () {
   const { h, btn } = DK.ui;
   const D = DK.data;
-  const t = (k, v) => DK.t(k, v);
+  const { t } = DK;
   const V = (DK.views = DK.views || {});
   /** Texto en singular (clave + 'One') cuando n es 1. */
   const tn = (key, n, v = {}) => t(n === 1 && DK.i18n.lookup(DK.i18n.lang, key + 'One') ? key + 'One' : key, { n, ...v });
@@ -33,6 +33,13 @@
       const d = DK.party.all().find((x) => !x.temp && DK.daskai.canEvolve(x));
       return d ? { id: 'evo', icon: 'evolve', kind: 'good', text: t('todo.evolve', { name: DK.daskai.name(d) }), cta: t('evo.button'), run: () => V.evolveDialog(d) } : null;
     },
+    // Objetivos de crafteo listos para fabricar
+    () => {
+      const ready = DK.crafting.goalsReady();
+      if (!ready.length) return null;
+      return { id: 'goals', icon: 'star', kind: 'good', text: ready.length === 1 ? t('todo.goalOne', { item: D.items[ready[0].result].name }) : t('todo.goalMany', { n: ready.length }),
+        cta: t('todo.craft'), run: go('craft', ready.length === 1 ? { sel: ready[0].id } : {}) };
+    },
     // Misiones por cobrar
     () => { const n = DK.missions.claimable(); return n ? { id: 'missions', icon: 'gift', kind: 'good', text: tn('todo.missions', n), cta: t('todo.claim'), run: go('progress', { tab: 'missions' }) } : null; },
     // Equipo herido
@@ -49,10 +56,9 @@
       return n && lead ? { id: 'tonic', icon: 'flask', kind: '', text: tn('todo.tonics', n), cta: t('todo.use'), run: go('team', { uid: lead.uid, panel: { open: 'items' } }) } : null;
     },
     // Mejoras que ya puedes pagar
-    // Emblemas guardados: se gastan al terminar la próxima expedición
-    () => { const n = DK.camp.affordable(); return n ? { id: 'emblems', icon: 'emblem', kind: '', text: tn('todo.upgrades', n), cta: t('todo.see'), run: go('camp') } : null; },
     // Huecos libres en el entrenamiento (si hay alguien en la reserva)
     () => {
+      if (!DK.unlocks.has('training')) return null;
       const free = DK.training.slotCount() - DK.training.slots().length;
       const idle = DK.party.all().some((d) => !d.temp && !DK.party.isActive(d.uid) && !DK.training.isTraining(d.uid));
       return free > 0 && idle ? { id: 'trainFree', icon: 'dumbbell', kind: '', text: tn('todo.trainFree', free), cta: t('todo.see'), run: go('training') } : null;

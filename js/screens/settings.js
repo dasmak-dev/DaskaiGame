@@ -10,7 +10,7 @@
 (function () {
   const { h, btn, toggle, slider, segmented } = DK.ui;
   const S = DK.settings;
-  const t = (k, v) => DK.t(k, v);
+  const { t } = DK;
 
   /** Construye el contenido del panel. `refresh` lo vuelve a pintar. */
   function build(refresh, close) {
@@ -38,6 +38,7 @@
         group('swords', t('settings.combat'),
           rowSeg('gauge', t('settings.battleSpeed'), segmented({ value: S.get('battleSpeed'), onChange: set('battleSpeed'), options: [1, 2, 4].map((n) => ({ value: n, label: 'x' + n, icon: 'play' })) })),
           toggle({ icon: 'bolt', label: t('settings.autoBattle'), desc: t('settings.autoBattleDesc'), value: S.get('autoBattle'), onChange: set('autoBattle') }),
+          toggle({ icon: 'flask', label: t('settings.autoHeal'), desc: t('settings.autoHealDesc', { n: Math.round(DK.config.autoHeal.at * 100), max: DK.config.autoHeal.max }), value: S.get('autoHeal'), onChange: set('autoHeal') }),
           toggle({ icon: 'heart', label: t('settings.autoPause'), desc: t('settings.autoPauseDesc'), value: S.get('autoPause'), onChange: set('autoPause') }),
           toggle({ icon: 'skip', label: t('settings.skipAnims'), desc: t('settings.skipAnimsDesc'), value: S.get('skipAnims'), onChange: set('skipAnims') }),
           toggle({ icon: 'keyboard', label: t('settings.showHotkeys'), desc: t('settings.showHotkeysDesc'), value: S.get('showHotkeys'), onChange: set('showHotkeys') }),

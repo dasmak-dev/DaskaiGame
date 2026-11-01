@@ -9,7 +9,7 @@
 (function () {
   const { h, btn } = DK.ui;
   const D = DK.data, V = DK.views;
-  const t = (k, v) => DK.t(k, v);
+  const { t } = DK;
   /** Singular (clave + 'One') cuando n es 1. */
   const tn = (key, n) => t(n === 1 ? key + 'One' : key, { n });
 
@@ -22,21 +22,17 @@
   };
 
   /**
-   * Mejoras permanentes: se compran AQUÍ, al terminar la expedición, con los
-   * emblemas (1 por jefe). Sólo en el resumen de la última expedición.
+   * Mejoras permanentes: sólo existen AQUÍ, al terminar la expedición. El menú
+   * se abre solo la primera vez que se ve el resumen (s.shopShown) y se
+   * puede volver a abrir con la tarjeta o el botón de arriba.
    */
-  function upgradeShop(s, params, refresh) {
-    const U = D.upgrades;
-    const open = params.shop != null ? params.shop : DK.camp.affordable() > 0;
+  function upgradeCardSummary(s, refresh) {
     const n = DK.camp.affordable();
-    return h('div', { class: 'card stack-s sum-shop' },
-      h('div', { class: 'panel-head' }, DK.icon('emblem', 18), h('h3', null, t('sum.shopTitle')),
-        h('span', { class: 'grow' }), V.emblems(DK.camp.emblems()),
-        btn({ icon: open ? 'arrowUp' : 'arrowDown', label: open ? t('sum.shopHide') : t('sum.shopShow'), size: 'sm', variant: 'ghost', onClick: () => { params.shop = !open; refresh(); } })),
-      h('p', { class: 'muted small' }, s.emblems ? tn('sum.shopEarned', s.emblems) : t('sum.shopNone'), ' ', n ? tn('sum.shopCan', n) : t('sum.shopSave')),
-      open ? DK.data.upgradeGroups.map((g) => h('section', { class: 'stack-s' },
-        h('h4', { class: 'camp-group' }, t('camp.group.' + g)),
-        h('div', { class: 'camp-grid' }, U.filter((u) => u.group === g).map((u) => V.upgradeCard(u, refresh, true))))) : null);
+    return h('button', { class: 'card sum-shop', type: 'button', onClick: () => V.upgradeMenu(refresh) },
+      h('span', { class: 'sum-shop-icon' }, DK.icon('emblem', 26)),
+      h('span', { class: 'grow stack-s' }, h('b', null, t('sum.shopTitle')),
+        h('span', { class: 'muted small' }, s.emblems ? tn('sum.shopEarned', s.emblems) : t('sum.shopNone'), ' ', n ? tn('sum.shopCan', n) : t('sum.shopSave'))),
+      V.emblems(DK.camp.emblems()), DK.icon('next', 18));
   }
 
   /** Chips de objetos { id: n }. lost=true los muestra tachados. */
@@ -44,6 +40,54 @@
     const list = Object.entries(items || {});
     return list.length ? h('div', { class: 'chips' }, list.map(([id, n]) => D.items[id] ? h('span', { class: 'chip ' + (lost ? 'neg' : 'pos') }, DK.icon(D.items[id].icon, 13), lost ? h('s', null, `${D.items[id].name} x${n}`) : `${D.items[id].name} x${n}`) : null)) : h('p', { class: 'muted small' }, t('sum.none'));
   };
+
+  /* ---------- Línea de tiempo ---------- */
+  const TL_ICON = { start: 'flag', newMap: 'map', elite: 'skull', boss: 'crown', secret: 'cave', recruit: 'paw', relic: 'amulet', cave: 'cave', caveTreasure: 'gift',
+    shortcut: 'shortcut', event: 'question', saved: 'sparkles', fallen: 'skull', mapCleared: 'trophy', campfire: 'campfire', cashout: 'coin', retreat: 'flag', lost: 'skull', quest: 'checkCircle' };
+  const TL_KIND = { boss: 'good', secret: 'good', mapCleared: 'good', recruit: 'good', relic: 'good', cashout: 'good', quest: 'good', fallen: 'bad', lost: 'bad', saved: 'warn' };
+  function tlText(ev) {
+    const v = ev.v || {};
+    const vars = Object.assign({}, v);
+    if (v.zone) vars.zone = D.zones[v.zone] ? D.zones[v.zone].name : v.zone;
+    if (v.size) vars.size = t('size.' + v.size + '.name');
+    if (v.species) vars.species = D.species[v.species] ? D.species[v.species].name : v.species;
+    if (v.id && ev.k === 'relic') vars.relic = D.relics[v.id] ? D.relics[v.id].name : v.id;
+    if (v.id && ev.k === 'event') vars.event = t(`events.${v.id}.title`);
+    if (v.id && ev.k === 'quest') vars.name = t(`quest.${v.id}.name`);
+    let text = t('tl.' + ev.k, vars);
+    if ((ev.k === 'start' || ev.k === 'newMap') && v.mod) text += ' · ' + t('mod.' + v.mod + '.name');
+    return text;
+  }
+  function timeline(s) {
+    const list = s.timeline || [];
+    if (!list.length) return null;
+    const t0 = list[0].at;
+    return h('div', { class: 'card stack-s sum-tl' },
+      h('div', { class: 'panel-head' }, DK.icon('clock', 18), h('h3', null, t('sum.timeline')), h('span', { class: 'muted small' }, t('sum.moments', { n: list.length }))),
+      h('ol', { class: 'tl' }, list.map((ev) => h('li', { class: 'tl-item k-' + (TL_KIND[ev.k] || '') },
+        h('span', { class: 'tl-dot' }, DK.icon(TL_ICON[ev.k] || 'info', 14)),
+        h('span', { class: 'tl-text' }, tlText(ev)),
+        h('span', { class: 'tl-meta muted small' }, `${t('exp.depth', { n: ev.d })}${ev.f ? ' · ' + t('sum.floorN', { n: ev.f }) : ''} · ${DK.util.duration(Math.round((ev.at - t0) / 1000))}`)))));
+  }
+  /** Comparación con tu mejor expedición anterior (por profundidad y luego monedas). */
+  function compare(s) {
+    const hist = (DK.store.state.expHistory || []).filter((x) => x !== s && x.endedAt !== s.endedAt);
+    if (!hist.length) return null;
+    const best = hist.slice().sort((a, b) => (b.depth || 1) - (a.depth || 1) || (b.coins || 0) - (a.coins || 0))[0];
+    const row = (icon, label, now, prev, fmt = String) => {
+      const diff = now - prev;
+      return h('div', { class: 'cmp-row' }, DK.icon(icon, 15), h('span', { class: 'grow' }, label), h('b', null, fmt(now)),
+        h('span', { class: 'cmp-diff ' + (diff > 0 ? 'up' : diff < 0 ? 'down' : '') }, diff > 0 ? '▲ ' + fmt(diff) : diff < 0 ? '▼ ' + fmt(-diff) : '='), h('span', { class: 'muted small' }, t('sum.bestWas', { v: fmt(prev) })));
+    };
+    const dur = (x) => Math.round(((x.endedAt || 0) - (x.startedAt || 0)) / 1000);
+    const isRecord = (s.depth || 1) > (best.depth || 1) || ((s.depth || 1) === (best.depth || 1) && (s.coins || 0) > (best.coins || 0));
+    return h('div', { class: 'card stack-s sum-cmp' },
+      h('div', { class: 'panel-head' }, DK.icon('trophy', 18), h('h3', null, t('sum.compare')), isRecord ? h('span', { class: 'badge good' }, DK.icon('star', 12), t('sum.newRecord')) : null),
+      row('compass', t('sum.cmpDepth'), s.depth || 1, best.depth || 1),
+      row('coin', t('sum.cmpCoins'), s.coins || 0, best.coins || 0),
+      row('emblem', t('emblem.title'), s.emblems || 0, best.emblems || 0),
+      row('clock', t('sum.cmpTime'), dur(s), dur(best), (n) => DK.util.duration(n)));
+  }
 
   DK.screens.register('expSummary', {
     title: () => t('sum.title'), icon: 'list', section: 'battle', music: 'menu',
@@ -63,6 +107,11 @@
       const again = () => DK.play.quick();
       const depth = s.depth || 1, zonesDone = s.zones || [];
       const home = () => DK.router.reset(DK.store.state.gameOver ? 'gameOver' : 'hub');
+      // Objetivos de crafteo que ya se pueden fabricar con lo traído
+      if (latest) DK.crafting.newlyReadyFavorites().forEach((rc) => DK.ui.toast(t('bag.favReady', { item: D.items[rc.result].name }), { icon: 'star', kind: 'good' }));
+      const goalsReady = latest ? DK.crafting.goalsReady() : [];
+      // El menú de Mejoras se abre solo al llegar al resumen (una vez por expedición)
+      if (latest && !DK.store.state.gameOver && !s.shopShown) { s.shopShown = true; DK.store.save(); setTimeout(() => V.upgradeMenu(refresh), 350); }
       DK.keys.on('Enter', home);
 
       const hero = h('div', { class: 'card sum-hero ' + o.cls, style: { '--z1': zone.colors[0], '--z2': zone.colors[1] } },
@@ -82,7 +131,7 @@
         h('div', { class: 'sum-actions' },
           btn({ icon: 'home', label: t('nav.home'), variant: 'primary', hotkey: '↵', onClick: home }),
           btn({ icon: 'flag', label: t('sum.again'), variant: 'tone', onClick: again }),
-          latest ? null : btn({ icon: 'star', label: t('nav.camp'), variant: 'ghost', onClick: () => DK.router.reset('camp') })));
+          latest && !DK.store.state.gameOver ? btn({ icon: 'emblem', label: t('sum.shopTitle'), variant: 'ghost', onClick: () => V.upgradeMenu(refresh) }) : null));
 
       const pathCard = h('div', { class: 'stack-s' },
         zonesDone.length ? h('div', { class: 'card stack-s' }, h('div', { class: 'panel-head' }, DK.icon('crown', 18), h('h3', null, t('sum.maps'))),
@@ -124,8 +173,12 @@
         relics.length ? h('div', { class: 'list' }, relics.map((r) => h('div', { class: 'relic-row r-' + r.rarity }, h('span', { class: 'relic-icon sm' }, DK.icon(r.icon, 18)), h('div', { class: 'grow' }, h('b', null, r.name), h('div', { class: 'muted small' }, V.relicText(r)))))) : h('p', { class: 'muted small' }, t('sum.none')));
 
       return h('div', { class: 'screen sum-screen' }, hero,
-        latest && !DK.store.state.gameOver ? upgradeShop(s, params, refresh) : null,
-        h('div', { class: 'sum-grid' }, pathCard, h('div', { class: 'stack' }, rewards, people, extras)));
+        latest && !DK.store.state.gameOver ? upgradeCardSummary(s, refresh) : null,
+        goalsReady.length ? h('button', { class: 'card sum-goals', type: 'button', onClick: () => DK.router.reset('craft', { sel: goalsReady[0].id }) },
+          h('span', { class: 'sum-shop-icon goals' }, DK.icon('star', 24)),
+          h('span', { class: 'grow stack-s' }, h('b', null, t('craft.goalsReadyTitle')), h('span', { class: 'muted small' }, goalsReady.map((r) => D.items[r.result].name).join(', '))),
+          DK.icon('next', 18)) : null,
+        h('div', { class: 'sum-grid' }, h('div', { class: 'stack' }, compare(s), timeline(s), pathCard), h('div', { class: 'stack' }, rewards, people, extras)));
     },
   });
 })();

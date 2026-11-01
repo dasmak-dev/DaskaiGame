@@ -13,7 +13,7 @@
 (function () {
   const { h, btn } = DK.ui;
   const D = DK.data, V = DK.views;
-  const t = (k, v) => DK.t(k, v);
+  const { t } = DK;
   const num = (n) => Math.round(n || 0).toLocaleString(DK.i18n.lang);
 
   DK.menus.add('nav', { id: 'profile', icon: 'user', order: 70, screen: 'profile', mobile: false, label: () => t('nav.profile') });
@@ -230,7 +230,7 @@
     return h('div', { class: 'card' }, h('div', { class: 'panel-head' }, DK.icon('award', 18), h('h3', null, t('profile.lastAch')),
       btn({ icon: 'next', label: t('home.allMissions'), size: 'sm', variant: 'ghost', onClick: () => DK.router.reset('progress', { tab: 'ach' }) })),
       DK.ui.bar({ value: DK.achievements.unlockedCount(), max: D.achievements.length, kind: 'exp' }),
-      recent.length ? h('div', { class: 'list mt' }, recent.map((a) => h('div', { class: 'stat-line' }, DK.icon(a.icon, 16), h('span', { class: 'grow' }, t(`achievements.${a.id}.name`)), h('span', { class: 'muted small' }, ago(st.achievements[a.id])))))
+      recent.length ? h('div', { class: 'list mt' }, recent.map((a) => h('div', { class: 'stat-line' }, DK.icon(a.icon, 16), h('span', { class: 'grow' }, DK.achievements.name(a)), h('span', { class: 'muted small' }, ago(st.achievements[a.id])))))
         : h('p', { class: 'muted small' }, t('profile.noAch')));
   }
 

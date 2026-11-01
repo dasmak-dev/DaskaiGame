@@ -5,7 +5,7 @@
 (function () {
   const { h, btn, modal } = DK.ui;
   const D = DK.data;
-  const t = (k, v) => DK.t(k, v);
+  const { t } = DK;
   const V = (DK.views = DK.views || {});
 
   V.itemIcon = (it, size = 22) => h('span', { class: 'item-icon r-' + it.rarity, style: { '--c': it.color || 'var(--primary)' } }, DK.icon(it.icon, size));

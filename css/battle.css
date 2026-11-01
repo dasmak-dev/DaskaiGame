@@ -233,7 +233,7 @@
   .arena-controls { top: 8px; right: 8px; gap: 4px; }
   .arena-controls .ctl { height: 30px; }
   .arena-controls .ctl:first-child:not(.auto), .arena-controls .ctl:last-child { display: none; }
-  .hud-enemy { width: 52%; }
+  .hud-enemy { width: 50%; }
 }
 .bact { justify-content: flex-start; }
 .bact span { text-align: left; }

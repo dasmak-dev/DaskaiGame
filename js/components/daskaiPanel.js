@@ -17,7 +17,7 @@
 (function () {
   const { h, btn, toast } = DK.ui;
   const D = DK.data, V = DK.views;
-  const t = (k, v) => DK.t(k, v);
+  const { t } = DK;
 
   /** Libera un daskai (con confirmación). Devuelve true si se liberó. */
   async function release(d) {

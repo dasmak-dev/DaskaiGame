@@ -37,7 +37,7 @@
 }
 @media (max-width: 600px) {
   .action-grid.five { grid-template-columns: 1fr 1fr; } .action-grid.five > .btn { grid-column: auto !important; } .action-grid.five > .btn:first-child { grid-column: span 2 !important; }
-  .turn-order { top: auto; bottom: 46%; font-size: .7rem; }
+  .turn-order { top: 52px; bottom: auto; left: auto; right: 8px; transform: none; font-size: .7rem; max-width: 44%; }
   .lu-row { grid-template-columns: 1fr 34px 14px 40px 36px; font-size: .85rem; }
   .battle-toolbar { padding: 6px 8px; }
   .input-sm { min-width: 0; flex: 1; }

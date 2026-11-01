@@ -16,7 +16,7 @@
 (function () {
   const { h, btn } = DK.ui;
   const D = DK.data, V = DK.views;
-  const t = (k, v) => DK.t(k, v);
+  const { t } = DK;
 
   DK.menus.add('nav', { id: 'team', icon: 'users', order: 20, expedition: true, pin: true, screen: 'team', label: () => t('nav.team'), badge: () => (DK.party.all().some((d) => DK.daskai.canEvolve(d)) ? '!' : '') });
 

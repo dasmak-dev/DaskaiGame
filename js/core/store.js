@@ -14,6 +14,7 @@
  * ============================================================= */
 (function () {
   const SLOT_KEY = (n) => `daskai.slot.${n}`;
+  const SAVE_DELAY = 400; // ms: las peticiones de guardado se agrupan (DK.store.save)
   const LEGACY_KEY = 'daskai.save.v1';
   const SLOTS = 3;
 
@@ -32,7 +33,7 @@
     slots: SLOTS,
 
     /** Lee la partida guardada en una ranura (sin activarla). */
-    read(n) { const raw = ls.get(SLOT_KEY(n)); if (!raw) return null; try { return JSON.parse(raw); } catch (e) { return null; } },
+    read(n) { if (n === this.slot) this.flush(); const raw = ls.get(SLOT_KEY(n)); if (!raw) return null; try { return JSON.parse(raw); } catch (e) { return null; } },
 
     /** ¿Hay alguna partida guardada? */
     hasAnySave() { for (let i = 1; i <= SLOTS; i++) if (ls.get(SLOT_KEY(i))) return true; return false; },
@@ -63,18 +64,34 @@
       return true;
     },
 
-    /** Guarda la partida activa en su ranura. */
+    /**
+     * Pide guardar la partida. No escribe al momento: agrupa todas las
+     * peticiones de los próximos SAVE_DELAY ms en una sola escritura
+     * (un combate o un clic en el mapa pueden pedir guardar decenas de
+     * veces). Se escribe seguro al cerrar la partida, al salir del juego o
+     * al cambiar de pestaña/app (ver flush()).
+     */
     save() {
+      if (DK.daskai && DK.daskai.touch) DK.daskai.touch(); // los atributos en caché se recalculan
       if (!this.state || !this.slot) return;
+      this._dirty = true;
+      if (!this._timer) this._timer = setTimeout(() => this.flush(), SAVE_DELAY);
+    },
+    /** Escribe ya lo pendiente (si hay algo). Devuelve true si ha escrito. */
+    flush() {
+      clearTimeout(this._timer); this._timer = null;
+      if (!this._dirty || !this.state || !this.slot) return false;
+      this._dirty = false;
       this.state.updated = Date.now();
       ls.set(SLOT_KEY(this.slot), JSON.stringify(this.state));
+      return true;
     },
 
     /** Cierra la partida activa (sin borrarla). */
-    close() { this.save(); this.state = null; this.slot = null; },
+    close() { this.save(); this.flush(); this.state = null; this.slot = null; },
 
     /** Borra una ranura. */
-    deleteSlot(n) { ls.del(SLOT_KEY(n)); if (this.slot === n) { this.state = null; this.slot = null; } },
+    deleteSlot(n) { if (this.slot === n) { clearTimeout(this._timer); this._timer = null; this._dirty = false; this.state = null; this.slot = null; } ls.del(SLOT_KEY(n)); },
 
     /**
      * Crea una partida nueva en la ranura indicada.
@@ -100,7 +117,7 @@
       const d = DK.daskai.create(starterId, DK.config.starterLevel);
       DK.party.add(d);
       DK.settings.set('lastSlot', n);
-      this.save();
+      this.save(); this.flush();
       DK.emit('game:new', { slot: n });
       return d;
     },
@@ -150,6 +167,7 @@
 
     /** Descarga la ranura n como archivo .json. */
     exportSlot(n) {
+      if (n === this.slot) this.flush();
       const raw = ls.get(SLOT_KEY(n));
       if (!raw) return false;
       const meta = this.slotMeta(n);
@@ -188,4 +206,11 @@
     if (DK.store.state && document.visibilityState === 'visible') { DK.store.state.stats.playTime += 10; }
   }, 10000);
   window.addEventListener('beforeunload', () => DK.store.save());
+  // Nunca se pierde lo pendiente: al salir, recargar o pasar a segundo plano se guarda ya
+  if (typeof window !== 'undefined' && window.addEventListener) {
+    const flush = () => DK.store.flush();
+    window.addEventListener('pagehide', flush);
+    window.addEventListener('beforeunload', flush);
+    if (typeof document !== 'undefined' && document.addEventListener) document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); });
+  }
 })();

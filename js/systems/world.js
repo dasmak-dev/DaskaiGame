@@ -37,6 +37,46 @@
       if (D.zones[zoneId].boss) D.zones[zoneId].boss.drops.forEach(([id]) => add(id));
       return set;
     },
+    /* ---- Vista global (Códice): especies, objetos y jefes ---- */
+    /** Objetos conseguidos alguna vez (state.itemsSeen). */
+    markItem(id) { const s = DK.store.state; if (!s) return; s.itemsSeen = s.itemsSeen || {}; s.itemsSeen[id] = 1; },
+    itemKnown(id) {
+      const s = DK.store.state;
+      if (s.itemsSeen && s.itemsSeen[id]) return true;
+      if ((s.bag && s.bag[id]) || (s.expedition && s.expedition.pack && s.expedition.pack[id])) return true;
+      if (DK.party.all().some((d) => (d.equip || []).includes(id))) return true;
+      return Object.values(this.raw()).some((z) => (z.items || []).includes(id));
+    },
+    /**
+     * Todo lo que sabes de una especie juntando todas las zonas:
+     * { seen, fought, defeated, captured, moves, drops, zones (donde la has visto), spawn (donde aparece),
+     *   owned (tus daskai de esa especie), best (el de más nivel), status: 'unknown'|'seen'|'fought'|'captured' }
+     */
+    species(sid) {
+      const out = { seen: 0, fought: 0, defeated: 0, captured: 0, moves: [], drops: [], zones: [] };
+      Object.entries(this.raw()).forEach(([zid, z]) => {
+        const e = z.enemies && z.enemies[sid]; if (!e) return;
+        out.zones.push(zid);
+        ['seen', 'fought', 'defeated', 'captured'].forEach((k) => (out[k] += e[k] || 0));
+        (e.moves || []).forEach((m) => { if (!out.moves.includes(m)) out.moves.push(m); });
+        (e.drops || []).forEach((m) => { if (!out.drops.includes(m)) out.drops.push(m); });
+      });
+      out.spawn = Object.values(D.zones).filter((z) => z.enemies.some((e) => e.species === sid)).map((z) => z.id);
+      out.owned = DK.party.all().filter((d) => d.species === sid && !d.temp);
+      out.best = out.owned.slice().sort((a, b) => b.level - a.level)[0] || null;
+      const ever = out.captured > 0 || out.owned.length > 0 || (DK.store.state.graveyard || []).some((g) => g.species === sid);
+      out.status = ever ? 'captured' : out.fought > 0 ? 'fought' : out.seen > 0 ? 'seen' : 'unknown';
+      return out;
+    },
+    /** Totales del códice: especies descubiertas, objetos conocidos, jefes vencidos. */
+    totals() {
+      const sp = Object.keys(D.species), it = Object.keys(D.items);
+      const bosses = Object.keys(D.zones).length + Object.keys(D.secretBosses || {}).length;
+      const bossesDone = Object.keys(D.zones).filter((z) => DK.world.boss(z).defeated > 0).length + Object.keys(D.secretBosses || {}).filter((z) => DK.world.secret(z).defeated > 0).length;
+      return { species: sp.filter((s) => this.species(s).status !== 'unknown').length, speciesTotal: sp.length,
+        items: it.filter((i) => this.itemKnown(i)).length, itemsTotal: it.length, bosses: bossesDone, bossesTotal: bosses };
+    },
+
     /** % de enemigos descubiertos en una zona. */
     completion(zoneId) {
       const z = this.zone(zoneId); if (!z) return 0;

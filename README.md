@@ -11,7 +11,7 @@ La partida se guarda automáticamente en el navegador (3 ranuras). Desde el men�
 
 ## Qué incluye
 
-**Juego:** 48 especies (5 iniciales con 2 evoluciones cada una), 47 ataques, 39 objetos, 44 recetas de Crafteo (equipo que enseña ataques nuevos o da pasivas extra), 8 zonas con jefe, expediciones roguelike infinitas (zona al azar, continuar o cobrar tras cada jefe), mejoras permanentes, daskai variocolor, tienda con oferta diaria, misiones diarias y semanales, 20 logros y estadísticas del jugador.
+**Juego:** 68 especies (5 iniciales con 2 evoluciones cada una), 53 ataques, 39 objetos, 44 recetas de Crafteo (equipo que enseña ataques nuevos o da pasivas extra), 8 zonas con jefe, expediciones roguelike infinitas (zona al azar, continuar o cobrar tras cada jefe), mejoras permanentes, daskai variocolor, tienda con oferta diaria, misiones diarias y semanales, 20 logros y estadísticas del jugador.
 
 **Comodidades:** atajos de teclado en todo el juego, velocidad de combate x1/x2/x4, combate automático, repetir último ataque, vista previa del daño en la barra enemiga, indicador de eficacia y de orden de turno, cambiar de daskai en combate, arrastrar y soltar en el equipo, filtros y comparador, vista previa de cambios al equipar, curar con objetos en un clic, crafteo en cadena y recetas favoritas, apodos, liberar daskai, tutorial guiado, ayuda con el ciclo de casas, tooltips y avisos antes de combatir.
 
@@ -23,6 +23,9 @@ La partida se guarda automáticamente en el navegador (3 ranuras). Desde el men�
 
 ## Para desarrolladores
 
-Lee **[docs/GUIA-DESARROLLO.md](docs/GUIA-DESARROLLO.md)** y ejecuta `node tools/check.js` antes de publicar cambios: arquitectura por capas, mapa de archivos y recetas para añadir pantallas, menús, daskai, zonas, misiones, logros, idiomas, sonidos o escenarios.
+Lee **[docs/GUIA-DESARROLLO.md](docs/GUIA-DESARROLLO.md)**: arquitectura por capas, mapa de archivos y recetas para añadir pantallas, menús, daskai, zonas, misiones, logros, idiomas, sonidos o escenarios.
 
-Resumen: los **datos** están en `js/data/`, las **reglas** en `js/systems/`, lo **visual** en `js/components/` y `js/screens/`, y los **textos** en `js/lang/`.
+- **Daskai, ataques, objetos y zonas** se editan en JSON en `data/` (`species.json`, `moves.json`, `items.json`, `zones.json`). Después ejecuta `node tools/data.js`: comprueba los datos (dice el archivo, la línea y qué está mal) y genera `js/data/gen/data.js`, que es lo que carga el juego.
+- **Pruebas:** `npm install`, `npx playwright install chromium` (una vez) y luego `npm test` antes de publicar cambios. Sin Node/Playwright, al menos `node tools/check.js`.
+
+Resumen: los **datos editables** están en `data/`, los números y reglas de equilibrio en `js/data/`, las **reglas** en `js/systems/`, lo **visual** en `js/components/` y `js/screens/`, y los **textos** en `js/lang/`.

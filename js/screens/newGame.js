@@ -5,7 +5,7 @@
 (function () {
   const { h, btn } = DK.ui;
   const D = DK.data, V = DK.views;
-  const t = (k, v) => DK.t(k, v);
+  const { t } = DK;
 
   DK.screens.register('newGame', {
     title: (p) => (p.step === 'starter' ? t('newGame.pickTitle') : t('newGame.nameTitle')),

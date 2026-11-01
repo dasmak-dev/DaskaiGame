@@ -7,7 +7,10 @@
  *
  *   Estado: state.training.slots = [{ uid, kind: 'exp'|'stat', stat, start, cost }]
  *   Rendimiento decreciente (config.training): 100% las primeras horas,
- *   luego 50%, luego nada → effHours(). El nivel no supera levelCap().
+ *   luego 50%, luego nada → effHours().
+ *   Experiencia: siempre se puede. Por encima del nivel recomendado
+ *   (levelCap()) cuesta más: o pagas ×mult (plan 'coins') o tarda ×mult
+ *   horas (plan 'time'). Slot: { ..., plan, mult }.
  *   La mejora «Instructor» da huecos, ritmo y tope extra (instr()).
  * ============================================================= */
 (function () {
@@ -25,7 +28,7 @@
     get(uid) { return st().slots.find((s) => s.uid === uid) || null; },
     isTraining(uid) { return !!(DK.store.state && DK.store.state.training && DK.store.state.training.slots.some((s) => s.uid === uid)); },
 
-    /** Nivel máximo al que se puede llegar entrenando. */
+    /** Nivel recomendado: por encima, la experiencia cuesta más monedas o más horas. */
     levelCap() {
       const others = DK.party.all().filter((d) => !d.temp && !this.isTraining(d.uid));
       const top = Math.max(1, ...others.map((d) => d.level), ...st().slots.map((s) => s.startLevel || 1));
@@ -38,32 +41,45 @@
     },
     /** Horas efectivas máximas. */
     maxEff() { return this.effHours(C().halfHours); },
-    cost(d, kind) { return C().cost(d.level, kind); },
+    /** Penalización por estar por encima del nivel recomendado (1 = ninguna). Sólo experiencia. */
+    overMult(d, kind = 'exp') {
+      if (kind !== 'exp' || !d) return 1;
+      const over = d.level - this.levelCap() + 1;
+      return over > 0 ? Math.min(C().overMax, 1 + over * C().overStep) : 1;
+    },
+    /** Monedas al entrar. plan 'coins' paga la penalización; 'time' paga lo normal. */
+    cost(d, kind, plan = 'coins') {
+      const base = C().cost(d.level, kind);
+      return plan === 'time' ? base : Math.round(base * this.overMult(d, kind));
+    },
+    /** Horas reales que equivalen a `h` horas normales con ese plan. */
+    stretch(slot) { return slot && slot.plan === 'time' ? (slot.mult || 1) : 1; },
 
     /** ¿Por qué no puede entrar? (null si puede) */
-    cannot(d, kind = 'exp') {
-      const t = (k, v) => DK.t(k, v);
+    cannot(d, kind = 'exp', plan = 'coins') {
+      const { t } = DK;
+      if (!DK.unlocks.has('training')) return t('unlock.trainingLocked');
       if (DK.expedition.active()) return t('train.inExpedition');
       if (!d || d.temp) return t('train.notThis');
       if (this.isTraining(d.uid)) return t('train.already');
       if (st().slots.length >= this.slotCount()) return t('train.full');
       if (DK.party.isActive(d.uid) && DK.store.state.team.length <= 1) return t('train.lastOne');
-      if (kind === 'exp' && d.level >= this.levelCap()) return t('train.atCap', { n: this.levelCap() });
+      if (kind === 'exp' && d.level >= DK.config.maxLevel) return t('train.atCap', { n: DK.config.maxLevel });
       if (kind === 'stat' && this.trainedTotal(d) >= C().statMax) return t('train.statMax', { n: C().statMax });
-      if (DK.wallet.get() < this.cost(d, kind)) return t('train.noMoney');
+      if (DK.wallet.get() < this.cost(d, kind, plan)) return t('train.noMoney');
       return null;
     },
     /** Puntos de atributo ya entrenados por un daskai. */
     trainedTotal(d) { return Object.entries(d.trained || {}).reduce((a, [k, v]) => a + v / C().statPer[k], 0); },
 
     /** Mete un daskai a entrenar. kind: 'exp' (experiencia) o 'stat' (un atributo). */
-    start(uid, kind, stat) {
+    start(uid, kind, stat, plan = 'coins') {
       const d = DK.party.get(uid);
-      if (this.cannot(d, kind)) return false;
-      const cost = this.cost(d, kind);
+      if (this.cannot(d, kind, plan)) return false;
+      const cost = this.cost(d, kind, plan), mult = this.overMult(d, kind);
       DK.wallet.spend(cost);
       if (DK.party.isActive(uid)) DK.store.state.team = DK.store.state.team.filter((u) => u !== uid);
-      st().slots.push({ uid, kind, stat: kind === 'stat' ? stat : null, start: Date.now(), cost, startLevel: d.level });
+      st().slots.push({ uid, kind, stat: kind === 'stat' ? stat : null, start: Date.now(), cost, startLevel: d.level, plan: mult > 1 ? plan : null, mult });
       DK.emit('training:start', { d, kind });
       DK.store.save();
       return true;
@@ -73,13 +89,14 @@
     progress(slot, now = Date.now()) {
       const d = DK.party.get(slot.uid);
       const hours = Math.max(0, (now - slot.start) / 3600000);
-      const eff = this.effHours(hours) * (1 + this.instr().rate);
-      const out = { d, hours, eff, pct: Math.min(1, this.effHours(hours) / this.maxEff()), done: hours >= C().halfHours };
+      const k = this.stretch(slot), norm = hours / k;   // horas «normales» (el plan lento las estira)
+      const eff = this.effHours(norm) * (1 + this.instr().rate);
+      const out = { d, hours, norm, stretch: k, eff, pct: Math.min(1, this.effHours(norm) / this.maxEff()), done: norm >= C().halfHours };
       if (!d) return out;
       if (slot.kind === 'exp') {
         // Experiencia, limitada a lo que falta para el tope de nivel
         const want = Math.floor(eff * C().expPerHour(slot.startLevel || d.level));
-        const cap = this.levelCap();
+        const cap = DK.config.maxLevel;
         let room = 0;
         for (let lv = d.level; lv < cap; lv++) room += DK.config.expCurve(lv);
         room = Math.max(0, room - d.exp);
@@ -109,6 +126,7 @@
         if (slot.kind === 'stat' && p.points > 0) {
           d.trained = d.trained || {};
           d.trained[slot.stat] = (d.trained[slot.stat] || 0) + p.gain;
+          DK.daskai.touch();
           res.points = p.points; res.gain = p.gain;
         }
         DK.daskai.fullHeal(d);

@@ -89,13 +89,46 @@
       });
       fresh.forEach((a) => {
         DK.audio.sfx('achievement');
-        DK.ui.toast(DK.t('achievements.unlocked', { name: DK.t(`achievements.${a.id}.name`), coins: a.reward }), { icon: a.icon, kind: 'good' });
+        DK.ui.toast(DK.t(a.hidden ? 'achievements.unlockedHidden' : 'achievements.unlocked', { name: DK.achievements.name(a), coins: a.reward }), { icon: a.icon, kind: 'good' });
       });
       if (fresh.length) DK.store.save();
       return fresh;
     },
-    unlockedCount() { return Object.keys(st().achievements).length; },
+    unlockedCount() { return D.achievements.filter((a) => st().achievements[a.id]).length; },
+    /** Nombre y descripción (con las variables de los logros que comparten texto). */
+    name(a) { return DK.t(`achievements.${a.text || a.id}.name`, Object.assign({ n: a.target }, a.vars ? a.vars(st()) : {})); },
+    desc(a) { return DK.t(`achievements.${a.text || a.id}.desc`, Object.assign({ n: a.target }, a.vars ? a.vars(st()) : {})); },
   };
+
+  /* ======================= DESBLOQUEOS ======================= *
+   * Partes del juego que se abren al avanzar. `DK.unlocks.has(id)` dice si
+   * ya está abierta; al abrirse por primera vez avisa (state.unlocks[id]).
+   *   training: el campo de entrenamiento, tras derrotar al primer jefe.
+   */
+  const UNLOCKS = {
+    training: { icon: 'dumbbell', screen: 'training', when: (s) => Object.values(s.bosses || {}).some((b) => b.defeated > 0) || (s.training && s.training.slots && s.training.slots.length > 0) },
+  };
+  DK.unlocks = {
+    defs: UNLOCKS,
+    has(id) { const s = st(); return !!s && !!UNLOCKS[id] && !!UNLOCKS[id].when(s); },
+    /** Avisa de lo que se acaba de abrir. `silent` marca sin avisar (partidas cargadas). */
+    check(silent = false) {
+      const s = st(); if (!s) return;
+      s.unlocks = s.unlocks || {};
+      Object.entries(UNLOCKS).forEach(([id, u]) => {
+        if (s.unlocks[id] || !u.when(s)) return;
+        s.unlocks[id] = Date.now();
+        if (!silent) {
+          DK.audio.sfx('achievement');
+          DK.ui.toast(DK.t('unlock.' + id), { icon: u.icon, kind: 'good' });
+        }
+        DK.emit('unlocked', { id });
+        if (DK.app && DK.app.renderNav) DK.app.renderNav();
+      });
+    },
+  };
+  ['battle:end', 'expedition:complete'].forEach((ev) => DK.on(ev, () => setTimeout(() => DK.unlocks.check(), 80)));
+  DK.on('game:loaded', () => DK.unlocks.check(true));
 
   /* ============ Conexión de eventos → estadísticas/misiones ============ */
   DK.on('enemy:defeated', (e) => {

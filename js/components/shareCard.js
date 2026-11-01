@@ -12,7 +12,7 @@
 (function () {
   const { h, btn } = DK.ui;
   const D = DK.data;
-  const t = (k, v) => DK.t(k, v);
+  const { t } = DK;
   const W = 1200, H = 630;
   const FONT = "'Outfit', system-ui, sans-serif";
 

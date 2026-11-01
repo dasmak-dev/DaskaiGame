@@ -8,7 +8,7 @@
 (function () {
   const { h, btn } = DK.ui;
   const D = DK.data;
-  const t = (k, v) => DK.t(k, v);
+  const { t } = DK;
   const V = (DK.views = DK.views || {});
 
   /** Efecto de un talento en texto corto. */

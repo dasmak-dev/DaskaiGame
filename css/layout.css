@@ -767,33 +767,37 @@ hr.sep { border: 0; border-top: 1px solid var(--border); margin: 2px 0; width: 1
   .team-toolbar { flex-wrap: wrap; }
 }
 
-/* ---------- Barra de estado de la expedición (iconos sobre el mapa) ---------- */
-.exp-hud-wrap { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; position: sticky; top: 68px; z-index: 6; }
-.exp-hud { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 8px 10px; background: var(--glass, var(--surface)); backdrop-filter: blur(12px); }
-.hud-team { display: flex; gap: 6px; }
-.hud-mon { --p: 100%; position: relative; width: 46px; height: 50px; padding: 2px 0 8px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); display: grid; place-items: center; cursor: pointer; }
-.hud-mon.leader { border-color: var(--primary); box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 35%, transparent); }
-.hud-mon.ko { opacity: .4; filter: grayscale(1); cursor: default; }
-.hud-hp { position: absolute; left: 6px; right: 6px; bottom: 4px; height: 4px; border-radius: 3px; background: var(--surface-3); overflow: hidden; }
-.hud-hp i { display: block; height: 100%; width: var(--p); background: var(--hp); }
-.hud-mon.low .hud-hp i { background: var(--hp-low); }
-.hud-sep { width: 1px; align-self: stretch; background: var(--border); margin: 0 4px; }
-.hud-btn { display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 12px; border-radius: 11px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font: inherit; font-weight: 700; cursor: pointer; font-variant-numeric: tabular-nums; }
-.hud-btn:hover { border-color: color-mix(in srgb, var(--primary) 50%, var(--border)); }
-.hud-btn.on { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 16%, var(--surface-2)); }
-.hud-btn.gold svg { color: var(--exp); }
-.hud-btn.ghost { background: transparent; color: var(--muted); font-weight: 600; }
-.hud-lock { padding: 0 8px; }
-.exp-hud-detail { animation: popIn .15s var(--ease); max-height: 40vh; overflow-y: auto; }
-.exp-hud-hint { margin: 0 4px; }
+/* ---------- Barra de estado de la expedición (iconos sobre el mapa) ----------
+ * Barra fija y opaca (no deja ver el mapa por debajo) y el detalle de cada
+ * icono en una ventanita flotante que no empuja el contenido. */
+.exp-hud-wrap { position: sticky; top: 68px; z-index: 8; margin: 0 0 14px; }
+.exp-hud { display: flex; align-items: center; gap: 8px; padding: 6px; border-radius: 14px; border: 1px solid var(--border); background: var(--surface); box-shadow: 0 6px 18px rgba(0, 0, 0, .35), 0 0 0 4px var(--bg); }
+.hud-group { display: flex; align-items: stretch; gap: 2px; padding: 2px; border-radius: 11px; background: var(--surface-2); min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.hud-group::-webkit-scrollbar { display: none; }
+.hud-btn { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 4px 12px 4px 10px; border-radius: 9px; border: 1px solid transparent; background: transparent; color: var(--text); font: inherit; cursor: pointer; font-variant-numeric: tabular-nums; flex: none; transition: background .15s, border-color .15s; }
+.hud-btn .icon { color: var(--muted); }
+.hud-btn:hover { background: var(--surface-3); }
+.hud-btn.on { background: color-mix(in srgb, var(--primary) 20%, var(--surface-3)); border-color: color-mix(in srgb, var(--primary) 60%, transparent); }
+.hud-btn.on .icon { color: var(--text); }
+.hud-val { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.05; }
+.hud-val b { font-size: .95rem; }
+.hud-cap { font-size: .64rem; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.hud-btn.gold .icon { color: var(--exp); }
+.hud-btn.bad .icon { color: #f87171; }
+.hud-lock { display: inline-flex; align-items: center; gap: 4px; padding: 0 8px; white-space: nowrap; }
+.exp-hud-pop { position: absolute; top: calc(100% + 8px); left: 0; width: min(380px, 100%); max-height: min(50vh, 420px); overflow-y: auto; padding: 12px; border-radius: 14px; border: 1px solid var(--border); background: var(--surface); box-shadow: 0 16px 40px rgba(0, 0, 0, .5); animation: popIn .14s var(--ease); display: flex; flex-direction: column; gap: 10px; }
+.hud-pop-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.hud-pop-head .icon-btn { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 8px; border: 0; background: var(--surface-2); color: var(--muted); cursor: pointer; }
+.hud-pop-head .icon-btn:hover { color: var(--text); background: var(--surface-3); }
 .exp-screen > .exp-map-card { max-width: 860px; margin: 0 auto; }
+@media (max-width: 1100px) { .hud-cap { display: none; } .hud-btn { padding: 4px 10px; } }
 @media (max-width: 600px) {
-  .exp-hud-wrap { top: 58px; }
-  .hud-team { width: 100%; justify-content: space-between; }
-  .hud-mon { flex: 1; }
-  .hud-sep { display: none; }
-  .hud-btn { height: 36px; padding: 0 10px; }
-  .hud-label { display: none; }
+  .exp-hud-wrap { top: 56px; }
+  .exp-hud { flex-wrap: wrap; gap: 6px; padding: 5px; }
+  .hud-group { flex: 1 1 100%; justify-content: space-between; }
+  .hud-btn { min-height: 34px; padding: 2px 8px; gap: 5px; }
+  .hud-lock .hud-label { display: none; }
+  .exp-hud-pop { width: 100%; max-height: 55vh; }
 }
 
 /* ---------- Pactos de expedición ---------- */

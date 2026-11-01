@@ -8,7 +8,7 @@
  *   modal({title, content, actions})           → ventana emergente
  * ============================================================= */
 (function () {
-  const t = (k, v) => DK.t(k, v);
+  const { t } = DK;
 
   /**
    * Crea un elemento HTML.

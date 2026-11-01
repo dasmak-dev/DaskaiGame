@@ -8,7 +8,7 @@
 (function () {
   const { h, btn } = DK.ui;
   const D = DK.data, V = DK.views;
-  const t = (k, v) => DK.t(k, v);
+  const { t } = DK;
 
   /** Lista de daskai caídos (también la usa la pantalla de Equipo). */
   V.graveyard = (list, { limit } = {}) => h('div', { class: 'grave-list' }, (limit ? list.slice(0, limit) : list).map((g) =>

@@ -8,7 +8,7 @@
 (function () {
   const { h, btn } = DK.ui;
   const D = DK.data, V = DK.views;
-  const t = (k, v) => DK.t(k, v);
+  const { t } = DK;
 
   DK.menus.add('nav', { id: 'progress', icon: 'award', order: 60, screen: 'progress', label: () => t('nav.progress'), badge: () => { const n = DK.missions.claimable(); return n ? String(n) : ''; } });
 
@@ -53,11 +53,21 @@
       const refresh = () => DK.router.refresh();
       const st = DK.store.state, s = st.stats;
       const list = DK.achievements.list();
-      const achTab = () => h('div', { class: 'ach-grid' }, list.map(({ def, value, unlocked, at }) => h('div', { class: 'card ach ' + (unlocked ? 'unlocked' : '') },
-        h('div', { class: 'ach-icon' }, DK.icon(unlocked ? def.icon : 'lock', 24)),
-        h('div', { class: 'grow' }, h('b', null, t(`achievements.${def.id}.name`)), h('p', { class: 'muted small' }, t(`achievements.${def.id}.desc`, { n: def.target })),
-          unlocked ? h('span', { class: 'small' }, DK.icon('check', 13), ' ', new Date(at).toLocaleDateString(DK.i18n.lang)) : DK.ui.bar({ value, max: def.target, kind: 'exp' })),
-        h('span', { class: 'chip' }, DK.icon('coin', 13), def.reward))));
+      // Los ocultos no dicen qué piden hasta conseguirlos (van al final mientras estén bloqueados)
+      const ordered = list.slice().sort((a, b) => (a.def.hidden && !a.unlocked ? 1 : 0) - (b.def.hidden && !b.unlocked ? 1 : 0));
+      const nHidden = list.filter((x) => x.def.hidden).length, gotHidden = list.filter((x) => x.def.hidden && x.unlocked).length;
+      const achTab = () => h('div', { class: 'stack' },
+        h('p', { class: 'muted small' }, DK.icon('question', 13), ' ', t('achievements.hiddenCount', { n: gotHidden, max: nHidden })),
+        h('div', { class: 'ach-grid' }, ordered.map(({ def, value, unlocked, at }) => {
+          const secret = def.hidden && !unlocked;
+          return h('div', { class: 'card ach ' + (unlocked ? 'unlocked' : '') + (secret ? ' secret' : '') + (def.hidden && unlocked ? ' hidden-got' : '') },
+            h('div', { class: 'ach-icon' }, DK.icon(unlocked ? def.icon : secret ? 'question' : 'lock', 24)),
+            h('div', { class: 'grow' }, h('b', null, secret ? t('achievements.hiddenName') : DK.achievements.name(def)),
+              h('p', { class: 'muted small' }, secret ? t('achievements.hiddenDesc') : DK.achievements.desc(def)),
+              unlocked ? h('span', { class: 'small' }, DK.icon('check', 13), ' ', new Date(at).toLocaleDateString(DK.i18n.lang), def.hidden ? h('span', { class: 'badge ach-hidden-tag' }, t('achievements.hiddenTag')) : null)
+                : secret ? null : DK.ui.bar({ value, max: def.target, kind: 'exp' })),
+            h('span', { class: 'chip' }, DK.icon('coin', 13), secret ? '?' : def.reward));
+        })));
       return h('div', { class: 'screen' }, DK.ui.tabs({
         active: params.tab, onChange: (id) => (params.tab = id),
         items: [

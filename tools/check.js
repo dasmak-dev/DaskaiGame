@@ -5,9 +5,10 @@
  * Uso (desde la carpeta del juego, con Node.js instalado):
  *     node tools/check.js
  *
- * Hace dos cosas:
+ * Hace tres cosas:
  *   1. Comprueba que todos los .js de js/ tienen sintaxis válida.
- *   2. Comprueba que todos los textos que usa el código existen en
+ *   2. Comprueba los datos de data/*.json (tools/data.js --check).
+ *   3. Comprueba que todos los textos que usa el código existen en
  *      español (es.js) y en inglés (en.js). Incluye los textos que se
  *      construyen a partir de los datos (sucesos, reliquias, mejoras,
  *      dificultades, tipos de nodo, logros, misiones y tutoriales).
@@ -37,14 +38,20 @@ for (const f of files) {
   catch (e) { problems++; console.log('✗ Sintaxis:', path.relative(ROOT, f), '\n ', String(e.stderr).split('\n').slice(0, 4).join('\n  ')); }
 }
 
-/* ---------- 2. Textos ---------- */
+/* ---------- 2. Datos (data/*.json, ver tools/data.js) ---------- */
+try { execFileSync(process.execPath, [path.join(__dirname, 'data.js'), '--check'], { stdio: 'pipe' }); }
+catch (e) { problems++; console.log(String(e.stdout || e.message).trim()); }
+
+/* ---------- 3. Textos ---------- */
 // Carga el núcleo de idiomas y los datos en un "navegador" falso
 global.window = global;
 global.document = { documentElement: {}, createElement: () => ({}) };
 global.localStorage = { getItem: () => null, setItem: () => {} };
 const load = (rel) => eval(fs.readFileSync(path.join(ROOT, rel), 'utf8')); // eslint-disable-line no-eval
 ['js/core/dk.js', 'js/core/i18n.js', 'js/lang/es.js', 'js/lang/en.js'].forEach(load);
-fs.readdirSync(path.join(JS, 'data')).forEach((f) => { try { load('js/data/' + f); } catch (e) { /* algunos datos necesitan el navegador */ } });
+// Datos en el mismo orden que index.html (los cargadores necesitan js/data/gen/data.js antes)
+const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+[...html.matchAll(/src="(js\/data\/[^"]+)"/g)].forEach((m) => { try { load(m[1]); } catch (e) { problems++; console.log('✗ Datos:', m[1], e.message); } });
 const D = DK.data;
 
 // Claves literales: t('seccion.clave') en el código
@@ -62,7 +69,8 @@ for (const f of files) {
 const add = (k) => keys.add(k);
 ['all', 'dmg', 'item', 'reward'].forEach((f) => add('battle.logFilter.' + f));
 ['level', 'name', 'house', 'hp', 'recent'].forEach((f) => add('team.sortBy.' + f));
-(D.achievements || []).forEach((a) => { add(`achievements.${a.id}.name`); add(`achievements.${a.id}.desc`); });
+(D.achievements || []).forEach((a) => { add(`achievements.${a.text || a.id}.name`); add(`achievements.${a.text || a.id}.desc`); });
+['training'].forEach((k) => add('unlock.' + k));
 Object.values(D.missions || {}).flat().forEach((m) => m && m.id && add('missions.' + m.id));
 Object.keys(D.difficulties || {}).forEach((id) => { add(`difficulty.${id}.name`); add(`difficulty.${id}.desc`); });
 (D.upgrades || []).forEach((u) => ['name', 'desc', 'effect'].forEach((x) => add(`camp.up.${u.id}.${x}`)));
@@ -79,6 +87,14 @@ Object.keys(D.talents || {}).forEach((id) => { add(`talent.${id}.name`); add(`ta
 ['trainReady', 'missions', 'fainted', 'hurt', 'tonics', 'upgrades', 'trainFree', 'craft'].forEach((k) => { add('todo.' + k); add('todo.' + k + 'One'); });
 ['high', 'up', 'normal', 'down', 'low'].forEach((r) => add('stats.rate.' + r));
 ['evo', 'perm'].forEach((k) => add('stats.legend.' + k));
+['move', 'passive', 'stats', 'tonic', 'consumable', 'all'].forEach((k) => add('craft.kind.' + k));
+['wild', 'boss', 'secret'].forEach((k) => add('craft.how.' + k));
+Object.keys(D.mapMods || {}).forEach((id) => { add(`mod.${id}.name`); add(`mod.${id}.desc`); });
+['start', 'newMap', 'elite', 'boss', 'secret', 'recruit', 'relic', 'cave', 'caveTreasure', 'shortcut', 'event', 'saved', 'fallen', 'mapCleared', 'campfire', 'cashout', 'retreat', 'lost', 'quest'].forEach((k) => add('tl.' + k));
+Object.keys(D.mapQuests || {}).forEach((id) => { add(`quest.${id}.name`); add(`quest.${id}.desc`); });
+['unknown', 'seen', 'fought', 'captured'].forEach((k) => add('codex.status.' + k));
+['all', 'seen', 'fought', 'captured', 'unknown'].forEach((k) => add('codex.filter.' + k));
+['fisico', 'magico'].forEach((k) => add('codex.kind.' + k));
 ['attack', 'heavy', 'heal', 'buff', 'debuff', 'status'].forEach((x) => add('intent.' + x));
 ['completed', 'retreat', 'lost', 'lostBoss', 'campfire'].forEach((x) => { add('sum.out.' + x); add('sum.outText.' + x); });
 

@@ -8,7 +8,7 @@
 (function () {
   const { h, modal } = DK.ui;
   const D = DK.data;
-  const t = (k, v) => DK.t(k, v);
+  const { t } = DK;
   const V = (DK.views = DK.views || {});
 
   /** Anima un número de `from` a `to` en un elemento. */

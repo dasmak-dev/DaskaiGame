@@ -11,7 +11,7 @@
 (function () {
   const DK = (window.DK = window.DK || {});
   DK.data = DK.data || {};
-  DK.version = '4.0.0';
+  DK.version = '4.8.0';
 
   DK.util = {
     /** Entero aleatorio entre min y max (ambos incluidos). */
@@ -23,8 +23,8 @@
     /** Devuelve true con probabilidad p (0-1). */
     chance(p) { return Math.random() < p; },
 
-    /** Elemento aleatorio de un array. */
-    pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; },
+    /** Elemento aleatorio de un array (rnd: generador con semilla, opcional). */
+    pick(arr, rnd = Math.random) { return arr[Math.floor(rnd() * arr.length)]; },
 
     /** Limita v al rango [a, b]. */
     clamp(v, a, b) { return Math.max(a, Math.min(b, v)); },
@@ -42,13 +42,31 @@
      * Elige un elemento de una lista según su peso.
      * @param {Array<Object>} list  elementos con propiedad de peso
      * @param {string} key          nombre de la propiedad (por defecto 'weight')
+     * @param {Function} [rnd]      generador (para resultados con semilla)
      */
-    weighted(list, key = 'weight') {
+    weighted(list, key = 'weight', rnd = Math.random) {
       const total = list.reduce((s, x) => s + (x[key] || 1), 0);
-      let r = Math.random() * total;
+      let r = rnd() * total;
       for (const x of list) { r -= x[key] || 1; if (r <= 0) return x; }
       return list[list.length - 1];
     },
+
+    /**
+     * Elige una clave de un objeto { clave: peso } según su peso.
+     * @param {Object<string, number>} weights
+     * @param {Function} [rnd]       generador (para resultados con semilla)
+     * @param {*} [fallback]         si no sale ninguna (por defecto, la última)
+     */
+    weightedKey(weights, rnd = Math.random, fallback) {
+      const list = Object.entries(weights);
+      let r = rnd() * list.reduce((a, [, w]) => a + w, 0);
+      for (const [k, w] of list) if ((r -= w) < 0) return k;
+      return fallback !== undefined ? fallback : list.length ? list[list.length - 1][0] : null;
+    },
+    /** { id: { weight } } → { id: weight } (para weightedKey). */
+    weightsOf(obj, key = 'weight') { return Object.fromEntries(Object.entries(obj).map(([id, o]) => [id, o[key] || 1])); },
+    /** Porcentaje entero de a sobre b (0 si b es 0): percent(30, 120) → 25. */
+    percent(a, b) { return b ? Math.round((a / b) * 100) : 0; },
 
     /** Formatea 0.25 → "25%". */
     pct(x, digits = 0) { return (x * 100).toFixed(digits) + '%'; },

@@ -84,6 +84,19 @@
   };
 
   // Añade `id` a cada entrada para poder traducirlas con DK.tr()
+  /* Categorías de objetos (data/items.json → category) */
+  D.categories = {
+    batalla: { id: 'batalla', name: 'Batalla', icon: 'flask', desc: 'Pociones y objetos para usar en combate.' },
+    mejora: { id: 'mejora', name: 'Mejora', icon: 'star', desc: 'Objetos que dan experiencia o mejoran para siempre a tus daskai fuera de combate.' },
+    equipo: { id: 'equipo', name: 'Equipamiento', icon: 'gem', desc: 'Objetos que se equipan a los daskai.' },
+    pieza: { id: 'pieza', name: 'Piezas', icon: 'cube', desc: 'Materiales para construir objetos en Crafteo.' },
+  };
+
+  /* Fases de los jefes (data/zones.json → boss.phases / secretBoss.phases) */
+  D.phaseTypes = {
+    enrage: { icon: 'flame' }, regen: { icon: 'regen' }, shield: { icon: 'shield' }, frenzy: { icon: 'bolt' },
+  };
+
   [D.stats, D.natures, D.passives, D.statuses, D.rarities].forEach((group) => Object.entries(group).forEach(([id, o]) => (o.id = id)));
 
   /** Color de una casa según el modo daltónico. */

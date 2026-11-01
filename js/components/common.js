@@ -9,7 +9,7 @@
 (function () {
   const { h, bar } = DK.ui;
   const D = DK.data;
-  const t = (k, v) => DK.t(k, v);
+  const { t } = DK;
   const V = (DK.views = DK.views || {});
 
   /** Casa contra la que es débil una casa. */

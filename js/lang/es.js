@@ -68,6 +68,8 @@ DK.i18n.register('es', {
   },
 
   team: {
+    barTitle: 'Tu equipo', barHint: 'Pulsa una tarjeta para elegir quién lucha el siguiente combate.', healOne: 'Curar a {name}', healAll: 'Curar a todos',
+    healed: '{name} se cura ({items}).', pickNext: 'Elegir a {name} para el siguiente combate',
     sheet: 'Ficha del daskai', expReserve: 'Banquillo de la expedición ({n})', expReserveHint: 'Sólo los que salieron contigo y tus reclutas',
     searchBtn: 'Buscar', filtersOn: 'Hay filtros activos: no se ven todos tus daskai.', dragHint: 'Arrastra (en el móvil, mantén pulsado) · el primero es el líder',
     reserve: 'Reserva ({n})', reserveEmpty: 'Todos tus daskai están en el equipo. Consigue más reclutando en las expediciones.', fallen: 'Caídos ({n})',
@@ -117,7 +119,7 @@ DK.i18n.register('es', {
     regenShort: 'Regen.',
     breakdown: '{base} base + {growth} nivel', equip: '{n} equipo', passive: '{n}% pasiva', regenPerTurn: '{n} PV por turno',
     legend: { base: 'Base', level: 'Nivel', nature: 'Naturaleza', equip: 'Equipo', bonus: 'Pasiva y bonos', evo: 'Evolución', perm: 'Tónicos y entrenamiento', minus: 'Resta', rate: 'Ritmo de crecimiento', rateTip: 'Cuánto crece al subir de nivel según su especie, pasivas, talentos y naturaleza', arrows: 'Efecto de la naturaleza' },
-    part: { base: '{n} base', level: '{n} nivel', nature: '{n} naturaleza', equip: '{n} equipo', passive: '{n}% pasiva', bonus: '{n} bonos', evo: '{n} evolución', tonic: '{n} tónicos', trained: '{n} entrenamiento' },
+    part: { gene: '(genes {n}%)', base: '{n} base', level: '{n} nivel', nature: '{n} naturaleza', equip: '{n} equipo', passive: '{n}% pasiva', bonus: '{n} bonos', evo: '{n} evolución', tonic: '{n} tónicos', trained: '{n} entrenamiento' },
     natUp: '{nature}: crece más al subir de nivel', natDown: '{nature}: crece menos al subir de nivel', natEq: '{nature}: no afecta a este atributo',
   },
   move: {
@@ -187,6 +189,17 @@ DK.i18n.register('es', {
   },
 
   codex: {
+    intro: 'Todo lo que has descubierto: daskai, objetos y jefes. Lo que aún no conoces aparece como silueta.', complete: 'completado', sheet: 'Ficha',
+    tabSpecies: 'Daskai', tabItems: 'Objetos', tabBosses: 'Jefes', search: 'Buscar…', house: 'Casa', zone: 'Zona', stateL: 'Estado',
+    allHouses: 'Todas las casas', allZones: 'Todas las zonas', filter: { all: 'Todos', seen: 'Vistos', fought: 'Combatidos', captured: 'Vinculados', unknown: 'Por descubrir' },
+    status: { unknown: 'Desconocido', seen: 'Visto', fought: 'Combatido', captured: 'Vinculado' },
+    unknownText: 'Aún no has visto a este daskai.', hintZone: 'Pista: vive en {zone}.', hintEvo: 'Pista: no vive en estado salvaje; quizá sea una evolución.',
+    seenL: 'Vistos', foughtL: 'Combates', defeatedL: 'Vencidos', capturedL: 'Vinculados',
+    where: 'Dónde aparece', onlyEvo: 'No vive en estado salvaje: se consigue evolucionando a {from}.', nowhere: 'No aparece en ninguna zona.',
+    evoLine: 'Evolución', weakness: 'Punto débil', weakIs: 'Recibe más daño de los ataques {kind}.', weakUnknown: 'Aún no lo has descubierto: lucha contra él.', noWeak: 'No tiene punto débil.',
+    kind: { fisico: 'físicos', magico: 'mágicos' }, movesByLevel: 'Ataques por nivel', movesHint: 'Se revelan al verlos o tras {n} combates contra él.',
+    yours: 'Tu mejor ejemplar', notYours: 'Aún no tienes ninguno.', itemHint: 'Aún no lo has conseguido.',
+    zoneBosses: 'Jefes de zona', secretBosses: 'Jefes ocultos', secretHint: 'Se esconde en las cuevas de {zone}.', secretHintUnknown: 'Se esconde en una zona que aún no conoces.',
     title: 'Códice', empty: 'El códice está vacío', emptyText: 'Entra en una zona de batalla para empezar a registrar daskai y objetos.',
     enemies: 'Enemigos', items: 'Objetos', boss: 'Jefe de zona', bossHint: 'Derrótalo al final de una expedición.',
     bossDefeated: 'Derrotado {n} veces · Nv. {level}', defeatedN: 'Derrotados: {n}', seen: 'Vistos {n}', fought: 'Combates {n}', captured: 'Vinculados {n}',
@@ -195,6 +208,8 @@ DK.i18n.register('es', {
   },
 
   zones: {
+    worldMap: 'Mapa del mundo', moreHidden: '{n} zonas por descubrir', records: 'Récords',
+    recMaps: 'Mapas superados', recDepth: 'Más profundo', recXl: 'Mapas XL', recSecret: 'Jefe oculto', recFast: 'Mapa más rápido',
     preview: 'Ver el primer mapa', zonesTitle: 'Zonas', unlockedN: '{n}/{total} zonas',
     freeLocked: 'Derrota a su jefe en una expedición para desbloquear los combates libres', freeDesc: 'Entrena sin riesgo: experiencia y monedas, sin objetos', unlockHint2: 'Derrota al jefe de {zone} en una expedición para desbloquearla.',
     permadeath: 'Modo difícil: si un daskai cae en una expedición, muere para siempre. Si pierdes a todos, la partida termina.',
@@ -218,6 +233,7 @@ DK.i18n.register('es', {
     allGood: 'Tu equipo está listo.',
   },
   pack: {
+    less: 'Quitar uno', more: 'Añadir otro', haveTip: 'Unidades que quedan en tu bolsa', tipAdd2: 'Añadir 1 (Mayús: todas)', dropHint2: 'Pulsa + en tu bolsa o arrastra objetos aquí.', bagHint2: 'Pulsa + o arrastra a la mochila',
     consolation: 'Recompensa por caer ante el jefe: empiezas con una reliquia rara o épica y 2 superpociones (no ocupan hueco).',
     tipAdd: 'Clic: llevar 1 · Mayús+clic: todas · o arrástralo a la mochila', tipRemove: 'Clic: devolver 1 · Mayús+clic: todas · o arrástralo a la bolsa', noMore: 'No tienes más', bagHint: 'Pulsa o arrastra a la mochila', allPacked: 'Ya lo llevas todo', dropHint: 'Arrastra objetos aquí o púlsalos en tu bolsa.',
     inExp: 'Lo que te llevaste y lo que encuentras para usar ya. Al volver, lo que quede regresa a tu bolsa; si pierdes, se pierde.',
@@ -231,6 +247,7 @@ DK.i18n.register('es', {
   },
   /* Intención del rival, fases de jefe y pactos (systems/battle.js, systems/curses.js) */
   intent: {
+    stunned: 'Aturdido', stunnedTip: 'Está roto: no actuará este turno y recibe +{n}% de daño.',
     label: 'Intención del rival', lethal: '¡Este golpe puede debilitar a tu daskai!',
     attack: 'Ataque', heavy: 'Golpe fuerte', heal: 'Se curará', buff: 'Se reforzará', debuff: 'Te debilitará', status: 'Estado alterado',
   },
@@ -333,6 +350,13 @@ DK.i18n.register('es', {
   },
 
   battle: {
+    autoHealed: 'Automático: {name} está en zona crítica, usa {item}.',
+    dmgStab: 'Misma casa', dmgBroken: 'Ruptura',
+    broken: '¡{name} rompe su guardia! No actuará hasta el final del turno siguiente y recibe +{n}% de daño.', stunned: '{name} está aturdido y no puede actuar.', recovered: '{name} se recupera de la ruptura.',
+    breakTip: 'Ruptura: los golpes eficaces, a su punto débil y los críticos la llenan. Al llenarse, el rival pierde su turno y recibe +{n}% de daño.',
+    brokenShort: '¡Roto!', breakFloat: '¡RUPTURA!', stunFloat: 'Aturdido', breakGainTip: 'Llena la ruptura en +{n}.',
+    koSure: 'Remata', koMaybe: 'Puede rematar', koSureTip: 'Incluso con el daño mínimo lo derrota.', koMaybeTip: 'Con un buen golpe lo derrota.',
+    stabShort: 'Su casa', stabTip: 'Ataque de la misma casa que tu daskai: +{n}% de daño.',
     emblemLog: '+{n} emblema para las Mejoras', secretUnlocked: '¡Jefe oculto desbloqueado! {title} puede aparecer como jefe final en {zone}.',
     lostBoss: 'Has caído ante el jefe. Pierdes el {n}% del botín y la mochila, pero tu próxima expedición tendrá recompensa.',
     turnN: 'Turno {n}', nextTurn: 'luego', byPriority: 'Decide la prioridad del ataque.', bySpeed: 'Decide la velocidad: {a} contra {e}.',
@@ -342,7 +366,7 @@ DK.i18n.register('es', {
     weakFound: '¡Has descubierto el punto débil de {name}: los ataques de tipo {kind}!', weakHit: '¡Golpe en su punto débil!',
     ifSwitch: 'Si entra ahora, la intención del rival le haría {a}-{b} (−{n}% por entrar al cambiar).',
     dmgPower: 'Poder', dmgAtkDef: 'Ataque / defensa', dmgLevel: 'Nivel', dmgHouse: 'Casas', dmgBonus: 'Mejoras y reliquias', dmgWeak: 'Punto débil',
-    dmgGuard: 'Defendiéndose', dmgSwitch: 'Recién cambiado', dmgShield: 'Escudo', dmgBurn: 'Quemado', dmgUnknownHouse: '(aún no sabes cómo afectan las casas)', dmgCrit: '{n}% de crítico',
+    dmgGuard: 'Defendiéndose', dmgSwitch: 'Recién cambiado', dmgShield: 'Escudo', dmgWeather: 'Clima del mapa', dmgBurn: 'Quemado', dmgUnknownHouse: '(aún no sabes cómo afectan las casas)', dmgCrit: '{n}% de crítico',
     knowTitle: 'Lo que sabes del rival ({n} combates)', statsLocked: 'Lucha {n} vez/veces más contra esta especie para ver sus atributos.', movesLocked: 'Lucha {n} vez/veces más contra esta especie para recordar sus ataques.',
     know: { house: 'Su casa', moves: 'Sus ataques ({n} combates)', stats: 'Sus atributos ({n} combates)', weak: 'Punto débil: golpéale con el tipo de ataque adecuado para descubrirlo', weakIs: 'Punto débil: ataques de tipo {kind}', noWeak: 'No tiene punto débil' },
     guard: 'Defender', guardDesc: 'Actúas primero, recibes un {n}% menos de daño este turno y recuperas algo de maná', guarding: '{name} se defiende y recupera {n} PM.',
@@ -406,6 +430,16 @@ DK.i18n.register('es', {
     expedition: 'Completa {n} expediciones', boss: 'Derrota {n} jefes',
   },
   achievements: {
+    unlockedHidden: '¡Logro oculto desbloqueado: {name}! +{coins} monedas', hiddenName: '???', hiddenDesc: 'Logro oculto: sigue explorando para descubrir qué pide.', hiddenTag: 'Oculto', hiddenCount: 'Logros ocultos descubiertos: {n}/{max}',
+    bossZone: { name: 'Señor de {zone}', desc: 'Derrota a {boss}, el jefe de {zone}.' },
+    secretFirst: { name: 'Lo que esconde la cueva', desc: 'Derrota a tu primer jefe oculto.' },
+    secretFoundAll: { name: 'Espeleólogo', desc: 'Encuentra la guarida de los {n} jefes ocultos.' },
+    secretAll: { name: 'Nada queda oculto', desc: 'Derrota a los {n} jefes ocultos.' },
+    depth5: { name: 'Sin mirar atrás', desc: 'Llega al mapa {n} en una misma expedición.' },
+    depth10: { name: 'Hasta el fondo', desc: 'Llega al mapa {n} en una misma expedición.' },
+    xlClear: { name: 'Gran travesía', desc: 'Supera un mapa XL.' },
+    breaks25: { name: 'Rompemuros', desc: 'Rompe la guardia de jefes o mini jefes {n} veces.' },
+    quests10: { name: 'Profesional', desc: 'Cumple {n} encargos de mapa.' },
     title: 'Logros', tab: 'Logros', unlocked: '¡Logro desbloqueado: {name}! +{coins} monedas',
     firstWin: { name: 'Primera victoria', desc: 'Gana tu primer combate.' },
     wins50: { name: 'Veterano', desc: 'Gana {n} combates.' },
@@ -436,6 +470,7 @@ DK.i18n.register('es', {
   },
 
   settings: {
+    autoHeal: 'Curar en automático', autoHealDesc: 'En automático, si tu daskai baja del {n}% de vida usa su ataque de curación o el objeto curativo más barato que sirva (como mucho {max} veces por combate).',
     pixelArt: 'Daskai en pixel art', pixelArtDesc: 'Dibujos pixelados de estilo retro (desactívalo para verlos suaves)',
     autoBattle: 'Empezar los combates en automático', autoBattleDesc: 'Tu daskai elige solo el mejor ataque. Pulsa A para tomar el control cuando quieras.',
     autoPause: 'Pausar el automático con poca vida', autoPauseDesc: 'Si tu daskai baja del 30% de vida, el automático se detiene para que decidas tú (importante en modo difícil).',
@@ -608,16 +643,20 @@ DK.i18n.register('es', {
   /* Crafteo (screens/craft.js) */
   train: {
     title: 'Campo de entrenamiento', text: 'Deja daskai entrenando en tiempo real, aunque cierres el juego. Mientras entrenan no pueden ir de expedición.',
-    slots: 'Huecos {n}/{max}', cap: 'Tope de nivel {n}', capTip: 'No pasan del nivel de tu daskai más fuerte menos {m} (el Instructor lo sube)', instructor: 'Instructor +{n}% ritmo',
+    slots: 'Huecos {n}/{max}', cap: 'Nivel recomendado {n}', capTip: 'El nivel de tu daskai más fuerte menos {m} (el Instructor lo sube). Por encima también pueden entrenar, pero cada nivel de más cuesta un {p}% más de monedas o de horas.', instructor: 'Instructor +{n}% ritmo',
     free: 'Hueco libre', freeHint: 'Mete a un daskai a entrenar', locked: 'Bloqueado', lockedTip: 'Compra la mejora «Instructor» para tener más huecos',
-    pickTitle: 'Elige quién entrena', pickHint: 'Experiencia hasta el nivel {n} o un atributo concreto.', nobody: 'No hay nadie disponible',
+    pickTitle: 'Elige quién entrena', pickHint: 'Experiencia o un atributo concreto. Por encima del nivel {n} cuesta más monedas o más horas.', nobody: 'No hay nadie disponible',
     setup: 'Entrenar a {name}', kind: 'Tipo de entrenamiento', kindExp: 'Experiencia', kindStat: 'Atributo', kindStatOf: 'Atributo: {stat}',
-    expHelp: 'Gana unos {n} de experiencia por hora (sin pasar del nivel {cap}).', statHelp: 'Gana un punto cada {h} h efectivas. Máximo {max} puntos por daskai (lleva {have}).',
+    expHelp: 'Gana unos {n} de experiencia por hora.', statHelp: 'Gana un punto cada {h} h efectivas. Máximo {max} puntos por daskai (lleva {have}).',
     rules: 'Rinde al 100% las primeras {a} h, al 50% hasta las {b} h y luego deja de ganar: recógelo a tiempo.',
     leavesTeam: 'Saldrá del equipo mientras entrena.', start: 'Entrenar ({n})', started: '{name} empieza a entrenar', cant: 'No puede entrenar ahora',
     inExpedition: 'No disponible durante una expedición', notThis: 'Este daskai no puede entrenar', already: 'Ya está entrenando', full: 'No quedan huecos libres',
-    lastOne: 'Es el único de tu equipo', atCap: 'Ya llegó al tope de nivel ({n})', statMax: 'Ya entrenó el máximo de atributos ({n})', noMoney: 'No tienes monedas suficientes',
+    lastOne: 'Es el único de tu equipo', atCap: 'Ya está al nivel máximo ({n})', statMax: 'Ya entrenó el máximo de atributos ({n})', noMoney: 'No tienes monedas suficientes',
     gotExp: '+{n} experiencia', gotStat: '+{n} {stat}', capLevel: 'Tope: nivel {n}', capStat: 'Máximo de atributos',
+    overNote: '{name} está por encima del nivel recomendado ({n}): entrenar le cuesta {m}. Elige cómo pagarlo.', overTip: 'Por encima del nivel recomendado ({n}) entrenar experiencia cuesta más monedas o más horas.', overBadge: 'Coste {m}',
+    plan: { coins: 'Pagar más', time: 'Más tiempo' },
+    planDesc: { coins: 'Ritmo normal: 100% hasta {a} h, 50% hasta {b} h', time: 'Precio normal, pero tarda más: 100% hasta {a} h, 50% hasta {b} h' },
+    slowTag: 'Lento {m}', slowTip: 'Elegiste pagar menos a cambio de más horas.', perPoint: '+{n} por punto',
     phaseFull: 'Rinde al 100%', phaseHalf: 'Rinde al 50%', phaseDone: 'Ya no gana más', curveTip: '100% hasta {a} h · 50% hasta {b} h · después nada',
     nextPoint: 'siguiente punto en {time}', collect: 'Recoger', collectedExp: '{name} vuelve con +{n} de experiencia', collectedStat: '{name} vuelve con +{n} {stat}',
     inTraining: 'Está en el campo de entrenamiento', short: 'Entrena', goTo: 'Ver entrenamiento',
@@ -642,6 +681,7 @@ DK.i18n.register('es', {
     bastion: { name: 'Bastión', desc: 'Defensas altas, algo más lento.' },
   },
   todo: {
+    goalOne: 'Ya puedes fabricar tu objetivo: {item}', goalMany: 'Puedes fabricar {n} de tus objetivos', craft: 'Fabricar',
     trainReadyOne: '1 daskai ha terminado de entrenar', missionsOne: '1 misión lista para cobrar', faintedOne: 'Tienes 1 daskai debilitado o muy herido', hurtOne: '1 daskai de tu equipo está herido',
     tonicsOne: 'Tienes 1 tónico sin usar', upgradesOne: 'Tienes emblemas para 1 mejora (se compra al terminar una expedición)', trainFreeOne: '1 hueco libre en el entrenamiento', craftOne: 'Puedes fabricar 1 receta',
     title: 'Qué hacer ahora', none: 'Todo al día. ¡Buen momento para una expedición!', more: 'Ver {n} más', less: 'Ver menos',
@@ -654,10 +694,65 @@ DK.i18n.register('es', {
     title: 'Emblemas', plus: 'Emblemas +{n}', have: 'Tienes {n} emblemas', thisRun: '{n} en esta expedición',
     help: 'Cada jefe derrotado da 1 emblema (también los ocultos de las cuevas). Se gastan en las Mejoras permanentes al terminar la expedición.',
   },
+  size: {
+    label: '{name} · {n} pisos',
+    small: { name: 'Mapa pequeño', desc: 'Expedición corta: {n} pisos con el jefe. 1 hoguera en el camino. Cada jefe da 1 emblema.' },
+    medium: { name: 'Mapa mediano', desc: 'Expedición media: {n} pisos con el jefe. 2 hogueras, más cuevas y atajos. Cada jefe da 2 emblemas.' },
+    xl: { name: 'Mapa XL', desc: 'Expedición larga: {n} pisos con el jefe. 3 hogueras y muchas cuevas y atajos. Cada jefe da 3 emblemas. Prepara bien la mochila.' },
+  },
+  draw: {
+    start: 'Dibujar', stop: 'Dejar de dibujar', tip: 'Dibuja tu ruta o deja notas en el mapa (también con clic derecho)', done: 'Listo',
+    undo: 'Deshacer', clear: 'Borrar todo', clearQ: '¿Borrar los dibujos y notas?', clearText: 'Se borra todo lo que has dibujado en este mapa.',
+    noteHere: 'Añadir nota aquí', noteTitle: 'Nota en el mapa', notePh: 'p. ej. «ir por la cueva»', delNote: 'Borrar nota',
+    tool: { pen: 'Lápiz', eraser: 'Goma', note: 'Nota' },
+  },
+  brief: {
+    mod: 'Clima del mapa',
+    size: 'Tamaño', sizeFloors: 'Tamaño · {n} pisos', levels: 'Rivales', levelsTip: 'Nivel de los daskai salvajes de este mapa', difficulty: 'Dificultad',
+    reward: 'Por jefe', rewardValue: '+{n} emblemas', rewardTip: 'Emblemas que da cada jefe de este mapa (también los ocultos de las cuevas). Cuanto más grande el mapa, más emblemas.',
+  },
+  mod: {
+    reward: 'Recompensa: +{n}% de monedas.', fogNode: 'Niebla: no se ve qué hay aquí',
+    niebla: { name: 'Niebla', desc: 'Sólo ves lo que hay 3 pisos por delante.' },
+    tormenta: { name: 'Tormenta', desc: 'Los ataques de agua y luz hacen un 20% más de daño; los de tierra, un 10% menos (a todos).' },
+    lunallena: { name: 'Luna llena', desc: 'Hay muchos más mini jefes (y más reliquias).' },
+    calor: { name: 'Ola de calor', desc: 'Los ataques de fuego hacen un 20% más de daño; los de agua, un 15% menos (a todos).' },
+    bonanza: { name: 'Bonanza', desc: 'Más cofres y mercaderes, pero los rivales tienen 2 niveles más.' },
+  },
+  tl: {
+    quest: 'Cumples el encargo «{name}» (+{coins} monedas)',
+    start: 'Sales hacia {zone} ({size})', newMap: 'Nuevo mapa: {zone} ({size})', elite: 'Vences a un mini jefe: {species}', boss: 'Derrotas a {title}', secret: '¡Derrotas al jefe oculto {title}!',
+    recruit: '{name} se une a ti', relic: 'Consigues la reliquia {relic}', cave: 'Encuentras la guarida de {title}', caveTreasure: 'Tesoro en una cueva: {coins} monedas',
+    shortcut: 'Atajo: te saltas {n} pisos', event: 'Suceso: {event}', saved: '{name} se salva de la muerte', fallen: '{name} cae para siempre', mapCleared: 'Mapa de {zone} superado',
+    campfire: 'Vuelves a casa desde una hoguera ({coins} monedas)', cashout: 'Terminas y cobras ({coins} monedas)', retreat: 'Te retiras ({coins} monedas)', lost: 'Tu equipo cae',
+  },
+  quest: {
+    title: 'Encargo', done: 'Cumplido', failed: 'Fallado', holding: 'En curso',
+    reward: 'Premio: {coins} monedas y {item}', paid: 'Cumplido: +{coins} monedas y {item} al botín.', missed: 'No se cumplió: esta vez no hay premio.',
+    doneToast: 'Encargo cumplido: {name}. Cobrarás al vencer al jefe del mapa.', failToast: 'Encargo fallado: {name}.',
+    elites: { name: 'Cazador de élites', desc: 'Vence a {n} mini jefe(s) en este mapa.' },
+    breaks: { name: 'Rompeguardias', desc: 'Rompe la guardia de jefes o mini jefes {n} vez/veces en este mapa.' },
+    strong: { name: 'Golpes eficaces', desc: 'Acierta {n} golpes eficaces (casa del ataque fuerte contra la del rival).' },
+    capture: { name: 'Reclutador', desc: 'Vincula a {n} daskai en este mapa.' },
+    noItems: { name: 'Sin pociones', desc: 'Supera el mapa sin usar objetos de curación.' },
+    noRest: { name: 'Sin descanso', desc: 'Supera el mapa sin descansar en una hoguera.' },
+    noFaint: { name: 'Sin bajas', desc: 'Supera el mapa sin que caiga ninguno de tus daskai.' },
+  },
+  unlock: {
+    training: '¡Campo de entrenamiento desbloqueado! Ya puedes dejar daskai entrenando (Inicio → Entrenamiento).',
+    trainingLocked: 'Se desbloquea al derrotar a tu primer jefe en una expedición.',
+  },
   craft: {
+    tabRecipes: 'Recetas', tabMaterials: 'Materiales', searchMat: 'Buscar material…', type: 'Tipo', recipesN: '{n} recetas', readyN: '{n} listas',
+    canN: 'Puedes hacer {n}', chainShort: 'Con pasos', missingN: 'Faltan {n}', usedInShort: 'En {n} recetas', usedIn: 'Se usa en {n} recetas', usedInOne: 'Se usa en 1 receta', whereGet: 'Dónde conseguirlo',
+    how: { wild: 'salvajes', boss: 'jefe', secret: 'jefe oculto' }, whatDoes: 'Qué hace',
+    goals: 'Objetivos', goal: 'Objetivo', goalShort: 'Marcar', goalOn: 'Marcar como objetivo: verás lo que te falta al preparar la expedición', goalOff: 'Quitar de objetivos',
+    goalAdded: '{item}: marcado como objetivo', goalRemoved: '{item}: ya no es objetivo', needMore: 'Faltan {n}', goalsAllReady: '¡Ya tienes lo necesario para tus objetivos!',
+    goalsReadyTitle: 'Objetivos listos para fabricar',
+    equipQ: '¿A quién le pones {item}?', equipText: 'Mira cómo cambian sus atributos antes de elegir.', replaces: 'Sustituye a {item}', freeSlot: 'Hueco libre', swap: 'Cambiar', notNow: 'Ahora no',
     title: 'Crafteo', canChain: 'Te falta, pero puedes fabricarlo',
     intro: 'Construye equipo con los materiales de las expediciones. Al equiparlo, tu daskai gana un ataque nuevo, una pasiva extra o mejores atributos.',
-    kind: { all: 'Todo', move: 'Habilidades', passive: 'Pasivas', stats: 'Atributos', consumable: 'Consumibles' },
+    kind: { all: 'Todos los tipos', move: 'Equipo con ataque', passive: 'Equipo con pasiva', stats: 'Equipo de atributos', tonic: 'Tónicos', consumable: 'Consumibles' },
     search: 'Buscar objeto o material…', only: 'Sólo construibles', usesFilter: 'Usa: {item}',
     emptyTitle: 'Nada que mostrar', emptyText: 'Prueba con otro filtro o consigue más materiales en las expediciones.',
     givesMove: 'Ataque nuevo al equiparlo', givesPassive: 'Pasiva extra al equiparlo', grants: 'Concede',
@@ -686,6 +781,8 @@ DK.i18n.register('es', {
   },
   /* Resumen de expedición (screens/expSummary.js) */
   sum: {
+    timeline: 'Cronología', moments: '{n} momentos', floorN: 'piso {n}', compare: 'Frente a tu mejor expedición', newRecord: '¡Nuevo récord!', bestWas: 'récord {v}',
+    cmpDepth: 'Profundidad', cmpCoins: 'Monedas', cmpTime: 'Duración',
     shopTitle: 'Mejoras permanentes', shopHide: 'Ocultar', shopShow: 'Ver mejoras', shopEarned: 'Has ganado {n} emblemas en esta expedición.', shopEarnedOne: 'Has ganado 1 emblema en esta expedición.', secretsOne: '1 jefe oculto vencido', shopCanOne: 'Puedes comprar 1 mejora ahora.', shopNone: 'No has derrotado ningún jefe en esta expedición.',
     shopCan: 'Puedes comprar {n} mejoras ahora.', shopSave: 'Guarda tus emblemas para la próxima.', secrets: '{n} jefes ocultos vencidos',
     campfireLost: 'Al volver desde una hoguera se pierde el {pct}% del botín ({coins} monedas).',
@@ -720,7 +817,7 @@ campfire: 'Volviste a casa desde una hoguera: te llevas la mitad del botín y to
   /* Campamento (data/upgrades.js) */
   camp: {
     title: 'Mejoras', text: 'Mejoras permanentes entre expediciones. Se pagan con emblemas (1 por cada jefe derrotado) y se compran al terminar cada expedición.',
-    buy: 'Mejorar · {n}', bought: '¡Mejora conseguida: {name}!', noMoney: 'No tienes monedas suficientes', missing: 'Te faltan {n} emblemas', noEmblems: 'No tienes emblemas suficientes', buyAtEnd: 'Se compra al terminar una expedición', howTo: 'Derrota jefes para ganar emblemas y cámbialos por mejoras en el resumen de cada expedición.',
+    buy: 'Mejorar · {n}', bought: '¡Mejora conseguida: {name}!', noMoney: 'No tienes monedas suficientes', missing: 'Te faltan {n} emblemas', closeMenu: 'Hecho', saveHint: 'Si no te alcanza, guarda los emblemas: podrás gastarlos al terminar la próxima expedición.', noEmblems: 'No tienes emblemas suficientes', buyAtEnd: 'Se compra al terminar una expedición', howTo: 'Derrota jefes para ganar emblemas y cámbialos por mejoras en el resumen de cada expedición.',
     now: 'Ahora:', nextLevel: 'Siguiente nivel:', firstLevel: 'Al comprarla:', maxed: 'Al máximo', levelTip: 'Nivel actual / máximo',
     spent: '{n} monedas invertidas', levels: '{n} de {total} niveles',
     group: { combat: 'Combate', progress: 'Progreso', expedition: 'Expedición' },

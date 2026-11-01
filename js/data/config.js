@@ -30,7 +30,8 @@
       cost: (lv, kind) => Math.round((30 + lv * 10) * (kind === 'stat' ? 1.6 : 1)), // monedas al entrar
       expPerHour: (lv) => Math.round(DK.config.expCurve(lv) * 0.5), // ≈ medio nivel por hora
       fullHours: 2, halfHours: 8, halfRate: 0.5,  // 100% las 2 primeras horas, 50% hasta las 8, luego nada
-      levelMargin: 3,                             // no pasa del nivel más alto de tus daskai − este margen
+      levelMargin: 3,                             // nivel recomendado = el más alto de tus daskai − este margen
+      overStep: 0.25, overMax: 4,                 // por cada nivel por encima del recomendado: +25% de monedas o de horas (máx. ×4)
       statHours: 1.5,                             // horas efectivas por punto de atributo
       statPer: { hp: 4, mp: 3, atk: 1, matk: 1, def: 1, mdef: 1, spd: 1 },
       statMax: 12,                                // puntos entrenados como mucho por daskai
@@ -73,11 +74,21 @@
        weights = probabilidad relativa de cada tipo de nodo (el piso 1 siempre es combate). */
     expedition: {
       rows: 10, eliteFrom: 2, branchChance: 0.45,
+      // Tamaños de mapa (al azar cada vez que se genera uno): `rows` pisos normales
+      // + hoguera + jefe → pequeño 12, mediano 20 y XL 31 (30 + jefe).
+      // caves / shortcuts / rests = cuevas mínimas, atajos [mín, máx] y hogueras fijas por el camino
+      // emblems = multiplicador de emblemas de los jefes (final y ocultos) en ese mapa
+      sizes: {
+        small: { rows: 10, weight: 45, caves: 1, shortcuts: [1, 2], rests: 1, emblems: 1, icon: 'map' },
+        medium: { rows: 18, weight: 35, caves: 2, shortcuts: [2, 3], rests: 2, emblems: 2, icon: 'compass' },
+        xl: { rows: 29, weight: 20, caves: 3, shortcuts: [3, 4], rests: 3, emblems: 3, icon: 'mountain' },
+      },
       weights: { fight: 36, event: 20, elite: 10, recruit: 9, shop: 7, treasure: 8, rest: 5, shrine: 4, cave: 4 },
       // Atajos: nodos que permiten saltar `shortcutSkip` pisos (a cambio de vida del equipo)
       shortcuts: [1, 2], shortcutSkip: 3, shortcutHpCost: 0.2,
       caveMin: 1,          // cuevas garantizadas por mapa (guarida del jefe oculto de la zona)
       secretFinalChance: 0.35, // si ya venciste al jefe oculto, probabilidad de que sea el jefe final del mapa
+      modChance: 0.5,      // probabilidad de que un mapa traiga un modificador (data/mapMods.js)
       campfireKeep: 0.5,   // al volver a casa desde una hoguera te llevas este % del botín (y todos los daskai)
       recruitChoices: 3,   // daskai entre los que eliges en un nodo de reclutamiento
       directToBag: ['batalla', 'mejora'], // categorías que van directas a la bolsa (usables ya); el resto espera al final
@@ -99,9 +110,16 @@
       depthLevel: 1,       // niveles extra de los rivales por cada mapa de profundidad
       depthLevelOver: 3,   // y además, por cada mapa más allá del número de zonas
       depthCoinBonus: 0.25, // +25% de monedas al terminar por cada mapa extra superado
-      emblemsPerBoss: 1,   // emblemas (moneda de las mejoras permanentes) por jefe derrotado
+      quest: { sizeMult: { small: 1, medium: 1.5, xl: 2 }, depthMult: 0.25 }, // premio de los encargos (data/quests.js)
+      emblemsPerBoss: 1,   // emblemas (moneda de las mejoras permanentes) por jefe derrotado (× sizes[tamaño].emblems)
     },
     weakMult: 1.25,       // daño extra al punto débil de una especie (su defensa más baja)
+    autoHeal: { at: 0.3, max: 3 }, // automático: cura con un objeto por debajo de este % de vida (máx. por combate)
+    genes: 0.1,           // cada daskai nace con sus atributos base ±10% sobre los de su especie (al azar)
+    stab: 1.2,            // ataque de la misma casa que el daskai que lo usa
+    // Ruptura (jefes y élites): golpes buenos llenan la barra; al llenarse el rival pierde
+    // su acción hasta el final del turno siguiente y recibe ×dmg. Cada ruptura sube la barra ×grow.
+    breakGauge: { boss: 100, elite: 70, hit: 6, strong: 30, weak: 22, crit: 12, dmg: 1.5, grow: 1.4 },
     switchMult: 0.7,      // el daskai que entra al cambiar recibe este % del daño ese turno
     revealMovesAt: 2,     // combates contra una especie (en la zona) para ver sus ataques
     revealStatsAt: 3,     // … y para ver sus atributos

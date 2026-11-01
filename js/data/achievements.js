@@ -32,4 +32,26 @@
     { id: 'crits100', icon: 'bolt', target: 100, reward: 300, value: S('crits') },
     { id: 'codex20', icon: 'book', target: 20, reward: 400, value: codexSeen },
   ];
+
+  /* ---------- Logros ocultos (hidden: no se ve qué piden hasta conseguirlos) ----------
+   * `text` + `vars(state)` permiten compartir textos: achievements.<text>.name/desc con variables. */
+  const A = DK.data.achievements;
+  const bossDone = (z) => (st) => (st.bosses[z] && st.bosses[z].defeated > 0 ? 1 : 0);
+  const secretDone = (st) => Object.keys(DK.data.secretBosses || {}).filter((z) => st.secretBosses && st.secretBosses[z] && st.secretBosses[z].defeated > 0).length;
+  const secretFound = (st) => Object.keys(DK.data.secretBosses || {}).filter((z) => st.secretBosses && st.secretBosses[z] && (st.secretBosses[z].found > 0 || st.secretBosses[z].defeated > 0)).length;
+  Object.values(DK.data.zones).forEach((z, i) => A.push({
+    id: 'boss_' + z.id, text: 'bossZone', hidden: true, icon: 'crown', target: 1, reward: 150 + i * 120, value: bossDone(z.id),
+    vars: () => ({ zone: z.name, boss: z.boss ? z.boss.title : '' }),
+  }));
+  const nSecrets = Object.keys(DK.data.secretBosses || {}).length;
+  A.push(
+    { id: 'secretFirst', hidden: true, icon: 'cave', target: 1, reward: 400, value: secretDone },
+    { id: 'secretFoundAll', hidden: true, icon: 'compass', target: nSecrets, reward: 1500, value: secretFound },
+    { id: 'secretAll', hidden: true, icon: 'skull', target: nSecrets, reward: 4000, value: secretDone },
+    { id: 'depth5', hidden: true, icon: 'compass', target: 5, reward: 600, value: S('bestDepth') },
+    { id: 'depth10', hidden: true, icon: 'compass', target: 10, reward: 2000, value: S('bestDepth') },
+    { id: 'xlClear', hidden: true, icon: 'map', target: 1, reward: 700, value: S('xlCleared') },
+    { id: 'breaks25', hidden: true, icon: 'bolt', target: 25, reward: 600, value: S('breaks') },
+    { id: 'quests10', hidden: true, icon: 'checkCircle', target: 10, reward: 800, value: S('questsDone') },
+  );
 })();

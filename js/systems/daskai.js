@@ -87,6 +87,7 @@
         uid: U.uid(), species: speciesId, level: 1, exp: 0,
         nature: U.pick(Object.keys(D.natures)),
         passive: U.pick(sp.passives),
+        genes: api.rollGenes(),    // ±config.genes sobre cada atributo base de la especie: no hay dos iguales
         growth: zeroStats(),       // puntos ganados al subir de nivel (nivel + naturaleza)
         natureGrowth: zeroStats(), // parte de `growth` que viene de la naturaleza (+ o -)
         cur: { hp: 0, mp: 0 },
@@ -106,6 +107,18 @@
 
     species(d) { return D.species[d.species]; },
 
+    /** Genes al nacer: un % al azar (±config.genes) para cada atributo base. */
+    rollGenes() {
+      const g = DK.config.genes || 0, out = {};
+      KEYS().forEach((k) => (out[k] = Math.round(U.randf(-g, g) * 100) / 100));
+      return out;
+    },
+    /** Atributo base de ESTE daskai: el de su especie con sus genes. */
+    baseOf(d, k) {
+      const b = D.species[d.species].base[k];
+      return Math.max(1, Math.round(b * (1 + ((d.genes && d.genes[k]) || 0))));
+    },
+
     /** Ritmo de crecimiento de un atributo (ver growthWeight) y su etiqueta para la interfaz. */
     growthWeight(d, k) { return growthWeight(d, k); },
     growthRate(d, k) {
@@ -121,12 +134,14 @@
     /** Tomar un tónico: +config.tonic.per[stat] para siempre (hasta config.tonic.cap tónicos). */
     applyTonic(d, stat) {
       if (api.tonicsUsed(d) >= DK.config.tonic.cap) return false;
+      api.touch();
       d.tonics = d.tonics || {};
       d.tonics[stat] = (d.tonics[stat] || 0) + 1;
       return true;
     },
     /** Elixir de olvido: devuelve los tónicos a la bolsa para repartirlos de nuevo. */
     resetTonics(d) {
+      api.touch();
       const back = {};
       Object.entries(d.tonics || {}).forEach(([k, n]) => { const id = D.tonicFor[k]; if (id && n) back[id] = n; });
       d.tonics = {};
@@ -148,6 +163,7 @@
     talentsPending(d) { return api.talentTiers(d).filter((tier) => !(d.talents || {})[tier]); },
     chooseTalent(d, tier, id) {
       if (!api.talentOptions(d, tier).includes(id) || (d.talents || {})[tier]) return false;
+      api.touch();
       d.talents = d.talents || {}; d.talents[tier] = id;
       api.clamp(d); DK.store.save();
       return true;
@@ -188,21 +204,57 @@
      * @param {Array} [equip] equipo alternativo (para previsualizar cambios)
      */
     stats(d, equip) {
-      const sp = D.species[d.species];
+      // Caché: el cálculo completo sólo se repite si cambia algo que lo afecta (statKey)
+      if (equip) return computeStats(d, equip);
+      const key = statKey(d);
+      const c = statCache.get(d);
+      if (c && c.key === key) return Object.assign({}, c.val);
+      const val = computeStats(d);
+      statCache.set(d, { key, val });
+      return Object.assign({}, val);
+    },
+    /** Vacía la caché de atributos. */
+    clearStatCache() { statCache = new WeakMap(); rev++; },
+  };
+
+  /*
+   * Caché de atributos. stats() se llama muchísimo (cada barra, cada
+   * daño, cada ficha). Se recalcula sólo si cambia la «revisión» o algo
+   * barato de comparar (nivel, especie, pasiva, equipo, expedición):
+   *  - DK.store.save() sube la revisión (casi todo cambio de la partida guarda);
+   *  - las funciones que cambian atributos sin tocar el nivel (tónicos,
+   *    talentos, entrenamiento, herencia, reliquias) llaman a DK.daskai.touch().
+   * Si cambias a mano growth/tonics/trained/legacy/talents/genes de un
+   * daskai, llama tú también a DK.daskai.touch().
+   */
+  let statCache = new WeakMap(), rev = 0;
+  function statKey(d) {
+    const st = DK.store.state, e = st && st.expedition;
+    const eq = d.equip || [];
+    return rev + '|' + d.level + '|' + d.species + '|' + d.passive + '|' + eq[0] + '|' + eq[1] + '|' + (e ? 'x' + (e.relics || []).length : '-') + '|' + (st ? st.difficulty : '');
+  }
+  api.touch = () => { rev++; };
+
+  /** Cálculo completo de los atributos (sin caché). */
+  function computeStats(d, equip) {
+    {
       const pas = api.passiveMods(d, equip);
       const eq = api.equipBonus(d, equip);
       const out = {};
       for (const k of KEYS()) {
         // Base de la especie + crecimiento por niveles + equipo + herencia de caídos (d.legacy)
         // + tónicos y entrenamiento (mejoras permanentes, ver api.permBonus)
-        const raw = sp.base[k] + d.growth[k] + (eq[k] || 0) + ((d.legacy && d.legacy[k]) || 0) + api.permBonus(d, k);
+        const raw = api.baseOf(d, k) + d.growth[k] + (eq[k] || 0) + ((d.legacy && d.legacy[k]) || 0) + api.permBonus(d, k);
         out[k] = Math.max(1, Math.round(raw * (1 + (pas.mods[k] || 0)) * api.mult(d, k)));
       }
       // En expedición no hay regeneración base (config.expedition.noFreeHeal): sólo la de pasivas y equipo
       const noFree = DK.config.expedition.noFreeHeal && DK.store.state && DK.store.state.expedition;
       out.regen = (noFree ? 0 : DK.config.regenPct) + (pas.regen || 0) + (eq.regen || 0);
       return out;
-    },
+    }
+  }
+
+  Object.assign(api, {
 
     /**
      * Pasivas activas: la propia + las que dan los objetos equipados (grants.passive).
@@ -253,9 +305,9 @@
       const equip = api.equipBonus(d)[k] || 0;
       const total = api.stats(d)[k];
       const perm = api.permBonus(d, k), evo = (d.evoBonus && d.evoBonus[k]) || 0;
-      const flat = sp.base[k] + d.growth[k] + equip + perm;
+      const flat = api.baseOf(d, k) + d.growth[k] + equip + perm;
       return {
-        base: sp.base[k], level: d.growth[k] - nature - evo, nature, natureEffect: D.natureEffect(d.nature, k), evo,
+        base: api.baseOf(d, k), gene: (d.genes && d.genes[k]) || 0, level: d.growth[k] - nature - evo, nature, natureEffect: D.natureEffect(d.nature, k), evo,
         perm, tonic: ((d.tonics && d.tonics[k]) || 0) * DK.config.tonic.per[k], trained: (d.trained && d.trained[k]) || 0,
         equip, passivePct: pas.mods[k] || 0, bonus: total - flat, total, rate: api.growthRate(d, k),
       };
@@ -322,6 +374,7 @@
      */
     evolve(d) {
       if (!api.canEvolve(d)) return null;
+      api.touch();
       const before = api.stats(d);
       const from = d.species, ratioHp = d.cur.hp / api.stats(d).hp, ratioMp = d.cur.mp / Math.max(1, api.stats(d).mp);
       d.species = D.species[from].evolve.into;
@@ -365,7 +418,7 @@
       return { coins: 20 + d.level * 6, items: { [piece]: 1 + Math.floor(d.level / 15), pelaje: 1 } };
     },
     movesUpTo,
-  };
+  });
   DK.daskai = api;
 
   /* ---------------- Grupo del jugador ---------------- */

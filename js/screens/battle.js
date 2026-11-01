@@ -18,7 +18,7 @@
 (function () {
   const { h, btn, bar, modal } = DK.ui;
   const D = DK.data, V = DK.views, B = () => DK.battle;
-  const t = (k, v) => DK.t(k, v);
+  const { t } = DK;
 
   DK.screens.register('battle', {
     title: (p) => D.zones[p.zone].name, icon: 'swords', back: false, nav: false, section: 'battle', tutorial: 'battle',
@@ -79,12 +79,16 @@
       ui.eStatus = h('span');
       ui.ePhase = h('span', { class: 'phase-tags' });
       ui.intent = h('div', { class: 'intent' });
+      // Barra de ruptura (jefes y élites)
+      ui.eBreak = st.breakMax ? h('div', { class: 'break-gauge', tip: t('battle.breakTip', { n: Math.round((DK.config.breakGauge.dmg - 1) * 100) }) },
+        h('span', { class: 'bg-icon' }, DK.icon('bolt', 12)), h('span', { class: 'bg-track' }, h('span', { class: 'bg-fill' }), h('span', { class: 'bg-preview' })), h('b', { class: 'bg-label' })) : null;
       // Marcas de las fases del jefe sobre su barra de vida
       (st.phases || []).forEach((p) => ui.eHp.querySelector('.bar-track').append(h('i', { class: 'phase-mark', style: { left: p.at * 100 + '%' }, tip: t('phase.name.' + p.type) })));
       enemyHud.replaceChildren(
         h('div', { class: 'hud-title' }, h('b', null, st.boss ? (st.bossInfo || zone.boss).title : sp.name), V.level(e.level)),
         h('div', { class: 'hud-tags' }, st.boss ? h('span', { class: 'badge leader' }, DK.icon('crown', 13), t('battle.boss')) : null, V.houseBadge(sp.house, { known: st.known }), V.shinyTag(e), ui.eStatus, ui.ePhase),
-        ui.eHp, ui.eMp, ui.intent);
+        ui.eHp, ui.eMp, ui.eBreak, ui.intent);
+      updateBreak();
       ui.eSprite = V.dSprite(e, { size: st.boss ? 210 : 180, cls: 'idle' });
       enemySlot.replaceChildren(ui.eSprite);
     }
@@ -125,7 +129,7 @@
     }
 
     /** Texto del desglose de daño de un ataque (lo que se ve al pasar por encima). */
-    const PART = { power: 'dmgPower', atkdef: 'dmgAtkDef', level: 'dmgLevel', house: 'dmgHouse', bonus: 'dmgBonus', weak: 'dmgWeak', guard: 'dmgGuard', switchIn: 'dmgSwitch', shield: 'dmgShield', burn: 'dmgBurn' };
+    const PART = { power: 'dmgPower', atkdef: 'dmgAtkDef', level: 'dmgLevel', house: 'dmgHouse', bonus: 'dmgBonus', weak: 'dmgWeak', guard: 'dmgGuard', switchIn: 'dmgSwitch', shield: 'dmgShield', burn: 'dmgBurn', weather: 'dmgWeather', stab: 'dmgStab', broken: 'dmgBroken' };
     function breakdown(side, mid, est) {
       const f = B().factors(st, side, D.moves[mid], { ignoreHouse: !st.known, hideWeak: side === 'ally' });
       const lines = f.parts.map((p) => `${t('battle.' + PART[p.k])}: ${typeof p.v === 'number' && p.k !== 'power' ? '×' + (Math.round(p.v * 100) / 100) : p.v}`);
@@ -135,12 +139,18 @@
     }
 
     /** Intención del rival: qué hará este turno y cuánto te haría. */
-    const INTENT_ICON = { attack: 'sword', heavy: 'swords', heal: 'heart', buff: 'arrowUp', debuff: 'arrowDown', status: 'poison' };
+    const INTENT_ICON = { attack: 'sword', heavy: 'swords', heal: 'heart', buff: 'arrowUp', debuff: 'arrowDown', status: 'poison', stunned: 'bolt' };
     function updateIntent() {
       if (!ui.intent) return;
       const it = !st.outcome && B().intentInfo(st);
       ui.intent.className = 'intent' + (it ? ' i-' + it.type : ' hidden');
       if (!it) return ui.intent.replaceChildren();
+      if (it.type === 'stunned') {
+        ui.intent.dataset.tip = t('intent.stunnedTip', { n: Math.round((DK.config.breakGauge.dmg - 1) * 100) });
+        ui.intent.classList.remove('lethal');
+        return ui.intent.replaceChildren(h('span', { class: 'intent-icon' }, DK.icon('bolt', 15)),
+          h('span', { class: 'intent-text' }, h('small', null, t('intent.label')), h('b', null, t('intent.stunned'))));
+      }
       const m = D.moves[it.move];
       const hp = B().ally(st).cur.hp;
       const lethal = it.dmg && it.dmg[0] * (it.twice ? 2 : 1) >= hp;
@@ -167,12 +177,25 @@
       updatePhase();
       updateTimeline(ui.hoverMove || null);
     }
+    /** Barra de ruptura: valor actual, vista previa del ataque señalado y estado «roto». */
+    function updateBreak(s, previewGain) {
+      if (!ui.eBreak) return;
+      const val = s ? s.bVal : st.breakVal, max = s ? s.bMax : st.breakMax, broken = s ? s.broken : st.broken;
+      const pct = broken ? 100 : Math.round((val / Math.max(1, max)) * 100);
+      ui.eBreak.classList.toggle('is-broken', !!broken);
+      ui.eBreak.querySelector('.bg-fill').style.width = pct + '%';
+      const pv = !broken && previewGain ? Math.min(100 - pct, Math.round((previewGain / Math.max(1, max)) * 100)) : 0;
+      const pvEl = ui.eBreak.querySelector('.bg-preview');
+      pvEl.style.left = pct + '%'; pvEl.style.width = pv + '%';
+      ui.eBreak.querySelector('.bg-label').textContent = broken ? t('battle.brokenShort') : `${val}/${max}`;
+    }
     /** Actualiza barras con la foto de un evento. */
     function applySnap(s) {
       if (!s) return;
       const a = B().ally(st), as = DK.daskai.stats(a), es = DK.daskai.stats(st.enemy);
       if (s.aUid === a.uid) { ui.aHp.update(s.aHp, as.hp); ui.aMp.update(s.aMp, as.mp); }
       ui.eHp.update(s.eHp, es.hp); ui.eMp.update(s.eMp, es.mp);
+      updateBreak(s);
       updateStatus();
     }
 
@@ -247,6 +270,8 @@
           case 'captureFail': DK.audio.sfx('captureFail'); break;
           case 'switch': buildAlly(); anim(ui.aSprite, 'enter', 600); DK.audio.sfx('swap'); break;
           case 'flee': DK.audio.sfx('flee'); break;
+          case 'broken': anim(ui.eSprite, 'hit', 450); anim(arena, 'shake', 500); DK.audio.sfx('crit'); DK.vibrate([60, 40, 90]); floatNum('enemy', t('battle.breakFloat'), 'strong'); DK.fx.burst(fx, ui.eSprite, 'luz', 18); break;
+          case 'stunned': anim(ui.eSprite, 'debuff', 600); floatNum('enemy', t('battle.stunFloat'), 'weak'); break;
           default: break;
         }
         applySnap(e.snap);
@@ -276,8 +301,15 @@
     async function autoStep() {
       await wait(450);
       if (!auto || busy || st.outcome || stopped || DK.keys.inModal()) return;
-      // Seguridad: con poca vida el automático se pausa (ajuste «Pausar el automático»)
       const a = B().ally(st);
+      // Zona crítica: primero su propio ataque de curación (gratis); si no, un objeto de la bolsa
+      if (B().autoShouldHeal(st)) {
+        const healMove = DK.daskai.battleMoves(a).find((m) => D.moves[m].effect && D.moves[m].effect.type === 'heal' && B().canUseMove(a, m));
+        if (healMove) { st.autoHeals = (st.autoHeals || 0) + 1; act({ type: 'move', moveId: healMove }); return; }
+        const item = B().autoHealItem(st);
+        if (item) { st.autoHeals = (st.autoHeals || 0) + 1; log(t('battle.autoHealed', { name: DK.daskai.name(a), item: D.items[item].name }), 'good', 'item'); act({ type: 'item', itemId: item }); return; }
+      }
+      // Seguridad: con poca vida el automático se pausa (ajuste «Pausar el automático»)
       st._paused = st._paused || {};
       if (DK.settings.get('autoPause') && DK.daskai.hpPct(a) < 0.3 && !st._paused[a.uid]) {
         st._paused[a.uid] = true; auto = false; params.auto = false; drawToolbar(); showMain();
@@ -298,17 +330,43 @@
       ui.offKeys.push(DK.keys.on('l', expandLog));
     }
 
-    /** Botón grande de ataque (color de su casa, coste, poder, daño previsto y eficacia). */
-    function moveButton(a, mid, i, eff, go, can) {
+    /**
+     * Previsión de un ataque contra el rival actual: rango de daño, % de su
+     * vida, eficacia (casa del ataque contra la del rival), misma casa,
+     * si remata y cuánto llena la ruptura.
+     */
+    function preview(mid) {
       const m = D.moves[mid];
+      if (!m || !m.power) return null;
       const est = B().estimate(st, mid);
-      const color = m.house ? D.houseColor(m.house) : 'var(--muted)';
+      const hp = st.enemy.cur.hp, maxHp = DK.daskai.stats(st.enemy).hp;
+      const a = B().ally(st);
+      return {
+        est, eff: B().effOf(st, mid), stab: B().isStab(a, m),
+        pct: [DK.util.percent(est[0], maxHp), DK.util.percent(est[1], maxHp)],
+        ko: est[0] >= hp ? 'sure' : est[1] >= hp ? 'maybe' : null,
+        brk: B().breakGain(st, m), acc: m.acc,
+      };
+    }
+
+    /** Botón grande de ataque (color de su casa, coste, daño previsto con % y eficacia). */
+    function moveButton(a, mid, i, _eff, go, can) {
+      const m = D.moves[mid];
+      const pv = preview(mid);
+      const est = pv && pv.est;
+      const eff = pv ? pv.eff : null;
+      const color = D.houseColor(B().moveHouse(a, m));
       const cost = B().mpCost(a, mid);
       const pr = B().priority(mid);
       const first = B().orderFor(st, mid).first;
       const knownWeak = m.power > 0 && B().weakKnown(st.enemy.species) && B().weakness(st.enemy.species) === m.kind;
+      const tags = pv ? [
+        pv.ko ? h('span', { class: 'pv-tag ko ' + pv.ko, tip: pv.ko === 'sure' ? t('battle.koSureTip') : t('battle.koMaybeTip') }, DK.icon('skull', 11), pv.ko === 'sure' ? t('battle.koSure') : t('battle.koMaybe')) : null,
+        pv.stab ? h('span', { class: 'pv-tag stab', tip: t('battle.stabTip', { n: Math.round((DK.config.stab - 1) * 100) }) }, DK.icon(D.houses[m.house].icon, 11), t('battle.stabShort')) : null,
+        pv.brk ? h('span', { class: 'pv-tag brk', tip: t('battle.breakGainTip', { n: pv.brk }) }, DK.icon('bolt', 11), '+' + pv.brk) : null,
+      ].filter(Boolean) : [];
       const b = h('button', {
-        class: 'bmove' + (can ? '' : ' disabled') + (m.power && eff ? ' eff-' + eff : '') + (knownWeak ? ' eff-weakspot' : ''), type: 'button', disabled: !can, style: { '--mc': color },
+        class: 'bmove' + (can ? '' : ' disabled') + (m.power && eff ? ' eff-' + eff : '') + (knownWeak ? ' eff-weakspot' : '') + (pv && pv.ko === 'sure' ? ' is-ko' : ''), type: 'button', disabled: !can, style: { '--mc': color },
         tip: can ? [m.desc || '', est ? breakdown('ally', mid, est) : null].filter(Boolean).join('\n') : t('battle.noMana'),
         onClick: go,
       },
@@ -324,11 +382,17 @@
           h('span', null, DK.icon('sparkle', 12), cost ? `${cost} ${t('common.mpShort')}` : t('move.free')),
           h('span', null, DK.icon('swords', 12), m.power ? t('move.power', { n: m.power }) : t('move.support')),
           h('span', null, DK.icon('eye', 12), `${m.acc}%`)),
-        h('div', { class: 'bmove-dmg' }, est ? h('span', null, DK.icon('target', 12), t('move.dmg', { n: `${est[0]}-${est[1]}` })) : h('span', { class: 'muted' }, m.effect ? V.effectText(m) : t('move.support')),
+        h('div', { class: 'bmove-dmg' },
+          est ? h('span', { class: 'pv-dmg' }, DK.icon('target', 12), h('b', null, `${est[0]}-${est[1]}`), h('span', { class: 'pv-pct' }, `${pv.pct[0] === pv.pct[1] ? pv.pct[1] : pv.pct[0] + '-' + pv.pct[1]}%`)) : h('span', { class: 'muted' }, m.effect ? V.effectText(m) : t('move.support')),
+          tags.length ? h('span', { class: 'pv-tags' }, tags) : null,
           // En el móvil la fila de datos se oculta: el coste va aquí
           h('span', { class: 'bmove-cost' }, DK.icon('sparkle', 11), cost ? `${cost}` : t('move.free'))));
-      b.addEventListener('mouseenter', () => { ui.eHp.preview(est ? st.enemy.cur.hp : null, Math.max(0, st.enemy.cur.hp - (est ? est[1] : 0))); ui.hoverMove = mid; updateTimeline(mid); });
-      b.addEventListener('mouseleave', () => { ui.eHp.preview(null); ui.hoverMove = null; updateTimeline(null); });
+      const on = () => { ui.eHp.preview(est ? st.enemy.cur.hp : null, Math.max(0, st.enemy.cur.hp - (est ? est[1] : 0))); updateBreak(null, pv && pv.brk); ui.hoverMove = mid; updateTimeline(mid); };
+      const off = () => { ui.eHp.preview(null); updateBreak(); ui.hoverMove = null; updateTimeline(null); };
+      b.addEventListener('mouseenter', on);
+      b.addEventListener('mouseleave', off);
+      b.addEventListener('focus', on);
+      b.addEventListener('blur', off);
       return b;
     }
 
@@ -357,7 +421,7 @@
           const cur = a && d.uid === a.uid;
           const fainted = DK.daskai.isFainted(d);
           const s = DK.daskai.stats(d);
-          const pct = Math.round((d.cur.hp / s.hp) * 100);
+          const pct = DK.util.percent(d.cur.hp, s.hp);
           const mu = matchup(d);
           // Si entrase ahora: cuánto le haría la intención del rival (con el colchón del cambio)
           const iv = !cur && !fainted ? B().intentVs(st, d) : null;
@@ -382,7 +446,7 @@
       drawToolbar();
       updateIntent();
       const a = B().ally(st);
-      const eff = B().effOf(st);
+      const eff = null; // la eficacia ahora es de cada ataque (su casa contra la del rival)
       const flee = Math.round(B().fleeChance(st) * 100);
       const others = DK.party.aliveActive().filter((d) => d.uid !== a.uid);
       const fleeDesc = st.boss ? t('battle.fleeBoss') : flee >= 100 ? t('battle.fleeSure') : flee <= 0 ? t('battle.fleeNever') : t('battle.fleeChance', { n: flee });
@@ -678,7 +742,7 @@
         actionsEl.replaceChildren(h('div', { class: 'end-panel' },
           h('div', { class: 'end-main' },
             btn({ icon: 'next', label: t('exp.continue'), size: 'lg', variant: 'primary', hotkey: '1', disabled: !DK.party.aliveActive().length,
-              desc: t('exp.continueDesc', { zone: nz.name, n: choice.depth + 1, lv: choice.nextBonus }), onClick: goOn })),
+              desc: t('exp.continueDesc', { zone: nz.name, n: choice.depth + 1, lv: choice.nextBonus }) + ' · ' + t('size.label', { name: t('size.' + (choice.next.size || 'small') + '.name'), n: DK.expedition.sizeFloors(choice.next.size) }), onClick: goOn })),
           h('div', { class: 'end-side' },
             btn({ icon: 'coin', label: t('exp.cashOut'), size: 'lg', variant: 'tone', hotkey: '2', desc: t('exp.cashOutDesc', { coins: choice.coins, n: Math.round((choice.mult - 1) * 100) }), onClick: stop }),
             heal2)));

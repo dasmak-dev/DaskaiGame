@@ -13,12 +13,8 @@
 (function () {
   const { h, btn } = DK.ui;
   const V = DK.views;
-  const t = (k, v) => DK.t(k, v);
+  const { t } = DK;
 
-  DK.menus.add('nav', {
-    id: 'camp', icon: 'star', order: 15, screen: 'camp', mobile: false, label: () => t('nav.camp'),
-    badge: () => '',
-  });
 
   /** Texto del efecto de una mejora con un valor concreto. */
   /** Texto del efecto con un valor. Si hay un texto propio por nivel (lv1, lv2…) se usa ese. */
@@ -61,23 +57,38 @@
 
   V.upgradeCard = upgradeCard;
 
+  /**
+   * Las Mejoras NO se ven desde el menú: sólo aparecen al terminar una
+   * expedición (V.upgradeMenu, desde screens/expSummary.js). Si algo
+   * intenta abrir la pantalla 'camp', se vuelve al Inicio.
+   */
   DK.screens.register('camp', {
-    title: () => t('nav.camp'), icon: 'star', section: 'camp', music: 'menu', tutorial: 'camp',
-    render() {
-      const refresh = () => DK.router.refresh();
-      const U = DK.data.upgrades;
-      const total = U.reduce((a, u) => a + u.levels.length, 0);
-      const have = U.reduce((a, u) => a + DK.camp.level(u.id), 0);
-      return h('div', { class: 'screen camp-screen' },
-        h('div', { class: 'card camp-hero' },
-          h('span', { class: 'camp-hero-icon' }, DK.icon('star', 34)),
-          h('div', { class: 'grow' }, h('h2', null, t('camp.title')), h('p', { class: 'muted' }, t('camp.text')),
-            h('div', { class: 'chips' }, h('span', { class: 'chip' }, DK.icon('star', 13), t('camp.levels', { n: have, total }))),
-            h('div', { class: 'warning' }, DK.icon('emblem', 16), h('span', null, t('camp.howTo')))),
-          h('div', { class: 'shop-wallet' }, V.emblems(DK.camp.emblems()))),
-        DK.data.upgradeGroups.map((g) => h('section', { class: 'stack-s' },
-          h('h3', { class: 'camp-group' }, t('camp.group.' + g)),
-          h('div', { class: 'camp-grid' }, U.filter((u) => u.group === g).map((u) => upgradeCard(u, refresh))))));
-    },
+    title: () => t('nav.camp'), icon: 'star', section: 'home', music: 'menu',
+    render() { setTimeout(() => DK.router.reset('hub'), 0); return h('div'); },
   });
+
+  /** Contenido del menú de Mejoras (emblemas + tarjetas con «Mejorar»). */
+  V.upgradeShop = (refresh) => {
+    const U = DK.data.upgrades;
+    const total = U.reduce((a, u) => a + u.levels.length, 0);
+    const have = U.reduce((a, u) => a + DK.camp.level(u.id), 0);
+    const n = DK.camp.affordable();
+    return h('div', { class: 'stack upgrade-shop' },
+      h('div', { class: 'row between wrap gap-s upgrade-shop-head' },
+        h('p', { class: 'muted small grow' }, t('camp.text')),
+        h('div', { class: 'row gap-s' }, h('span', { class: 'chip' }, DK.icon('star', 13), t('camp.levels', { n: have, total })), V.emblems(DK.camp.emblems()))),
+      h('div', { class: 'warning ' + (n ? 'good' : '') }, DK.icon('emblem', 16), h('span', null, n ? t(n === 1 ? 'sum.shopCanOne' : 'sum.shopCan', { n }) : t('camp.saveHint'))),
+      DK.data.upgradeGroups.map((g) => h('section', { class: 'stack-s' },
+        h('h4', { class: 'camp-group' }, t('camp.group.' + g)),
+        h('div', { class: 'camp-grid' }, U.filter((u) => u.group === g).map((u) => upgradeCard(u, refresh, true))))));
+  };
+
+  /** Abre el menú de Mejoras (panel; hoja inferior en el móvil). onChange tras cada compra. */
+  V.upgradeMenu = (onChange = () => {}) => {
+    const holder = h('div');
+    const draw = () => holder.replaceChildren(V.upgradeShop(() => { draw(); onChange(); }));
+    draw();
+    return DK.ui.drawer({ id: 'upgrades', title: t('sum.shopTitle'), icon: 'emblem', size: 'wide', cls: 'upgrade-drawer', content: holder,
+      actions: [{ label: t('camp.closeMenu'), icon: 'check', variant: 'primary' }] });
+  };
 })();
