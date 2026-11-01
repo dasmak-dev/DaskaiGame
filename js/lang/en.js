@@ -41,6 +41,7 @@ DK.i18n.register('en', {
   bye: { title: 'Thanks for playing!', text: 'Your progress is saved. You can close this tab now.', back: 'Back to main menu' },
 
   newGame: {
+    strong: 'Strong vs {house}', weak: 'Weak vs {house}', statsTitle: 'Stats', statsNote: 'Bar: compared to the best starter · each daskai is born ±{n}%', 
     nameTitle: 'New adventurer', pickTitle: 'Choose your daskai',
     nameQ: "What's your name, adventurer?", nameHint: 'Your game will be saved in slot {slot}.',
     nameLabel: 'Adventurer name', placeholder: 'Type your name...', nameError: 'The name must have at least 2 characters.',

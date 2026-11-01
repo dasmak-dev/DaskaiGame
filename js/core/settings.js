@@ -73,6 +73,9 @@
     apply() {
       const el = document.documentElement;
       el.dataset.theme = this.theme();
+      // La barra del sistema (móvil / app instalada) del mismo color que el fondo del juego
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta && window.getComputedStyle) { const bg = getComputedStyle(el).getPropertyValue('--bg').trim(); if (bg) meta.setAttribute('content', bg); }
       el.dataset.textsize = this.data.textSize;
       el.dataset.contrast = this.data.highContrast ? 'high' : 'normal';
       el.dataset.colorblind = this.data.colorblind ? 'on' : 'off';

@@ -42,6 +42,7 @@ DK.i18n.register('es', {
   bye: { title: '¡Gracias por jugar!', text: 'Tu progreso está guardado. Ya puedes cerrar esta pestaña.', back: 'Volver al menú principal' },
 
   newGame: {
+    strong: 'Fuerte contra {house}', weak: 'Débil contra {house}', statsTitle: 'Atributos', statsNote: 'Barra: comparado con el mejor inicial · cada daskai nace con ±{n}%', 
     nameTitle: 'Nuevo aventurero', pickTitle: 'Elige tu daskai',
     nameQ: '¿Cómo te llamas, aventurero?', nameHint: 'Tu partida se guardará en la ranura {slot}.',
     nameLabel: 'Nombre de aventurero', placeholder: 'Escribe tu nombre...', nameError: 'El nombre debe tener al menos 2 caracteres.',

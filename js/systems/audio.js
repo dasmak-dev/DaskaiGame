@@ -27,10 +27,27 @@
     musicGain = ctx.createGain(); musicGain.connect(master);
     sfxGain = ctx.createGain(); sfxGain.connect(master);
     updateVolumes();
-    if (wantedTrack) startTrack(wantedTrack);
+    if (wantedTrack && !hidden()) startTrack(wantedTrack);
     return ctx;
   }
-  ['pointerdown', 'keydown'].forEach((ev) => window.addEventListener(ev, () => { ensure(); if (ctx && ctx.state === 'suspended') ctx.resume(); }, { capture: true }));
+  const hidden = () => typeof document !== 'undefined' && document.visibilityState === 'hidden';
+  ['pointerdown', 'keydown'].forEach((ev) => window.addEventListener(ev, () => { ensure(); if (ctx && ctx.state === 'suspended' && !hidden()) ctx.resume(); }, { capture: true }));
+
+  /*
+   * El sonido sólo suena con el juego a la vista: al minimizarlo, cambiar
+   * de app o bloquear el móvil se pausa el contexto (y el secuenciador de
+   * la música) y al volver sigue la misma pista.
+   */
+  function pause() { stopTrack(); if (ctx && ctx.state === 'running') ctx.suspend().catch(() => {}); }
+  function wake() {
+    if (!ctx || hidden()) return;
+    const go = () => { if (wantedTrack && !seq) startTrack(wantedTrack); };
+    if (ctx.state === 'suspended') ctx.resume().then(go, () => {}); else go();
+  }
+  if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => (hidden() ? pause() : wake()));
+  window.addEventListener('pagehide', pause);
+  window.addEventListener('pageshow', wake);
+  window.addEventListener('freeze', pause);
 
   /** Aplica los volúmenes de los ajustes. */
   function updateVolumes() {
@@ -163,7 +180,7 @@
   DK.audio = {
     /** Reproduce un efecto por nombre. */
     sfx(name) {
-      if (!ctx || DK.settings.get('muted') || DK.settings.get('sfxVol') <= 0) return;
+      if (!ctx || hidden() || DK.settings.get('muted') || DK.settings.get('sfxVol') <= 0) return;
       try { (SFX[name] || SFX.click)(); } catch (e) { /* audio no disponible */ }
     },
     /** Cambia la música ('menu', 'boss', escena de zona o null). */
@@ -171,9 +188,11 @@
       if (name === wantedTrack && seq) return;
       wantedTrack = name;
       if (!ctx) return;
-      if (!name) stopTrack(); else startTrack(name);
+      if (!name || hidden()) stopTrack(); else startTrack(name);
     },
     updateVolumes,
+    /** ¿Está sonando la música? (para las pruebas) */
+    playing: () => !!seq && !!ctx && ctx.state === 'running',
     /** Lista de efectos disponibles (para la guía y pruebas). */
     list: () => Object.keys(SFX),
     registerSfx(name, fn) { SFX[name] = fn; },

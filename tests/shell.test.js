@@ -53,5 +53,21 @@ module.exports = {
       await sleep(1700);
       check(!(await p.$('.curtain')), 'la cortinilla no desaparece');
     }),
+  }, {
+    name: 'La música se pausa al minimizar el juego y vuelve al abrirlo',
+    run: (browser, view) => play(browser, view, async (p) => {
+      await p.mouse.click(5, 300); await sleep(300); // primera interacción: crea el audio
+      await p.evaluate(() => { DK.settings.set('muted', false); DK.audio.music(null); DK.audio.music('menu'); });
+      await sleep(400);
+      const vis = (state) => p.evaluate((st) => { Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => st }); document.dispatchEvent(new Event('visibilitychange')); }, state);
+      const before = await p.evaluate(() => DK.audio.playing());
+      await vis('hidden'); await sleep(400);
+      const hiddenNow = await p.evaluate(() => DK.audio.playing());
+      await vis('visible'); await sleep(500);
+      const after = await p.evaluate(() => DK.audio.playing());
+      check(before, 'la música no estaba sonando al empezar la prueba');
+      check(!hiddenNow, 'la música sigue sonando con el juego minimizado');
+      check(after, 'la música no vuelve al abrir el juego');
+    }),
   }],
 };

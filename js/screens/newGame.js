@@ -46,12 +46,20 @@
         h('div', { class: 'row end' }, btn({ icon: 'next', label: t('common.continue'), variant: 'primary', onClick: next, hotkey: '↵' }))));
   }
 
-  /** Paso 2: daskai inicial. */
+  /**
+   * Paso 2: daskai inicial, al estilo de elegir el primer Pokémon.
+   *  - Arriba, los cinco como retratos pequeños en una fila (caben en el móvil).
+   *  - En medio, el elegido en grande sobre un pedestal del color de su casa,
+   *    con su casa, descripción, contra quién es fuerte o débil y su evolución.
+   *  - Sus atributos en fichas (valor y barra comparada con el mejor inicial
+   *    en ese atributo) y el botón para empezar (fijo abajo en el móvil).
+   *  ← / → o 1-5 cambian de daskai; en el móvil también se puede deslizar.
+   */
   function renderStarter(params) {
     const starters = Object.values(D.species).filter((s) => s.starter);
     params.pick = params.pick || starters[0].id;
-    const detail = h('div', { class: 'starter-detail card' });
-    const grid = h('div', { class: 'starter-grid' });
+    const best = Object.fromEntries(D.statKeys.map((k) => [k, Math.max(...starters.map((s) => s.base[k]))]));
+    const refresh = () => DK.router.refresh();
 
     const start = () => {
       const d = DK.store.newGame(params.slot, params.name, params.pick, params.difficulty);
@@ -59,35 +67,51 @@
       DK.router.reset('hub');
       DK.ui.toast(t('newGame.welcome', { name: DK.daskai.name(d), player: params.name }), { icon: 'sparkles', kind: 'good' });
     };
-
-    const drawDetail = () => {
-      const sp = D.species[params.pick];
-      const hs = D.houses[sp.house];
-      const evo = sp.evolve ? D.species[sp.evolve.into] : null;
-      detail.replaceChildren(
-        h('div', { class: 'starter-detail-head', style: { '--c': D.houseColor(sp.house) } },
-          V.sprite(sp.id, { size: 150, cls: 'float' }),
-          h('div', null, h('h2', null, sp.name), V.houseBadge(sp.house), h('p', { class: 'muted' }, sp.desc),
-            h('p', { class: 'small' }, DK.icon(hs.icon, 14), ' ', t('newGame.matchup', { strong: DK.tr('houses', D.houses[hs.strongVs]), weak: DK.tr('houses', V.weakAgainst(sp.house)) })),
-            evo ? h('p', { class: 'small' }, DK.icon('evolve', 14), ' ', t('newGame.evolves', { into: evo.name, n: sp.evolve.level })) : null)),
-        h('div', { class: 'mini-stats' }, D.statKeys.map((k) =>
-          h('div', { class: 'mini-stat' }, h('span', { tip: DK.tr('stats', D.stats[k]) }, DK.icon(D.stats[k].icon, 14), DK.tr('stats', D.stats[k], 'short')), h('div', { class: 'stat-bar' }, h('div', { style: { width: (sp.base[k] / 70) * 100 + '%' } })), h('b', null, sp.base[k])))),
-        h('div', { class: 'row between wrap gap' },
-          btn({ icon: 'back', label: t('newGame.changeName'), variant: 'ghost', onClick: () => { params.step = 'name'; DK.router.refresh(); } }),
-          btn({ icon: 'check', label: t('newGame.choose', { name: sp.name }), variant: 'primary', onClick: start, hotkey: '↵' })));
-      grid.querySelectorAll('.starter-card').forEach((c) => c.classList.toggle('selected', c.dataset.id === params.pick));
-    };
-
-    starters.forEach((sp, i) => {
-      const choose = () => { params.pick = sp.id; DK.audio.sfx('select'); drawDetail(); };
-      const c = h('button', { class: 'starter-card', type: 'button', dataset: { id: sp.id }, style: { '--c': D.houseColor(sp.house) } },
-        V.sprite(sp.id, { size: 84 }), h('b', null, sp.name), V.houseBadge(sp.house), h('kbd', { class: 'hotkey' }, i + 1));
-      c.addEventListener('click', choose);
-      DK.keys.on(String(i + 1), choose);
-      grid.append(c);
-    });
+    const choose = (id) => { if (id === params.pick) return; params.pick = id; DK.audio.sfx('select'); refresh(); };
+    const step = (dir) => { const i = starters.findIndex((s) => s.id === params.pick); choose(starters[(i + dir + starters.length) % starters.length].id); };
+    starters.forEach((sp, i) => DK.keys.on(String(i + 1), () => choose(sp.id)));
+    DK.keys.on('ArrowLeft', () => step(-1)); DK.keys.on('ArrowRight', () => step(1));
     DK.keys.on('Enter', start);
-    drawDetail();
-    return h('div', { class: 'screen' }, h('p', { class: 'muted center' }, t('newGame.pickText', { name: params.name })), grid, detail);
+
+    const sp = D.species[params.pick], hs = D.houses[sp.house];
+    const evo = sp.evolve ? D.species[sp.evolve.into] : null;
+
+    const picker = h('div', { class: 'st-picker', role: 'radiogroup', 'aria-label': t('newGame.pickTitle') }, starters.map((s, i) =>
+      h('button', { class: 'st-pick' + (s.id === params.pick ? ' on' : ''), type: 'button', role: 'radio', 'aria-checked': String(s.id === params.pick), 'aria-label': s.name,
+        tip: `${s.name} · ${DK.tr('houses', D.houses[s.house])}`, style: { '--c': D.houseColor(s.house) }, onClick: () => choose(s.id) },
+        V.sprite(s.id, { size: 52 }), h('span', { class: 'st-pick-house' }, DK.icon(D.houses[s.house].icon, 12)), h('kbd', { class: 'hotkey' }, String(i + 1)))));
+
+    const stage = h('div', { class: 'st-stage', style: { '--c': D.houseColor(sp.house) } },
+      h('button', { class: 'st-arrow prev', type: 'button', 'aria-label': t('detail.prev'), onClick: () => step(-1) }, DK.icon('back', 22)),
+      h('div', { class: 'st-hero' }, h('span', { class: 'st-pedestal', 'aria-hidden': 'true' }), V.sprite(sp.id, { size: 168, cls: 'float' })),
+      h('button', { class: 'st-arrow next', type: 'button', 'aria-label': t('detail.next'), onClick: () => step(1) }, DK.icon('next', 22)));
+    // Deslizar en el móvil
+    let x0 = null;
+    stage.addEventListener('touchstart', (e) => { x0 = e.touches[0].clientX; }, { passive: true });
+    stage.addEventListener('touchend', (e) => { if (x0 == null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) > 45) step(dx < 0 ? 1 : -1); });
+
+    const stats = h('div', { class: 'st-stats' }, D.statKeys.map((k) =>
+      h('div', { class: 'st-stat' + (sp.base[k] === best[k] ? ' top' : ''), tip: DK.tr('stats', D.stats[k], 'desc') || DK.tr('stats', D.stats[k]) },
+        h('span', { class: 'st-stat-name' }, DK.icon(D.stats[k].icon, 14), DK.tr('stats', D.stats[k], 'short')),
+        h('b', null, sp.base[k]),
+        h('span', { class: 'st-stat-bar' }, h('i', { style: { width: Math.round((sp.base[k] / best[k]) * 100) + '%' } })))));
+
+    const info = h('div', { class: 'st-info' },
+      h('div', { class: 'st-title' }, h('h2', null, sp.name), V.houseBadge(sp.house)),
+      h('p', { class: 'st-desc' }, sp.desc),
+      h('div', { class: 'chips' },
+        h('span', { class: 'chip pos' }, DK.icon('swords', 13), t('newGame.strong', { house: DK.tr('houses', D.houses[hs.strongVs]) })),
+        h('span', { class: 'chip neg' }, DK.icon('shield', 13), t('newGame.weak', { house: DK.tr('houses', V.weakAgainst(sp.house)) })),
+        evo ? h('span', { class: 'chip' }, DK.icon('evolve', 13), t('newGame.evolves', { into: evo.name, n: sp.evolve.level })) : null),
+      h('div', { class: 'st-stats-head' }, h('b', null, t('newGame.statsTitle')), h('span', { class: 'muted small' }, t('newGame.statsNote', { n: Math.round(DK.config.genes * 100) }))),
+      stats);
+
+    return h('div', { class: 'screen starter-screen' },
+      h('p', { class: 'muted center st-intro' }, t('newGame.pickText', { name: params.name })),
+      picker,
+      h('section', { class: 'card st-card', style: { '--c': D.houseColor(sp.house) } }, stage, info),
+      h('div', { class: 'st-actions' },
+        btn({ icon: 'back', label: t('newGame.changeName'), variant: 'ghost', onClick: () => { params.step = 'name'; refresh(); } }),
+        btn({ icon: 'check', label: t('newGame.choose', { name: sp.name }), variant: 'primary', size: 'lg', onClick: start, hotkey: '↵', cls: 'st-go' })));
   }
 })();
