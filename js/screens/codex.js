@@ -114,7 +114,7 @@
   function itemsTab(params) {
     const q = (params.q || '').trim().toLowerCase();
     return h('div', { class: 'stack' }, ['batalla', 'mejora', 'equipo', 'pieza'].map((cat) => {
-      const ids = Object.values(D.items).filter((it) => it.category === cat && (!q || (C().itemKnown(it.id) && it.name.toLowerCase().includes(q)))).map((it) => it.id);
+      const ids = Object.values(D.items).filter((it) => it.category === cat && !D.isHidden(it.id) && (!q || (C().itemKnown(it.id) && it.name.toLowerCase().includes(q)))).map((it) => it.id);
       if (!ids.length) return null;
       const known = ids.filter((id) => C().itemKnown(id)).length;
       return h('section', { class: 'cx-items' },

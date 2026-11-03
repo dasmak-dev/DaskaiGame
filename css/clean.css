@@ -1,0 +1,134 @@
+/* =============================================================
+ * css/clean.css — Estilo «limpio» (Ajustes → Apariencia → Estilo).
+ *   Se activa con <html data-style="clean"> (por defecto). Con
+ *   data-style="classic" no se aplica nada de este archivo y el juego
+ *   se ve con el estilo anterior (remaches, relieves y bordes gruesos).
+ *
+ *   Tarjetas planas con borde fino y radio pequeño, botones sin
+ *   relieve, pestañas subrayadas, chips discretos, cabecera y barra
+ *   de accesos translúcidas. Mantiene la paleta oscura de fantasía.
+ * ============================================================= */
+:root[data-style="clean"] {
+  --cl-line: rgba(231, 194, 122, .13); --cl-line-2: rgba(231, 194, 122, .3);
+  --cl-card: linear-gradient(180deg, rgba(27, 20, 16, .94), rgba(16, 11, 9, .96));
+  --cl-inner: rgba(255, 240, 220, .035); --cl-hover: rgba(255, 240, 220, .065);
+  --cl-bar: rgba(14, 10, 9, .86); --cl-shadow: 0 8px 26px rgba(0, 0, 0, .28);
+  --cl-active: rgba(190, 48, 36, .2); --cl-active-line: rgba(240, 130, 100, .55);
+}
+:root[data-style="clean"][data-theme="light"] {
+  --cl-line: rgba(90, 60, 20, .15); --cl-line-2: rgba(90, 60, 20, .32);
+  --cl-card: linear-gradient(180deg, #fdf9f0, #f7efe0);
+  --cl-inner: rgba(90, 60, 20, .04); --cl-hover: rgba(90, 60, 20, .075);
+  --cl-bar: rgba(253, 248, 238, .9); --cl-shadow: 0 8px 24px rgba(90, 60, 20, .12);
+  --cl-active: rgba(185, 28, 28, .1); --cl-active-line: rgba(185, 28, 28, .45);
+}
+
+/* Tarjetas y ventanas */
+:root[data-style="clean"][data-style] :is(.card, .panel) { border: 1px solid var(--cl-line); border-radius: 10px; background: var(--cl-card); box-shadow: var(--cl-shadow); }
+:root[data-style="clean"][data-style] :is(.card, .panel)::after { display: none; }
+:root[data-style="clean"][data-style] :is(.card, .panel) :is(.card, .panel) { background: var(--cl-inner); border-color: var(--cl-line); box-shadow: none; }
+:root[data-style="clean"][data-style] :is(.modal, .drawer) { border: 1px solid var(--cl-line-2); box-shadow: 0 24px 70px rgba(0, 0, 0, .5); }
+:root[data-style="clean"][data-style] .modal { border-radius: 12px; }
+:root[data-style="clean"] :is(.drawer-head, .modal-head) { border-bottom-color: var(--cl-line); }
+:root[data-style="clean"] .panel-head { border-bottom-color: var(--cl-line); }
+
+/* Botones: rectángulos con borde fino, sin relieve */
+:root[data-style="clean"][data-style] .btn { border-width: 1px; border-radius: 8px; box-shadow: none; text-shadow: none; }
+:root[data-style="clean"][data-style] .btn:active:not(:disabled) { transform: scale(.985); box-shadow: none; }
+:root[data-style="clean"][data-style] .btn-lg { border-radius: 10px; }
+:root[data-style="clean"][data-style] .btn-lg .icon { border-radius: 8px; background: color-mix(in srgb, currentColor 9%, transparent); box-shadow: none; }
+:root[data-style="clean"][data-style] .btn-tone { background: var(--cl-inner); border-color: var(--cl-line-2); color: var(--text); box-shadow: none; }
+:root[data-style="clean"][data-style] .btn-tone:hover:not(:disabled) { background: var(--cl-hover); border-color: color-mix(in srgb, var(--gold) 55%, transparent); }
+:root[data-style="clean"][data-style] .btn-ghost { border-color: transparent; background: transparent; }
+:root[data-style="clean"][data-style] .btn-ghost:hover:not(:disabled) { background: var(--cl-hover); }
+:root[data-style="clean"][data-style] .btn-primary { border-color: transparent; background: linear-gradient(180deg, #b42a20, #8c1d16); color: #fff3e6; box-shadow: 0 4px 14px rgba(180, 42, 32, .24); }
+:root[data-style="clean"][data-style] .btn-primary:hover:not(:disabled) { background: linear-gradient(180deg, #c8342a, #9c231b); }
+:root[data-style="clean"][data-style] .btn-danger { border-color: transparent; }
+:root[data-style="clean"][data-style] .icon-btn { border: 1px solid var(--cl-line); border-radius: 8px; background: transparent; box-shadow: none; }
+:root[data-style="clean"][data-style] .icon-btn:hover:not(:disabled) { background: var(--cl-hover); border-color: var(--cl-line-2); }
+:root[data-style="clean"] .hotkey { box-shadow: none; border-radius: 4px; }
+
+/* Chips, insignias, avisos y campos */
+:root[data-style="clean"][data-style] .chip { border-radius: 6px; border: 1px solid var(--cl-line); background: var(--cl-inner); box-shadow: none; }
+:root[data-style="clean"][data-style] .chip.pos { border-color: color-mix(in srgb, #4ade80 35%, transparent); }
+:root[data-style="clean"][data-style] .chip.neg { border-color: color-mix(in srgb, #f87171 40%, transparent); }
+:root[data-style="clean"] .badge { border-radius: 6px; }
+:root[data-style="clean"] .warning { border-radius: 8px; border-width: 1px; }
+:root[data-style="clean"][data-style] :is(.input, .select, select, textarea, .inv-search input) { border-width: 1px; border-radius: 8px; border-color: var(--cl-line-2); box-shadow: none; }
+
+/* Pestañas: subrayadas en lugar de botones rellenos */
+:root[data-style="clean"][data-style] .tabs { gap: 2px; padding: 0; border: 0; border-bottom: 1px solid var(--cl-line); border-radius: 0; background: none; }
+:root[data-style="clean"][data-style] .tab { border-radius: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+:root[data-style="clean"][data-style] .tab:hover { background: var(--cl-hover); }
+:root[data-style="clean"][data-style] .tab.active { background: none; color: var(--gold); border-bottom-color: var(--gold); box-shadow: none; }
+:root[data-style="clean"][data-style] .tab.active .tab-count { background: color-mix(in srgb, var(--gold) 18%, transparent); }
+
+/* Cabecera y barra de accesos translúcidas */
+:root[data-style="clean"][data-style] .game-hud { background: var(--cl-bar); border-bottom: 1px solid var(--cl-line); box-shadow: 0 6px 20px rgba(0, 0, 0, .25); backdrop-filter: blur(10px); }
+:root[data-style="clean"][data-style] .hud-pill { border: 1px solid var(--cl-line-2); border-radius: 8px; background: var(--cl-inner); box-shadow: none; }
+:root[data-style="clean"][data-style] .dock-bar { border: 1px solid var(--cl-line-2); border-radius: 14px; background: var(--cl-bar); box-shadow: 0 12px 34px rgba(0, 0, 0, .35); backdrop-filter: blur(12px); }
+:root[data-style="clean"][data-style] .dock-slot { border: 1px solid transparent; border-radius: 10px; background: transparent; box-shadow: none; color: var(--muted); }
+:root[data-style="clean"][data-style] .dock-slot:hover { background: var(--cl-hover); border-color: transparent; color: var(--text); transform: none; }
+:root[data-style="clean"][data-style] .dock-slot.active { background: var(--cl-active); border-color: var(--cl-active-line); color: var(--text); box-shadow: none; }
+:root[data-style="clean"][data-style] .dock-slot.main { border-color: var(--cl-line-2); color: var(--gold); }
+:root[data-style="clean"][data-style] .dock-slot.main.active { background: color-mix(in srgb, var(--gold) 16%, transparent); border-color: color-mix(in srgb, var(--gold) 60%, transparent); }
+
+/* Fichas de listas: menos relieve */
+:root[data-style="clean"][data-style] :is(.dk-row, .item-card, .move-card, .tile, .inv-row, .pk-row, .relic-row, .mr-row, .tr-tile, .wb-tile, .rest-opt, .loot-card) { box-shadow: none; }
+:root[data-style="clean"][data-style] :is(.dk-row, .item-card, .tile, .inv-row) { border-width: 1px; border-radius: 10px; }
+
+/* ---------- 14. Menú principal moderno: tarjetas planas, bordes finos, botones sin relieve ---------- */
+:root[data-style="clean"] .main-menu { --mm-line: rgba(231, 194, 122, .14); --mm-line-2: rgba(231, 194, 122, .28); --mm-card: linear-gradient(180deg, rgba(28, 20, 16, .78), rgba(14, 10, 8, .82)); --mm-soft: rgba(255, 240, 220, .04); --mm-hover: rgba(255, 240, 220, .07); }
+:root[data-style="clean"][data-theme="light"] .main-menu { --mm-line: rgba(90, 60, 20, .14); --mm-line-2: rgba(90, 60, 20, .3); --mm-card: linear-gradient(180deg, rgba(255, 252, 244, .92), rgba(246, 238, 222, .92)); --mm-soft: rgba(90, 60, 20, .04); --mm-hover: rgba(90, 60, 20, .07); }
+:root[data-style="clean"] .main-menu .main-slots > h3 { font-family: var(--font); font-size: .78rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+:root[data-style="clean"] .main-menu .slot-grid { gap: 16px; }
+:root[data-style="clean"] .main-menu .save-slot { position: relative; gap: 14px; padding: 18px; border-radius: 10px; border: 1px solid var(--mm-line); background: var(--mm-card); box-shadow: 0 10px 30px rgba(0, 0, 0, .25); backdrop-filter: blur(6px); transition: border-color .2s, transform .2s, box-shadow .2s; }
+:root[data-style="clean"] .main-menu .save-slot::before, :root[data-style="clean"] .main-menu .save-slot::after { display: none; }
+:root[data-style="clean"] .main-menu .save-slot:hover { border-color: var(--mm-line-2); transform: translateY(-2px); box-shadow: 0 16px 36px rgba(0, 0, 0, .32); }
+:root[data-style="clean"] .main-menu .save-slot.empty { border-style: dashed; background: transparent; box-shadow: none; backdrop-filter: none; }
+:root[data-style="clean"] .main-menu .save-slot.last { border-color: color-mix(in srgb, var(--gold) 45%, transparent); box-shadow: 0 0 0 1px color-mix(in srgb, var(--gold) 18%, transparent), 0 16px 40px rgba(0, 0, 0, .35); }
+:root[data-style="clean"] .main-menu .save-slot.last::before { display: block; content: ''; position: absolute; left: 18px; right: 18px; top: -1px; height: 2px; border-radius: 2px; background: linear-gradient(90deg, transparent, var(--gold), transparent); }
+:root[data-style="clean"] .main-menu .save-num { padding: 0; background: none; font-size: .7rem; letter-spacing: .14em; color: var(--muted); }
+:root[data-style="clean"] .main-menu .save-last { font-size: .7rem; letter-spacing: .04em; color: var(--gold); }
+:root[data-style="clean"] .main-menu .save-portrait { width: 64px; height: 64px; border-radius: 50%; border: 1px solid var(--mm-line-2); background: radial-gradient(circle at 50% 60%, rgba(231, 194, 122, .18), transparent 70%); }
+:root[data-style="clean"] .main-menu .save-empty-icon { width: 64px; height: 64px; border-radius: 50%; border: 1px dashed var(--mm-line-2); }
+:root[data-style="clean"] .main-menu .save-title h3 { font-family: var(--font-title); font-size: 1.25rem; letter-spacing: .03em; }
+:root[data-style="clean"] .main-menu .save-title p { font-size: .76rem; }
+/* Estadísticas: sin cajas, separadas por líneas finas */
+:root[data-style="clean"] .main-menu .save-stats { gap: 0; border-top: 1px solid var(--mm-line); border-bottom: 1px solid var(--mm-line); }
+:root[data-style="clean"] .main-menu .save-stat { padding: 10px 8px; border: 0; border-radius: 0; background: none; }
+:root[data-style="clean"] .main-menu .save-stat:not(:nth-child(3n + 1)) { border-left: 1px solid var(--mm-line); }
+:root[data-style="clean"] .main-menu .save-stat:nth-child(n + 4) { border-top: 1px solid var(--mm-line); }
+:root[data-style="clean"] .main-menu .save-stat .icon { color: color-mix(in srgb, var(--gold) 75%, var(--muted)); opacity: .85; }
+:root[data-style="clean"] .main-menu .save-stat b { font-size: 1rem; }
+:root[data-style="clean"] .main-menu .save-stat small { font-size: .66rem; letter-spacing: .03em; }
+:root[data-style="clean"] .main-menu .save-flags .chip { border-radius: 6px; background: var(--mm-soft); border-color: var(--mm-line); }
+/* Botón principal: plano, rectangular */
+:root[data-style="clean"] .main-menu .save-main { min-height: 46px; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--mm-line-2); background: var(--mm-soft); color: var(--text); box-shadow: none; text-shadow: none; transform: none; justify-content: flex-start; }
+:root[data-style="clean"] .main-menu .save-main:hover:not(:disabled) { background: var(--mm-hover); border-color: color-mix(in srgb, var(--gold) 55%, transparent); }
+:root[data-style="clean"] .main-menu .save-main.btn-primary { border-color: transparent; background: linear-gradient(180deg, #b42a20, #8c1d16); color: #fff3e6; box-shadow: 0 6px 18px rgba(180, 42, 32, .28); }
+:root[data-style="clean"] .main-menu .save-main.btn-primary:hover:not(:disabled) { background: linear-gradient(180deg, #c8342a, #9c231b); }
+:root[data-style="clean"] .main-menu .save-main .icon { width: auto; height: auto; padding: 0; border-radius: 0; background: none !important; box-shadow: none !important; }
+:root[data-style="clean"] .main-menu .save-main .btn-label { font-size: .98rem; font-weight: 700; letter-spacing: .02em; }
+:root[data-style="clean"] .main-menu .save-main .btn-desc { font-size: .72rem; opacity: .8; }
+:root[data-style="clean"] .main-menu .save-main .hotkey { margin-left: auto; border: 1px solid currentColor; background: none; opacity: .45; box-shadow: none; border-radius: 4px; font-size: .66rem; }
+/* Opciones: fila de texto con iconos, sin cajas */
+:root[data-style="clean"] .main-menu .save-tools { gap: 2px; padding-top: 2px; }
+:root[data-style="clean"] .main-menu .save-tool { min-height: 0; padding: 7px 4px; border: 0; border-radius: 6px; background: none; color: var(--muted); font-size: .7rem; font-weight: 600; }
+:root[data-style="clean"] .main-menu .save-tools.n1 .save-tool { padding: 9px; }
+:root[data-style="clean"] .main-menu .save-tool:hover { background: var(--mm-hover); color: var(--text); }
+:root[data-style="clean"] .main-menu .save-tool.danger:hover { background: rgba(239, 68, 68, .1); color: #f87171; }
+/* Opciones de abajo (Ajustes, Ayuda, Salir): también planas */
+:root[data-style="clean"] .main-menu .main-menu-actions .btn { border-radius: 8px; border: 1px solid var(--mm-line); background: transparent; box-shadow: none; text-shadow: none; color: var(--muted); }
+:root[data-style="clean"] .main-menu .main-menu-actions .btn:hover:not(:disabled) { color: var(--text); background: var(--mm-hover); border-color: var(--mm-line-2); }
+:root[data-style="clean"] .main-menu .main-menu-actions .btn .icon { background: none !important; box-shadow: none !important; }
+:root[data-style="clean"] .main-menu .save-tool { min-height: 0; height: 50px; }
+
+
+/* Paneles concretos que el estilo clásico marca más */
+:root[data-style="clean"][data-style][data-style] .camp-screen .camp-panels .card { border: 1px solid var(--cl-line); border-radius: 10px; background: var(--cl-card); box-shadow: var(--cl-shadow); }
+:root[data-style="clean"][data-style] .camp-scene.grim { border: 1px solid var(--cl-line-2); border-radius: 12px; box-shadow: inset 0 0 120px rgba(0, 0, 0, .8), 0 14px 40px rgba(0, 0, 0, .45); }
+:root[data-style="clean"][data-style] :is(.bt-kind, .bt-runes, .wb-side, .rest-opt) { border-width: 1px; border-radius: 10px; }
+:root[data-style="clean"][data-style] .bt-prep-grid > .bt-block { border-radius: 10px; }
+:root[data-style="clean"][data-style] .party-mon { border-width: 1px; border-radius: 12px; box-shadow: none; }
+:root[data-style="clean"][data-style] .wb-side { background: var(--cl-card); box-shadow: var(--cl-shadow); border-color: var(--cl-line); }

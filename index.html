@@ -25,6 +25,7 @@
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/game.css">
   <link rel="stylesheet" href="css/grim.css">
+  <link rel="stylesheet" href="css/clean.css">
   <script>
     // Aplica tema y tamaño de texto antes de pintar para evitar parpadeos
     try {
@@ -32,6 +33,7 @@
       var d = document.documentElement;
       d.dataset.theme = s.theme || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
       d.dataset.textsize = s.textSize || 'md';
+      d.dataset.style = s.uiStyle || 'clean';
     } catch (e) {}
   </script>
 </head>
@@ -85,6 +87,8 @@
   <script src="js/data/difficulties.js"></script>
   <script src="js/data/upgrades.js"></script>
   <script src="js/data/curses.js"></script>
+  <script src="js/data/hidden.js"></script>
+  <script src="js/data/pass.js"></script>
 
   <!-- 4. Sistemas -->
   <script src="js/systems/audio.js"></script>
@@ -96,6 +100,7 @@
   <script src="js/systems/world.js"></script>
   <script src="js/systems/expedition.js"></script>
   <script src="js/systems/runes.js"></script>
+  <script src="js/systems/pass.js"></script>
   <script src="js/systems/training.js"></script>
   <script src="js/systems/curses.js"></script>
   <script src="js/systems/battle.js"></script>

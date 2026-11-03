@@ -355,6 +355,54 @@ Se carga la última y sólo sobrescribe: paleta (piedra oscura, bronce, oro `--g
 - **Expedición:** al entrar en el mapa, el equipo, la mochila o un combate durante una expedición, `#zone-backdrop` (creado en `screens/expedition.js` con `screen:enter`) pinta detrás de todo la escena de la zona actual, oscurecida; `body.in-exp`.
 - **Combate:** la arena usa la escena de la zona (`components/scenes.js`, ahora con árboles muertos, ruinas, tumbas, cristales o tentáculos según la zona) y los **jefes tienen su propio fondo**: `DK.scenes.bossScene(zona, secreto)` → `boss_<escena>` (menhires bajo luna roja, bosque muerto, naufragio con tormenta, bosque de cristales, forja de lava, santuario con estatua, fauces del abismo, ruinas entre rayos) y `boss_secret` (cripta) para los jefes ocultos.
 
+### Cambios de la v4.29
+
+- **Senda del aventurero** (`data/pass.js`, `systems/pass.js` → `DK.pass`, `state.pass = { xp, claimed, extra }`): misión diaria cobrada +25, semanal +80, logro +40 (oculto +80) puntos (`DK.data.pass.points`). Nivel n pide `xpFor(n) = 100 + (n-1)·10`. 30 niveles con premio (monedas, objetos, runas, emblemas, marcos `senda_bronce/plata/oro` en los niveles 10/20/30 y títulos `senda15`/`senda30`); después, cada 400 puntos un cofre repetible (500 monedas + runa). Se cobran en Progreso (nodo a nodo o «Cobrar N»); la medalla de Progreso suma los niveles sin cobrar. Las partidas antiguas reciben en `store.migrate()` los puntos de los logros que ya tenían. Marcos en `components/avatar.js` (FRAMES) y títulos `pass:<id>` en `DK.avatars.titles()`.
+- **Logros con premio visible y por categorías:** cada logro enseña sus monedas, sus puntos de senda y su título. `a.cat` (combat, collection, expedition, bosses, craft; en `data/pass.js`) con filtros y % por categoría (`DK.achievements.byCat()`). Los ocultos enseñan una pista (`achievements.<id>.hint`, también `bossZone.hint`). Sin vínculo se quitan `firstCapture` y `captures15` (`data/hidden.js`).
+- **«Casi lo tienes»** (`DK.achievements.near(3)`): misiones sin terminar y logros visibles ordenados por % con un botón «Ir» a la pantalla donde se avanzan.
+- **Cambiar una misión al día** (`DK.missions.canReroll()` / `reroll(m)`, `state.missions.rerollDay`): botón ↻ en las misiones sin terminar de Progreso; la nueva no repite ninguna de las actuales.
+- Prueba: `tests/pass.test.js`.
+
+### Cambios de la v4.28
+
+- **Perfil rediseñado** (`screens/profile.js`, grim.css §16): sin lema (tampoco en la tarjeta para compartir; `player.motto` se conserva en la partida pero no se usa). Cabecera con foto redonda y halo del color de la casa del líder, título como desplegable en una píldora, nombre editable sin caja, datos de la partida (tiempo, desde, ranura, dificultad) y a la derecha 4 cifras grandes (% victorias, combates, mayor profundidad, jefes). Debajo, «Avance de la partida» (especies, objetos, zonas, jefes, logros y recetas con barra, n/total y %, más un % global) y una rejilla de 8 cifras con su detalle (racha, mayor golpe, expediciones y mapas XL, daskai, evoluciones y variocolores, crafteos y recetas conocidas, monedas ganadas y actuales, emblemas y runas). El resto (últimos combates, resultados, por casa y zona, favoritos, logros, expediciones y estadísticas detalladas) se mantiene. Sin vínculo, la leyenda no muestra «Vínculo».
+
+### Cambios de la v4.27
+
+- **Crafteo en mesa de trabajo** (`screens/craft.js`, grim.css §15 `.wb-*`):
+  - Pestañas Consumibles (consumibles y tónicos) · Equipo (con ataque, con pasiva, de atributos) · Materiales; filtros por tipo, «Objetivos», «Sólo las que puedo» y buscador. `params.tab`: `consum` | `equip` | `materials` (`recipes` se traduce a la pestaña de la receta elegida).
+  - Fichas en cuadrícula (`recipeTile`): icono, nombre, estado (`Lista ×n`, `Con pasos`, `Falta 1`, `Faltan N`) y los materiales con tienes/necesitas en verde o rojo. Orden: listas, con pasos, falta 1, el resto (atenuadas).
+  - Mesa (`recipeDetail`) a la derecha, siempre con una receta elegida en escritorio (hoja inferior en el móvil): efecto, materiales en huecos con la zona donde cae cada uno (`sourceChips`: las abiertas con «Ir →» → `DK.router.reset('zones', { zone })`, bloqueadas con candado, deshabilitado en expedición), atajo a la receta del material, nota de lo que falta, cantidad y «Forjar».
+  - Materiales en fichas con su detalle (dónde se consigue y recetas que lo usan).
+- **Estilo limpio / clásico** (`css/clean.css`, ajuste `uiStyle`: `clean` por defecto | `classic`; `<html data-style>`, aplicado también en el script de `index.html` para que no parpadee; Ajustes → Apariencia → Estilo). Todo `clean.css` va bajo `:root[data-style="clean"]` (con `[data-style]` repetido para ganar especificidad a grim.css): tarjetas planas de borde fino, sin remaches, botones sin relieve, pestañas subrayadas, chips discretos, cabecera y dock translúcidos y el menú principal moderno (antes §14 de grim.css). Con `classic` no se aplica nada de ese archivo.
+- Prueba: `tests/craft.test.js`.
+
+### Cambios de la v4.26
+
+- **Menú principal más moderno** (grim.css §14, todo bajo `.main-menu` con variables `--mm-*`): tarjetas planas con borde fino y radio pequeño (sin remaches), la última jugada con un filo dorado arriba, retrato redondo, estadísticas sin cajas separadas por líneas finas, botón principal rectangular y sin relieve, opciones como fila de texto con icono (Exportar, Importar, Reiniciar, Borrar) y Ajustes/Ayuda/Salir también planos. Los botones principales ya no llevan descripción salvo «Tu equipo sigue de expedición».
+- Propuesta de crafteo (sin implementar): maqueta de «mesa de trabajo» con materiales tienes/necesitas en cada receta y dónde conseguir cada material (`scratch/crm.js`).
+
+### Cambios de la v4.25
+
+- **Cristales de vínculo ocultos** (`js/data/hidden.js`, cargado tras los datos): con `config.captureEnabled = false`, los objetos con `use.capture` quedan en `DK.data.hiddenItems` y se quitan de drops de especies/jefes/jefes ocultos, recetas, `shopStock`, bolsa inicial y misiones (fuera la de vincular; las que daban un cristal dan +50% monedas). `DK.bag.add` los ignora y `DK.bag.list`, el códice, sus totales y la paleta los filtran (`DK.data.isHidden(id)`). Siguen en `data/items.json`: al activar el vínculo vuelven solos.
+- **Menú principal** (`screens/mainMenu.js`, grim.css §13): cada ranura con «Ranura N» y «Última jugada», retrato + nombre + fecha, cuadrícula fija de 6 estadísticas (mejor nivel, daskai, tiempo, monedas, zonas, jefes; `store.slotMeta` da también emblemas, expediciones, dificultad y si sigue de expedición), chips de dificultad/caídos/fin, y abajo el botón principal y una fila de 4 opciones iguales (exportar, importar, sobrescribir, borrar). Los botones quedan a la misma altura en las tres ranuras.
+- **Iconos de objetos nuevos** (`core/icons.js`): potion, potionLarge, etherBottle, pill, jar, elixir, berry, vial (tónicos, distinguidos por su color), claw, ring, boot, pearl, drum, prism, armor, cloak, earring, brazier, sprout, carapace, dust, starTear. Asignados en `data/items.json` (`node tools/data.js`).
+- Prueba: `tests/menu.test.js`.
+
+### Cambios de la v4.24
+
+- **Ficha del daskai más simple** (`components/daskaiPanel.js`, grim.css §12): la acción principal (añadir al equipo / líder / evolucionar / ir al entrenamiento) va con texto y el resto en una barra de iconos con nombre al pasar (`.dp-tools`: quitar del equipo, usar objeto, curar, liberar). El apodo se cambia con el lápiz junto al nombre.
+- **Atributos compactos** (`V.statTable`, clases `.st2-*`): cada atributo es un `<details>` con nombre, marcas (naturaleza, ritmo de crecimiento, rasgo), valor y barra por colores; al pulsarlo se ve el desglose en texto. «Ver todo el desglose» los abre todos y la leyenda va plegada. Nada de información se ha quitado, sólo se ha plegado. En móvil la cabecera se reordena y las pestañas caben (icono, nombre y contador apilados).
+- **Runas en tema claro:** panel de pergamino con los engastes de piedra.
+- Prueba: `tests/detail.test.js`.
+
+### Cambios de la v4.23
+
+- **Runas con 4 huecos** (`config.expedition.runes.slots`): en Batalla, `.bt-runes` es una fila con 4 huecos de piedra; pulsar uno vacío abre el selector (`runePicker`, modal `.rune-modal`) y pulsar uno lleno lo vacía. Se guardan en `nextExpedition.runeSlots` (las partidas con el `runes: {size, kind}` de la v4.22.0 se leen igual).
+  - Reglas (`DK.runes.slots()` / `canSocket` / `socket` / `unsocket`): como mucho una de tamaño y una de tipo (otra del mismo grupo la sustituye); las de **bonificación** se repiten.
+  - Runas nuevas de bonificación: `oro` (+25% monedas, se suma en `addLoot`) y `saber` (+25% experiencia, en `battle.rewards`), vía `DK.runes.bonus('coins'|'exp')` sobre `expedition.runesUsed`.
+  - Aspecto de gema rúnica: `V.runeGem(id, size)` (SVG con glifo brillante, color por runa en `RUNE_LOOK`, `zones.js`) y `V.runeEffect(id)`; también en el cofre y en el cartel del combate.
+
 ### Cambios de la v4.22
 
 - **Runas de expedición** (`systems/runes.js`, `config.expedition.runes`): sustituyen a las Mejoras «Rumbo» (las partidas que las tenían recuperan sus emblemas en `store.migrate()`).

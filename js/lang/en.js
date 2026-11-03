@@ -26,6 +26,8 @@ DK.i18n.register('en', {
     footer: 'v{v} · Autosaved in this browser',
   },
   saves: {
+    overwriteShort: 'Restart', slotN: 'Slot {n}', lastPlayed: 'Last played', emptyHint: 'Free for a new adventure.', inExpedition: 'Your team is still on an expedition', onExpedition: 'On expedition',
+    statBest: 'Best level', statCount: 'Daskai', statTime: 'Played', statZones: 'Zones', statBosses: 'Bosses',
     fallen: '{n} fallen',
     title: 'Saves', titleNew: 'Choose a slot',
     help: 'You have 3 slots. Export a save to a file to back it up or move it to another computer.',
@@ -92,6 +94,7 @@ DK.i18n.register('en', {
   compare: { title: 'Compare daskai' },
 
   detail: {
+    actions: 'Actions',
     prev: 'Previous', next: 'Next', swipeHint: 'or swipe the card',
     replaceHere: 'Replace here',
     notFound: 'This daskai no longer exists', makeLeader: 'Make leader', isLeader: '{name} is now the leader.',
@@ -121,6 +124,7 @@ DK.i18n.register('en', {
     tonics: 'Tonics {n}/{max}', tonicTip: 'Tonics taken (permanent upgrades). The elixir of oblivion returns them.',
     trained: 'Trained {n}/{max}', trainedTip: 'Stat points earned at the training grounds',
     regenShort: 'Regen',
+    showAll: 'Show full breakdown', hideAll: 'Hide breakdown', legendTitle: 'What the colours and arrows mean',
     breakdown: '{base} base + {growth} level', equip: '{n} gear', passive: '{n}% passive', regenPerTurn: '{n} HP per turn',
     legend: { base: 'Base', level: 'Level', nature: 'Nature', equip: 'Gear', bonus: 'Passive & bonuses', evo: 'Evolution', perm: 'Tonics & training', minus: 'Reduction', rate: 'Growth rate', rateTip: 'How much it grows per level based on species, passives, talents and nature', arrows: 'Nature effect' },
     part: { gene: '(genes {n}%)', base: '{n} base', level: '{n} level', nature: '{n} nature', equip: '{n} gear', passive: '{n}% passive', bonus: '{n} bonuses', evo: '{n} evolution', tonic: '{n} tonics', trained: '{n} training', trait: '(trait {n}%)' },
@@ -434,7 +438,18 @@ DK.i18n.register('en', {
     whoNext: 'Who fights the next battle?', whoNextNote: "HP and MP aren't restored between battles.",
   },
 
+  /* Adventurer's path (systems/pass.js) */
+  pass: {
+    title: "Adventurer's path", level: 'Level', levelN: 'Level {n}', levelUp: "Adventurer's path: level {n}! Claim your reward in Progress.",
+    toNext: '{a}/{b} points to level {n}', howTo: 'daily mission +{d}, weekly +{w}, achievement +{a}',
+    points: '+{n} path', pointsTip: "Adventurer's path points", claimAll: 'Claim {n}', claimed: 'Level {n}: {what}', claimedN: '{n} rewards claimed!',
+    coins: '{n} coins', runeRandom: '{n} random rune(s)', titleReward: 'Title “{name}”', frameReq: "Reach level {n} of the Adventurer's path",
+    titles: { senda15: 'Wayfarer', senda30: 'Legend of the path' },
+    nearTitle: 'Almost there', nearHint: 'What you are closest to completing', go: 'Go',
+  },
+
   missions: {
+    reroll: 'Change mission', rerollTip: 'Swap this mission for another (once a day)', rerolled: 'Mission changed', rerollLeft: 'Today you can swap one mission you do not like (↻ button).', rerollUsed: 'You already swapped a mission today. You can swap another tomorrow.',
     title: 'Missions', daily: 'Daily', weekly: 'Weekly', dailyHelp: 'Renewed every day at midnight.', weeklyHelp: 'Renewed every Monday. Bigger rewards.',
     resetIn: 'Change in {time}', claim: 'Claim', claimed: 'Claimed', claimedToast: 'Reward claimed: +{coins} coins', ready: 'Mission complete: {name}',
     defeatHouse: 'Defeat {n} {house} daskai', defeatAny: 'Defeat {n} daskai', win: 'Win {n} battles', capture: 'Bond {n} daskai',
@@ -442,16 +457,19 @@ DK.i18n.register('en', {
     expedition: 'Complete {n} expeditions', boss: 'Defeat {n} bosses',
   },
   achievements: {
+    all: 'All', cat: { combat: 'Combat', collection: 'Collection', expedition: 'Expeditions', bosses: 'Bosses', craft: 'Crafting & wealth' },
+    hintLabel: 'Hint:', titleReward: 'Title: {name}', titleTip: 'Once earned you can use it as a title on your profile',
+    framesHint: '10 achievements unlock the golden frame; all of them, the legendary one.',
     unlockedHidden: 'Hidden achievement unlocked: {name}! +{coins} coins', hiddenName: '???', hiddenDesc: 'Hidden achievement: keep exploring to find out what it asks.', hiddenTag: 'Hidden', hiddenCount: 'Hidden achievements found: {n}/{max}',
-    bossZone: { name: 'Lord of {zone}', desc: 'Defeat {boss}, the boss of {zone}.' },
-    secretFirst: { name: 'What the cave hides', desc: 'Defeat your first hidden boss.' },
-    secretFoundAll: { name: 'Caver', desc: 'Find the lair of all {n} hidden bosses.' },
-    secretAll: { name: 'Nothing stays hidden', desc: 'Defeat all {n} hidden bosses.' },
-    depth5: { name: 'No looking back', desc: 'Reach map {n} in a single expedition.' },
-    depth10: { name: 'To the bottom', desc: 'Reach map {n} in a single expedition.' },
-    xlClear: { name: 'Long journey', desc: 'Clear an XL map.' },
-    breaks25: { name: 'Wall breaker', desc: 'Break the guard of bosses or mini bosses {n} times.' },
-    quests10: { name: 'Professional', desc: 'Complete {n} map jobs.' },
+    bossZone: { hint: 'Something very powerful waits at the end of {zone}.', name: 'Lord of {zone}', desc: 'Defeat {boss}, the boss of {zone}.' },
+    secretFirst: { hint: 'The caves on the maps hide more than treasure.', name: 'What the cave hides', desc: 'Defeat your first hidden boss.' },
+    secretFoundAll: { hint: 'Explore the caves of every zone.', name: 'Caver', desc: 'Find the lair of all {n} hidden bosses.' },
+    secretAll: { hint: 'No cave guardian must be left standing.', name: 'Nothing stays hidden', desc: 'Defeat all {n} hidden bosses.' },
+    depth5: { hint: 'After beating a boss, keep going instead of returning.', name: 'No looking back', desc: 'Reach map {n} in a single expedition.' },
+    depth10: { hint: 'Keep going for many maps in a row without returning home.', name: 'To the bottom', desc: 'Reach map {n} in a single expedition.' },
+    xlClear: { hint: 'The biggest maps hold this reward.', name: 'Long journey', desc: 'Clear an XL map.' },
+    breaks25: { hint: 'Hit bosses until their guard breaks.', name: 'Wall breaker', desc: 'Break the guard of bosses or mini bosses {n} times.' },
+    quests10: { hint: 'Each map brings a task. Complete them.', name: 'Professional', desc: 'Complete {n} map jobs.' },
     title: 'Achievements', tab: 'Achievements', unlocked: 'Achievement unlocked: {name}! +{coins} coins',
     firstWin: { name: 'First victory', desc: 'Win your first battle.' },
     wins50: { name: 'Veteran', desc: 'Win {n} battles.' },
@@ -486,7 +504,7 @@ DK.i18n.register('en', {
     pixelArt: 'Pixel art daskai', pixelArtDesc: 'Retro pixelated sprites (turn off for smooth drawings)',
     autoBattle: 'Start battles in auto mode', autoBattleDesc: 'Your daskai picks the best move by itself. Press A to take control at any time.',
     autoPause: 'Pause auto on low HP', autoPauseDesc: 'If your daskai drops below 30% HP, auto stops so you decide (important in hard mode).',
-    title: 'Settings', appearance: 'Appearance', theme: 'Theme', themeAuto: 'System', themeLight: 'Light', themeDark: 'Dark', textSize: 'Text size',
+    title: 'Settings', appearance: 'Appearance', theme: 'Theme', themeAuto: 'System', themeLight: 'Light', themeDark: 'Dark', uiStyle: 'Style', styleClean: 'Clean', styleClassic: 'Classic', textSize: 'Text size',
     accessibility: 'Accessibility', highContrast: 'High contrast', highContrastDesc: 'Stronger colors and more visible borders',
     colorblind: 'Colorblind mode', colorblindDesc: 'Colorblind-safe palette and patterned bars',
     reduceMotion: 'Reduce motion', reduceMotionDesc: 'Disables animations and particles',
@@ -568,6 +586,8 @@ DK.i18n.register('en', {
   ctx: { open: 'Open details', addFull: 'Add (replaces another)' },
 
   profile: {
+    progressTitle: 'Game progress', ppSpecies: 'Species', ppItems: 'Items', ppZones: 'Zones', ppBosses: 'Bosses', ppAch: 'Achievements', ppRecipes: 'Recipes',
+    xl: '{n} XL maps', inTeam: '{n} in the team', recipesKnown: '{n} recipes known', coinsNowShort: 'You have {n}', emblems: 'Emblems', runes: '{n} runes',
     bestDepth: 'Deepest run', bestDepthSub: 'in one expedition', expCashed: '{n} of {total} cashed out', 
     expTitle: 'Expeditions', expCount: '{n} in history', expBest: 'Best: floor {floor}/{total}', expFallen: '{n} fallen', expNone: 'You have not finished an expedition yet.', expRecent: 'Recent expeditions',
     fallen: 'Fallen in expeditions',
@@ -577,7 +597,7 @@ DK.i18n.register('en', {
     imageHint: 'Upload an image from your computer or phone. It is cropped to a square and saved only in this game.',
     upload: 'Upload image', removeImage: 'Remove image', imageError: 'Could not read the image',
     frames: 'Frames', framesHint: 'Unlock new frames by playing. Hover a locked one to see how.',
-    frame: { none: 'No frame', house: '{house} frame', shiny: 'Shiny frame', gold: 'Golden frame', legend: 'Legendary frame' },
+    frame: { none: 'No frame', house: '{house} frame', shiny: 'Shiny frame', gold: 'Golden frame', legend: 'Legendary frame', senda_bronce: 'Path bronze frame', senda_plata: 'Path silver frame', senda_oro: 'Path gold frame' },
     frameHouse: 'Defeat {n} {house} daskai', frameShiny: 'Get a shiny daskai', frameGold: 'Unlock {n} achievements', frameLegend: 'Unlock every achievement',
     winRate: 'Win rate', rateSub: '{w} wins · {l} losses', rateTip: '{w} wins and {l} losses (flees do not count)',
     flees: '{n} flees', streak: 'Current streak', bestStreak: 'Best streak: {n}', biggestHit: 'Biggest hit', crits: '{n} crits',
@@ -707,7 +727,9 @@ DK.i18n.register('en', {
   /* Expedition runes (systems/runes.js) */
   rune: {
     title: 'Expedition runes', short: 'Runes', size: 'Size', kind: 'Type', random: 'Random',
-    help: 'They drop from chests, elites and bosses. Set one size rune and/or one type rune to fix your next expedition; they are spent when you set off. Without runes, everything is random.',
+    help: 'They drop from chests, elites and bosses. Socket up to 4 before setting off: one size and one type rune fix the map (otherwise it is random) and bonus runes stack. They are spent when you set off.',
+    bonus: 'Bonus', add: 'Socket a rune', remove: 'Remove {name}', swap: 'Replaces {name}',
+    pickHelp: 'Choose which rune to socket for this expedition ({n} sockets). At most one size and one type rune; bonus runes can repeat.',
     none: 'You have no runes yet: they drop from chests, elites and bosses on expeditions.',
     have: 'You have {n}', on: 'Set: it will be spent when you set off', tapOn: 'Tap to use it', tapOff: 'Tap to remove it', locked: 'Defeat any boss to be able to use it',
     got: 'Rune obtained: {name}', dest: 'Runes', destHelp: 'kept forever', used: 'Runes used: {list}',
@@ -717,6 +739,8 @@ DK.i18n.register('en', {
     captura: { name: 'Capture rune', effect: 'Capture' },
     combate: { name: 'Battle rune', effect: 'Battle' },
     desafio: { name: 'Boss rune', effect: 'Bosses (challenge)' },
+    oro: { name: 'Rune of greed', effect: '+{n}% coins' },
+    saber: { name: 'Rune of wisdom', effect: '+{n}% experience' },
   },
 
   kind: {
@@ -796,6 +820,9 @@ DK.i18n.register('en', {
   },
   party: { toReserve: 'Take out of the team (stays with you)', emptyHintExp: 'Drag here someone who came along', title: 'Your team', empty: 'Empty slot', emptyHint: 'Drag a daskai here from the box', toBox: 'Put in the box' },
   craft: {
+    tabConsum: 'Consumables', tabEquip: 'Gear', sub: { all: 'All' }, onlyMine: 'Only what I can make', readyTag: 'Ready ×{n}', missingOne: '1 missing',
+    go: 'Go', goTip: 'Go to Battle with {zone} selected', goExp: 'Finish the expedition to go to another zone', zoneLocked: 'Zone still locked', subShort: 'Recipe',
+    missingNote: 'You need {list}. Tap a zone to go and get it.', forge: 'Forge ×{n}',
     tabRecipes: 'Recipes', tabMaterials: 'Materials', searchMat: 'Search material…', type: 'Type', recipesN: '{n} recipes', readyN: '{n} ready',
     canN: 'Can make {n}', chainShort: 'In steps', missingN: '{n} missing', usedInShort: 'In {n} recipes', usedIn: 'Used in {n} recipes', usedInOne: 'Used in 1 recipe', whereGet: 'Where to get it',
     how: { wild: 'wild', boss: 'boss', secret: 'hidden boss' }, whatDoes: 'What it does',

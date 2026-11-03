@@ -22,7 +22,7 @@
   // Daskai del jugador
   sources.push(() => DK.party.all().filter((d) => !inExp() || DK.party.isActive(d.uid) || DK.party.canJoin(d.uid)).map((d) => ({ group: t('palette.daskai'), icon: 'paw', label: DK.daskai.name(d), hint: `${t('common.lvl')} ${d.level} · ${DK.tr('houses', D.houses[DK.daskai.species(d).house])}`, run: () => DK.router.reset('team', { uid: d.uid }) })));
   // Objetos (los que tienes primero)
-  sources.push(() => Object.values(D.items).filter((it) => !inExp() || DK.bag.count(it.id)).map((it) => ({ group: t('palette.items'), icon: it.icon, label: it.name, hint: DK.bag.count(it.id) ? t('item.owned', { n: DK.bag.count(it.id) }) : t('palette.notOwned'), weight: DK.bag.count(it.id) ? 1 : 0,
+  sources.push(() => Object.values(D.items).filter((it) => !D.isHidden(it.id)).filter((it) => !inExp() || DK.bag.count(it.id)).map((it) => ({ group: t('palette.items'), icon: it.icon, label: it.name, hint: DK.bag.count(it.id) ? t('item.owned', { n: DK.bag.count(it.id) }) : t('palette.notOwned'), weight: DK.bag.count(it.id) ? 1 : 0,
     run: () => DK.router.reset('inventory', DK.bag.count(it.id) ? { item: it.id } : { q: it.name }) })));
   // Zonas desbloqueadas
   sources.push(() => (inExp() ? [] : DK.world.unlockedZones()).map((z) => ({ group: t('palette.zones'), icon: z.icon, label: z.name, hint: `${t('common.lvl')} ${z.levels[0]}-${z.levels[1]}`, run: () => DK.router.reset('zones', { zone: z.id }) })));

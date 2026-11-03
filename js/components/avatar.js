@@ -34,6 +34,10 @@
     })),
     { id: 'shiny', css: 'conic-gradient(from 0deg, #f472b6, #facc15, #34d399, #60a5fa, #a78bfa, #f472b6)', req: () => DK.party.all().some((d) => d.shiny), reqText: () => t('profile.frameShiny') },
     { id: 'gold', css: 'linear-gradient(135deg, #fde68a, #f59e0b, #b45309, #fde68a)', req: () => DK.achievements.unlockedCount() >= 10, reqText: () => t('profile.frameGold', { n: 10 }) },
+    // Marcos de la Senda del aventurero (DK.pass)
+    { id: 'senda_bronce', css: 'linear-gradient(135deg, #e0b07a, #8a5a2b, #f0c99a, #8a5a2b)', req: () => DK.pass.has('frame', 'senda_bronce'), reqText: () => t('pass.frameReq', { n: 10 }) },
+    { id: 'senda_plata', css: 'linear-gradient(135deg, #f8fafc, #94a3b8, #e2e8f0, #64748b)', req: () => DK.pass.has('frame', 'senda_plata'), reqText: () => t('pass.frameReq', { n: 20 }) },
+    { id: 'senda_oro', css: 'conic-gradient(from 0deg, #fde68a, #b45309, #fff7d6, #d97706, #fde68a)', req: () => DK.pass.has('frame', 'senda_oro'), reqText: () => t('pass.frameReq', { n: 30 }) },
     { id: 'legend', css: 'conic-gradient(from 90deg, #6d5dfc, #22d3ee, #6d5dfc, #f472b6, #6d5dfc)', req: () => DK.achievements.unlockedCount() >= D.achievements.length, reqText: () => t('profile.frameLegend') },
   ];
 
@@ -44,10 +48,14 @@
     frame(id) { return FRAMES.find((f) => f.id === id) || FRAMES[0]; },
     /** Títulos: el de por defecto + el nombre de cada logro conseguido. */
     titles() {
-      return [{ id: null, label: t('hub.adventurer') }].concat(
+      const pass = D.pass.levels.filter((r, i) => r.title && DK.pass.claimed(i + 1)).map((r) => ({ id: 'pass:' + r.title, label: t('pass.titles.' + r.title) }));
+      return [{ id: null, label: t('hub.adventurer') }].concat(pass,
         D.achievements.filter((a) => st().achievements[a.id]).map((a) => ({ id: a.id, label: DK.achievements.name(a) })));
     },
-    titleText(p) { const a = p.title && st().achievements[p.title] && D.achievements.find((x) => x.id === p.title); return a ? DK.achievements.name(a) : t('hub.adventurer'); },
+    titleText(p) {
+      if (p.title && p.title.startsWith('pass:') && DK.pass.has('title', p.title.slice(5))) return t('pass.titles.' + p.title.slice(5));
+      const a = p.title && st().achievements[p.title] && D.achievements.find((x) => x.id === p.title); return a ? DK.achievements.name(a) : t('hub.adventurer');
+    },
     /** Especies que el jugador conoce (las suyas y las vistas en el códice). */
     knownSpecies() {
       const set = new Set(DK.party.all().map((d) => d.species));

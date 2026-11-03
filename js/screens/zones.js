@@ -18,6 +18,45 @@
   const D = DK.data, V = DK.views;
   const { t } = DK;
 
+  /* ---------- Runas (estilo piedra rúnica: gema redonda con un glifo que brilla) ---------- */
+  const RUNE_LOOK = {
+    small: ['#e7e5e4', 'M12 3v18M12 8l5-4M12 14l-5 4'],
+    medium: ['#818cf8', 'M7 3v18M17 3v18M7 8l10 8'],
+    xl: ['#22d3ee', 'M5 4l7 8-7 8M19 4l-7 8 7 8'],
+    captura: ['#4ade80', 'M12 3v18M12 12l6-6M12 12l-6-6M8 21h8'],
+    combate: ['#f43f5e', 'M6 3l12 18M18 3L6 21M8 12h8'],
+    desafio: ['#c084fc', 'M12 3l7 7-7 11-7-11zM12 9v6'],
+    oro: ['#facc15', 'M12 3v18M7 7l5 3 5-3M7 14l5 3 5-3'],
+    saber: ['#5eead4', 'M6 5h12M12 5v14M8 19h8M8 10l4 4 4-4'],
+  };
+  /** Gema rúnica (SVG) de una runa. */
+  V.runeGem = (id, size = 48, { dim = false } = {}) => {
+    const [c, d] = RUNE_LOOK[id] || ['#a78bfa', 'M12 4v16'];
+    const svg = (tag, attrs) => { const el = document.createElementNS('http://www.w3.org/2000/svg', tag); Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v)); return el; };
+    const s = svg('svg', { viewBox: '0 0 48 48', width: size, height: size, class: 'rune-gem' + (dim ? ' dim' : ''), 'aria-hidden': 'true', style: `--rc:${c}` });
+    const uid = 'rg' + Math.random().toString(36).slice(2, 8);
+    const defs = svg('defs', {});
+    const g = svg('radialGradient', { id: uid, cx: '40%', cy: '35%', r: '70%' });
+    [[0, c, 0.55], [0.55, '#1a1220', 0.95], [1, '#07050a', 1]].forEach(([o, col, op]) => g.appendChild(svg('stop', { offset: o, 'stop-color': col, 'stop-opacity': op })));
+    const f = svg('filter', { id: uid + 'f', x: '-50%', y: '-50%', width: '200%', height: '200%' });
+    f.appendChild(svg('feGaussianBlur', { stdDeviation: 1.6, result: 'b' }));
+    const m = svg('feMerge', {}); m.appendChild(svg('feMergeNode', { in: 'b' })); m.appendChild(svg('feMergeNode', { in: 'SourceGraphic' })); f.appendChild(m);
+    defs.append(g, f); s.appendChild(defs);
+    s.appendChild(svg('circle', { cx: 24, cy: 24, r: 21, fill: `url(#${uid})`, stroke: c, 'stroke-opacity': 0.55, 'stroke-width': 1.5 }));
+    s.appendChild(svg('circle', { cx: 24, cy: 24, r: 17, fill: 'none', stroke: c, 'stroke-opacity': 0.22, 'stroke-width': 1 }));
+    const glyph = svg('g', { transform: 'translate(10 10) scale(1.1667)', filter: `url(#${uid}f)` });
+    glyph.appendChild(svg('path', { d, fill: 'none', stroke: c, 'stroke-width': 2.2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
+    s.appendChild(glyph);
+    s.appendChild(svg('ellipse', { cx: 18, cy: 13, rx: 7, ry: 3.5, fill: '#fff', opacity: 0.18 }));
+    return s;
+  };
+  /** Texto de lo que hace una runa. */
+  V.runeEffect = (id) => {
+    const r = DK.runes.get(id); if (!r) return '';
+    if (r.group === 'bonus') return t('rune.' + id + '.effect', { n: Math.round((r.coins || r.exp || 0) * 100) });
+    return t('rune.' + id + '.effect');
+  };
+
   DK.menus.add('nav', { id: 'battle', icon: 'swords', order: 40, pin: true, screen: 'zones', label: () => t('nav.battle'), badge: () => (DK.expedition.active() ? '!' : '') });
 
   /* ---------- Empezar combates desde cualquier pantalla ---------- */
@@ -166,21 +205,23 @@
         E.kinds().map((k) => h('span', { class: 'bt-odd k-' + k.id + (k.id === cur.id ? ' on' : '') + (k.locked ? ' locked' : ''), tip: k.locked ? t('kind.locked') : `${t('kind.' + k.id + '.name')} · ${Math.round((chances[k.id] || 0) * 100)}%` },
           DK.icon(k.locked ? 'lock' : k.icon, 13), h('small', null, k.locked ? '—' : Math.round((chances[k.id] || 0) * 100) + '%')))));
 
-    // Runas: una de tamaño y/o una de tipo fijan la próxima expedición (se gastan al partir)
-    const runeTile = (r) => {
-      const n = DK.runes.count(r.id), on = sel[r.group] === r.id, locked = DK.runes.locked(r.id);
-      const off = !on && (n <= 0 || locked);
-      return h('button', { class: 'bt-rune g-' + r.group + ' r-' + r.id + (on ? ' on' : '') + (n <= 0 ? ' none' : ''), type: 'button', 'aria-pressed': String(on), disabled: off,
-        tip: `${t('rune.' + r.id + '.name')} · ${t('rune.' + r.id + '.effect')} · ${locked ? t('rune.locked') : on ? t('rune.on') : n ? t('rune.tapOn') : t('rune.none')}`,
-        onClick: () => { DK.runes.toggle(r.id); DK.audio.sfx(on ? 'click' : 'select'); refresh(); } },
-        h('span', { class: 'bt-rune-stone' }, DK.icon(locked ? 'lock' : r.icon, 16)),
-        h('span', { class: 'bt-rune-text' }, h('b', null, t('rune.' + r.id + '.effect')), h('small', null, on ? t('rune.on').split(':')[0] : '×' + n)));
-    };
-    const runeBox = h('div', { class: 'bt-runes' + (DK.runes.total() ? '' : ' empty') },
-      h('div', { class: 'bt-label-row' }, h('span', { class: 'bt-label' }, DK.icon('rune', 12), ' ', t('rune.title')), h('span', { class: 'grow' }),
-        h('span', { class: 'small muted', tip: t('rune.help') }, DK.icon('info', 12), ' ', t('rune.random'))),
-      ['size', 'kind'].map((g) => h('div', { class: 'bt-rune-row' }, h('span', { class: 'bt-rune-group' }, t('rune.' + g)), DK.runes.defs(g).map(runeTile))),
-      DK.runes.total() ? null : h('p', { class: 'muted small' }, t('rune.none')));
+    // Runas: 4 huecos; pulsa uno vacío para engastar una runa, uno lleno para quitarla
+    const slots = DK.runes.slots(), N = DK.runes.slotCount();
+    const sockets = Array.from({ length: N }, (_, i) => {
+      const id = slots[i];
+      if (!id) return h('button', { class: 'rune-socket empty', type: 'button', 'aria-label': t('rune.add'), tip: DK.runes.total() ? t('rune.add') : t('rune.none'),
+        onClick: () => runePicker(refresh) }, h('span', { class: 'rune-socket-ring' }, DK.icon('plus', 16)));
+      return h('button', { class: 'rune-socket full g-' + DK.runes.get(id).group, type: 'button', style: { '--rc': RUNE_LOOK[id][0] }, 'aria-label': t('rune.remove', { name: t('rune.' + id + '.name') }),
+        tip: `${t('rune.' + id + '.name')} · ${V.runeEffect(id)} · ${t('rune.tapOff')}`,
+        onClick: () => { DK.runes.unsocket(i); DK.audio.sfx('click'); refresh(); } },
+        h('span', { class: 'rune-socket-ring' }, V.runeGem(id, 46)), h('span', { class: 'rune-socket-x' }, DK.icon('x', 10)));
+    });
+    const runeBox = h('div', { class: 'bt-runes' },
+      h('div', { class: 'bt-runes-text' },
+        h('span', { class: 'bt-label' }, t('rune.title')),
+        h('span', { class: 'small muted' }, slots.length ? slots.map(V.runeEffect).join(' · ') : t('rune.random')),
+        h('button', { class: 'bt-runes-help', type: 'button', tip: t('rune.help'), 'aria-label': t('rune.help'), onClick: () => DK.ui.toast(t('rune.help'), { icon: 'info' }) }, DK.icon('info', 12), ' ', t('rune.have', { n: DK.runes.total() }))),
+      h('div', { class: 'rune-sockets' }, sockets));
 
     // Equipo: retratos con su vida
     const teamStrip = h('div', { class: 'bt-team' }, team.map((d, i) => {
@@ -238,6 +279,25 @@
       problems.length ? V.warnings(problems, async () => { if (await V.healDialog(team)) refresh(); }) : null,
       h('div', { class: 'bt-prep-foot' }, h('div', { class: 'chips' }, notes),
         btn({ icon: 'flag', label: t('pack.go'), desc: t('pack.goDesc', { n: used }), size: 'lg', variant: 'primary', hotkey: '↵', disabled: !ok, cls: 'bt-go play-btn', onClick: go })));
+  }
+
+  /** Elegir qué runa engastar (agrupadas: tamaño, tipo y bonificación). */
+  function runePicker(refresh) {
+    const tile = (r, close) => {
+      const free = DK.runes.free(r.id), locked = DK.runes.locked(r.id), ok = DK.runes.canSocket(r.id);
+      const sel = DK.runes.selected(), swap = r.group !== 'bonus' && sel[r.group];
+      return h('button', { class: 'rune-pick' + (ok ? '' : ' off'), type: 'button', disabled: !ok, style: { '--rc': RUNE_LOOK[r.id][0] },
+        tip: locked ? t('rune.locked') : swap && ok ? t('rune.swap', { name: t('rune.' + sel[r.group] + '.name') }) : null,
+        onClick: () => { if (DK.runes.socket(r.id)) { DK.audio.sfx('select'); close(); refresh(); } } },
+        V.runeGem(r.id, 44, { dim: !free }),
+        h('span', { class: 'rune-pick-text' }, h('b', null, t('rune.' + r.id + '.name')), h('small', null, V.runeEffect(r.id))),
+        h('span', { class: 'rune-pick-n' }, locked ? DK.icon('lock', 12) : '×' + Math.max(0, free)));
+    };
+    DK.ui.modal({ title: t('rune.title'), icon: 'rune', cls: 'rune-modal', content: (close) => h('div', { class: 'stack-s' },
+      h('p', { class: 'muted small' }, t('rune.pickHelp', { n: DK.runes.slotCount() })),
+      ['size', 'kind', 'bonus'].map((g) => h('div', { class: 'stack-s' }, h('span', { class: 'bt-label' }, t('rune.' + g)),
+        h('div', { class: 'rune-pick-grid' }, DK.runes.defs(g).map((r) => tile(r, close))))),
+      DK.runes.total() ? null : h('p', { class: 'muted small' }, t('rune.none'))) });
   }
 
   /* ---------------- Mapa del mundo ----------------

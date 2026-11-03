@@ -1,9 +1,10 @@
 /* =============================================================
  * screens/profile.js — Perfil del aventurero.
  *
- *  - Cabecera: foto (daskai, icono o imagen propia), marco, nombre,
- *    título (logros) y lema. Todo se edita en la propia pantalla.
- *  - Resumen: combates, % de victorias, racha, mayor golpe...
+ *  - Cabecera: foto (daskai, icono o imagen propia), marco, título (logros),
+ *    nombre y datos de la partida; a la derecha, las cifras principales.
+ *  - Avance de la partida (códice, objetos, zonas, jefes, logros, recetas)
+ *    y rejilla de cifras (racha, mayor golpe, expediciones, colección...).
  *  - Gráficos: últimos combates, resultados, victorias por casa y por zona.
  *  - Estadísticas detalladas, daskai más usados y últimos logros.
  *
@@ -36,8 +37,12 @@
   }
 
   /* ---------- Cabecera y editor ---------- */
+  /**
+   * Cabecera: foto, título, nombre editable, datos de la partida y, a la
+   * derecha, las cuatro cifras principales (victorias, combates, profundidad, jefes).
+   */
   function hero(params, refresh) {
-    const p = DK.store.state.player, s = DK.store.state.stats;
+    const st = DK.store.state, p = st.player, s = st.stats;
     const save = () => { DK.store.save(); DK.app.renderNav(); };
     const nameInput = h('input', { class: 'input profile-name-input', value: p.name, maxlength: 16, 'aria-label': t('newGame.nameLabel') });
     const commitName = () => {
@@ -47,27 +52,36 @@
     };
     nameInput.addEventListener('change', commitName);
     nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') nameInput.blur(); });
-    const motto = h('input', { class: 'input input-sm profile-motto', value: p.motto || '', maxlength: 60, placeholder: t('profile.mottoPh'), 'aria-label': t('profile.motto') });
-    motto.addEventListener('change', () => { p.motto = motto.value.trim(); save(); });
-
+    const lead = DK.party.active()[0];
+    const color = lead ? D.houseColor(DK.daskai.species(lead).house) : 'var(--gold)';
     const pic = h('button', { class: 'profile-pic', type: 'button', tip: t('profile.changePic'), onClick: () => { params.edit = !params.edit; refresh(); } },
-      V.avatar(p, { size: 112 }), h('span', { class: 'profile-pic-edit' }, DK.icon('edit', 16)));
-
-    return h('div', { class: 'card profile-hero' },
-      pic,
-      h('div', { class: 'profile-id' },
-        h('span', { class: 'muted small' }, DK.icon('award', 13), ' ', DK.avatars.titleText(p)),
-        nameInput,
-        motto,
-        h('div', { class: 'chips' },
-          h('span', { class: 'chip' }, DK.icon('clock', 13), DK.util.duration(s.playTime)),
-          h('span', { class: 'chip' }, DK.icon('flag', 13), t('profile.since', { date: new Date(DK.store.state.created || Date.now()).toLocaleDateString(DK.i18n.lang) })),
-          h('span', { class: 'chip' }, DK.icon('folder', 13), t('profile.slot', { n: DK.store.slot })))),
-      h('div', { class: 'profile-hero-actions' },
-        btn({ icon: 'edit', label: params.edit ? t('profile.doneEditing') : t('profile.customize'), variant: params.edit ? 'primary' : 'tone', onClick: () => { params.edit = !params.edit; refresh(); } }),
-        btn({ icon: 'share', label: t('share.button'), variant: 'tone', onClick: () => DK.shareCard.open() }),
-        DK.ui.select({ label: t('profile.title'), value: p.title || '', onChange: (v) => { p.title = v || null; save(); refresh(); },
-          options: DK.avatars.titles().map((x) => ({ value: x.id || '', label: x.label })) })));
+      V.avatar(p, { size: 104 }), h('span', { class: 'profile-pic-edit' }, DK.icon('edit', 14)));
+    const decided = s.wins + s.losses, rate = decided ? Math.round((s.wins / decided) * 100) : 0;
+    const R = 24, C = 2 * Math.PI * R;
+    const ring = h('div', { class: 'kpi-ring', tip: t('profile.rateTip', { w: s.wins, l: s.losses }) });
+    ring.innerHTML = `<svg viewBox="0 0 60 60" width="60" height="60"><circle cx="30" cy="30" r="${R}" class="ring-bg"/><circle cx="30" cy="30" r="${R}" class="ring-fg" stroke-dasharray="${(C * rate) / 100} ${C}" transform="rotate(-90 30 30)"/></svg><b>${rate}%</b>`;
+    const head = (icon, value, label) => h('div', { class: 'ph-stat' }, h('b', null, value), h('span', null, DK.icon(icon, 12), label));
+    const diff = st.difficulty && D.difficulties[st.difficulty];
+    return h('div', { class: 'card profile-hero ph', style: { '--ph': color } },
+      h('div', { class: 'ph-id' }, pic,
+        h('div', { class: 'profile-id' },
+          h('label', { class: 'ph-title' }, DK.icon('award', 12),
+            h('select', { class: 'ph-title-select', 'aria-label': t('profile.title'), onChange: (e) => { p.title = e.target.value || null; save(); refresh(); } },
+              DK.avatars.titles().map((x) => h('option', { value: x.id || '', selected: (p.title || '') === (x.id || '') }, x.label)))),
+          nameInput,
+          h('div', { class: 'ph-meta' },
+            h('span', null, DK.icon('clock', 12), DK.util.duration(s.playTime)),
+            h('span', null, DK.icon('flag', 12), t('profile.since', { date: new Date(st.created || Date.now()).toLocaleDateString(DK.i18n.lang) })),
+            h('span', null, DK.icon('folder', 12), t('profile.slot', { n: DK.store.slot })),
+            diff ? h('span', null, DK.icon(diff.icon, 12), t('difficulty.' + st.difficulty + '.name')) : null),
+          h('div', { class: 'ph-actions' },
+            btn({ icon: 'edit', label: params.edit ? t('profile.doneEditing') : t('profile.customize'), size: 'sm', variant: params.edit ? 'primary' : 'tone', onClick: () => { params.edit = !params.edit; refresh(); } }),
+            btn({ icon: 'share', label: t('share.button'), size: 'sm', variant: 'tone', onClick: () => DK.shareCard.open() })))),
+      h('div', { class: 'ph-stats' },
+        h('div', { class: 'ph-stat ring' }, ring, h('span', null, t('profile.winRate'))),
+        head('swords', num(s.battles), t('pstats.battles')),
+        head('compass', s.bestDepth ? String(s.bestDepth) : '—', t('profile.bestDepth')),
+        head('crown', num(s.bossesDefeated), t('pstats.bosses'))));
   }
 
   /** Editor de foto y marco (dentro de la pantalla, sin ventana). */
@@ -119,27 +133,51 @@
   }
 
   /* ---------- Resumen y gráficos ---------- */
+  /** Cifras secundarias en una rejilla compacta. */
   function kpis(s) {
-    const decided = s.wins + s.losses;
-    const rate = decided ? Math.round((s.wins / decided) * 100) : 0;
-    const R = 26, C = 2 * Math.PI * R;
-    const ring = h('div', { class: 'kpi-ring', tip: t('profile.rateTip', { w: s.wins, l: s.losses }) });
-    ring.innerHTML = `<svg viewBox="0 0 64 64" width="64" height="64"><circle cx="32" cy="32" r="${R}" class="ring-bg"/><circle cx="32" cy="32" r="${R}" class="ring-fg" stroke-dasharray="${(C * rate) / 100} ${C}" transform="rotate(-90 32 32)"/></svg><b>${rate}%</b>`;
-    const tile = (icon, label, value, sub) => h('div', { class: 'card kpi' }, h('span', { class: 'kpi-label' }, DK.icon(icon, 15), label), h('b', { class: 'kpi-value' }, value), sub ? h('span', { class: 'muted small' }, sub) : null);
-    return h('div', { class: 'kpi-grid' },
-      h('div', { class: 'card kpi kpi-rate' }, ring, h('div', null, h('span', { class: 'kpi-label' }, t('profile.winRate')), h('span', { class: 'muted small' }, t('profile.rateSub', { w: num(s.wins), l: num(s.losses) })))),
-      tile('swords', t('pstats.battles'), num(s.battles), t('profile.flees', { n: num(s.flees) })),
-      tile('flame', t('profile.streak'), num(s.streak), t('profile.bestStreak', { n: num(s.bestStreak) })),
-      tile('target', t('profile.biggestHit'), num(s.biggestHit), t('profile.crits', { n: num(s.crits) })),
-      tile('orb', t('pstats.captures'), num(s.captures), t('profile.shinies', { n: num(s.shinies) })),
-      tile('crown', t('pstats.bosses'), num(s.bossesDefeated), t('profile.expeditions', { n: num(s.expeditions) })),
-      tile('compass', t('profile.bestDepth'), s.bestDepth ? t('exp.depth', { n: s.bestDepth }) : '—', t('profile.bestDepthSub')));
+    const st = DK.store.state;
+    const tile = (icon, label, value, sub, color) => h('div', { class: 'pk', style: color ? { '--pk': color } : null }, h('span', { class: 'pk-icon' }, DK.icon(icon, 16)),
+      h('div', { class: 'pk-text' }, h('b', null, value), h('span', null, label), sub ? h('small', null, sub) : null));
+    return h('div', { class: 'pk-grid' },
+      tile('flame', t('profile.streak'), num(s.streak), t('profile.bestStreak', { n: num(s.bestStreak) }), '#f97316'),
+      tile('target', t('profile.biggestHit'), num(s.biggestHit), t('profile.crits', { n: num(s.crits) }), '#ef4444'),
+      tile('flag', t('profile.expTitle'), num(s.expeditions), t('profile.xl', { n: num(s.xlCleared || 0) }), '#a855f7'),
+      tile('paw', t('profile.owned'), num(DK.party.all().length), t('profile.inTeam', { n: DK.party.active().length }), '#22c55e'),
+      tile('evolve', t('pstats.evolutions'), num(s.evolutions), t('profile.shinies', { n: num(s.shinies) }), '#38bdf8'),
+      tile('anvil', t('pstats.crafts'), num(s.crafts), t('profile.recipesKnown', { n: (st.recipesKnown || []).length }), '#eab308'),
+      tile('coin', t('pstats.coinsEarned'), num(s.coinsEarned), t('profile.coinsNowShort', { n: num(DK.wallet.get()) }), '#facc15'),
+      tile('emblem', t('profile.emblems'), num(DK.camp.emblems()), t('profile.runes', { n: num(DK.runes ? DK.runes.total() : 0) }), '#e7c27a'));
+  }
+
+  /** Avance de la partida: códice, objetos, zonas, jefes, logros y recetas. */
+  function progressCard() {
+    const st = DK.store.state, tot = DK.codex.totals();
+    const zones = Object.keys(D.zones), open = zones.filter((z) => DK.world.isUnlocked(z)).length;
+    const recipes = D.recipes.length, known = D.recipes.filter((r) => (st.recipesKnown || []).includes(r.id)).length;
+    const row = (icon, label, n, max, color) => {
+      const pct = max ? Math.round((n / max) * 100) : 0;
+      return h('div', { class: 'pp-row', tip: `${label}: ${n}/${max}` },
+        h('span', { class: 'pp-label' }, DK.icon(icon, 14), label),
+        h('span', { class: 'pp-track' }, h('i', { style: { width: pct + '%', background: color } })),
+        h('b', null, `${n}/${max}`), h('small', null, pct + '%'));
+    };
+    const all = [[tot.species, tot.speciesTotal], [tot.items, tot.itemsTotal], [open, zones.length], [tot.bosses, tot.bossesTotal], [DK.achievements.unlockedCount(), D.achievements.length], [known, recipes]];
+    const overall = Math.round((all.reduce((a, [n, m]) => a + (m ? n / m : 0), 0) / all.length) * 100);
+    return h('div', { class: 'card pp' },
+      h('div', { class: 'panel-head' }, DK.icon('chart', 18), h('h3', null, t('profile.progressTitle')), h('span', { class: 'grow' }), h('b', { class: 'pp-total' }, overall + '%')),
+      h('div', { class: 'pp-rows' },
+        row('book', t('profile.ppSpecies'), tot.species, tot.speciesTotal, '#22c55e'),
+        row('bag', t('profile.ppItems'), tot.items, tot.itemsTotal, '#38bdf8'),
+        row('map', t('profile.ppZones'), open, zones.length, '#eab308'),
+        row('crown', t('profile.ppBosses'), tot.bosses, tot.bossesTotal, '#ef4444'),
+        row('award', t('profile.ppAch'), DK.achievements.unlockedCount(), D.achievements.length, '#a855f7'),
+        row('anvil', t('profile.ppRecipes'), known, recipes, '#f97316')));
   }
 
   /** Tira de los últimos combates (un punto por combate, el más reciente a la derecha). */
   function historyCard(s) {
     const hist = s.history || [];
-    const legend = h('div', { class: 'chart-legend' }, Object.entries(OUTCOMES).map(([k, o]) =>
+    const legend = h('div', { class: 'chart-legend' }, Object.entries(OUTCOMES).filter(([k]) => k !== 'captured' || DK.config.captureEnabled).map(([k, o]) =>
       h('span', { class: 'legend-item' }, h('span', { class: 'legend-dot', style: { background: o.color } }), t('profile.out.' + k))));
     const body = hist.length
       ? h('div', { class: 'stack-s' },
@@ -272,7 +310,7 @@
       return h('div', { class: 'screen profile-screen' },
         hero(params, refresh),
         params.edit ? editor(params, refresh) : null,
-        kpis(s),
+        h('div', { class: 'ph-row' }, progressCard(), kpis(s)),
         h('div', { class: 'profile-grid' },
           h('div', { class: 'stack' }, historyCard(s), expeditionsCard()),
           h('div', { class: 'stack' }, outcomesCard(s), housesCard(s), zonesCard(), favoritesCard(s), achievementsCard())),

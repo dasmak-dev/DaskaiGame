@@ -97,29 +97,34 @@
       setTimeout(() => input.focus(), 20);
       nameEl = h('div', { class: 'row gap-s wrap' }, input, btn({ icon: 'check', label: t('common.accept'), size: 'sm', variant: 'primary', onClick: save }), btn({ icon: 'x', label: t('common.cancel'), size: 'sm', variant: 'ghost', onClick: () => toggle('rename') }));
     } else {
-      nameEl = h('div', { class: 'row gap-s wrap' }, h('h2', null, DK.daskai.name(d)), d.nickname ? h('span', { class: 'muted' }, `(${sp.name})`) : null,
+      nameEl = h('div', { class: 'row gap-s wrap' }, h('h2', null, DK.daskai.name(d)),
+        h('button', { class: 'icon-btn dp-rename', type: 'button', tip: t('detail.rename'), 'aria-label': t('detail.rename'), onClick: () => toggle('rename') }, DK.icon('edit', 14)),
+        d.nickname ? h('span', { class: 'muted' }, `(${sp.name})`) : null,
         V.level(d.level), V.houseBadge(sp.house), V.roleBadge(d, { neutral: true }), V.shinyTag(d), V.tempTag(d), V.statusTag(d.status),
         DK.daskai.isFainted(d) ? h('span', { class: 'badge bad' }, DK.icon('skull', 13), t('common.fainted')) : null,
         active ? h('span', { class: 'badge good' }, DK.icon('check', 13), isLeader ? t('detail.teamLeader') : t('team.inTeam')) : null);
     }
 
-    /* ---- Acciones ---- */
+    /* ---- Acciones: la principal con texto; el resto, iconos con su nombre al pasar ---- */
     const full = DK.party.active().length >= DK.config.maxTeam;
-    const actions = [];
+    const main = [];
     if (active) {
-      if (!isLeader) actions.push(btn({ icon: 'crown', label: t('detail.makeLeader'), variant: 'ghost', size: 'sm', onClick: () => { DK.party.setLeader(d.uid); DK.audio.sfx('swap'); changed(); } }));
-      actions.push(btn({ icon: 'minus', label: t('detail.removeTeam'), variant: 'ghost', size: 'sm', disabled: DK.party.active().length <= 1, tip: DK.party.active().length <= 1 ? t('team.needOne') : null,
-        onClick: () => { if (DK.party.removeFromTeam(d.uid)) { DK.audio.sfx('swap'); changed(); } } }));
+      if (!isLeader) main.push(btn({ icon: 'crown', label: t('detail.makeLeader'), variant: 'tone', size: 'sm', onClick: () => { DK.party.setLeader(d.uid); DK.audio.sfx('swap'); changed(); } }));
     } else if (DK.training.isTraining(d.uid)) {
-      actions.push(btn({ icon: 'dumbbell', label: t('train.goTo'), variant: 'primary', size: 'sm', onClick: () => DK.router.reset('training') }));
+      main.push(btn({ icon: 'dumbbell', label: t('train.goTo'), variant: 'primary', size: 'sm', onClick: () => DK.router.reset('training') }));
     } else {
-      actions.push(btn({ icon: 'plus', label: t('detail.addTeam'), variant: 'primary', size: 'sm', onClick: () => { if (!full) { DK.party.addToTeam(d.uid); DK.audio.sfx('swap'); changed(); } else toggle('team'); } }));
+      main.push(btn({ icon: 'plus', label: t('detail.addTeam'), variant: 'primary', size: 'sm', onClick: () => { if (!full) { DK.party.addToTeam(d.uid); DK.audio.sfx('swap'); changed(); } else toggle('team'); } }));
     }
-    if (DK.daskai.canEvolve(d)) actions.push(btn({ icon: 'evolve', label: t('evo.button'), variant: 'primary', size: 'sm', onClick: async () => { if (await V.evolveDialog(d)) changed(); } }));
-    actions.push(btn({ icon: 'flask', label: t('detail.useItem'), variant: state.open === 'items' ? 'primary' : 'ghost', size: 'sm', onClick: () => toggle('items') }));
-    actions.push(btn({ icon: 'heart', label: t('heal.button'), variant: 'ghost', size: 'sm', onClick: async () => { if (await V.healDialog([d])) changed(); } }));
-    actions.push(btn({ icon: 'tag', label: t('detail.rename'), variant: 'ghost', size: 'sm', onClick: () => toggle('rename') }));
-    actions.push(btn({ icon: 'trash', label: t('detail.release'), variant: 'ghost', size: 'sm', disabled: DK.party.all().length <= 1, onClick: async () => { if (await release(d)) onRemoved(); } }));
+    if (DK.daskai.canEvolve(d)) main.push(btn({ icon: 'evolve', label: t('evo.button'), variant: 'primary', size: 'sm', onClick: async () => { if (await V.evolveDialog(d)) changed(); } }));
+    const tool = (icon, label, onClick, { on = false, disabled = false, tip = null, danger = false, cls = '' } = {}) =>
+      h('button', { class: 'icon-btn dp-tool' + (on ? ' on' : '') + (danger ? ' danger' : '') + (cls ? ' ' + cls : ''), type: 'button', tip: tip || label, 'aria-label': label, disabled, onClick }, DK.icon(icon, 17));
+    const tools = [
+      active ? tool('minus', t('detail.removeTeam'), () => { if (DK.party.removeFromTeam(d.uid)) { DK.audio.sfx('swap'); changed(); } }, { disabled: DK.party.active().length <= 1, tip: DK.party.active().length <= 1 ? t('team.needOne') : null, cls: 'dp-out' }) : null,
+      tool('flask', t('detail.useItem'), () => toggle('items'), { on: state.open === 'items', cls: 'dp-items' }),
+      tool('heart', t('heal.button'), async () => { if (await V.healDialog([d])) changed(); }, { cls: 'dp-heal' }),
+      tool('trash', t('detail.release'), async () => { if (await release(d)) onRemoved(); }, { disabled: DK.party.all().length <= 1, danger: true, cls: 'dp-release' }),
+    ];
+    const actions = [h('div', { class: 'dp-main' }, main), h('div', { class: 'dp-tools', role: 'toolbar', 'aria-label': t('detail.actions') }, tools)];
 
     /* ---- Desplegables en línea ---- */
     let inline = null;
@@ -154,7 +159,7 @@
       items: [
         // 3 pestañas: Atributos (+ talentos) · Ataques (+ aprender y evolución) · Equipo
         { id: 'stats', label: t('detail.stats'), icon: 'chart', count: DK.daskai.talentsPending(d).length ? '!' : null,
-          render: () => h('div', { class: 'stack-s' }, h('div', { class: 'info-grid' }, V.natureInfo(d), V.passiveInfo(d)), V.permInfo(d), V.statTable(d), V.talentTab(d, changed)) },
+          render: () => h('div', { class: 'stack-s dp-stats' }, h('div', { class: 'info-grid dp-profile' }, V.natureInfo(d), V.passiveInfo(d)), V.permInfo(d), V.statTable(d, { open: !!state.statsOpen }), V.talentTab(d, changed)) },
         { id: 'moves', label: t('detail.moves'), icon: 'swords', count: `${d.moves.length}/${DK.config.maxMoves}`,
           render: () => h('div', { class: 'stack' }, movesTab(d, state, changed), h('div', null, h('h4', { class: 'mt' }, DK.icon('book2', 16), ' ', t('detail.learn')), learnTab(d, changed))) },
         { id: 'equip', label: t('detail.equip'), icon: 'gem', count: `${d.equip.filter(Boolean).length}/${DK.config.maxEquip}`, render: () => equipTab(d, state, changed) },
@@ -175,7 +180,7 @@
         if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) { DK.audio.sfx('select'); onNav(dx < 0 ? 1 : -1); }
       });
     }
-    return h('div', { class: 'daskai-panel' }, navBar, head, h('div', { class: 'row gap-s wrap panel-actions' }, actions), inline, tabs);
+    return h('div', { class: 'daskai-panel' }, navBar, head, h('div', { class: 'panel-actions dp-actions' }, actions), inline, tabs);
   };
 
   /* ---------- Ataques: sustituir sin ventanas ---------- */

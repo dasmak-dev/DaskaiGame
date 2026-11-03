@@ -106,7 +106,7 @@
     const X = 430;
     ctx.fillStyle = '#a5b4fc'; ctx.font = `600 22px ${FONT}`; ctx.fillText(DK.avatars.titleText(p).toUpperCase(), X, 140);
     ctx.fillStyle = '#eceefb'; ctx.font = `800 64px ${FONT}`; ctx.fillText(p.name, X, 205);
-    if (p.motto) { ctx.fillStyle = 'rgba(236,238,251,.7)'; ctx.font = `italic 400 24px ${FONT}`; ctx.fillText(`«${p.motto}»`.slice(0, 60), X, 245); }
+    // (el lema se quitó del perfil en la v4.28)
 
     // Estadísticas (3 × 2)
     const decided = s.wins + s.losses;

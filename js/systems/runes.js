@@ -4,9 +4,11 @@
  * Caen durante las expediciones (cofres, élites y jefes:
  * config.expedition.runes.drop) y se guardan para siempre en
  * state.runes = { id: n }. Al preparar la próxima expedición
- * (Batalla) puedes poner UNA runa de tamaño (pequeño, mediano, XL)
- * y/o UNA de tipo (captura, combate, desafío) para fijarlos; sin
- * runas salen al azar como siempre. Se gastan al partir.
+ * (Batalla) se engastan en 4 huecos (nextExpedition.runeSlots):
+ * como mucho UNA de tamaño (pequeño, mediano, XL) y UNA de tipo
+ * (captura, combate, desafío), que los fijan (sin ellas salen al
+ * azar), y las de bonificación (oro, saber) que quieras. Se gastan
+ * al partir.
  *
  * La próxima expedición guarda lo que salió al azar (n.rolled) para
  * poder quitar la runa sin volver a sortear.
@@ -56,30 +58,73 @@
       return ids;
     },
 
-    /* ---------- Runas puestas en la próxima expedición ---------- */
-    /** { size: id|null, kind: id|null } (sólo las que aún tienes) */
-    selected() {
-      const n = st() && st().nextExpedition; const r = (n && n.runes) || {};
-      const ok = (id) => (id && this.usable(id) ? id : null);
-      return { size: ok(r.size), kind: ok(r.kind) };
+    /* ---------- Runas engastadas en la próxima expedición ---------- */
+    /** Nº de huecos para runas. */
+    slotCount() { return cfg().slots || 4; },
+    /**
+     * Runas engastadas en la próxima expedición: [id, ...] (como mucho slotCount();
+     * sólo las que aún tienes; como mucho una de tamaño y una de tipo).
+     */
+    slots() {
+      const n = st() && st().nextExpedition; if (!n) return [];
+      let raw = n.runeSlots;
+      if (!raw && n.runes) raw = [n.runes.size, n.runes.kind].filter(Boolean); // v4.22.0
+      const used = {}, groups = {}, out = [];
+      (raw || []).forEach((id) => {
+        const r = this.get(id); if (!r || this.locked(id) || out.length >= this.slotCount()) return;
+        if ((used[id] || 0) >= this.count(id)) return;
+        if (r.group !== 'bonus' && groups[r.group]) return;
+        used[id] = (used[id] || 0) + 1; groups[r.group] = 1; out.push(id);
+      });
+      return out;
     },
-    /** Pone o quita una runa (si ya estaba puesta, la quita). @returns {boolean} puesta */
-    toggle(id) {
-      const r = this.get(id); if (!r) return false;
+    /** Cuántas de esta runa quedan sin engastar. */
+    free(id) { return this.count(id) - this.slots().filter((x) => x === id).length; },
+    /** { size: id|null, kind: id|null } de las engastadas */
+    selected() {
+      const sl = this.slots(), find = (g) => sl.find((id) => this.get(id).group === g) || null;
+      return { size: find('size'), kind: find('kind') };
+    },
+    /** ¿Se puede engastar? (la tienes libre, no está bloqueada y hay hueco o reemplaza a la de su grupo) */
+    canSocket(id) {
+      const r = this.get(id); if (!r || this.locked(id) || this.free(id) <= 0) return false;
+      const sl = this.slots();
+      return sl.length < this.slotCount() || (r.group !== 'bonus' && sl.some((x) => this.get(x).group === r.group));
+    },
+    /** Guarda los huecos y recalcula el mapa. */
+    setSlots(list) {
       const n = DK.expedition.nextStart();
-      const sel = this.selected();
-      const on = sel[r.group] !== id;
-      if (on && !this.usable(id)) return false;
       n.rolled = n.rolled || { kind: n.kind, size: n.size, free: DK.expedition.pickSize(Math.random) };
-      sel[r.group] = on ? id : null;
-      n.runes = sel;
+      n.runeSlots = list; delete n.runes;
+      n.runeSlots = this.slots();
       this.apply(n);
       DK.store.save();
-      return on;
+    },
+    /** Engasta una runa (una de tamaño/tipo sustituye a la de su grupo). @returns {boolean} */
+    socket(id) {
+      if (!this.canSocket(id)) return false;
+      const r = this.get(id), sl = this.slots();
+      const k = r.group === 'bonus' ? -1 : sl.findIndex((x) => this.get(x).group === r.group);
+      if (k >= 0) sl[k] = id; else sl.push(id);
+      this.setSlots(sl);
+      return true;
+    },
+    /** Quita la runa del hueco i. */
+    unsocket(i) { const sl = this.slots(); if (i < 0 || i >= sl.length) return false; sl.splice(i, 1); this.setSlots(sl); return true; },
+    /** Engasta o quita (si ya estaba). @returns {boolean} engastada */
+    toggle(id) {
+      const i = this.slots().indexOf(id);
+      if (i >= 0) { this.unsocket(i); return false; }
+      return this.socket(id);
+    },
+    /** Suma de una bonificación ('coins' | 'exp') de las runas de la expedición en curso. */
+    bonus(key) {
+      const e = DK.expedition.active();
+      return ((e && e.runesUsed) || []).reduce((a, id) => a + ((cfg().list[id] || {})[key] || 0), 0);
     },
     /** Tipo y tamaño de la próxima expedición según sus runas (o lo que salió al azar). */
     apply(n) {
-      const sel = n.runes || {}, rolled = n.rolled; if (!rolled) return n;
+      const sel = this.selected(), rolled = n.rolled; if (!rolled) return n;
       const kind = sel.kind ? this.get(sel.kind).value : rolled.kind;
       const kd = DK.config.expedition.kinds[kind] || {};
       const size = sel.size ? this.get(sel.size).value
@@ -90,10 +135,9 @@
       return n;
     },
     /** Al partir: gasta las runas puestas. @returns {string[]} gastadas */
-    consume(n) {
-      const used = [];
-      const sel = (n && n.runes) || {};
-      ['size', 'kind'].forEach((g) => { const id = sel[g]; if (id && this.count(id) > 0) { this.all()[id]--; if (!this.all()[id]) delete this.all()[id]; used.push(id); } });
+    consume() {
+      const used = this.slots();
+      used.forEach((id) => { this.all()[id]--; if (!this.all()[id]) delete this.all()[id]; });
       return used;
     },
   };

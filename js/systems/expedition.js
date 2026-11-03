@@ -688,7 +688,7 @@
         else { e.loot.items[id] = (e.loot.items[id] || 0) + 1; out.loot.push(id); }
       });
       const md = this.mod();
-      e.loot.coins += Math.round(coins * Math.max(0.1, 1 + DK.relics.sum('coins') + DK.camp.value('mochila') + DK.curses.coinBonus() + ((md && md.coins) || 0) + (this.kindDef().coins || 0)));
+      e.loot.coins += Math.round(coins * Math.max(0.1, 1 + DK.relics.sum('coins') + DK.camp.value('mochila') + DK.curses.coinBonus() + ((md && md.coins) || 0) + (this.kindDef().coins || 0) + DK.runes.bonus('coins')));
       return out;
     },
 

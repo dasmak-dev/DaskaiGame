@@ -30,7 +30,7 @@
     addHome(items) { const b = this.home(); Object.entries(items || {}).forEach(([id, n]) => { if (n > 0) { b[id] = (b[id] || 0) + n; DK.codex && DK.codex.markItem(id); } }); },
     /** Cantidad que tienes de un objeto. */
     count(id) { return this.raw()[id] || 0; },
-    add(id, n = 1) { if (n > 0) { this.raw()[id] = this.count(id) + n; DK.codex && DK.codex.markItem(id); } },
+    add(id, n = 1) { if (n > 0 && !D.isHidden(id)) { this.raw()[id] = this.count(id) + n; DK.codex && DK.codex.markItem(id); } },
     /** Quita n unidades. Devuelve false si no hay suficientes. */
     remove(id, n = 1) {
       const c = this.count(id);
@@ -41,7 +41,7 @@
     /** [{item, qty}] de una categoría, ordenado por rareza y nombre. */
     list(category) {
       return Object.entries(this.raw())
-        .filter(([id, q]) => q > 0 && D.items[id] && (!category || D.items[id].category === category))
+        .filter(([id, q]) => q > 0 && D.items[id] && !D.isHidden(id) && (!category || D.items[id].category === category))
         .map(([id, qty]) => ({ item: D.items[id], qty }))
         .sort((a, b) => D.rarities[a.item.rarity].order - D.rarities[b.item.rarity].order || a.item.name.localeCompare(b.item.name));
     },

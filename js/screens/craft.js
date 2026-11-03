@@ -2,21 +2,21 @@
  * screens/craft.js — Crafteo: fabricar objetos con los materiales que
  * traes de las expediciones (data/recipes.js, DK.crafting).
  *
- * Diseño simple:
- *   - Una barra: Recetas | Materiales, buscador, «Sólo fabricables» y tipo.
- *   - RECETAS en LISTA agrupada por secciones plegables (equipo con ataque,
- *     con pasiva, de atributos, tónicos, consumibles). Arriba, tus OBJETIVOS.
- *     Cada fila: icono, nombre, qué hace y su estado (fabricable / faltan).
- *   - MATERIALES: lo que tienes de cada uno, en cuántas recetas se usa y
- *     dónde conseguirlo.
- *   - Detalle en tres bloques: qué hace · qué necesitas · fabricar.
- *     A la derecha en escritorio; hoja inferior en el móvil.
+ * Mesa de trabajo:
+ *   - Pestañas Consumibles | Equipo | Materiales, filtros por tipo, objetivos,
+ *     «Sólo las que puedo» y buscador.
+ *   - Fichas de receta en cuadrícula: icono, nombre, estado (lista / con pasos /
+ *     falta 1 / faltan N) y sus materiales con tienes/necesitas (verde o rojo).
+ *     Primero las que puedes hacer; las lejanas, atenuadas.
+ *   - A la derecha (hoja inferior en el móvil), la receta elegida: efecto,
+ *     materiales en huecos con dónde se consigue cada uno (zona con «Ir →»
+ *     que te lleva a Batalla con esa zona elegida), cantidad y «Forjar».
  *   - Objetivos (estrella, DK.crafting favoritas): lo que les falta sale al
  *     preparar la expedición y en «Qué hacer ahora»; avisan cuando están listos.
  *   - Al fabricar equipo se ofrece ponérselo a un daskai (V.equipChooser),
  *     viendo cómo le cambian los atributos.
  *
- * params: { tab: 'recipes'|'materials', q, only, kind, sel, mat, times, open: {sección: bool} }
+ * params: { tab: 'consum'|'equip'|'materials' ('recipes' = la de la receta), sub, q, only, sel, mat, times }
  * ============================================================= */
 (function () {
   const { h, btn, toast } = DK.ui;
@@ -113,7 +113,24 @@
     }).promise;
   };
 
-  /* ---------------- Detalle de receta ---------------- */
+  /* ---------------- Mesa de trabajo (detalle de receta) ---------------- */
+  const GROUPS = { consum: ['consumable', 'tonic'], equip: ['move', 'passive', 'stats'] };
+  const groupOf = (r) => (GROUPS.equip.includes(kindOf(r)) ? 'equip' : 'consum');
+  const inExp = () => !!DK.expedition.active();
+
+  /** Chips de zona donde cae un material (las abiertas llevan «Ir»). */
+  function sourceChips(id, missing) {
+    const src = sources(id);
+    if (!src.length) return h('div', { class: 'wb-src' }, h('span', { class: 'wb-zone none' }, DK.icon(C().recipeFor(id) ? 'anvil' : 'gift', 11), C().recipeFor(id) ? t('craft.craftable') : t('craft.rare')));
+    return h('div', { class: 'wb-src' }, src.slice(0, 4).map((s) => {
+      const open = DK.world.isUnlocked(s.zone.id), how = s.how !== 'wild' ? ` (${t('craft.how.' + s.how)})` : '';
+      if (!open) return h('span', { class: 'wb-zone lock', tip: t('craft.zoneLocked') }, DK.icon('lock', 11), s.zone.name + how);
+      return h('button', { class: 'wb-zone go' + (missing ? ' need' : ''), type: 'button', disabled: inExp(), tip: inExp() ? t('craft.goExp') : t('craft.goTip', { zone: s.zone.name }),
+        onClick: () => DK.router.reset('zones', { zone: s.zone.id }) },
+        DK.icon(s.zone.icon, 11), s.zone.name + how, missing && !inExp() ? h('b', null, ' · ' + t('craft.go') + ' →') : null);
+    }));
+  }
+
   function recipeDetail(r, ctx) {
     const it = D.items[r.result];
     const kind = kindOf(r);
@@ -129,82 +146,91 @@
       DK.audio.sfx('craft');
       toast(t('craft.done', { item: it.name, n: r.qty * times }), { icon: it.icon, kind: 'good' });
       ctx.redraw();
-      // Equipo: ofrecer ponérselo a alguien ya
       if (it.category === 'equipo' && DK.party.active().length) { await V.equipChooser(it.id); ctx.redraw(); }
     };
 
-    // 1) Qué hace
+    // Qué hace
     const what = [];
     if (it.grants && it.grants.move) what.push(V.moveCard(it.grants.move, { compact: true }));
     if (it.grants && it.grants.passive) what.push(V.passiveBox(it.grants.passive));
-    if (it.stats) what.push(h('p', { class: 'cr-line' }, summary(it)));
-    if (it.use) what.push(h('p', { class: 'cr-line' }, V.useText(it)));
+    const eff = it.stats ? Object.entries(it.stats).map(([k, v]) => h('span', { class: 'wb-eff' + (v < 0 ? ' neg' : '') }, `${DK.tr('stats', D.stats[k])} ${v > 0 ? '+' : ''}${v}`)) : [];
+    if (it.use) eff.push(h('span', { class: 'wb-eff' }, V.useText(it)));
 
-    // 2) Qué necesitas
-    const ings = h('div', { class: 'cr-ings' }, Object.entries(r.ingredients).map(([id, n]) => {
+    // Materiales en huecos: tienes / necesitas y dónde conseguirlo
+    const missing = [];
+    const slots = h('div', { class: 'wb-slots' }, Object.entries(r.ingredients).map(([id, n]) => {
       const have = DK.bag.count(id), need = n * times, ok = have >= need;
+      if (!ok) missing.push(`${need - have} ${D.items[id].name}`);
       const sub = C().recipeFor(id);
-      return h('div', { class: 'cr-ing' + (ok ? ' ok' : '') },
-        V.itemIcon(D.items[id], 20),
-        h('div', { class: 'grow cr-ing-main' }, h('b', null, D.items[id].name), h('span', { class: 'muted small' }, sourceText(id))),
-        sub && !ok ? btn({ icon: 'anvil', size: 'sm', variant: 'ghost', tip: t('craft.open'), onClick: () => ctx.open({ sel: sub.id, mat: null }) }) : null,
-        h('b', { class: 'cr-count' }, `${have}/${need}`));
+      return h('div', { class: 'wb-slot' + (ok ? ' ok' : ' no') },
+        V.itemIcon(D.items[id], 24),
+        h('div', { class: 'wb-slot-main' }, h('b', null, D.items[id].name), sourceChips(id, !ok)),
+        h('div', { class: 'wb-slot-end' },
+          h('span', { class: 'wb-count ' + (ok ? 'ok' : 'no') }, `${have}/${need}`),
+          sub && !ok ? h('button', { class: 'wb-sub', type: 'button', tip: t('craft.open'), onClick: () => ctx.open({ sel: sub.id, mat: null }) }, DK.icon('anvil', 12), t('craft.subShort')) : null));
     }));
 
-    return h('div', { class: 'cr-detail stack' },
-      h('div', { class: 'cr-detail-head' }, V.itemIcon(it, 34),
+    return h('div', { class: 'wb-detail' },
+      h('div', { class: 'wb-res' }, V.itemIcon(it, 38),
         h('div', { class: 'grow' }, h('h3', null, it.name),
           h('div', { class: 'row gap-s wrap' }, V.rarity(it.rarity), h('span', { class: 'muted small' }, t('craft.kind.' + kind) + ' · ' + t('item.owned', { n: DK.bag.count(it.id) })))),
         h('button', { class: 'cr-goal' + (goal ? ' on' : ''), type: 'button', tip: goal ? t('craft.goalOff') : t('craft.goalOn'), 'aria-pressed': goal,
           onClick: () => { const on = C().toggleFavorite(r.id); toast(on ? t('craft.goalAdded', { item: it.name }) : t('craft.goalRemoved', { item: it.name }), { icon: 'star', kind: on ? 'good' : '' }); ctx.redraw(); } },
-          DK.icon('star', 18), h('span', null, goal ? t('craft.goal') : t('craft.goalShort'))),
-        ctx.close ? btn({ icon: 'x', size: 'sm', variant: 'ghost', tip: t('common.close'), onClick: ctx.close }) : null),
-      h('section', { class: 'cr-block' }, h('h4', null, t('craft.whatDoes')), what, it.desc && !it.use ? h('p', { class: 'muted small' }, it.desc) : null),
-      h('section', { class: 'cr-block' }, h('h4', null, t('craft.ingredients')), ings,
-        !plan.ok ? h('p', { class: 'muted small' }, t('craft.missing')) : !direct ? h('p', { class: 'muted small' }, DK.icon('anvil', 12), ' ', t('craft.chainInfo', { n: plan.steps.length - 1 })) : null),
-      h('section', { class: 'cr-block cr-make' },
-        h('div', { class: 'stepper' },
-          btn({ icon: 'minus', size: 'sm', variant: 'ghost', disabled: times <= 1, onClick: () => ctx.setTimes(times - 1) }),
-          h('b', null, 'x' + times),
-          btn({ icon: 'plus', size: 'sm', variant: 'ghost', onClick: () => ctx.setTimes(times + 1) }),
-          max > 1 ? btn({ label: t('craft.max'), size: 'sm', variant: 'ghost', onClick: () => ctx.setTimes(max) }) : null),
-        btn({ icon: 'anvil', label: plan.ok && !direct ? t('craft.makeChain') : t('craft.make', { n: r.qty * times }), variant: 'primary', size: 'lg', disabled: !plan.ok, onClick: doCraft })));
+          DK.icon('star', 16), h('span', null, goal ? t('craft.goal') : t('craft.goalShort'))),
+        ctx.close ? h('button', { class: 'icon-btn', type: 'button', tip: t('common.close'), 'aria-label': t('common.close'), onClick: ctx.close }, DK.icon('x', 16)) : null),
+      it.desc ? h('p', { class: 'muted small wb-desc' }, it.desc) : null,
+      eff.length ? h('div', { class: 'wb-effs' }, eff) : null,
+      what,
+      h('div', { class: 'wb-h' }, DK.icon('anvil', 13), t('craft.ingredients')),
+      slots,
+      missing.length && !plan.ok ? h('p', { class: 'wb-note' }, DK.icon('info', 13), t('craft.missingNote', { list: missing.join(', ') })) : null,
+      plan.ok && !direct ? h('p', { class: 'wb-note chain' }, DK.icon('anvil', 13), t('craft.chainInfo', { n: plan.steps.length - 1 })) : null,
+      h('div', { class: 'wb-foot' },
+        h('div', { class: 'wb-qty' },
+          h('button', { type: 'button', 'aria-label': '−', disabled: times <= 1, onClick: () => ctx.setTimes(times - 1) }, DK.icon('minus', 14)),
+          h('b', null, String(times)),
+          h('button', { type: 'button', 'aria-label': '+', onClick: () => ctx.setTimes(times + 1) }, DK.icon('plus', 14)),
+          max > 1 ? h('button', { type: 'button', class: 'wb-max', onClick: () => ctx.setTimes(max) }, t('craft.max')) : null),
+        btn({ icon: 'hammer', label: plan.ok && !direct ? t('craft.makeChain') : t('craft.forge', { n: r.qty * times }), variant: 'primary', size: 'lg', cls: 'wb-forge', disabled: !plan.ok, onClick: doCraft })));
   }
 
   /* ---------------- Detalle de material ---------------- */
   function materialDetail(id, ctx) {
     const it = D.items[id];
     const uses = C().usesOf(id);
-    const src = sources(id);
-    return h('div', { class: 'cr-detail stack' },
-      h('div', { class: 'cr-detail-head' }, V.itemIcon(it, 34),
+    return h('div', { class: 'wb-detail' },
+      h('div', { class: 'wb-res' }, V.itemIcon(it, 38),
         h('div', { class: 'grow' }, h('h3', null, it.name), h('div', { class: 'row gap-s wrap' }, V.rarity(it.rarity), h('span', { class: 'muted small' }, t('item.owned', { n: DK.bag.count(id) })))),
-        ctx.close ? btn({ icon: 'x', size: 'sm', variant: 'ghost', tip: t('common.close'), onClick: ctx.close }) : null),
-      h('p', { class: 'muted' }, it.desc),
-      h('section', { class: 'cr-block' }, h('h4', null, t('craft.whereGet')),
-        src.length ? h('div', { class: 'cr-sources' }, src.map((s) => h('div', { class: 'cr-source' }, DK.icon(s.zone.icon, 14), h('span', null, s.zone.name), h('span', { class: 'muted small' }, t('craft.how.' + s.how)))))
-          : h('p', { class: 'muted small' }, sourceText(id))),
-      h('section', { class: 'cr-block' }, h('h4', null, t(uses.length === 1 ? 'craft.usedInOne' : 'craft.usedIn', { n: uses.length })),
-        h('div', { class: 'cr-list' }, uses.map((r) => recipeRow(r, { onClick: () => ctx.open({ tab: 'recipes', sel: r.id, mat: null }) })))));
+        ctx.close ? h('button', { class: 'icon-btn', type: 'button', tip: t('common.close'), 'aria-label': t('common.close'), onClick: ctx.close }, DK.icon('x', 16)) : null),
+      h('p', { class: 'muted small wb-desc' }, it.desc),
+      h('div', { class: 'wb-h' }, DK.icon('map', 13), t('craft.whereGet')),
+      sourceChips(id, true),
+      h('div', { class: 'wb-h' }, DK.icon('anvil', 13), t(uses.length === 1 ? 'craft.usedInOne' : 'craft.usedIn', { n: uses.length })),
+      h('div', { class: 'wb-grid mini' }, uses.map((r) => recipeTile(r, { onClick: () => ctx.open({ tab: groupOf(r), sel: r.id, mat: null }) }))));
   }
 
-  /* ---------------- Filas ---------------- */
-  /** Fila de receta: icono · nombre y qué hace · estado. */
-  function recipeRow(r, { selected, onClick }) {
+  /* ---------------- Fichas ---------------- */
+  /** Ficha de receta: icono, nombre, estado y sus materiales con tienes/necesitas. */
+  function recipeTile(r, { selected, onClick }) {
     const it = D.items[r.result], s = status(r), goal = C().isFavorite(r.id);
-    return h('button', { class: 'cr-row' + (selected ? ' selected' : '') + (s.key === 'ready' ? ' ready' : ''), type: 'button', onClick },
-      V.itemIcon(it, 22),
-      h('span', { class: 'cr-row-main' }, h('b', null, it.name, goal ? h('span', { class: 'cr-star', tip: t('craft.goal') }, DK.icon('star', 12)) : null), h('span', { class: 'muted small' }, summary(it))),
-      h('span', { class: 'cr-status s-' + s.key }, s.key === 'ready' ? t('craft.canN', { n: s.n }) : s.key === 'chain' ? t('craft.chainShort') : t('craft.missingN', { n: s.n })));
+    const tag = s.key === 'ready' ? h('span', { class: 'wb-tag ok' }, DK.icon('check', 10), t('craft.readyTag', { n: s.n }))
+      : s.key === 'chain' ? h('span', { class: 'wb-tag chain' }, DK.icon('anvil', 10), t('craft.chainShort'))
+        : h('span', { class: 'wb-tag ' + (s.n === 1 ? 'near' : 'far') }, t(s.n === 1 ? 'craft.missingOne' : 'craft.missingN', { n: s.n }));
+    return h('button', { class: 'wb-tile s-' + s.key + (s.key === 'missing' && s.n > 1 ? ' far' : '') + (selected ? ' sel' : ''), type: 'button', 'aria-pressed': selected ? 'true' : 'false', onClick },
+      goal ? h('span', { class: 'wb-star', tip: t('craft.goal') }, DK.icon('star', 12)) : null,
+      h('span', { class: 'wb-top' }, V.itemIcon(it, 20), h('span', { class: 'wb-name' }, h('b', null, it.name), tag)),
+      h('span', { class: 'wb-mats' }, Object.entries(r.ingredients).map(([id, n]) => {
+        const have = DK.bag.count(id), ok = have >= n;
+        return h('span', { class: 'wb-mat ' + (ok ? 'ok' : 'no'), tip: `${D.items[id].name} ${have}/${n}` }, V.itemIcon(D.items[id], 12), `${have}/${n}`);
+      })));
   }
 
-  /** Fila de material: icono · nombre y uso · cantidad. */
-  function materialRow(id, { selected, onClick }) {
+  /** Ficha de material: icono, nombre, cuántos tienes y en cuántas recetas se usa. */
+  function materialTile(id, { selected, onClick }) {
     const it = D.items[id], n = DK.bag.count(id), uses = C().usesOf(id).length;
-    return h('button', { class: 'cr-row' + (selected ? ' selected' : '') + (n ? ' have' : ''), type: 'button', onClick },
-      V.itemIcon(it, 22),
-      h('span', { class: 'cr-row-main' }, h('b', null, it.name), h('span', { class: 'muted small' }, t('craft.usedInShort', { n: uses }) + ' · ' + sourceText(id))),
-      h('span', { class: 'cr-qty' + (n ? '' : ' zero') }, 'x' + n));
+    return h('button', { class: 'wb-tile mat' + (n ? ' have' : ' far') + (selected ? ' sel' : ''), type: 'button', onClick },
+      h('span', { class: 'wb-top' }, V.itemIcon(it, 20), h('span', { class: 'wb-name' }, h('b', null, it.name), h('span', { class: 'muted small' }, t('craft.usedInShort', { n: uses })))),
+      h('span', { class: 'wb-qty-big' + (n ? '' : ' zero') }, '×' + n));
   }
 
   /* ---------------- Pantalla ---------------- */
@@ -212,19 +238,18 @@
     title: () => t('craft.title'), icon: 'anvil', section: 'craft', music: 'menu',
     render(params) {
       const refresh = () => DK.router.refresh();
-      params.tab = params.tab || 'recipes';
-      params.kind = params.kind || 'all';
-      params.open = params.open || {};
+      // Compatibilidad: 'recipes' → la pestaña de la receta elegida
+      if (!params.tab || params.tab === 'recipes') { const r0 = params.sel && C().get(params.sel); params.tab = r0 ? groupOf(r0) : 'equip'; }
+      params.sub = params.sub || 'all';
       const q = (params.q || '').trim().toLowerCase();
       const narrow = DK.ui.isNarrow();
       const set = (o) => { Object.assign(params, o); refresh(); };
 
-      // Abrir un detalle: en escritorio a la derecha; en el móvil, hoja inferior
+      // Abrir un detalle: en escritorio, la mesa de la derecha; en el móvil, hoja inferior
       const open = (o) => {
         Object.assign(params, o, { times: 1 });
         if (!narrow) { refresh(); return; }
         const holder = h('div');
-        let dr;
         const ctx = {
           get times() { return params.times; },
           setTimes: (n) => { params.times = Math.max(1, Math.min(99, n)); draw(); },
@@ -233,63 +258,59 @@
         };
         const draw = () => holder.replaceChildren(params.sel ? recipeDetail(C().get(params.sel), ctx) : materialDetail(params.mat, ctx));
         draw();
-        dr = DK.ui.drawer({ title: t('craft.title'), icon: 'anvil', size: 'wide', cls: 'cr-sheet', content: holder });
+        const dr = DK.ui.drawer({ title: t('craft.title'), icon: 'anvil', size: 'wide', cls: 'cr-sheet', content: holder });
         dr.promise.then(() => { params.sel = null; params.mat = null; if (DK.router.current() && DK.router.current().id === 'craft') refresh(); });
       };
 
-      /* Barra única */
-      const kinds = ['all', ...Object.keys(KINDS)];
-      const bar = h('div', { class: 'cr-bar' },
-        DK.ui.segmented({ value: params.tab, onChange: (v) => set({ tab: v, sel: null, mat: null }),
-          options: [{ value: 'recipes', label: t('craft.tabRecipes'), icon: 'anvil' }, { value: 'materials', label: t('craft.tabMaterials'), icon: 'cube' }] }),
-        h('input', { class: 'input cr-search', type: 'search', placeholder: params.tab === 'recipes' ? t('craft.search') : t('craft.searchMat'), value: params.q || '',
-          onInput: (e) => { params.q = e.target.value; clearTimeout(params._qt); params._qt = setTimeout(() => { refresh(); const i = document.querySelector('.cr-search'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }, 220); } }),
-        params.tab === 'recipes' ? DK.ui.select({ label: t('craft.type'), value: params.kind, onChange: (v) => set({ kind: v }),
-          options: kinds.map((k) => ({ value: k, label: k === 'all' ? t('craft.kind.all') : t('craft.kind.' + k) })) }) : null,
-        params.tab === 'recipes' ? btn({ icon: params.only ? 'check' : 'filter', label: t('craft.only'), size: 'sm', variant: params.only ? 'primary' : 'ghost', onClick: () => set({ only: !params.only }) }) : null);
+      const isMat = params.tab === 'materials';
+      const count = (g) => D.recipes.filter((r) => groupOf(r) === g).length;
+      const readyIn = (g) => D.recipes.filter((r) => groupOf(r) === g && status(r).key === 'ready').length;
+      const tab = (id, icon, label, n, ready) => h('button', { class: 'wb-tabbtn' + (params.tab === id ? ' on' : ''), type: 'button', role: 'tab', 'aria-selected': String(params.tab === id),
+        onClick: () => set({ tab: id, sub: 'all', sel: null, mat: null }) }, DK.icon(icon, 15), h('span', null, label), h('small', null, String(n)), ready ? h('i', { class: 'wb-ready', tip: t('craft.readyN', { n: ready }) }, ready) : null);
+      const tabs = h('div', { class: 'wb-tabs', role: 'tablist' },
+        tab('consum', 'potion', t('craft.tabConsum'), count('consum'), readyIn('consum')),
+        tab('equip', 'gem', t('craft.tabEquip'), count('equip'), readyIn('equip')),
+        tab('materials', 'cube', t('craft.tabMaterials'), Object.values(D.items).filter((it) => it.category === 'pieza' && !D.isHidden(it.id)).length));
+      const search = h('input', { class: 'input wb-search', type: 'search', placeholder: isMat ? t('craft.searchMat') : t('craft.search'), value: params.q || '',
+        onInput: (e) => { params.q = e.target.value; clearTimeout(params._qt); params._qt = setTimeout(() => { refresh(); const i = document.querySelector('.wb-search'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }, 220); } });
+      // Filtros de la pestaña: tipo, objetivos y «Sólo las que puedo»
+      const subs = isMat ? [] : ['all', ...GROUPS[params.tab], 'goals'];
+      const chip = (v, label, icon) => h('button', { class: 'wb-chip' + (params.sub === v ? ' on' : ''), type: 'button', onClick: () => set({ sub: v }) }, icon ? DK.icon(icon, 12) : null, label);
+      const filters = h('div', { class: 'wb-filters' },
+        subs.map((v) => chip(v, v === 'all' ? t('craft.sub.all') : v === 'goals' ? t('craft.goals') : t('craft.kind.' + v), v === 'goals' ? 'star' : v === 'all' ? null : KINDS[v])),
+        h('span', { class: 'grow' }),
+        isMat ? null : h('button', { class: 'wb-chip' + (params.only ? ' on' : ''), type: 'button', 'aria-pressed': String(!!params.only), onClick: () => set({ only: !params.only }) }, DK.icon(params.only ? 'check' : 'filter', 12), t('craft.onlyMine')),
+        search);
 
       let body, detail = null;
-      if (params.tab === 'recipes') {
-        let list = D.recipes.slice();
-        if (params.kind !== 'all') list = list.filter((r) => kindOf(r) === params.kind);
+      if (!isMat) {
+        let list = D.recipes.filter((r) => groupOf(r) === params.tab);
+        if (params.sub === 'goals') list = list.filter((r) => C().isFavorite(r.id));
+        else if (params.sub !== 'all') list = list.filter((r) => kindOf(r) === params.sub);
         if (params.only) list = list.filter((r) => C().plan(r).ok);
         if (q) list = list.filter((r) => D.items[r.result].name.toLowerCase().includes(q) || Object.keys(r.ingredients).some((id) => D.items[id].name.toLowerCase().includes(q)));
-        const ord = (r) => ({ ready: 0, chain: 1, missing: 2 })[status(r).key] * 10 + D.rarities[D.items[r.result].rarity].order;
+        // Primero lo que puedes hacer, luego lo que necesita un solo material más
+        const ord = (r) => { const st = status(r); return (st.key === 'ready' ? 0 : st.key === 'chain' ? 1 : st.n === 1 ? 2 : 3) * 10 + D.rarities[D.items[r.result].rarity].order; };
         list.sort((a, b) => ord(a) - ord(b) || D.items[a.result].name.localeCompare(D.items[b.result].name));
-        const row = (r) => recipeRow(r, { selected: params.sel === r.id, onClick: () => (params.sel === r.id && !narrow ? set({ sel: null }) : open({ sel: r.id, mat: null })) });
-        const goals = list.filter((r) => C().isFavorite(r.id));
-        const section = (id, icon, title, items, defOpen) => {
-          if (!items.length) return null;
-          const ready = items.filter((r) => status(r).key === 'ready').length;
-          const isOpen = params.open[id] != null ? params.open[id] : defOpen || !!q;
-          return h('section', { class: 'cr-section' + (isOpen ? ' open' : '') },
-            h('button', { class: 'cr-section-head', type: 'button', 'aria-expanded': isOpen, onClick: () => { params.open[id] = !isOpen; refresh(); } },
-              DK.icon(icon, 16), h('b', null, title), h('span', { class: 'muted small' }, t('craft.recipesN', { n: items.length })),
-              ready ? h('span', { class: 'cr-ready-n' }, t('craft.readyN', { n: ready })) : null,
-              h('span', { class: 'grow' }), DK.icon(isOpen ? 'arrowUp' : 'arrowDown', 14)),
-            isOpen ? h('div', { class: 'cr-list' }, items.map(row)) : null);
-        };
-        const sections = [
-          goals.length ? section('goals', 'star', t('craft.goals'), goals, true) : null,
-          ...Object.keys(KINDS).map((k) => {
-            const items = list.filter((r) => kindOf(r) === k);
-            return section(k, KINDS[k], t('craft.kind.' + k), items, items.some((r) => status(r).key === 'ready'));
-          }),
-        ].filter(Boolean);
-        body = sections.length ? h('div', { class: 'cr-sections' }, sections) : DK.ui.empty('anvil', t('craft.emptyTitle'), t('craft.emptyText'));
+        // La mesa nunca está vacía en escritorio: si no has elegido, la primera
+        if (!narrow && list.length && (!params.sel || !list.some((r) => r.id === params.sel))) params.sel = list[0].id;
+        body = list.length ? h('div', { class: 'wb-grid' }, list.map((r) => recipeTile(r, { selected: params.sel === r.id, onClick: () => open({ sel: r.id, mat: null }) })))
+          : DK.ui.empty('anvil', t('craft.emptyTitle'), t('craft.emptyText'));
         const sel = params.sel && C().get(params.sel);
-        if (sel && !narrow) detail = recipeDetail(sel, { times: params.times, setTimes: (n) => set({ times: Math.max(1, Math.min(99, n)) }), redraw: refresh, open: (o) => open(o), close: () => set({ sel: null }) });
+        if (sel && !narrow) detail = recipeDetail(sel, { times: params.times, setTimes: (n) => set({ times: Math.max(1, Math.min(99, n)) }), redraw: refresh, open: (o) => open(o) });
       } else {
-        let mats = Object.values(D.items).filter((it) => it.category === 'pieza').map((it) => it.id);
+        let mats = Object.values(D.items).filter((it) => it.category === 'pieza' && !D.isHidden(it.id)).map((it) => it.id);
         if (q) mats = mats.filter((id) => D.items[id].name.toLowerCase().includes(q));
         mats.sort((a, b) => (DK.bag.count(b) > 0) - (DK.bag.count(a) > 0) || D.rarities[D.items[a].rarity].order - D.rarities[D.items[b].rarity].order || D.items[a].name.localeCompare(D.items[b].name));
-        body = mats.length ? h('div', { class: 'cr-list' }, mats.map((id) => materialRow(id, { selected: params.mat === id, onClick: () => (params.mat === id && !narrow ? set({ mat: null }) : open({ mat: id, sel: null })) })))
+        if (!narrow && mats.length && !params.mat) params.mat = mats[0];
+        body = mats.length ? h('div', { class: 'wb-grid' }, mats.map((id) => materialTile(id, { selected: params.mat === id, onClick: () => open({ mat: id, sel: null }) })))
           : DK.ui.empty('cube', t('craft.emptyTitle'), '');
-        if (params.mat && !narrow) detail = materialDetail(params.mat, { open: (o) => open(o), close: () => set({ mat: null }) });
+        if (params.mat && !narrow) detail = materialDetail(params.mat, { open: (o) => open(o) });
       }
 
-      return h('div', { class: 'screen cr-screen' }, bar,
-        h('div', { class: 'cr-layout' + (detail ? ' has-detail' : '') }, h('div', { class: 'cr-main' }, body), detail ? h('aside', { class: 'card cr-side' }, detail) : null));
+      return h('div', { class: 'screen cr-screen wb' },
+        h('div', { class: 'wb-main' }, tabs, filters, body),
+        detail ? h('aside', { class: 'wb-side' }, detail) : null);
     },
   });
 })();

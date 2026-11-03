@@ -13,6 +13,7 @@
     theme: null,            // 'dark' | 'light' | null (según el sistema)
     lang: 'es',
     textSize: 'md',         // 'sm' | 'md' | 'lg' | 'xl'
+    uiStyle: 'clean',       // 'clean' (limpio, css/clean.css) | 'classic' (el de antes)
     highContrast: false,
     colorblind: false,
     reduceMotion: false,
@@ -77,6 +78,7 @@
       const meta = document.querySelector('meta[name="theme-color"]');
       if (meta && window.getComputedStyle) { const bg = getComputedStyle(el).getPropertyValue('--bg').trim(); if (bg) meta.setAttribute('content', bg); }
       el.dataset.textsize = this.data.textSize;
+      el.dataset.style = this.data.uiStyle === 'classic' ? 'classic' : 'clean';
       el.dataset.contrast = this.data.highContrast ? 'high' : 'normal';
       el.dataset.colorblind = this.data.colorblind ? 'on' : 'off';
       el.dataset.motion = this.reducedMotion() ? 'reduced' : 'full';

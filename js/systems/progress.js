@@ -55,12 +55,36 @@
       }));
     },
 
-    /** Cobra la recompensa de una misión completada. */
+    /** Periodo de una misión ('daily' | 'weekly'). */
+    periodOf(m) { return this.list('weekly').includes(m) ? 'weekly' : 'daily'; },
+    /** Cobra la recompensa de una misión completada (y sus puntos de senda). */
     claim(m) {
       if (m.claimed || m.progress < m.target) return false;
       m.claimed = true;
       DK.wallet.add(m.reward.coins);
       if (m.reward.item && m.reward.qty) DK.bag.add(m.reward.item, m.reward.qty);
+      if (DK.pass) DK.pass.add(D.pass.points[this.periodOf(m)], 'mission');
+      DK.store.save();
+      return true;
+    },
+    /** Puntos de senda que da una misión. */
+    passPoints(m) { return D.pass.points[this.periodOf(m)]; },
+
+    /* ---------- Cambiar una misión (una vez al día) ---------- */
+    canReroll() { return !!st() && st().missions.rerollDay !== U.today(); },
+    /** Cambia una misión sin completar por otra que no tengas. @returns {boolean} */
+    reroll(m) {
+      if (!this.canReroll() || m.claimed || m.progress >= m.target) return false;
+      const period = this.periodOf(m), list = this.list(period), i = list.indexOf(m);
+      const used = new Set(this.list('daily').concat(this.list('weekly')).map((x) => x.id));
+      const pool = D.missions.templates.filter((tp) => !used.has(tp.id) && !(period === 'daily' && tp.weeklyOnly));
+      if (i < 0 || !pool.length) return false;
+      const tpl = pool[Math.floor(Math.random() * pool.length)];
+      const houses = Object.keys(D.houses), idx = period === 'daily' ? 0 : 1, mult = period === 'daily' ? 1 : D.missions.weeklyRewardMult;
+      list[i] = { id: tpl.id, type: tpl.type, icon: tpl.icon, house: tpl.house ? houses[Math.floor(Math.random() * houses.length)] : null,
+        target: tpl.target[idx], progress: 0, claimed: false, rerolled: true,
+        reward: { coins: tpl.reward.coins * mult, item: tpl.reward.item, qty: (tpl.reward.qty || 0) * (period === 'daily' ? 1 : 2) } };
+      st().missions.rerollDay = U.today();
       DK.store.save();
       return true;
     },
@@ -84,6 +108,7 @@
         if (a.value(st()) >= a.target) {
           st().achievements[a.id] = Date.now();
           DK.wallet.add(a.reward, { silent: true });
+          if (DK.pass) DK.pass.add(this.passPoints(a), 'achievement');
           fresh.push(a);
         }
       });
@@ -93,6 +118,25 @@
       });
       if (fresh.length) DK.store.save();
       return fresh;
+    },
+    passPoints(a) { return a.hidden ? D.pass.points.hidden : D.pass.points.achievement; },
+    /** Progreso por categoría: { cat: {got, total} } */
+    byCat() {
+      const out = {}; D.achievementCats.forEach((c) => (out[c] = { got: 0, total: 0 }));
+      D.achievements.forEach((a) => { const c = out[a.cat] || (out[a.cat] = { got: 0, total: 0 }); c.total++; if (st().achievements[a.id]) c.got++; });
+      return out;
+    },
+    /**
+     * «Casi lo tienes»: misiones sin terminar y logros visibles más cerca de
+     * completarse. [{kind: 'mission'|'ach', item, pct, value, target, go}]
+     */
+    near(n = 3) {
+      const GO = { defeat: 'zones', win: 'zones', boss: 'zones', damage: 'zones', levelUp: 'zones', expedition: 'zones', capture: 'zones', craft: 'craft', useItem: 'inventory' };
+      const CAT_GO = { combat: 'zones', collection: 'zones', expedition: 'zones', bosses: 'zones', craft: 'craft' };
+      const out = [];
+      ['daily', 'weekly'].forEach((p) => DK.missions.list(p).forEach((m) => { if (!m.claimed && m.progress < m.target) out.push({ kind: 'mission', item: m, value: m.progress, target: m.target, pct: m.progress / m.target, go: GO[m.type] || 'zones' }); }));
+      this.list().forEach(({ def, value, unlocked }) => { if (!unlocked && !def.hidden && value > 0) out.push({ kind: 'ach', item: def, value, target: def.target, pct: value / def.target, go: CAT_GO[def.cat] || 'zones' }); });
+      return out.sort((a, b) => b.pct - a.pct).slice(0, n);
     },
     unlockedCount() { return D.achievements.filter((a) => st().achievements[a.id]).length; },
     /** Nombre y descripción (con las variables de los logros que comparten texto). */

@@ -70,7 +70,7 @@
     },
     /** Totales del códice: especies descubiertas, objetos conocidos, jefes vencidos. */
     totals() {
-      const sp = Object.keys(D.species), it = Object.keys(D.items);
+      const sp = Object.keys(D.species), it = Object.keys(D.items).filter((id) => !D.isHidden(id));
       const bosses = Object.keys(D.zones).length + Object.keys(D.secretBosses || {}).length;
       const bossesDone = Object.keys(D.zones).filter((z) => DK.world.boss(z).defeated > 0).length + Object.keys(D.secretBosses || {}).filter((z) => DK.world.secret(z).defeated > 0).length;
       return { species: sp.filter((s) => this.species(s).status !== 'unknown').length, speciesTotal: sp.length,

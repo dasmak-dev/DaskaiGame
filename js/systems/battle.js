@@ -617,7 +617,7 @@
     rewards(st) {
       const ally = this.ally(st), e = st.enemy, sp = D.species[e.species], zone = D.zones[st.zoneId];
       const out = { exp: 0, coins: 0, drops: [], unlocked: null, captured: st.outcome === 'captured', boss: st.boss, toLoot: st.expedition };
-      out.exp = Math.round(C().expGain(sp.exp, e.level) * (st.boss ? 2 : st.elite ? 1.5 : 1) * (1 + DK.camp.value('sabiduria') + (st.expedition ? DK.relics.sum('exp') + (DK.expedition.kindDef().exp || 0) : 0)));
+      out.exp = Math.round(C().expGain(sp.exp, e.level) * (st.boss ? 2 : st.elite ? 1.5 : 1) * (1 + DK.camp.value('sabiduria') + (st.expedition ? DK.relics.sum('exp') + (DK.expedition.kindDef().exp || 0) + DK.runes.bonus('exp') : 0)));
       out.levelInfo = DK.daskai.gainExp(ally, out.exp);
       // Experiencia compartida con el resto del equipo (no debilitados)
       out.shared = DK.party.active().filter((d) => d.uid !== ally.uid && !DK.daskai.isFainted(d) && d.level < DK.config.maxLevel).map((d) => {

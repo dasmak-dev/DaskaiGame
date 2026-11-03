@@ -23,7 +23,7 @@ module.exports = {
     name: 'Una partida antigua (daskai sin genes) se carga y calcula bien',
     run: (browser, view) => play(browser, view, async (p) => {
       const r = await p.evaluate(() => {
-        const slot = DK.store.slot; DK.store.state.party.forEach((d) => delete d.genes); DK.store.close();
+        const slot = DK.store.slot; DK.store.state.party.forEach((d) => { delete d.genes; delete d.role; }); DK.store.close();
         DK.store.load(slot);
         const d = DK.store.state.party[0], s = DK.daskai.stats(d);
         return { hp: s.hp, base: DK.daskai.baseOf(d, 'hp') === DK.data.species[d.species].base.hp };

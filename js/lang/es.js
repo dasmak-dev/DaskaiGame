@@ -27,6 +27,8 @@ DK.i18n.register('es', {
     footer: 'v{v} · Guardado automático en este navegador',
   },
   saves: {
+    overwriteShort: 'Reiniciar', slotN: 'Ranura {n}', lastPlayed: 'Última jugada', emptyHint: 'Libre para una aventura nueva.', inExpedition: 'Tu equipo sigue de expedición', onExpedition: 'En expedición',
+    statBest: 'Mejor nivel', statCount: 'Daskai', statTime: 'Jugado', statZones: 'Zonas', statBosses: 'Jefes',
     fallen: '{n} caídos',
     title: 'Partidas', titleNew: 'Elige una ranura',
     help: 'Tienes 3 ranuras. Exporta una partida a un archivo para hacer una copia de seguridad o llevarla a otro equipo.',
@@ -93,6 +95,7 @@ DK.i18n.register('es', {
   compare: { title: 'Comparar daskai' },
 
   detail: {
+    actions: 'Acciones',
     prev: 'Anterior', next: 'Siguiente', swipeHint: 'o desliza la ficha',
     replaceHere: 'Sustituir aquí',
     notFound: 'Este daskai ya no existe', makeLeader: 'Hacer líder', isLeader: '{name} es ahora el líder.',
@@ -122,6 +125,7 @@ DK.i18n.register('es', {
     tonics: 'Tónicos {n}/{max}', tonicTip: 'Tónicos tomados (mejoras permanentes). El elixir de olvido los devuelve.',
     trained: 'Entrenado {n}/{max}', trainedTip: 'Puntos de atributo ganados en el campo de entrenamiento',
     regenShort: 'Regen.',
+    showAll: 'Ver todo el desglose', hideAll: 'Ocultar el desglose', legendTitle: 'Qué significan los colores y flechas',
     breakdown: '{base} base + {growth} nivel', equip: '{n} equipo', passive: '{n}% pasiva', regenPerTurn: '{n} PV por turno',
     legend: { base: 'Base', level: 'Nivel', nature: 'Naturaleza', equip: 'Equipo', bonus: 'Pasiva y bonos', evo: 'Evolución', perm: 'Tónicos y entrenamiento', minus: 'Resta', rate: 'Ritmo de crecimiento', rateTip: 'Cuánto crece al subir de nivel según su especie, pasivas, talentos y naturaleza', arrows: 'Efecto de la naturaleza' },
     part: { gene: '(genes {n}%)', base: '{n} base', level: '{n} nivel', nature: '{n} naturaleza', equip: '{n} equipo', passive: '{n}% pasiva', bonus: '{n} bonos', evo: '{n} evolución', tonic: '{n} tónicos', trained: '{n} entrenamiento', trait: '(rasgo {n}%)' },
@@ -435,7 +439,18 @@ DK.i18n.register('es', {
     whoNext: '¿Quién lucha en el siguiente combate?', whoNextNote: 'La vida y el maná no se recuperan entre combates.',
   },
 
+  /* Senda del aventurero (systems/pass.js) */
+  pass: {
+    title: 'Senda del aventurero', level: 'Nivel', levelN: 'Nivel {n}', levelUp: '¡Senda del aventurero: nivel {n}! Cobra tu premio en Progreso.',
+    toNext: '{a}/{b} puntos para el nivel {n}', howTo: 'misión diaria +{d}, semanal +{w}, logro +{a}',
+    points: '+{n} senda', pointsTip: 'Puntos de la Senda del aventurero', claimAll: 'Cobrar {n}', claimed: 'Nivel {n}: {what}', claimedN: '¡{n} premios cobrados!',
+    coins: '{n} monedas', runeRandom: '{n} runa(s) al azar', titleReward: 'Título «{name}»', frameReq: 'Llega al nivel {n} de la Senda del aventurero',
+    titles: { senda15: 'Caminante', senda30: 'Leyenda de la senda' },
+    nearTitle: 'Casi lo tienes', nearHint: 'Lo que tienes más cerca de completar', go: 'Ir',
+  },
+
   missions: {
+    reroll: 'Cambiar misión', rerollTip: 'Cambiar esta misión por otra (una vez al día)', rerolled: 'Misión cambiada', rerollLeft: 'Hoy puedes cambiar una misión que no te guste (botón ↻).', rerollUsed: 'Ya has cambiado una misión hoy. Mañana podrás cambiar otra.',
     title: 'Misiones', daily: 'Diarias', weekly: 'Semanales', dailyHelp: 'Se renuevan cada día a medianoche.', weeklyHelp: 'Se renuevan cada lunes. Mayor recompensa.',
     resetIn: 'Cambian en {time}', claim: 'Cobrar', claimed: 'Cobrada', claimedToast: 'Recompensa cobrada: +{coins} monedas', ready: 'Misión completada: {name}',
     defeatHouse: 'Derrota {n} daskai de {house}', defeatAny: 'Derrota {n} daskai', win: 'Gana {n} combates', capture: 'Vincula {n} daskai',
@@ -443,16 +458,19 @@ DK.i18n.register('es', {
     expedition: 'Completa {n} expediciones', boss: 'Derrota {n} jefes',
   },
   achievements: {
+    all: 'Todos', cat: { combat: 'Combate', collection: 'Colección', expedition: 'Expediciones', bosses: 'Jefes', craft: 'Crafteo y riqueza' },
+    hintLabel: 'Pista:', titleReward: 'Título: {name}', titleTip: 'Al conseguirlo podrás usarlo como título en tu perfil',
+    framesHint: 'Con 10 logros desbloqueas el marco dorado; con todos, el legendario.',
     unlockedHidden: '¡Logro oculto desbloqueado: {name}! +{coins} monedas', hiddenName: '???', hiddenDesc: 'Logro oculto: sigue explorando para descubrir qué pide.', hiddenTag: 'Oculto', hiddenCount: 'Logros ocultos descubiertos: {n}/{max}',
-    bossZone: { name: 'Señor de {zone}', desc: 'Derrota a {boss}, el jefe de {zone}.' },
-    secretFirst: { name: 'Lo que esconde la cueva', desc: 'Derrota a tu primer jefe oculto.' },
-    secretFoundAll: { name: 'Espeleólogo', desc: 'Encuentra la guarida de los {n} jefes ocultos.' },
-    secretAll: { name: 'Nada queda oculto', desc: 'Derrota a los {n} jefes ocultos.' },
-    depth5: { name: 'Sin mirar atrás', desc: 'Llega al mapa {n} en una misma expedición.' },
-    depth10: { name: 'Hasta el fondo', desc: 'Llega al mapa {n} en una misma expedición.' },
-    xlClear: { name: 'Gran travesía', desc: 'Supera un mapa XL.' },
-    breaks25: { name: 'Rompemuros', desc: 'Rompe la guardia de jefes o mini jefes {n} veces.' },
-    quests10: { name: 'Profesional', desc: 'Cumple {n} encargos de mapa.' },
+    bossZone: { hint: 'Algo muy poderoso espera al final de {zone}.', name: 'Señor de {zone}', desc: 'Derrota a {boss}, el jefe de {zone}.' },
+    secretFirst: { hint: 'Las cuevas de los mapas esconden algo más que tesoros.', name: 'Lo que esconde la cueva', desc: 'Derrota a tu primer jefe oculto.' },
+    secretFoundAll: { hint: 'Explora las cuevas de todas las zonas.', name: 'Espeleólogo', desc: 'Encuentra la guarida de los {n} jefes ocultos.' },
+    secretAll: { hint: 'Ningún guardián de las cuevas debe quedar en pie.', name: 'Nada queda oculto', desc: 'Derrota a los {n} jefes ocultos.' },
+    depth5: { hint: 'Tras vencer a un jefe, sigue adelante en lugar de volver.', name: 'Sin mirar atrás', desc: 'Llega al mapa {n} en una misma expedición.' },
+    depth10: { hint: 'Sigue adelante muchos mapas seguidos sin volver a casa.', name: 'Hasta el fondo', desc: 'Llega al mapa {n} en una misma expedición.' },
+    xlClear: { hint: 'Los mapas más grandes guardan esta recompensa.', name: 'Gran travesía', desc: 'Supera un mapa XL.' },
+    breaks25: { hint: 'Golpea a los jefes hasta que su guardia ceda.', name: 'Rompemuros', desc: 'Rompe la guardia de jefes o mini jefes {n} veces.' },
+    quests10: { hint: 'Cada mapa trae un encargo. Cúmplelos.', name: 'Profesional', desc: 'Cumple {n} encargos de mapa.' },
     title: 'Logros', tab: 'Logros', unlocked: '¡Logro desbloqueado: {name}! +{coins} monedas',
     firstWin: { name: 'Primera victoria', desc: 'Gana tu primer combate.' },
     wins50: { name: 'Veterano', desc: 'Gana {n} combates.' },
@@ -487,7 +505,7 @@ DK.i18n.register('es', {
     pixelArt: 'Daskai en pixel art', pixelArtDesc: 'Dibujos pixelados de estilo retro (desactívalo para verlos suaves)',
     autoBattle: 'Empezar los combates en automático', autoBattleDesc: 'Tu daskai elige solo el mejor ataque. Pulsa A para tomar el control cuando quieras.',
     autoPause: 'Pausar el automático con poca vida', autoPauseDesc: 'Si tu daskai baja del 30% de vida, el automático se detiene para que decidas tú (importante en modo difícil).',
-    title: 'Ajustes', appearance: 'Apariencia', theme: 'Tema', themeAuto: 'Sistema', themeLight: 'Claro', themeDark: 'Oscuro', textSize: 'Tamaño del texto',
+    title: 'Ajustes', appearance: 'Apariencia', theme: 'Tema', themeAuto: 'Sistema', themeLight: 'Claro', themeDark: 'Oscuro', uiStyle: 'Estilo', styleClean: 'Limpio', styleClassic: 'Clásico', textSize: 'Tamaño del texto',
     accessibility: 'Accesibilidad', highContrast: 'Alto contraste', highContrastDesc: 'Colores más marcados y bordes más visibles',
     colorblind: 'Modo daltónico', colorblindDesc: 'Paleta segura para daltonismo y patrones en las barras',
     reduceMotion: 'Reducir movimiento', reduceMotionDesc: 'Desactiva animaciones y partículas',
@@ -570,6 +588,8 @@ DK.i18n.register('es', {
   ctx: { open: 'Abrir ficha', addFull: 'Añadir (sustituye a otro)' },
 
   profile: {
+    progressTitle: 'Avance de la partida', ppSpecies: 'Especies', ppItems: 'Objetos', ppZones: 'Zonas', ppBosses: 'Jefes', ppAch: 'Logros', ppRecipes: 'Recetas',
+    xl: '{n} mapas XL', inTeam: '{n} en el equipo', recipesKnown: '{n} recetas conocidas', coinsNowShort: 'Tienes {n}', emblems: 'Emblemas', runes: '{n} runas',
     bestDepth: 'Mayor profundidad', bestDepthSub: 'en una expedición', expCashed: '{n} de {total} cobradas', 
     expTitle: 'Expediciones', expCount: '{n} en el historial', expBest: 'Mejor: piso {floor}/{total}', expFallen: '{n} caídos', expNone: 'Todavía no has terminado ninguna expedición.', expRecent: 'Últimas expediciones',
     fallen: 'Caídos en expediciones',
@@ -579,7 +599,7 @@ DK.i18n.register('es', {
     imageHint: 'Sube una imagen de tu ordenador o móvil. Se recorta en un cuadrado y se guarda sólo en esta partida.',
     upload: 'Subir imagen', removeImage: 'Quitar imagen', imageError: 'No se ha podido leer la imagen',
     frames: 'Marcos', framesHint: 'Consigue marcos nuevos jugando. Pasa el ratón por uno bloqueado para ver cómo conseguirlo.',
-    frame: { none: 'Sin marco', house: 'Marco de {house}', shiny: 'Marco variocolor', gold: 'Marco dorado', legend: 'Marco legendario' },
+    frame: { none: 'Sin marco', house: 'Marco de {house}', shiny: 'Marco variocolor', gold: 'Marco dorado', legend: 'Marco legendario', senda_bronce: 'Marco de bronce de la senda', senda_plata: 'Marco de plata de la senda', senda_oro: 'Marco de oro de la senda' },
     frameHouse: 'Derrota a {n} daskai de {house}', frameShiny: 'Consigue un daskai variocolor', frameGold: 'Consigue {n} logros', frameLegend: 'Consigue todos los logros',
     winRate: 'Victorias', rateSub: '{w} victorias · {l} derrotas', rateTip: '{w} victorias y {l} derrotas (las huidas no cuentan)',
     flees: '{n} huidas', streak: 'Racha actual', bestStreak: 'Mejor racha: {n}', biggestHit: 'Mayor golpe', crits: '{n} críticos',
@@ -711,7 +731,9 @@ DK.i18n.register('es', {
   /* Runas de expedición (systems/runes.js) */
   rune: {
     title: 'Runas de expedición', short: 'Runas', size: 'Tamaño', kind: 'Tipo', random: 'Al azar',
-    help: 'Caen en cofres, élites y jefes. Pon una de tamaño y/o una de tipo para fijar la próxima expedición; se gastan al partir. Sin runas, todo sale al azar.',
+    help: 'Caen en cofres, élites y jefes. Engasta hasta 4 antes de partir: una de tamaño y una de tipo fijan el mapa (sin ellas sale al azar) y las de bonificación se suman. Se gastan al partir.',
+    bonus: 'Bonificación', add: 'Engastar una runa', remove: 'Quitar {name}', swap: 'Sustituye a {name}',
+    pickHelp: 'Elige qué runa engastar en esta expedición ({n} huecos). Como mucho una de tamaño y una de tipo; las de bonificación se pueden repetir.',
     none: 'Aún no tienes runas: caen en cofres, élites y jefes de las expediciones.',
     have: 'Tienes {n}', on: 'Puesta: se gastará al partir', tapOn: 'Pulsa para usarla', tapOff: 'Pulsa para quitarla', locked: 'Derrota a algún jefe para poder usarla',
     got: 'Runa conseguida: {name}', dest: 'Runas', destHelp: 'se guardan para siempre', used: 'Runas usadas: {list}',
@@ -721,6 +743,8 @@ DK.i18n.register('es', {
     captura: { name: 'Runa de captura', effect: 'Captura' },
     combate: { name: 'Runa de batalla', effect: 'Batalla' },
     desafio: { name: 'Runa de jefes', effect: 'Jefes (desafío)' },
+    oro: { name: 'Runa de la avaricia', effect: '+{n}% monedas' },
+    saber: { name: 'Runa del saber', effect: '+{n}% experiencia' },
   },
 
   kind: {
@@ -800,6 +824,9 @@ DK.i18n.register('es', {
   },
   party: { toReserve: 'Sacar del equipo (sigue contigo)', emptyHintExp: 'Arrastra aquí a quien va contigo', title: 'Tu equipo', empty: 'Hueco libre', emptyHint: 'Arrastra aquí un daskai de la caja', toBox: 'Guardar en la caja' },
   craft: {
+    tabConsum: 'Consumibles', tabEquip: 'Equipo', sub: { all: 'Todo' }, onlyMine: 'Sólo las que puedo', readyTag: 'Lista ×{n}', missingOne: 'Falta 1',
+    go: 'Ir', goTip: 'Ir a Batalla con {zone} elegida', goExp: 'Termina la expedición para ir a otra zona', zoneLocked: 'Zona aún bloqueada', subShort: 'Receta',
+    missingNote: 'Te falta {list}. Pulsa una zona para ir a buscarlo.', forge: 'Forjar ×{n}',
     tabRecipes: 'Recetas', tabMaterials: 'Materiales', searchMat: 'Buscar material…', type: 'Tipo', recipesN: '{n} recetas', readyN: '{n} listas',
     canN: 'Puedes hacer {n}', chainShort: 'Con pasos', missingN: 'Faltan {n}', usedInShort: 'En {n} recetas', usedIn: 'Se usa en {n} recetas', usedInOne: 'Se usa en 1 receta', whereGet: 'Dónde conseguirlo',
     how: { wild: 'salvajes', boss: 'jefe', secret: 'jefe oculto' }, whatDoes: 'Qué hace',

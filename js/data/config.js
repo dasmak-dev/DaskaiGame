@@ -110,9 +110,11 @@
       },
       /* Runas de expedición (DK.runes): caen en cofres, élites y jefes y se guardan
        * para siempre. Antes de salir puedes gastar una de tamaño y/o una de tipo
-       * para fijar el mapa; sin runas el tamaño y el tipo salen al azar.
+       * para fijar el mapa (sin runas salen al azar) y runas de bonificación.
+       * Se engastan en `slots` huecos.
        *   drop   probabilidad de runa en cofre / élite; jefe y jefe oculto: nº seguro
-       *   list   runas: group 'size' | 'kind', value = tamaño o tipo, weight = rareza al caer */
+       *   list   runas: group 'size' | 'kind' (value = tamaño o tipo) | 'bonus' (coins / exp);
+       *          weight = rareza al caer */
       runes: {
         drop: { treasure: 0.3, elite: 0.35, boss: 1, secret: 2 },
         list: {
@@ -122,7 +124,11 @@
           captura: { group: 'kind', value: 'captura', icon: 'paw', weight: 16 },
           combate: { group: 'kind', value: 'combate', icon: 'swords', weight: 16 },
           desafio: { group: 'kind', value: 'desafio', icon: 'skull', weight: 8 },
+          // De bonificación: se pueden repetir (+% que se suma por cada una engastada)
+          oro: { group: 'bonus', coins: 0.25, icon: 'coin', weight: 14 },
+          saber: { group: 'bonus', exp: 0.25, icon: 'star', weight: 14 },
         },
+        slots: 4,   // huecos para engastar runas antes de partir (como mucho 1 de tamaño y 1 de tipo)
       },
       weights: { fight: 36, event: 20, elite: 10, recruit: 9, shop: 7, treasure: 8, rest: 5, shrine: 4, cave: 4 },
       // Atajos: nodos que permiten saltar `shortcutSkip` pisos (a cambio de vida del equipo)

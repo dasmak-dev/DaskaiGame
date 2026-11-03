@@ -50,6 +50,8 @@
         bestSpecies: best && best.species, bestLevel: best ? best.level : 0, coins: s.coins || 0,
         zones: Object.values(s.zones || {}).filter((z) => z.unlocked).length, gameOver: !!s.gameOver, fallen: (s.graveyard || []).length,
         avatar: s.player && s.player.avatar, frame: s.player && s.player.frame,
+        emblems: s.emblems || 0, expeditions: (s.stats && s.stats.expeditions) || 0, bosses: (s.stats && s.stats.bossesDefeated) || 0,
+        difficulty: s.difficulty || null, inExpedition: !!s.expedition,
       };
     },
 
@@ -134,6 +136,12 @@
       s.essences = s.essences || [];      // esencias de caídos (DK.legacy)
       s.camp = s.camp || {};              // mejoras del campamento (DK.camp)
       s.runes = s.runes || {};            // runas de expedición (DK.runes)
+      // Senda del aventurero (DK.pass): las partidas antiguas reciben los puntos de sus logros
+      if (!s.pass) {
+        const pts = DK.data.pass.points, got = s.achievements || {};
+        s.pass = { xp: DK.data.achievements.filter((a) => got[a.id]).reduce((n, a) => n + (a.hidden ? pts.hidden : pts.achievement), 0), claimed: {}, extra: 0 };
+      }
+      s.missions = s.missions || {};
       // Las Mejoras «Rumbo» (v4.21) se cambiaron por runas: se devuelven sus emblemas
       const RUMBO = { rumbo_captura: [2, 3, 5], rumbo_combate: [2, 3, 5], rumbo_tesoro: [2, 3, 5], rumbo_desafio: [3, 4, 6] };
       Object.entries(RUMBO).forEach(([id, costs]) => { const lv = s.camp[id] || 0; if (lv) s.emblems = (s.emblems || 0) + costs.slice(0, lv).reduce((a, b) => a + b, 0); delete s.camp[id]; });

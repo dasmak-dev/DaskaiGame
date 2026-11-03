@@ -40,41 +40,58 @@
   function slotCard(n, refresh, pickFile) {
     const m = DK.store.slotMeta(n);
     const last = DK.settings.get('lastSlot') === n && m.exists;
-    const tools = [];
-    if (m.exists) {
-      tools.push(btn({ icon: 'download', label: t('saves.export'), variant: 'ghost', size: 'sm', onClick: () => DK.store.exportSlot(n) && DK.ui.toast(t('saves.exported'), { icon: 'download' }) }));
-      tools.push(btn({ icon: 'sparkles', label: t('saves.overwrite'), variant: 'ghost', size: 'sm', onClick: async () => {
-        if (await DK.ui.confirm(t('saves.overwriteQ'), t('saves.overwriteText', { name: m.name }), { okLabel: t('saves.overwrite'), danger: true })) DK.router.go('newGame', { slot: n });
-      } }));
-      tools.push(btn({ icon: 'trash', label: t('saves.delete'), variant: 'ghost', size: 'sm', onClick: async () => {
-        if (await DK.ui.confirm(t('saves.deleteQ'), t('saves.deleteText', { name: m.name }), { okLabel: t('saves.delete'), okIcon: 'trash', danger: true })) { DK.store.deleteSlot(n); refresh(); }
-      } }));
-    }
-    tools.push(btn({ icon: 'upload', label: t('saves.import'), variant: 'ghost', size: 'sm', onClick: async () => {
+    // Opciones secundarias: botones iguales (icono arriba, nombre abajo) en una fila
+    const tool = (icon, label, onClick, danger) => h('button', { class: 'save-tool' + (danger ? ' danger' : ''), type: 'button', tip: label, onClick }, DK.icon(icon, 17), h('span', null, label));
+    const importIt = async () => {
       if (m.exists && !(await DK.ui.confirm(t('saves.importQ'), t('saves.importText'), { okLabel: t('saves.import'), danger: true }))) return;
       pickFile(n);
-    } }));
+    };
+    const tools = m.exists ? [
+      tool('download', t('saves.export'), () => DK.store.exportSlot(n) && DK.ui.toast(t('saves.exported'), { icon: 'download' })),
+      tool('upload', t('saves.import'), importIt),
+      tool('refresh', t('saves.overwriteShort'), async () => {
+        if (await DK.ui.confirm(t('saves.overwriteQ'), t('saves.overwriteText', { name: m.name }), { okLabel: t('saves.overwrite'), danger: true })) DK.router.go('newGame', { slot: n });
+      }),
+      tool('trash', t('saves.delete'), async () => {
+        if (await DK.ui.confirm(t('saves.deleteQ'), t('saves.deleteText', { name: m.name }), { okLabel: t('saves.delete'), okIcon: 'trash', danger: true })) { DK.store.deleteSlot(n); refresh(); }
+      }, true),
+    ] : [tool('upload', t('saves.import'), importIt)];
 
     const main = m.exists
-      ? btn({ icon: 'play', label: last ? t('main.continue') : t('saves.play'), desc: t('main.continueDesc', { name: m.name, slot: n }), size: 'lg', variant: last ? 'primary' : 'tone', hotkey: String(n), onClick: () => play(n) })
-      : btn({ icon: 'sparkles', label: t('saves.newHere'), desc: t('saves.emptyText'), size: 'lg', variant: DK.store.hasAnySave() ? 'tone' : 'primary', hotkey: String(n), onClick: () => DK.router.go('newGame', { slot: n }) });
+      ? btn({ icon: 'play', label: last ? t('main.continue') : t('saves.play'), desc: m.inExpedition ? t('saves.inExpedition') : null, size: 'lg', variant: last ? 'primary' : 'tone', hotkey: String(n), cls: 'save-main', onClick: () => play(n) })
+      : btn({ icon: 'sparkles', label: t('saves.newHere'), size: 'lg', variant: DK.store.hasAnySave() ? 'tone' : 'primary', hotkey: String(n), cls: 'save-main', onClick: () => DK.router.go('newGame', { slot: n }) });
     DK.keys.on(String(n), () => (m.exists ? play(n) : DK.router.go('newGame', { slot: n })));
 
-    return h('div', { class: 'card save-slot ' + (m.exists ? '' : 'empty') + (last ? ' last' : '') },
+    // Estadísticas en una cuadrícula fija: siempre en el mismo sitio en las tres ranuras
+    const stat = (icon, value, label, cls = '') => h('div', { class: 'save-stat ' + cls, tip: label }, DK.icon(icon, 14), h('b', null, value), h('small', null, label));
+    const diff = m.difficulty && DK.data.difficulties[m.difficulty];
+    const stats = m.exists ? h('div', { class: 'save-stats' },
+      stat('star', String(m.bestLevel), t('saves.statBest')),
+      stat('paw', String(m.count), t('saves.statCount')),
+      stat('clock', DK.util.duration(m.playTime), t('saves.statTime')),
+      stat('coin', m.coins.toLocaleString(DK.i18n.lang), t('hub.coins')),
+      stat('map', String(m.zones), t('saves.statZones')),
+      stat('crown', String(m.bosses), t('saves.statBosses'))) : null;
+    const flags = m.exists ? [
+      diff ? h('span', { class: 'chip' }, DK.icon(diff.icon, 12), t('difficulty.' + m.difficulty + '.name')) : null,
+      m.inExpedition ? h('span', { class: 'chip pos' }, DK.icon('flag', 12), t('saves.onExpedition')) : null,
+      m.fallen ? h('span', { class: 'chip neg' }, DK.icon('skull', 12), t('saves.fallen', { n: m.fallen })) : null,
+      m.gameOver ? h('span', { class: 'chip neg' }, DK.icon('skull', 12), t('over.title')) : null,
+    ].filter(Boolean) : [];
+
+    return h('div', { class: 'card save-slot ' + (m.exists ? 'full' : 'empty') + (last ? ' last' : '') },
+      h('div', { class: 'save-top' },
+        h('span', { class: 'save-num' }, t('saves.slotN', { n })),
+        last ? h('span', { class: 'save-last' }, DK.icon('check', 12), t('saves.lastPlayed')) : null),
       h('div', { class: 'save-head' },
-        h('span', { class: 'save-num' }, n),
-        m.exists ? (m.avatar ? V.avatar(m, { size: 60 }) : m.bestSpecies ? V.sprite(m.bestSpecies, { size: 60, cls: last ? 'float' : '' }) : h('div', { class: 'save-empty-icon' }, DK.icon('skull', 24))) : h('div', { class: 'save-empty-icon' }, DK.icon('plus', 24)),
-        h('div', { class: 'grow' },
+        m.exists ? h('div', { class: 'save-portrait' }, m.avatar ? V.avatar(m, { size: 64 }) : m.bestSpecies ? V.sprite(m.bestSpecies, { size: 64, cls: last ? 'float' : '' }) : DK.icon('skull', 26))
+          : h('div', { class: 'save-empty-icon' }, DK.icon('plus', 26)),
+        h('div', { class: 'save-title' },
           h('h3', null, m.exists ? m.name : t('saves.empty')),
-          m.exists ? h('div', { class: 'chips' },
-            h('span', { class: 'chip' }, DK.icon('star', 13), t('saves.best', { n: m.bestLevel })),
-            h('span', { class: 'chip' }, DK.icon('paw', 13), t('saves.count', { n: m.count })),
-            h('span', { class: 'chip' }, DK.icon('clock', 13), DK.util.duration(m.playTime)),
-            m.fallen ? h('span', { class: 'chip neg' }, DK.icon('skull', 13), t('saves.fallen', { n: m.fallen })) : null,
-            m.gameOver ? h('span', { class: 'chip neg' }, DK.icon('skull', 13), t('over.title')) : null) : null,
-          m.exists && m.updated ? h('p', { class: 'muted small' }, t('saves.updated', { date: new Date(m.updated).toLocaleString(DK.i18n.lang) })) : null)),
-      main,
-      h('div', { class: 'row gap-s wrap save-tools' }, tools));
+          h('p', { class: 'muted small' }, m.exists && m.updated ? t('saves.updated', { date: new Date(m.updated).toLocaleString(DK.i18n.lang, { dateStyle: 'short', timeStyle: 'short' }) }) : t('saves.emptyHint')))),
+      stats,
+      flags.length ? h('div', { class: 'chips save-flags' }, flags) : null,
+      h('div', { class: 'save-foot' }, main, h('div', { class: 'save-tools n' + tools.length }, tools)));
   }
 
   DK.screens.register('mainMenu', {

@@ -241,31 +241,55 @@
   };
 
   /**
-   * Tabla de atributos con barra por colores, flecha de naturaleza y desglose.
+   * Tabla de atributos compacta: cada fila es nombre + valor + marcas
+   * (naturaleza, ritmo de crecimiento, rasgo) y debajo la barra por colores.
+   * Pulsar una fila despliega su desglose en texto; «Ver todo el desglose»
+   * los abre todos. La leyenda de colores va plegada.
    * @param {Object} d
-   * @param {Object} [o] {stages (mejoras en combate), compare (otro daskai), legend (mostrar leyenda, por defecto sí)}
+   * @param {Object} [o] {stages (mejoras en combate), compare (otro daskai), legend (mostrar leyenda, por defecto sí), open (desglose abierto)}
    */
-  V.statTable = (d, { stages, compare, legend = true } = {}) => {
+  V.statTable = (d, { stages, compare, legend = true, open = false } = {}) => {
     const s = DK.daskai.stats(d);
     const other = compare ? DK.daskai.stats(compare) : null;
+    const row = (k, { val, bar, marks = [], extra = [], more }) => {
+      const el = h('details', { class: 'st2-row k-' + k }, h('summary', { class: 'st2-sum' },
+        h('span', { class: 'st2-name' }, DK.icon(D.stats[k].icon, 15), h('span', { tip: DK.t('tips.stat.' + k) }, DK.tr('stats', D.stats[k]))),
+        h('span', { class: 'st2-marks' }, marks),
+        h('span', { class: 'st2-val' }, val, extra),
+        bar,
+        h('span', { class: 'st2-chev', 'aria-hidden': 'true' }, DK.icon('chevronDown', 14))),
+        h('p', { class: 'st2-more stat-break small' }, more));
+      if (open) el.open = true;
+      return el;
+    };
     const rows = D.statKeys.map((k) => {
       const b = DK.daskai.breakdown(d, k);
       const stage = stages && stages[k];
       const diff = other ? s[k] - other[k] : 0;
-      return h('div', { class: 'stat-row' },
-        h('span', { class: 'stat-name' }, DK.icon(D.stats[k].icon, 16), h('span', { tip: DK.t('tips.stat.' + k) }, DK.tr('stats', D.stats[k])), V.natureArrow(d, k), V.growthBadge(d, k), b.trait ? h('span', { class: 'trait-mark ' + (b.trait > 0 ? 'up' : 'down'), tip: t('trait.statTip', { name: DK.tr('roles', DK.daskai.roleOf(d)), n: (b.trait > 0 ? '+' : '') + Math.round(b.trait * 100) }) }, DK.icon(DK.daskai.roleOf(d).icon, 12)) : null),
-        h('span', { class: 'stat-val' }, s[k],
-          stage ? h('span', { class: 'stage ' + (stage > 0 ? 'pos' : 'neg') }, (stage > 0 ? '▲' : '▼') + Math.abs(stage)) : null,
-          other && diff ? h('span', { class: 'stage ' + (diff > 0 ? 'pos' : 'neg') }, (diff > 0 ? '+' : '') + diff) : null),
-        V.statBar(b, k === 'hp' ? 400 : 260),
-        h('span', { class: 'stat-break muted small' }, V.breakdownText(b)));
+      return row(k, {
+        val: String(s[k]),
+        extra: [stage ? h('span', { class: 'stage ' + (stage > 0 ? 'pos' : 'neg') }, (stage > 0 ? '▲' : '▼') + Math.abs(stage)) : null,
+          other && diff ? h('span', { class: 'stage ' + (diff > 0 ? 'pos' : 'neg') }, (diff > 0 ? '+' : '') + diff) : null],
+        marks: [V.natureArrow(d, k), V.growthBadge(d, k), b.trait ? h('span', { class: 'trait-mark ' + (b.trait > 0 ? 'up' : 'down'), tip: t('trait.statTip', { name: DK.tr('roles', DK.daskai.roleOf(d)), n: (b.trait > 0 ? '+' : '') + Math.round(b.trait * 100) }) }, DK.icon(DK.daskai.roleOf(d).icon, 11)) : null],
+        bar: V.statBar(b, k === 'hp' ? 400 : 260),
+        more: V.breakdownText(b),
+      });
     });
-    rows.push(h('div', { class: 'stat-row' },
-      h('span', { class: 'stat-name', tip: DK.t('tips.stat.regen') }, DK.icon('regen', 16), DK.tr('stats', D.stats.regen)),
-      h('span', { class: 'stat-val' }, s.regen + '%'),
-      h('div', { class: 'stat-bar' }, h('div', { class: 'seg seg-level', style: { width: Math.min(100, s.regen * 15) + '%' } })),
-      h('span', { class: 'stat-break muted small' }, t('stats.regenPerTurn', { n: Math.max(1, Math.round((s.hp * s.regen) / 100)) }))));
-    return h('div', { class: 'stat-table' }, legend ? V.statLegend() : null, rows);
+    rows.push(row('regen', {
+      val: s.regen + '%',
+      bar: h('div', { class: 'stat-bar' }, h('div', { class: 'seg seg-level', style: { width: Math.min(100, s.regen * 15) + '%' } })),
+      more: t('stats.regenPerTurn', { n: Math.max(1, Math.round((s.hp * s.regen) / 100)) }),
+    }));
+    const all = h('button', { class: 'st2-all', type: 'button', onClick: (ev) => {
+      const box = ev.currentTarget.closest('.stat-table'); const list = [...box.querySelectorAll('.st2-row')];
+      const to = !list.every((x) => x.open); list.forEach((x) => (x.open = to));
+      ev.currentTarget.lastChild.textContent = to ? t('stats.hideAll') : t('stats.showAll');
+    } }, DK.icon('list', 13), h('span', null, open ? t('stats.hideAll') : t('stats.showAll')));
+    return h('div', { class: 'stat-table st2' },
+      h('div', { class: 'st2-head' },
+        legend ? h('details', { class: 'st2-legend' }, h('summary', null, DK.icon('info', 13), ' ', t('stats.legendTitle')), V.statLegend()) : h('span'),
+        all),
+      rows);
   };
 
   /** Decidir si aprender un ataque nuevo cuando ya tiene el máximo (config.maxMoves). Devuelve promesa (true si lo aprende). */

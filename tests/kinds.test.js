@@ -63,20 +63,29 @@ module.exports = {
       check(!r.next, 'la próxima expedición debería volver a sortearse');
     }),
   }, {
-    name: 'Runas en la preparación: se ponen y quitan con un toque (Batalla)',
+    name: 'Runas en la preparación: 4 huecos en una fila, se engastan desde el selector y se quitan con un toque',
+    views: ['desktop', 'mobile'],
     run: (browser, view) => play(browser, view, async (p) => {
-      await p.evaluate(() => { DK.store.state.nextExpedition = { zone: 'pradera', seed: 'r2', size: 'small', kind: 'normal', mod: null }; DK.runes.add('medium', 1); DK.store.state.camp.rumbo_captura = 2; DK.store.state.emblems = 0; DK.store.migrate(); DK.router.reset('zones'); });
+      await p.evaluate(() => { DK.store.state.nextExpedition = { zone: 'pradera', seed: 'r2', size: 'small', kind: 'normal', mod: null }; DK.runes.add('medium', 1); DK.runes.add('oro', 3); DK.runes.add('saber', 1); DK.store.state.camp.rumbo_captura = 2; DK.store.state.emblems = 0; DK.store.migrate(); DK.router.reset('zones'); });
       await sleep(400);
-      const n0 = await p.locator('.bt-rune').count();
-      await p.click('.bt-rune.r-medium'); await sleep(300);
-      const r1 = await p.evaluate(() => ({ on: !!document.querySelector('.bt-rune.r-medium.on'), size: DK.expedition.nextStart().size, emblems: DK.store.state.emblems, rumbo: DK.store.state.camp.rumbo_captura }));
-      await p.click('.bt-rune.r-medium'); await sleep(300);
-      const r2 = await p.evaluate(() => ({ on: !!document.querySelector('.bt-rune.r-medium.on'), size: DK.expedition.nextStart().size, disabled: document.querySelector('.bt-rune.r-xl').disabled }));
-      check(n0 === 6, 'deberían verse las 6 runas: ' + n0);
-      check(r1.on && r1.size === 'medium', 'la runa no se pone');
-      check(!r2.on && r2.size === 'small', 'la runa no se quita');
-      check(r2.disabled, 'una runa que no tienes debería estar desactivada');
+      const row = await p.evaluate(() => { const s = [...document.querySelectorAll('.rune-socket')].map((b) => b.getBoundingClientRect()); return { n: s.length, oneLine: s.every((r) => Math.abs(r.top - s[0].top) < 2), inside: s.every((r) => r.right <= innerWidth) }; });
+      check(row.n === 4 && row.oneLine && row.inside, 'deberían verse 4 huecos de runa en una sola línea: ' + JSON.stringify(row));
+      await p.click('.rune-socket.empty >> nth=0'); await sleep(300);
+      const picks = await p.locator('.rune-pick').count();
+      await p.click('.rune-pick:has-text("' + (await p.evaluate(() => DK.t('rune.medium.name'))) + '")'); await sleep(300);
+      const r1 = await p.evaluate(() => ({ full: document.querySelectorAll('.rune-socket.full').length, size: DK.expedition.nextStart().size, emblems: DK.store.state.emblems, rumbo: DK.store.state.camp.rumbo_captura, modal: !!document.querySelector('.rune-modal') }));
+      check(picks === 8, 'el selector debería enseñar las 8 runas: ' + picks);
+      check(r1.full === 1 && r1.size === 'medium' && !r1.modal, 'la runa no se engasta: ' + JSON.stringify(r1));
       check(r1.emblems === 5 && r1.rumbo === undefined, 'el Rumbo antiguo debería devolver sus emblemas: ' + r1.emblems);
+      // Bonificaciones repetibles hasta llenar los 4 huecos
+      const r2 = await p.evaluate(() => { const a = DK.runes.socket('oro'), b = DK.runes.socket('oro'), c = DK.runes.socket('saber'), d = DK.runes.socket('oro'); return { a, b, c, d, slots: DK.runes.slots() }; });
+      check(r2.a && r2.b && r2.c && !r2.d && r2.slots.length === 4, 'las runas de bonificación deberían repetirse hasta llenar los huecos: ' + JSON.stringify(r2));
+      await p.evaluate(() => DK.router.refresh()); await sleep(300);
+      await p.click('.rune-socket.full >> nth=0'); await sleep(300);
+      const r3 = await p.evaluate(() => ({ full: document.querySelectorAll('.rune-socket.full').length, size: DK.expedition.nextStart().size }));
+      check(r3.full === 3 && r3.size === 'small', 'quitar la runa debería vaciar el hueco y volver al tamaño al azar: ' + JSON.stringify(r3));
+      const r4 = await p.evaluate(() => { DK.expedition.start({}); return { coins: DK.runes.bonus('coins'), exp: DK.runes.bonus('exp'), oro: DK.runes.count('oro') }; });
+      check(Math.abs(r4.coins - 0.5) < 1e-9 && Math.abs(r4.exp - 0.25) < 1e-9 && r4.oro === 1, 'las bonificaciones no se aplican o no se gastan: ' + JSON.stringify(r4));
     }),
   }, {
     name: 'Campamento: ciclo de día y noche oscuro (cielo, sol o luna y estrellas según la hora)',
