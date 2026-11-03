@@ -509,7 +509,8 @@
 
     function showBag() {
       const a = B().ally(st);
-      const items = DK.bag.list('batalla');
+      // (sin vínculo en combate, los cristales no salen en la bolsa del combate)
+      const items = DK.bag.list('batalla').filter(({ item }) => !(item.use && item.use.capture && !DK.config.captureEnabled));
       const keys = { Escape: showMain, Backspace: showMain, b: showMain };
       actionsEl.replaceChildren(h('div', { class: 'sub-panel' },
         h('div', { class: 'sub-head' }, backBtn(), h('span', { class: 'muted small' }, t('battle.itemTurn'))),
@@ -689,13 +690,14 @@
       if (r.captured) log(t('battle.joined', { name: DK.daskai.name(st.enemy), team: DK.party.isActive(st.enemy.uid) ? t('battle.joinedTeam') : '' }), 'good', 'reward');
       if (r.temp) log(t('exp.tempNote', { name: DK.daskai.name(st.enemy) }), 'warn', 'reward');
       for (const id of r.drops) { await wait(200); log((r.toLoot && !(r.toBag || []).includes(id) ? t('battle.lootItem') : t('battle.gotItem')) + ' ' + D.items[id].name, 'drop', 'reward'); }
+      for (const id of r.runes || []) { await wait(200); log(t('rune.got', { name: t('rune.' + id + '.name') }) + ' · ' + t('rune.' + id + '.effect'), 'level', 'reward'); DK.ui.toast(t('rune.got', { name: t('rune.' + id + '.name') }), { icon: 'rune', kind: 'good' }); }
       (r.shared || []).forEach((x) => {
         log(t('battle.sharedExp', { name: x.name, n: x.exp }), 'muted', 'reward');
         if (x.to > x.from) { log(t('battle.levelUp', { name: x.name, n: x.to }), 'level', 'reward'); DK.ui.toast(t('battle.levelUp', { name: x.name, n: x.to }), { icon: 'star', kind: 'good' }); }
       });
       if (r.winHeal) { log(t('relics.winHealLog', { n: Math.round(r.winHeal * 100) }), 'good', 'reward'); const s2 = DK.daskai.stats(a); ui.aHp.update(a.cur.hp, s2.hp); }
       if (st.elite && st.expedition && DK.expedition.active() && DK.expedition.active().relicChoice) log(t('relics.eliteLog'), 'level', 'reward');
-      if (!r.captured && !r.drops.length) log(t('battle.noDrop'), 'muted', 'reward');
+      if (!r.captured && !r.drops.length && !(r.runes || []).length) log(t('battle.noDrop'), 'muted', 'reward');
       if (r.freeUnlocked) { log(t('battle.freeUnlocked', { zone: zone.name }), 'level', 'reward'); DK.ui.toast(t('battle.freeUnlocked', { zone: zone.name }), { icon: 'swords', kind: 'good' }); }
       if (r.emblems) { log(t('battle.emblemLog', { n: r.emblems }), 'level', 'reward'); DK.ui.toast(t('battle.emblemLog', { n: r.emblems }), { icon: 'emblem', kind: 'good' }); }
       if (r.secretUnlocked) { log(t('battle.secretUnlocked', { title: st.bossInfo.title, zone: zone.name }), 'level', 'reward'); DK.ui.toast(t('battle.secretUnlocked', { title: st.bossInfo.title, zone: zone.name }), { icon: 'cave', kind: 'good' }); }
@@ -729,6 +731,7 @@
       banner.replaceChildren(h('div', { class: 'banner-card ' + outcome }, DK.icon(ic, 34), h('h2', null, title), h('p', null, sub),
         r ? h('div', { class: 'chips' }, h('span', { class: 'chip pos' }, DK.icon('star', 13), `+${r.exp} ${t('common.expShort')}`), h('span', { class: 'chip pos' }, DK.icon('coin', 13), `+${r.coins}`),
           r.drops.map((id) => h('span', { class: 'chip pos' }, DK.icon(D.items[id].icon, 13), D.items[id].name)),
+          (r.runes || []).map((id) => h('span', { class: 'chip pos rune-chip', tip: t('rune.' + id + '.effect') }, DK.icon('rune', 13), t('rune.' + id + '.name'))),
           r.relicOffer ? h('span', { class: 'chip pos' }, DK.icon('amulet', 13), t('relics.toChoose')) : null,
           r.emblems ? h('span', { class: 'chip pos emblem-chip' }, DK.icon('emblem', 13), t('emblem.plus', { n: r.emblems })) : null) : null,
         choice ? h('div', { class: 'exp-summary' }, h('b', null, DK.icon('crown', 14), ' ', t('exp.mapCleared', { n: choice.depth })),

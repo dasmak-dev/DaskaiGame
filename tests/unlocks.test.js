@@ -38,13 +38,13 @@ module.exports = {
       check((await overflowX(p)) <= 1, 'el menú se sale por la derecha');
     }),
   }, {
-    name: 'En la expedición el equipo ocupa siempre 5 huecos del mismo tamaño',
+    name: 'En la expedición el equipo ocupa siempre 6 huecos del mismo tamaño',
     views: ['desktop', 'mobile'],
     run: (browser, view) => play(browser, view, async (p) => {
       await p.evaluate(() => { DK.expedition.start({}); DK.router.reset('expedition'); });
       await sleep(1200);
       const r = await p.evaluate(() => ({ slots: [...document.querySelectorAll('.tb-slot')].map((e) => Math.round(e.getBoundingClientRect().width)), cards: document.querySelectorAll('.tb-card').length }));
-      check(r.slots.length === 5 && r.cards === 1, 'deberían ser 5 huecos con 1 daskai: ' + JSON.stringify(r));
+      check(r.slots.length === 6 && r.cards === 1, 'deberían ser 6 huecos con 1 daskai: ' + JSON.stringify(r));
       check(Math.max(...r.slots) - Math.min(...r.slots) <= 2, 'los huecos no miden lo mismo: ' + JSON.stringify(r.slots));
       check((await overflowX(p)) <= 1, 'la barra del equipo se sale por la derecha');
     }),

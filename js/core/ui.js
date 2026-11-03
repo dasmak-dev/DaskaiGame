@@ -8,6 +8,19 @@
  *   modal({title, content, actions})           → ventana emergente
  * ============================================================= */
 (function () {
+  /*
+   * replaceChildren / append / prepend nativos convierten null en el texto «null».
+   * Aquí se ignoran null, undefined y false, igual que hace DK.ui.h con sus hijos
+   * (así un trozo opcional como `cond ? el : null` nunca se ve escrito en pantalla).
+   */
+  ['replaceChildren', 'append', 'prepend'].forEach((m) => {
+    const orig = Element.prototype[m];
+    if (!orig || orig.__dkSafe) return;
+    const safe = function (...nodes) { return orig.apply(this, nodes.flat(Infinity).filter((n) => n != null && n !== false)); };
+    safe.__dkSafe = true;
+    Element.prototype[m] = safe;
+  });
+
   const { t } = DK;
 
   /**

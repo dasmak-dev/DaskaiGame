@@ -180,3 +180,131 @@ body.in-exp { background: #0b0807 !important; }
 .tr-step-cost { margin-top: auto; display: inline-flex; align-items: center; color: var(--gold); font-weight: 700; }
 .tr-step .badge { margin-top: auto; align-self: flex-start; }
 @media (max-width: 760px) { .tr-up-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); } .tr-grid { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); } }
+
+/* ---------- 11. Cofre y hoguera de la expedición ---------- */
+.chest-panel, .rest-panel { max-width: 900px; margin: 0 auto; width: 100%; }
+.chest-big { position: relative; align-self: center; display: grid; place-items: center; width: 130px; height: 120px; border-radius: 18px; border: 3px solid #5a4320; color: #e7c27a; background: radial-gradient(circle at 50% 40%, #3a2a14, #120c08); box-shadow: inset 0 0 0 2px rgba(0, 0, 0, .5), 0 6px 0 rgba(0, 0, 0, .5); cursor: pointer; }
+.chest-big.closed { animation: chestWiggle 2.2s ease-in-out infinite; }
+.chest-big.closed:hover { transform: scale(1.05); }
+.chest-big.open { width: 100px; height: 86px; cursor: default; }
+.chest-glow { position: absolute; inset: -20px; border-radius: 50%; background: radial-gradient(circle, rgba(250, 204, 21, .28), transparent 65%); pointer-events: none; z-index: -1; }
+.chest-big.open .chest-glow { animation: chestBurst 1.2s ease-out both; }
+@keyframes chestWiggle { 0%, 80%, 100% { transform: rotate(0); } 84% { transform: rotate(-5deg); } 88% { transform: rotate(5deg); } 92% { transform: rotate(-3deg); } }
+@keyframes chestBurst { from { transform: scale(.3); opacity: 0; } 40% { opacity: 1; } to { transform: scale(1.4); opacity: .6; } }
+.loot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.loot-card { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 5px; padding: 14px 10px 10px; border-radius: 14px; border: 2px solid color-mix(in srgb, var(--r-comun) 45%, var(--border)); background: linear-gradient(180deg, color-mix(in srgb, var(--r-comun) 10%, var(--surface-2)), var(--surface-2)); animation: lootIn .45s var(--ease) both; }
+.loot-card.r-raro { border-color: color-mix(in srgb, var(--r-raro) 55%, var(--border)); background: linear-gradient(180deg, color-mix(in srgb, var(--r-raro) 16%, var(--surface-2)), var(--surface-2)); }
+.loot-card.r-epico { border-color: color-mix(in srgb, var(--r-epico) 60%, var(--border)); background: linear-gradient(180deg, color-mix(in srgb, var(--r-epico) 18%, var(--surface-2)), var(--surface-2)); box-shadow: 0 0 18px rgba(168, 85, 247, .25); }
+.loot-card.r-legendario { border-color: var(--r-legendario); box-shadow: 0 0 22px rgba(245, 158, 11, .35); }
+.loot-card.coins { border-color: #a16207; background: linear-gradient(180deg, #3a2a10, #1a1208); color: #fde68a; }
+.loot-card.coins b { font-size: 1.4rem; font-family: var(--font-title); }
+.loot-card.relic, .loot-card.recipe { border-color: var(--gold); }
+.loot-card > b { font-size: .95rem; }
+.loot-card > small { line-height: 1.25; }
+.loot-icon { position: relative; display: grid; place-items: center; width: 60px; height: 60px; border-radius: 50%; background: radial-gradient(circle, rgba(255, 255, 255, .08), transparent 70%); color: var(--gold); }
+.loot-n { position: absolute; bottom: -4px; right: -8px; padding: 1px 6px; border-radius: 999px; background: #b45309; color: #fff; font-weight: 800; font-size: .75rem; border: 2px solid var(--surface); }
+.loot-dest { display: inline-flex; align-items: center; gap: 3px; margin-top: auto; padding: 2px 8px; border-radius: 999px; font-size: .68rem; font-weight: 800; font-family: var(--font-pixel); }
+.loot-dest.bag { background: rgba(34, 197, 94, .18); color: #86efac; }
+.loot-dest.loot { background: rgba(234, 179, 8, .18); color: #fde68a; }
+.loot-dest.relic { background: rgba(168, 85, 247, .2); color: #e9d5ff; }
+@keyframes lootIn { from { opacity: 0; transform: translateY(14px) scale(.9); } to { opacity: 1; transform: none; } }
+:root[data-motion="reduced"] .loot-card, :root[data-motion="reduced"] .chest-big { animation: none; }
+.chest-legend { text-align: center; }
+/* Hoguera */
+.rest-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.rest-opt { display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 14px; border: 1px solid var(--border); background: var(--surface-2); }
+.rest-opt > b { font-family: var(--font-title); font-size: 1.15rem; color: var(--gold); }
+.rest-opt > p { margin: 0; }
+.rest-opt > .btn { margin-top: auto; justify-content: center; }
+.rest-opt-icon { width: 52px; height: 52px; display: grid; place-items: center; border-radius: 14px; color: #fff; border: 2px solid rgba(0, 0, 0, .45); }
+.rest-opt-icon.heal { background: radial-gradient(circle at 35% 30%, #4ade80, #14532d); }
+.rest-opt-icon.train { background: radial-gradient(circle at 35% 30%, #fbbf24, #92400e); }
+.rest-team { display: flex; gap: 6px; flex-wrap: wrap; }
+.rest-mini { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 44px; }
+.rest-hp { display: block; width: 100%; height: 5px; border-radius: 3px; background: rgba(0, 0, 0, .45); overflow: hidden; }
+.rest-hp i { display: block; height: 100%; background: var(--hp); }
+.rest-picks { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; }
+.rest-pick { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px 6px; border-radius: 12px; border: 2px solid var(--border); background: var(--surface-3); color: var(--text); font: inherit; cursor: pointer; }
+.rest-pick b { font-size: .8rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rest-pick small { font-size: .7rem; color: var(--muted); font-family: var(--font-pixel); font-weight: 700; }
+.rest-pick.on { border-color: var(--gold); background: linear-gradient(180deg, #3a2a14, var(--surface-3)); box-shadow: 0 0 0 2px rgba(231, 194, 122, .2); }
+.rest-up { color: #86efac; }
+.rest-pick:disabled { opacity: .45; cursor: not-allowed; }
+@media (max-width: 700px) { .rest-options { grid-template-columns: minmax(0, 1fr); } .loot-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* Elegir caja (V.moveToBox) */
+.box-pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+.box-pick-btn { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; padding: 10px; border-radius: 12px; border: 2px solid color-mix(in srgb, var(--b1, #888) 45%, var(--border)); background: linear-gradient(135deg, color-mix(in srgb, var(--b1, #888) 22%, var(--surface-2)), var(--surface-2)); color: var(--text); font: inherit; cursor: pointer; text-align: left; }
+.box-pick-btn:hover:not(:disabled) { border-color: var(--gold); }
+.box-pick-btn:disabled { opacity: .5; cursor: not-allowed; }
+.box-pick-btn.cur { border-style: dashed; }
+.box-pick-btn small { color: var(--muted); }
+.box-pick-sw { width: 100%; height: 6px; border-radius: 3px; background: linear-gradient(90deg, var(--b1, #888), var(--b2, #444)); }
+.box-pick-btn.add { align-items: center; justify-content: center; border-style: dashed; color: var(--gold); }
+.pc-tab.drop-zone.drop-over, .pc-tab.drag-over { outline: 2px solid var(--gold); outline-offset: 2px; transform: scale(1.12); }
+
+/* ---------- 10. Tema claro: textos legibles y sin destellos oscuros ---------- */
+/* El fondo de la expedición no se pone negro en claro (antes parpadeaba al cambiar de pantalla) */
+:root[data-theme="light"] body.in-exp { background: #e9dfcb !important; }
+:root[data-theme="light"] #zone-backdrop { transition: none; }
+:root[data-theme="light"] .size-chip.s-small { color: #15803d; }
+:root[data-theme="light"] .size-chip.s-medium { color: #a16207; }
+:root[data-theme="light"] .size-chip.s-xl { color: #b91c1c; }
+:root[data-theme="light"] .mod-chip.m-niebla { color: #475569; } :root[data-theme="light"] .mod-chip.m-tormenta { color: #1d4ed8; }
+:root[data-theme="light"] .mod-chip.m-lunallena { color: #6d28d9; } :root[data-theme="light"] .mod-chip.m-calor { color: #c2410c; }
+:root[data-theme="light"] .mod-chip.m-bonanza { color: #a16207; }
+:root[data-theme="light"] :is(.emblems, .camp-cost, .cr-goal.on, .badge.train, .tr-tag.over) { color: #854d0e; }
+:root[data-theme="light"] .coins { color: #92400e; }
+:root[data-theme="light"] .badge.house, :root[data-theme="light"] .badge.status { color: color-mix(in srgb, var(--c) 45%, #1c1008); }
+:root[data-theme="light"] .badge.rarity { color: color-mix(in srgb, var(--rc) 55%, #1c1008); }
+:root[data-theme="light"] .inv-tab.on { color: var(--primary); }
+:root[data-theme="light"] .inv-tab.on b { color: #fff; }
+:root[data-theme="light"] .pc-plate b, :root[data-theme="light"] .pc-plate small { text-shadow: 0 1px 0 rgba(0, 0, 0, .55), 0 0 6px rgba(0, 0, 0, .35); }
+:root[data-theme="light"] .pc-tab.on { color: #1c1008; border-color: #a16207; }
+:root[data-theme="light"] .order-tag.ally { color: #15803d; }
+:root[data-theme="light"] .rest-up { color: #15803d; }
+:root[data-theme="light"] .rest-pick.on { background: linear-gradient(180deg, #f6e2b3, var(--surface-3)); border-color: #a16207; }
+:root[data-theme="light"] .rest-opt > b, :root[data-theme="light"] .section-head h3, :root[data-theme="light"] .stack > h3, :root[data-theme="light"] h3.sec { color: #7c4a0a; }
+:root[data-theme="light"] .loot-card.coins { background: linear-gradient(180deg, #fbe7b0, #f3d68a); color: #78350f; }
+:root[data-theme="light"] .loot-dest.loot { color: #854d0e; }
+:root[data-theme="light"] .mr-purse { background: linear-gradient(180deg, #f6e8c6, #ecd8a8); border-color: #c9a45a; color: #78350f; }
+:root[data-theme="light"] .chest-big { background: radial-gradient(circle at 50% 40%, #fbe7b0, #e0c07a); color: #78350f; }
+:root[data-theme="light"] .camp-scene.grim .camp-greet-text { color: #fde8c8; }
+:root[data-theme="light"] :is(input.input, select, textarea) { border-color: #cdb68c; }
+:root[data-theme="light"] :is(.party-mon, .hud-dark, .tb-card) .badge.house { color: color-mix(in srgb, var(--c) 55%, #fff); }
+
+/* ---------- 11. Runas de expedición (zones.js prepCard → .bt-runes) ---------- */
+.bt-runes { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: 14px; border: 1px solid color-mix(in srgb, #7c3aed 35%, var(--border)); background: linear-gradient(180deg, color-mix(in srgb, #7c3aed 8%, var(--surface-2)), var(--surface-2)); }
+.bt-runes .bt-label { display: inline-flex; align-items: center; gap: 4px; color: color-mix(in srgb, #a78bfa 70%, var(--text)); }
+.bt-rune-row { display: grid; grid-template-columns: 64px repeat(3, minmax(0, 1fr)); gap: 6px; align-items: stretch; }
+.bt-rune-group { align-self: center; font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.bt-rune { --rc: #8b5cf6; display: flex; align-items: center; gap: 8px; min-width: 0; padding: 6px 8px; border-radius: 10px; border: 2px solid color-mix(in srgb, var(--rc) 35%, var(--border)); background: var(--surface); color: var(--text); font: inherit; text-align: left; cursor: pointer; transition: border-color .15s, transform .12s; }
+.bt-rune.g-size { --rc: #0ea5e9; }
+.bt-rune.r-captura { --rc: #22c55e; } .bt-rune.r-combate { --rc: #ef4444; } .bt-rune.r-desafio { --rc: #a855f7; }
+.bt-rune:hover:not(:disabled) { border-color: var(--rc); transform: translateY(-1px); }
+.bt-rune:disabled { opacity: .42; cursor: not-allowed; }
+.bt-rune.on { border-color: var(--rc); background: linear-gradient(180deg, color-mix(in srgb, var(--rc) 22%, var(--surface)), var(--surface)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--rc) 30%, transparent), 0 0 14px color-mix(in srgb, var(--rc) 35%, transparent); }
+.bt-rune-stone { flex: none; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px 8px 12px 12px; color: #fff; background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--rc) 75%, #fff), color-mix(in srgb, var(--rc) 55%, #000)); border: 1px solid rgba(0, 0, 0, .45); box-shadow: inset 0 -2px 0 rgba(0, 0, 0, .3); }
+.bt-rune-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.15; }
+.bt-rune-text b { font-size: .78rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bt-rune-text small { font-size: .7rem; color: var(--muted); font-weight: 700; }
+.bt-rune.on .bt-rune-text small { color: color-mix(in srgb, var(--rc) 70%, var(--text)); }
+.bt-rune-tag { display: inline-flex; align-items: center; gap: 3px; margin-left: 8px; padding: 1px 7px; border-radius: 999px; font-size: .66rem; color: #fff; background: #7c3aed; text-transform: none; letter-spacing: 0; }
+.bt-runes .muted.small { margin: 0; }
+@media (max-width: 600px) { .bt-rune-row { grid-template-columns: repeat(3, minmax(0, 1fr)); } .bt-rune-group { grid-column: 1 / -1; } .bt-rune { flex-direction: column; text-align: center; gap: 4px; padding: 6px 4px; } .bt-rune-text b { white-space: normal; font-size: .72rem; } }
+/* Runa en el cofre y en el resumen del combate */
+.loot-card.rune { border-color: #7c3aed; background: linear-gradient(180deg, color-mix(in srgb, #7c3aed 22%, var(--surface-2)), var(--surface-2)); }
+.loot-card.rune .loot-icon { color: #c4b5fd; }
+.loot-dest.rune { background: rgba(124, 58, 237, .2); color: #c4b5fd; }
+:root[data-theme="light"] .loot-card.rune .loot-icon, :root[data-theme="light"] .loot-dest.rune { color: #6d28d9; }
+:root[data-theme="light"] .bt-runes .bt-label { color: #6d28d9; }
+.chip.rune-chip { border-color: color-mix(in srgb, #7c3aed 55%, var(--border)); }
+.chip.rune-chip .icon { color: #a78bfa; }
+/* Mercader: «seguir» también arriba */
+.mr-top { display: flex; align-items: flex-start; gap: 10px; }
+.mr-top > .exp-node-head { flex: 1; min-width: 0; }
+.mr-top > .btn { flex: none; }
+@media (max-width: 600px) { .mr-top { flex-direction: column; align-items: stretch; } }
+/* Hoguera: el «→ nivel» sólo en el elegido (sin repintar al elegir) */
+.rest-pick:not(.on) .rest-up { display: none; }
+:root[data-theme="light"] .loot-dest.bag { color: #15803d; background: rgba(34, 197, 94, .16); }
+:root[data-theme="light"] .loot-dest.relic { color: #6b21a8; }

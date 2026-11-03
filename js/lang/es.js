@@ -291,6 +291,8 @@ DK.i18n.register('es', {
     jefe_furioso: { name: 'Jefe furioso', desc: 'El jefe tiene una fase de furia más.' },
   },
   exp: {
+    chestOpened: 'Esto es lo que había dentro:', destBag: 'Mochila', destLoot: 'Botín', destRelic: 'Reliquia', destBagHelp: 'ya puedes usarlo', destLootHelp: 'te lo llevas al volver a casa', recipeShort: 'Ya puedes fabricarlo en el yunque.', 
+    trainDescLevel: 'Elige a un daskai: sube 1 nivel ahora mismo.', trainBtn: 'Entrenar a {name} (Nv. {n})', trainedLevel: '{name} entrena junto al fuego y sube al nivel {n}.', 
     campExit: 'Volver a casa', campExitDesc: 'Te llevas el {pct}% del botín ({coins} monedas) y todos tus reclutas', campExitQ: '¿Volver a casa desde la hoguera?',
     campExitText: 'Te llevas el {pct}% del botín: unas {coins} monedas y {items} objetos. La otra mitad se pierde.', campExitRecruits: 'Estos daskai se quedan contigo para siempre: {names}.',
     campExitKeeps: 'Se quedan contigo: {names}', campExited: 'Vuelves a casa con {coins} monedas.',
@@ -359,6 +361,7 @@ DK.i18n.register('es', {
   },
 
   battle: {
+    captureOff: 'Por ahora no se puede vincular en combate: recluta daskai en los nodos de reclutas de las expediciones.', 
     curtainEliteTitle: '¡Mini jefe!', curtainBoss: '¡Jefe! {name} · Nv. {n}', curtainSecret: '¡Jefe oculto! {name} · Nv. {n}', curtainElite: 'Mini jefe · Nv. {n}',
     autoHealed: 'Automático: {name} está en zona crítica, usa {item}.',
     dmgStab: 'Misma casa', dmgBroken: 'Ruptura',
@@ -705,15 +708,30 @@ DK.i18n.register('es', {
     title: 'Emblemas', plus: 'Emblemas +{n}', have: 'Tienes {n} emblemas', thisRun: '{n} en esta expedición',
     help: 'Cada jefe derrotado da 1 emblema (también los ocultos de las cuevas). Se gastan en las Mejoras permanentes al terminar la expedición.',
   },
+  /* Runas de expedición (systems/runes.js) */
+  rune: {
+    title: 'Runas de expedición', short: 'Runas', size: 'Tamaño', kind: 'Tipo', random: 'Al azar',
+    help: 'Caen en cofres, élites y jefes. Pon una de tamaño y/o una de tipo para fijar la próxima expedición; se gastan al partir. Sin runas, todo sale al azar.',
+    none: 'Aún no tienes runas: caen en cofres, élites y jefes de las expediciones.',
+    have: 'Tienes {n}', on: 'Puesta: se gastará al partir', tapOn: 'Pulsa para usarla', tapOff: 'Pulsa para quitarla', locked: 'Derrota a algún jefe para poder usarla',
+    got: 'Runa conseguida: {name}', dest: 'Runas', destHelp: 'se guardan para siempre', used: 'Runas usadas: {list}',
+    small: { name: 'Runa del sendero', effect: 'Mapa pequeño' },
+    medium: { name: 'Runa del camino', effect: 'Mapa mediano' },
+    xl: { name: 'Runa de la travesía', effect: 'Mapa XL' },
+    captura: { name: 'Runa de captura', effect: 'Captura' },
+    combate: { name: 'Runa de batalla', effect: 'Batalla' },
+    desafio: { name: 'Runa de jefes', effect: 'Jefes (desafío)' },
+  },
+
   kind: {
-    rolled: 'Esta expedición', chances: 'Probabilidad de cada tipo', chancesHint: 'El tipo sale al azar. Puedes hacer más probable uno con emblemas en Mejoras → Rumbos.',
+    rolled: 'Esta expedición', chances: 'Probabilidad de cada tipo', chancesHint: 'El tipo sale al azar. Con una runa de tipo puedes elegirlo tú.', byRune: 'Fijado con runa',
     title: 'Tipo de expedición', label: 'Expedición: {name}', locked: 'Derrota a algún jefe para desbloquearla',
     normal: { name: 'Normal', desc: 'De todo un poco: combates, sucesos, cofres, reclutas y tiendas.' },
-    captura: { name: 'Captura', desc: 'Corta y llena de daskai salvajes: muchos reclutas, más candidatos y más fácil vincular. Menos monedas.' },
+    captura: { name: 'Captura', desc: 'Corta y llena de daskai salvajes: muchos reclutas, más candidatos y más variocolores. Menos monedas.' },
     combate: { name: 'Combate', desc: 'Casi todo son peleas y mini jefes. Más monedas y experiencia.' },
     tesoro: { name: 'Tesoro', desc: 'Cofres, tiendas, sucesos y cuevas. Pocas peleas, pero los rivales son algo más fuertes.' },
     desafio: { name: 'Desafío', desc: 'Corta y dura: mini jefes por todas partes, rivales +3 niveles y +1 emblema por jefe.' },
-    fx: { capture: '+{n}% vínculo', recruit: '+{n} candidato', coins: '{n}% monedas', exp: '+{n}% exp.', levels: 'Rivales +{n} Nv.', emblems: '+{n} emblema por jefe', short: 'Corta' },
+    fx: { shiny: '+{n}% variocolor', capture: '+{n}% vínculo', recruit: '+{n} candidato', coins: '{n}% monedas', exp: '+{n}% exp.', levels: 'Rivales +{n} Nv.', emblems: '+{n} emblema por jefe', short: 'Corta' },
   },
   size: {
     label: '{name} · {n} pisos',
@@ -771,11 +789,12 @@ DK.i18n.register('es', {
     greet: { day: 'Un cielo rojo cubre el campamento', dawn: 'El alba no logra vencer a la bruma', dusk: 'La oscuridad acecha más allá del fuego', night: 'La hoguera mantiene a raya la noche' },
   },
   box: {
+    moveTo: 'Mover a otra caja…', storeIn: 'Guardar en una caja…', moveTitle: 'Mover a {name} a…', moved: '{name} va a {box}', here: 'Está aquí', full: 'Llena', newBox: 'Caja nueva', 
     dragHintExp: 'Arrastra entre tu equipo y quienes van contigo (en el móvil, mantén pulsado).', 
     withYou: 'Contigo en la expedición', withYouN: '{n} daskai', withYouEmpty: 'Todos los que salieron contigo están en el equipo.', locked: 'Las cajas se quedan en el campamento: durante la expedición sólo puedes cambiar el equipo con quien va contigo y con tus reclutas.', 
     name: 'Caja {n}', count: '{n}/{max}', prev: 'Caja anterior', next: 'Caja siguiente', rename: 'Cambiar nombre', renameTitle: 'Nombre de la caja',
     bg: 'Cambiar fondo', bgTitle: 'Fondo de la caja', add: 'Nueva caja', sort: 'Ordenar caja', matches: '{n} coinciden', atHome: 'se quedó en casa',
-    dragHint: 'Arrastra entre la caja y el equipo (en el móvil, mantén pulsado). Pulsa uno para ver su ficha.',
+    dragHint: 'Arrastra entre la caja y el equipo, o suéltalo sobre el número de otra caja para moverlo allí (en el móvil, mantén pulsado). Clic derecho: «Mover a otra caja».',
     sortBy: { level: 'Por nivel', house: 'Por casa', species: 'Por especie', name: 'Por nombre' },
     bgName: { noche: 'Noche estrellada', nieve: 'Nieve', arena: 'Desierto', cristal: 'Cristal', lava: 'Lava' },
   },
@@ -859,12 +878,8 @@ campfire: 'Volviste a casa desde una hoguera: te llevas la mitad del botín y to
     buy: 'Mejorar · {n}', bought: '¡Mejora conseguida: {name}!', noMoney: 'No tienes monedas suficientes', missing: 'Te faltan {n} emblemas', closeMenu: 'Hecho', saveHint: 'Si no te alcanza, guarda los emblemas: podrás gastarlos al terminar la próxima expedición.', noEmblems: 'No tienes emblemas suficientes', buyAtEnd: 'Se compra al terminar una expedición', howTo: 'Derrota jefes para ganar emblemas y cámbialos por mejoras en el resumen de cada expedición.',
     now: 'Ahora:', nextLevel: 'Siguiente nivel:', firstLevel: 'Al comprarla:', maxed: 'Al máximo', levelTip: 'Nivel actual / máximo',
     spent: '{n} monedas invertidas', levels: '{n} de {total} niveles',
-    group: { combat: 'Combate', progress: 'Progreso', expedition: 'Expedición', rumbos: 'Rumbos (tipo de expedición)' },
+    group: { combat: 'Combate', progress: 'Progreso', expedition: 'Expedición' },
     up: {
-      rumbo_captura: { name: 'Rumbo de captura', desc: 'Más probable que la expedición sea de captura.', effect: '+{n}%', lv1: '+75% de probabilidad', lv2: '+150% de probabilidad', lv3: '+250% de probabilidad' },
-      rumbo_combate: { name: 'Rumbo de combate', desc: 'Más probable que la expedición sea de combate.', effect: '+{n}%', lv1: '+75% de probabilidad', lv2: '+150% de probabilidad', lv3: '+250% de probabilidad' },
-      rumbo_tesoro: { name: 'Rumbo del tesoro', desc: 'Más probable que la expedición sea de tesoro.', effect: '+{n}%', lv1: '+75% de probabilidad', lv2: '+150% de probabilidad', lv3: '+250% de probabilidad' },
-      rumbo_desafio: { name: 'Rumbo del desafío', desc: 'Más probable que la expedición sea un desafío (cuando esté desbloqueado).', effect: '+{n}%', lv1: '+75% de probabilidad', lv2: '+150% de probabilidad', lv3: '+250% de probabilidad' },
       instructor: { name: 'Instructor', desc: 'Mejora el campo de entrenamiento: más huecos, más ritmo y más tope de nivel.', effect: 'nivel {n}', lv1: '+1 hueco · +25% ritmo · +2 niveles de tope', lv2: '+1 hueco · +50% ritmo · +4 niveles de tope', lv3: '+2 huecos · +100% ritmo · +6 niveles de tope' },
       vigor: { name: 'Vigor', desc: 'Tus daskai tienen más vida máxima durante las expediciones.', effect: '+{n}% de vida' },
       fuerza: { name: 'Entrenamiento de fuerza', desc: 'Tus daskai hacen más daño con todos sus ataques.', effect: '+{n}% de daño' },

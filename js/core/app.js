@@ -109,10 +109,10 @@
       if (!st || !lastEntry || !this.navVisible(lastEntry.def)) { resEl.replaceChildren(); return; }
       const exp = DK.expedition.active();
       const pill = (icon, v, tip, cls) => h('span', { class: 'hud-pill ' + cls, tip }, DK.icon(icon, 16), h('b', null, Number(v).toLocaleString(DK.i18n.lang)));
+      // En expedición sólo se ve el botín (con lo que se paga en el mercader), no el monedero de casa
       resEl.replaceChildren(...[
-        pill('coin', DK.wallet.get(), DK.t('hub.coins'), 'coins'),
+        exp ? pill('gift', exp.loot.coins, DK.t('exp.lootCoinsTip'), 'coins loot') : pill('coin', DK.wallet.get(), DK.t('hub.coins'), 'coins'),
         pill('emblem', DK.camp.emblems(), DK.t('emblem.title'), 'emblems'),
-        exp ? pill('gift', exp.loot.coins, DK.t('exp.lootCoinsTip'), 'loot') : null,
       ].filter(Boolean));
     },
 

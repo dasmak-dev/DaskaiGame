@@ -290,6 +290,8 @@ DK.i18n.register('en', {
     jefe_furioso: { name: 'Furious boss', desc: 'The boss has one more rage phase.' },
   },
   exp: {
+    chestOpened: 'This is what was inside:', destBag: 'Backpack', destLoot: 'Loot', destRelic: 'Relic', destBagHelp: 'usable right away', destLootHelp: 'you take it home when you return', recipeShort: 'You can now craft it at the anvil.', 
+    trainDescLevel: 'Choose a daskai: it gains 1 level right now.', trainBtn: 'Train {name} (Lv. {n})', trainedLevel: '{name} trains by the fire and reaches level {n}.', 
     campExit: 'Go home', campExitDesc: 'Keep {pct}% of the loot ({coins} coins) and all your recruits', campExitQ: 'Go home from the campfire?',
     campExitText: 'You keep {pct}% of the loot: about {coins} coins and {items} items. The other half is lost.', campExitRecruits: 'These daskai stay with you forever: {names}.',
     campExitKeeps: 'They stay with you: {names}', campExited: 'You head home with {coins} coins.',
@@ -358,6 +360,7 @@ DK.i18n.register('en', {
   },
 
   battle: {
+    captureOff: 'Bonding in battle is disabled for now: recruit daskai at the recruit nodes of expeditions.', 
     curtainEliteTitle: 'Mini boss!', curtainBoss: 'Boss! {name} · Lv. {n}', curtainSecret: 'Hidden boss! {name} · Lv. {n}', curtainElite: 'Mini boss · Lv. {n}',
     autoHealed: 'Auto: {name} is in critical condition, uses {item}.',
     dmgStab: 'Same house', dmgBroken: 'Break',
@@ -701,15 +704,30 @@ DK.i18n.register('en', {
     title: 'Emblems', plus: 'Emblems +{n}', have: 'You have {n} emblems', thisRun: '{n} this expedition',
     help: 'Each boss defeated gives 1 emblem (hidden cave bosses too). Spend them on permanent Upgrades when the expedition ends.',
   },
+  /* Expedition runes (systems/runes.js) */
+  rune: {
+    title: 'Expedition runes', short: 'Runes', size: 'Size', kind: 'Type', random: 'Random',
+    help: 'They drop from chests, elites and bosses. Set one size rune and/or one type rune to fix your next expedition; they are spent when you set off. Without runes, everything is random.',
+    none: 'You have no runes yet: they drop from chests, elites and bosses on expeditions.',
+    have: 'You have {n}', on: 'Set: it will be spent when you set off', tapOn: 'Tap to use it', tapOff: 'Tap to remove it', locked: 'Defeat any boss to be able to use it',
+    got: 'Rune obtained: {name}', dest: 'Runes', destHelp: 'kept forever', used: 'Runes used: {list}',
+    small: { name: 'Trail rune', effect: 'Small map' },
+    medium: { name: 'Road rune', effect: 'Medium map' },
+    xl: { name: 'Journey rune', effect: 'XL map' },
+    captura: { name: 'Capture rune', effect: 'Capture' },
+    combate: { name: 'Battle rune', effect: 'Battle' },
+    desafio: { name: 'Boss rune', effect: 'Bosses (challenge)' },
+  },
+
   kind: {
-    rolled: 'This expedition', chances: 'Chance of each type', chancesHint: 'The type is random. You can make one more likely with emblems in Upgrades → Courses.',
+    rolled: 'This expedition', chances: 'Chance of each type', chancesHint: 'The type is random. With a type rune you can choose it.', byRune: 'Set by rune',
     title: 'Expedition type', label: 'Expedition: {name}', locked: 'Defeat any boss to unlock it',
     normal: { name: 'Normal', desc: 'A bit of everything: fights, events, chests, recruits and shops.' },
-    captura: { name: 'Capture', desc: 'Short and full of wild daskai: many recruits, more candidates and easier bonding. Fewer coins.' },
+    captura: { name: 'Capture', desc: 'Short and full of wild daskai: many recruits, more candidates and more shinies. Fewer coins.' },
     combate: { name: 'Combat', desc: 'Almost all fights and mini bosses. More coins and experience.' },
     tesoro: { name: 'Treasure', desc: 'Chests, shops, events and caves. Few fights, but rivals are a bit stronger.' },
     desafio: { name: 'Challenge', desc: 'Short and tough: mini bosses everywhere, rivals +3 levels and +1 emblem per boss.' },
-    fx: { capture: '+{n}% bonding', recruit: '+{n} candidate', coins: '{n}% coins', exp: '+{n}% exp.', levels: 'Rivals +{n} Lv.', emblems: '+{n} emblem per boss', short: 'Short' },
+    fx: { shiny: '+{n}% shiny', capture: '+{n}% bonding', recruit: '+{n} candidate', coins: '{n}% coins', exp: '+{n}% exp.', levels: 'Rivals +{n} Lv.', emblems: '+{n} emblem per boss', short: 'Short' },
   },
   size: {
     label: '{name} · {n} floors',
@@ -767,11 +785,12 @@ DK.i18n.register('en', {
     greet: { day: 'A red sky covers the camp', dawn: 'Dawn cannot beat the mist', dusk: 'Darkness lurks beyond the fire', night: 'The bonfire keeps the night at bay' },
   },
   box: {
+    moveTo: 'Move to another box…', storeIn: 'Store in a box…', moveTitle: 'Move {name} to…', moved: '{name} moves to {box}', here: 'It is here', full: 'Full', newBox: 'New box', 
     dragHintExp: 'Drag between your team and those with you (on mobile, long press).', 
     withYou: 'With you on the expedition', withYouN: '{n} daskai', withYouEmpty: 'Everyone who came with you is in the team.', locked: 'The boxes stay at camp: during an expedition you can only swap your team with those who came along and your recruits.', 
     name: 'Box {n}', count: '{n}/{max}', prev: 'Previous box', next: 'Next box', rename: 'Rename', renameTitle: 'Box name',
     bg: 'Change wallpaper', bgTitle: 'Box wallpaper', add: 'New box', sort: 'Sort box', matches: '{n} match', atHome: 'stayed at home',
-    dragHint: 'Drag between the box and your team (on mobile, press and hold). Tap one to see its sheet.',
+    dragHint: 'Drag between the box and your team, or drop it on another box number to move it there (on mobile, press and hold). Right click: «Move to another box».',
     sortBy: { level: 'By level', house: 'By house', species: 'By species', name: 'By name' },
     bgName: { noche: 'Starry night', nieve: 'Snow', arena: 'Desert', cristal: 'Crystal', lava: 'Lava' },
   },
@@ -850,12 +869,8 @@ campfire: 'You went home from a campfire: you keep half the loot and all your re
     buy: 'Upgrade · {n}', bought: 'Upgrade bought: {name}!', noMoney: 'Not enough coins', missing: 'You need {n} more emblems', closeMenu: 'Done', saveHint: 'If you cannot afford one, save your emblems: you can spend them when your next expedition ends.', noEmblems: 'Not enough emblems', buyAtEnd: 'Bought when an expedition ends', howTo: 'Defeat bosses to earn emblems and trade them for upgrades in each expedition summary.',
     now: 'Now:', nextLevel: 'Next level:', firstLevel: 'When bought:', maxed: 'Maxed', levelTip: 'Current / max level',
     spent: '{n} coins invested', levels: '{n} of {total} levels',
-    group: { combat: 'Combat', progress: 'Progress', expedition: 'Expedition', rumbos: 'Courses (expedition type)' },
+    group: { combat: 'Combat', progress: 'Progress', expedition: 'Expedition' },
     up: {
-      rumbo_captura: { name: 'Capture course', desc: 'The expedition is more likely to be a capture one.', effect: '+{n}%', lv1: '+75% chance', lv2: '+150% chance', lv3: '+250% chance' },
-      rumbo_combate: { name: 'Combat course', desc: 'The expedition is more likely to be a combat one.', effect: '+{n}%', lv1: '+75% chance', lv2: '+150% chance', lv3: '+250% chance' },
-      rumbo_tesoro: { name: 'Treasure course', desc: 'The expedition is more likely to be a treasure one.', effect: '+{n}%', lv1: '+75% chance', lv2: '+150% chance', lv3: '+250% chance' },
-      rumbo_desafio: { name: 'Challenge course', desc: 'The expedition is more likely to be a challenge (once unlocked).', effect: '+{n}%', lv1: '+75% chance', lv2: '+150% chance', lv3: '+250% chance' },
       instructor: { name: 'Instructor', desc: 'Improves the training grounds: more slots, faster pace and a higher level cap.', effect: 'level {n}', lv1: '+1 slot · +25% pace · +2 level cap', lv2: '+1 slot · +50% pace · +4 level cap', lv3: '+2 slots · +100% pace · +6 level cap' },
       vigor: { name: 'Vigor', desc: 'Your daskai have more max HP during expeditions.', effect: '+{n}% HP' },
       fuerza: { name: 'Strength training', desc: 'Your daskai deal more damage with every move.', effect: '+{n}% damage' },

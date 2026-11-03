@@ -326,12 +326,12 @@
     /** Datos del tipo de la expedición en curso (o del de la próxima). */
     kindDef(kind) { const e = this.active(); const k = kind || (e && e.kind) || 'normal'; return Object.assign({ id: k }, cfg().kinds[k] || cfg().kinds.normal); },
     /**
-     * Probabilidad (0-1) de cada tipo de expedición: su `chance` × (1 + Mejora
-     * «Rumbo de <tipo>»). Los bloqueados (desafío sin haber vencido a un jefe) no salen.
+     * Probabilidad (0-1) de cada tipo de expedición al azar (su `chance`); una runa
+     * de tipo lo fija (DK.runes). Los bloqueados (desafío sin haber vencido a un jefe) no salen.
      */
     kindChances() {
       const w = {};
-      this.kinds().forEach((k) => { if (!k.locked) w[k.id] = (k.chance || 0) * (1 + DK.camp.value('rumbo_' + k.id)); });
+      this.kinds().forEach((k) => { if (!k.locked) w[k.id] = (k.chance || 0); });
       const tot = Object.values(w).reduce((a, b) => a + b, 0) || 1;
       return Object.fromEntries(Object.entries(w).map(([id, v]) => [id, v / tot]));
     },
@@ -419,7 +419,7 @@
       byPower(['hiperpocion', 'superpocion', 'pocion'], 'heal').forEach((id) => take(id, Math.ceil(cap * 0.5) - this.packSize(out)));
       byPower(['supereter', 'eter'], 'mana').forEach((id) => take(id, Math.ceil(cap * 0.7) - this.packSize(out)));
       ['panacea', 'antidoto', 'balsamo'].forEach((id) => take(id, 1));
-      take(DK.bag.home().cristal_mayor ? 'cristal_mayor' : 'cristal_vinculo', 2);
+      if (DK.config.captureEnabled) take(DK.bag.home().cristal_mayor ? 'cristal_mayor' : 'cristal_vinculo', 2);
       ['elixir', 'superpocion', 'pocion', 'eter'].forEach((id) => take(id, cap));
       return out;
     },
@@ -438,6 +438,7 @@
         if (k > 0 && this.canPack(id)) { chosen[id] = k; room -= k; home[id] -= k; if (!home[id]) delete home[id]; }
       });
       st().lastPack = Object.assign({}, chosen); // para repetir la próxima vez
+      const runesUsed = DK.runes.consume(n); // runas de tamaño / tipo puestas en la preparación
       st().nextExpedition = null; // la próxima vista previa será otra
       const map = generate(n.zone, n.seed, n.size, n.mod, n.kind || 'normal');
       st().expedition = {
@@ -450,6 +451,7 @@
         log: { nodes: {}, toBag: {}, lootSpent: 0, recipes: [], kept: [] }, // para el resumen final
         revivesUsed: 0, blessed: null, // salvaciones de la muerte (DK.expedition.trySave)
         quest: this.pickQuest(n.size || 'small'),
+        runesUsed,
       };
       this.logEvent('start', { zone: n.zone, size: n.size, mod: n.mod || null, kind: n.kind || 'normal' });
       // Pactos opcionales del primer mapa (se eligen antes que la reliquia)
@@ -718,7 +720,9 @@
       const split = this.addLoot(items, coins);
       // A veces hay una reliquia
       const relic = U.chance(DK.config.expedition.chestRelicChance) ? DK.relics.give(DK.relics.roll(['comun', 'raro'], 1)[0]) : null;
-      return { items, coins, bag: split.bag, loot: split.loot, relic };
+      // A veces, una runa de expedición (se guarda ya: DK.runes)
+      const runes = DK.runes.drop('treasure');
+      return { items, coins, bag: split.bag, loot: split.loot, relic, runes };
     },
 
     /** Descanso: cura un % de vida y maná y los estados. */
@@ -735,11 +739,11 @@
       return { pct: Math.round(pct * 100) };
     },
 
-    /** Entrenar: experiencia para un daskai. Devuelve {d, exp, levelInfo}. */
+    /** Entrenar en la hoguera: el daskai elegido sube SIEMPRE 1 nivel. Devuelve {d, exp, levelInfo}. */
     train(uid) {
-      const e = this.active();
       const d = DK.party.get(uid);
-      const exp = Math.round(DK.config.expGain(cfg().trainExpBase, D.zones[e.zone].levels[1]));
+      if (!d || d.level >= DK.config.maxLevel) return null;
+      const exp = Math.max(1, DK.daskai.expToNext(d) - (d.exp || 0));
       const levelInfo = DK.daskai.gainExp(d, exp);
       DK.store.save();
       return { d, exp, levelInfo };
@@ -765,14 +769,17 @@
       const price = (id) => Math.round(D.prices[id] * (1 - cfg().shopDiscount));
       const offer = (id, stock) => ({ id, price: price(id), stock, left: stock });
       const heal = lv <= 12 ? 'pocion' : lv <= 40 ? 'superpocion' : 'hiperpocion';
-      const out = [offer(heal, U.rand(3, 5)), offer(lv <= 25 ? 'eter' : 'supereter', U.rand(2, 4)), offer(this.expItem(), U.rand(1, 3)), offer(lv <= 30 ? 'cristal_vinculo' : 'cristal_mayor', U.rand(1, 2))];
-      const extra = D.shopStock.filter((id) => D.prices[id] && !out.some((o) => o.id === id));
+      const out = [offer(heal, U.rand(3, 5)), offer(lv <= 25 ? 'eter' : 'supereter', U.rand(2, 4)), offer(this.expItem(), U.rand(1, 3))];
+      if (DK.config.captureEnabled) out.push(offer(lv <= 30 ? 'cristal_vinculo' : 'cristal_mayor', U.rand(1, 2)));
+      // (sin vínculo en combate no se venden cristales)
+      const sellable = (id) => DK.config.captureEnabled || !(D.items[id] && D.items[id].use && D.items[id].use.capture);
+      const extra = D.shopStock.filter((id) => D.prices[id] && sellable(id) && !out.some((o) => o.id === id));
       out.push(offer(U.pick(extra), U.rand(2, 4)));
       const rare = this.zoneLoot('raro').filter((id) => D.prices[id] && !out.some((o) => o.id === id));
       if (rare.length && U.chance(0.6)) out.push(offer(U.pick(rare), 1));
       // Contactos comerciales del campamento: ofertas extra
       for (let i = 0; i < DK.camp.value('comercio'); i++) {
-        const more = D.shopStock.filter((id) => D.prices[id] && !out.some((o) => o.id === id));
+        const more = D.shopStock.filter((id) => D.prices[id] && sellable(id) && !out.some((o) => o.id === id));
         if (more.length) out.push(offer(U.pick(more), U.rand(1, 3)));
       }
       // Muy de vez en cuando, una pluma de fénix
@@ -903,7 +910,9 @@
       }
       const lv = U.clamp(zone.levels[0] + node.row, zone.levels[0], zone.levels[1]) + DK.camp.value('reclutador') + this.levelBonus();
       return species.map((sp) => {
-        const d = DK.daskai.create(sp, U.clamp(lv + U.rand(-1, 1), 1, DK.config.maxLevel), { wild: true });
+        // Variocolor: más probable que en combate (y aún más en una expedición de captura)
+        const shiny = U.chance(cfg().recruitShinyChance + (this.kindDef().shiny || 0));
+        const d = DK.daskai.create(sp, U.clamp(lv + U.rand(-1, 1), 1, DK.config.maxLevel), { wild: true, shiny });
         DK.daskai.fullHeal(d);
         return d;
       });
@@ -930,6 +939,7 @@
       this.addRecruit(c);
       e.result = { key: 'exp.recruited', vars: { name: DK.daskai.name(c) }, uid: c.uid };
       this.logEvent('recruit', { name: DK.daskai.name(c), species: c.species });
+      this.questTrack('capture'); // el encargo «recluta» cuenta los reclutas
       DK.store.save();
       return c;
     },
@@ -991,7 +1001,7 @@
         relics: e.relics.slice(), nodes: e.log.nodes, toBag: e.log.toBag, lootSpent: e.log.lootSpent, recipes: e.log.recipes.slice(),
         fallen: (e.log.fallen || []).slice(), difficulty: DK.rules.difficulty(),
         size: e.size || 'small', mod: e.mod || null, marks: e.marks || null,
-        emblems: e.log.emblems || 0, timeline: (e.log.timeline || []).slice(), secrets: (e.log.secrets || []).slice(), shortcuts: e.log.shortcuts || 0,
+        emblems: e.log.emblems || 0, timeline: (e.log.timeline || []).slice(), secrets: (e.log.secrets || []).slice(), shortcuts: e.log.shortcuts || 0, runes: (e.log.runes || []).slice(), runesUsed: (e.runesUsed || []).slice(),
       }, extra);
       // Historial de expediciones (Perfil): las últimas config.expHistorySize
       st().expHistory = st().expHistory || [];
@@ -1165,7 +1175,7 @@
     roll(rarities, n, { unlocked = false } = {}) {
       const e = DK.expedition.active();
       const have = (e && e.relics) || [];
-      const pool = Object.values(D.relics).filter((r) => rarities.includes(r.rarity) && !have.includes(r.id) && (!unlocked || DK.camp.isUnlocked('relic', r.id))).map((r) => r.id);
+      const pool = Object.values(D.relics).filter((r) => rarities.includes(r.rarity) && !have.includes(r.id) && (!unlocked || DK.camp.isUnlocked('relic', r.id)) && (DK.config.captureEnabled || r.effect.type !== 'capture')).map((r) => r.id);
       const out = [];
       while (out.length < n && pool.length) out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
       return out;

@@ -38,6 +38,7 @@
     const pct = (x) => Math.round(x * 100);
     return [k.sizes && k.sizes.length === 1 && k.sizes[0] === 'short' ? ['flag', t('kind.fx.short')] : null,
       k.capture ? ['orb', t('kind.fx.capture', { n: pct(k.capture) })] : null,
+      k.shiny ? ['sparkles', t('kind.fx.shiny', { n: pct(k.shiny) })] : null,
       k.recruit ? ['paw', t('kind.fx.recruit', { n: k.recruit })] : null,
       k.exp ? ['star', t('kind.fx.exp', { n: pct(k.exp) })] : null,
       k.coins ? ['coin', t('kind.fx.coins', { n: (k.coins > 0 ? '+' : '') + pct(k.coins) }), k.coins < 0] : null,

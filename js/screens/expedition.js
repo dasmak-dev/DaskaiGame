@@ -425,18 +425,36 @@
 
     if (n.type === 'treasure') {
       if (!e.result) {
-        const open = () => { const r = E().openTreasure(); e.result = { key: 'treasure', items: r.items, coins: r.coins, recipe: r.recipe, relic: r.relic }; DK.audio.sfx('coin'); DK.store.save(); refresh(); };
+        const open = () => { const r = E().openTreasure(); e.result = { key: 'treasure', items: r.items, coins: r.coins, recipe: r.recipe, relic: r.relic, runes: r.runes }; DK.audio.sfx('coin'); DK.store.save(); refresh(); };
         DK.keys.on('Enter', open);
-        return h('div', { class: 'card stack-s' }, head('treasure', t('exp.node.treasure'), t('exp.treasureText')),
+        return h('div', { class: 'card stack chest-panel' }, head('treasure', t('exp.node.treasure'), t('exp.treasureText')),
+          h('button', { class: 'chest-big closed', type: 'button', 'aria-label': t('exp.openChest'), onClick: open }, DK.icon('gift', 64), h('span', { class: 'chest-glow' })),
           btn({ icon: 'gift', label: t('exp.openChest'), variant: 'primary', size: 'lg', hotkey: '↵', onClick: open }));
       }
       enterCont();
-      return h('div', { class: 'card stack-s' }, head('treasure', t('exp.node.treasure')),
-        e.result.recipe ? h('div', { class: 'warning good' }, DK.icon('scroll', 18), h('span', null, t('exp.recipeFound', { item: D.items[D.recipes.find((r) => r.id === e.result.recipe).result].name }))) : null,
-        e.result.relic ? h('div', { class: 'warning good' }, DK.icon(D.relics[e.result.relic].icon, 18), h('span', null, t('relics.inChest', { name: D.relics[e.result.relic].name, effect: relicText(D.relics[e.result.relic]) }))) : null,
-        h('div', { class: 'chips' }, h('span', { class: 'chip pos', tip: t('exp.toLoot') }, DK.icon('coin', 13), `+${e.result.coins}`),
-          e.result.items.map((id) => { const bag = E().toBag(id); return h('span', { class: 'chip pos', tip: bag ? t('exp.toBagTip') : t('exp.toLoot') }, DK.icon(D.items[id].icon, 13), D.items[id].name, ' ', DK.icon(bag ? 'bag' : 'flag', 12)); })),
-        h('p', { class: 'muted small' }, DK.icon('bag', 12), ' ', t('exp.toBagTip'), ' · ', DK.icon('flag', 12), ' ', t('exp.toLoot')), cont(refresh));
+      // Botín del cofre en tarjetas: lo que es, para qué sirve y adónde va (mochila: ya; botín: al volver)
+      const counts = {}; (e.result.items || []).forEach((id) => (counts[id] = (counts[id] || 0) + 1));
+      let k = 0;
+      const delay = () => ({ animationDelay: (k++ * 0.12) + 's' });
+      const cards = [
+        e.result.coins ? h('div', { class: 'loot-card coins', style: delay() }, h('span', { class: 'loot-icon' }, DK.icon('coin', 34)), h('b', null, '+' + e.result.coins.toLocaleString(DK.i18n.lang)), h('small', null, t('hub.coins')), h('span', { class: 'loot-dest loot' }, DK.icon('gift', 11), t('exp.destLoot'))) : null,
+        ...Object.entries(counts).map(([id, n]) => {
+          const it = D.items[id], bag = E().toBag(id);
+          return h('div', { class: 'loot-card r-' + it.rarity, style: delay(), tip: it.desc },
+            h('span', { class: 'loot-icon' }, V.itemIcon(it, 40), n > 1 ? h('span', { class: 'loot-n' }, '×' + n) : null),
+            h('b', null, it.name), V.rarity(it.rarity),
+            h('small', { class: 'muted' }, V.useText(it) || it.desc),
+            h('span', { class: 'loot-dest ' + (bag ? 'bag' : 'loot'), tip: bag ? t('exp.toBagTip') : t('exp.toLoot') }, DK.icon(bag ? 'bag' : 'gift', 11), bag ? t('exp.destBag') : t('exp.destLoot')));
+        }),
+        e.result.relic ? (() => { const r = D.relics[e.result.relic]; return h('div', { class: 'loot-card relic r-' + r.rarity, style: delay() }, h('span', { class: 'loot-icon' }, DK.icon(r.icon, 36)), h('b', null, r.name), V.rarity(r.rarity), h('small', { class: 'muted' }, relicText(r)), h('span', { class: 'loot-dest relic' }, DK.icon('amulet', 11), t('exp.destRelic'))); })() : null,
+        ...(e.result.runes || []).map((id) => { const r = DK.runes.get(id); return h('div', { class: 'loot-card rune', style: delay(), tip: t('rune.help') }, h('span', { class: 'loot-icon' }, DK.icon('rune', 36)), h('b', null, t('rune.' + id + '.name')), h('small', { class: 'muted' }, DK.icon(r.icon, 11), ' ', t('rune.' + id + '.effect')), h('span', { class: 'loot-dest rune' }, DK.icon('rune', 11), t('rune.dest'))); }),
+        e.result.recipe ? (() => { const it = D.items[D.recipes.find((r) => r.id === e.result.recipe).result]; return h('div', { class: 'loot-card recipe', style: delay() }, h('span', { class: 'loot-icon' }, DK.icon('scroll', 34)), h('b', null, t('exp.newRecipe', { item: it.name })), h('small', { class: 'muted' }, t('exp.recipeShort')), h('span', { class: 'loot-dest relic' }, DK.icon('anvil', 11), t('nav.craft'))); })() : null,
+      ];
+      return h('div', { class: 'card stack chest-panel' }, head('treasure', t('exp.node.treasure'), t('exp.chestOpened')),
+        h('div', { class: 'chest-big open', 'aria-hidden': 'true' }, DK.icon('gift', 48), h('span', { class: 'chest-glow' })),
+        h('div', { class: 'loot-grid' }, cards),
+        h('p', { class: 'muted small chest-legend' }, h('span', { class: 'loot-dest bag' }, DK.icon('bag', 11), t('exp.destBag')), ' ', t('exp.destBagHelp'), ' · ', h('span', { class: 'loot-dest loot' }, DK.icon('gift', 11), t('exp.destLoot')), ' ', t('exp.destLootHelp')),
+        cont(refresh));
     }
 
     if (n.type === 'rest') {
@@ -454,7 +472,8 @@
       const rest = () => { const r = E().rest(); e.result = { key: 'exp.rested', vars: { n: r.pct } }; DK.audio.sfx('heal'); DK.store.save(); refresh(); };
       const train = async () => {
         const r = E().train(e.trainUid);
-        e.result = { key: 'exp.trained', vars: { name: DK.daskai.name(r.d), n: r.exp } };
+        if (!r) { DK.audio.sfx('error'); return; }
+        e.result = { key: 'exp.trainedLevel', vars: { name: DK.daskai.name(r.d), n: r.d.level } };
         DK.store.save();
         if (r.levelInfo.levels.length) await V.levelUpDialog(r.d, r.levelInfo);
         for (const m of r.levelInfo.pending) await V.learnMovePrompt(r.d, m);
@@ -478,13 +497,35 @@
           btn({ icon: 'home', label: t('exp.campExit'), desc: t('exp.campExitDesc', { pct: pv.pct, coins: pv.coins }), variant: 'ghost', size: 'lg', hotkey: '3', onClick: goHome }),
           pv.recruits.length ? h('p', { class: 'small good-text' }, DK.icon('paw', 12), ' ', t('exp.campExitKeeps', { names: pv.recruits.join(', ') })) : null)
         : h('p', { class: 'muted small' }, DK.icon('lock', 12), ' ', t('exp.noRetreat'));
-      return h('div', { class: 'card stack-s' }, head('rest', t('exp.node.rest'), t('exp.restText')),
-        h('div', { class: 'list' }, team.map((d) => V.daskaiRow(d, { compact: true }))),
-        btn({ icon: 'bed', label: t('exp.restHeal'), desc: t('exp.restHealDesc', { n: Math.round(DK.config.expedition.restHeal * 100) }), variant: 'primary', size: 'lg', hotkey: '1', onClick: rest }),
-        h('div', { class: 'stack-s exp-train' },
-          btn({ icon: 'star', label: t('exp.train'), desc: t('exp.trainDesc'), variant: 'tone', size: 'lg', hotkey: '2', onClick: train }),
-          DK.ui.select({ label: t('exp.trainWho'), value: e.trainUid, onChange: (v) => (e.trainUid = v),
-            options: team.map((d) => ({ value: d.uid, label: `${DK.daskai.name(d)} · ${t('common.lvl')} ${d.level}` })) })),
+      // Dos opciones grandes: descansar (todo el equipo) o entrenar (eliges a quién: sube 1 nivel)
+      const who = DK.party.get(e.trainUid);
+      const trainBtn = (d) => btn({ icon: 'star', label: d ? t('exp.trainBtn', { name: DK.daskai.name(d), n: d.level + 1 }) : t('exp.train'), variant: 'tone', size: 'lg', hotkey: '2', cls: 'rest-train-btn', disabled: !d || d.level >= DK.config.maxLevel, onClick: train });
+      let tBtn = trainBtn(who);
+      const pick = (d, el) => {
+        e.trainUid = d.uid; DK.audio.sfx('select');
+        el.parentElement.querySelectorAll('.rest-pick').forEach((b) => { const on = b === el; b.classList.toggle('on', on); b.setAttribute('aria-checked', String(on)); });
+        const nb = trainBtn(d); tBtn.replaceWith(nb); tBtn = nb;
+      };
+      const picks = h('div', { class: 'rest-picks', role: 'radiogroup', 'aria-label': t('exp.trainWho') }, team.map((d) => {
+        const s = DK.daskai.stats(d), hp = DK.util.percent(d.cur.hp, s.hp), on = d.uid === e.trainUid, maxed = d.level >= DK.config.maxLevel;
+        return h('button', { class: 'rest-pick' + (on ? ' on' : ''), type: 'button', role: 'radio', 'aria-checked': String(on), disabled: maxed, tip: `${DK.daskai.name(d)} · ${t('common.lvl')} ${d.level}`,
+          onClick: (ev) => pick(d, ev.currentTarget) },
+          V.dSprite(d, { size: 52 }), h('b', null, DK.daskai.name(d)),
+          h('small', null, `${t('common.lvl')} ${d.level}`, h('span', { class: 'rest-up' }, ` → ${d.level + 1}`)),
+          h('span', { class: 'rest-hp' }, h('i', { style: { width: hp + '%' } })));
+      }));
+      return h('div', { class: 'card stack rest-panel' }, head('rest', t('exp.node.rest'), t('exp.restText')),
+        h('div', { class: 'rest-options' },
+          h('section', { class: 'rest-opt' },
+            h('span', { class: 'rest-opt-icon heal' }, DK.icon('bed', 28)),
+            h('b', null, t('exp.restHeal')), h('p', { class: 'muted small' }, t('exp.restHealDesc', { n: Math.round(DK.config.expedition.restHeal * 100) })),
+            h('div', { class: 'rest-team' }, team.map((d) => { const s = DK.daskai.stats(d); return h('span', { class: 'rest-mini', tip: `${DK.daskai.name(d)} ${d.cur.hp}/${s.hp}` }, V.dSprite(d, { size: 34 }), h('span', { class: 'rest-hp' }, h('i', { style: { width: DK.util.percent(d.cur.hp, s.hp) + '%' } }))); })),
+            btn({ icon: 'bed', label: t('exp.restHeal'), variant: 'primary', size: 'lg', hotkey: '1', onClick: rest })),
+          h('section', { class: 'rest-opt' },
+            h('span', { class: 'rest-opt-icon train' }, DK.icon('star', 28)),
+            h('b', null, t('exp.train')), h('p', { class: 'muted small' }, t('exp.trainDescLevel')),
+            picks,
+            tBtn)),
         exitBox);
     }
 
@@ -570,7 +611,9 @@
       const tabs = h('div', { class: 'mr-tabs', role: 'tablist' }, [['buy', 'bag', t('shop.buy')], ['sell', 'coin', `${t('shop.sell')} (${sellable.length})`]].map(([id, ic, label]) =>
         h('button', { class: 'mr-tab' + (shopUi.mode === id ? ' on' : ''), type: 'button', role: 'tab', 'aria-selected': String(shopUi.mode === id), onClick: () => { shopUi.mode = id; DK.audio.sfx('select'); draw(); } }, DK.icon(ic, 15), label)));
       card.replaceChildren(
-        head('shop', t('exp.node.shop'), t('exp.shopText2')),
+        // «Seguir el camino» también arriba: no hace falta bajar si no quieres comprar
+        h('div', { class: 'mr-top' }, head('shop', t('exp.node.shop'), t('exp.shopText2')),
+          btn({ icon: 'next', label: t('exp.continuePath'), variant: 'tone', size: 'sm', cls: 'mr-skip', onClick: () => { E().completeNode(); refresh(); } })),
         h('div', { class: 'mr-bar' }, tabs,
           h('span', { class: 'mr-purse', tip: t('exp.lootCoinsTip') }, DK.icon('gift', 15), h('small', null, t('exp.loot')), V.coins(coins))),
         h('p', { class: 'muted small mr-note' }, shopUi.mode === 'buy' ? t('exp.payNoteLoot') : t('shop.sellHelpLoot', { n: Math.round(DK.config.sellRatio * 100) })),

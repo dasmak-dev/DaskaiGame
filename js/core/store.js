@@ -133,6 +133,10 @@
       s.graveyard = s.graveyard || [];
       s.essences = s.essences || [];      // esencias de caídos (DK.legacy)
       s.camp = s.camp || {};              // mejoras del campamento (DK.camp)
+      s.runes = s.runes || {};            // runas de expedición (DK.runes)
+      // Las Mejoras «Rumbo» (v4.21) se cambiaron por runas: se devuelven sus emblemas
+      const RUMBO = { rumbo_captura: [2, 3, 5], rumbo_combate: [2, 3, 5], rumbo_tesoro: [2, 3, 5], rumbo_desafio: [3, 4, 6] };
+      Object.entries(RUMBO).forEach(([id, costs]) => { const lv = s.camp[id] || 0; if (lv) s.emblems = (s.emblems || 0) + costs.slice(0, lv).reduce((a, b) => a + b, 0); delete s.camp[id]; });
       s.expHistory = s.expHistory || [];  // resúmenes de expediciones (Perfil)
       s.difficulty = s.difficulty || DK.data.defaultDifficulty;
       // Máximo de ataques reducido: los que sobran pasan a la reserva (siguen en learned)

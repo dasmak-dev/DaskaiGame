@@ -240,40 +240,55 @@
     return pts.map(([x, y]) => `${x},${y}`).join(' ');
   }
 
-  /** Fondo oscuro: cielo sangriento, luna roja, ruinas, montañas, tierra yerma, tumbas y el camino al portal. */
+  /*
+   * Paletas oscuras para cada momento del día (ciclo según la hora real):
+   * día = cielo ceniciento con un sol pálido; amanecer/atardecer = brasas en el
+   * horizonte; noche = cielo negro, estrellas y luna de sangre.
+   */
+  const GRIM = {
+    day: { sky: ['#3a3540', '#5b4c50', '#8a6a58'], mtn: '#342a30', ruin: '#231a1e', hill: '#2a2024', ground: ['#3a2c26', '#30241f', '#261c18'], cloud: '#4a4048', cloudOp: 0.55, stars: 0, body: 'sun', bx: 300, by: 26, disc: ['#e8dcb4', '#f5ecd0', '#d8c79a'], halo: '#f5e6b8', haloOp: 0.35, fire: 0.3, path: ['#40343a', '#4e4146'] },
+    dawn: { sky: ['#1b1428', '#4c2238', '#b0502e'], mtn: '#24141c', ruin: '#160b10', hill: '#1d1015', ground: ['#2c1d1b', '#221716', '#1a1110'], cloud: '#2e1620', cloudOp: 0.7, stars: 14, body: 'sun', bx: 56, by: 44, disc: ['#f97316', '#fdba74', '#ea580c'], halo: '#fb923c', haloOp: 0.5, fire: 0.42, path: ['#2e2329', '#3a2d32'] },
+    dusk: { sky: ['#120916', '#3b0f24', '#8f2c14'], mtn: '#1e0c12', ruin: '#12070b', hill: '#170a0e', ground: ['#271816', '#1e1312', '#170e0d'], cloud: '#220c14', cloudOp: 0.75, stars: 24, body: 'sun', bx: 182, by: 48, disc: ['#dc2626', '#f87171', '#b91c1c'], halo: '#ef4444', haloOp: 0.5, fire: 0.5, path: ['#2a2026', '#362a2e'] },
+    night: { sky: ['#050308', '#14070c', '#3d0c10'], mtn: '#1c0d12', ruin: '#0f070a', hill: '#140a0d', ground: ['#231716', '#1b1211', '#140d0c'], cloud: '#1a0a0e', cloudOp: 0.75, stars: 46, body: 'moon', bx: 298, by: 16, disc: ['#dc2626', '#ef4444', '#b91c1c'], halo: '#ef4444', haloOp: 0.45, fire: 0.6, path: ['#2a2026', '#362a2e'] },
+  };
+
+  /** Fondo oscuro: cielo según la hora, sol pálido o luna roja, ruinas, montañas, tierra yerma, tumbas y el camino al portal. */
   function backdrop(tod) {
     const W = 400, H = 180, HZ = 82;
+    const P = GRIM[tod] || GRIM.night;
     const s = svgEl('svg', { viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: 'xMidYMax slice', class: 'camp-bg', 'shape-rendering': 'crispEdges', 'aria-hidden': 'true' });
     const defs = svgEl('defs');
-    const sky = tod === 'day' ? ['#1a1016', '#3a1a1c', '#6b2a1f'] : tod === 'night' ? ['#050308', '#14070c', '#3d0c10'] : ['#0b0509', '#2a0b10', '#5c1410'];
     const lg = svgEl('linearGradient', { id: 'campSky', x1: 0, y1: 0, x2: 0, y2: 1 });
-    sky.forEach((c, i) => lg.appendChild(svgEl('stop', { offset: i / 2, 'stop-color': c })));
+    P.sky.forEach((c, i) => lg.appendChild(svgEl('stop', { offset: i / 2, 'stop-color': c })));
     const glow = svgEl('radialGradient', { id: 'campGlow', cx: '50%', cy: '82%', r: '46%' });
-    glow.appendChild(svgEl('stop', { offset: 0, 'stop-color': '#f97316', 'stop-opacity': 0.55 }));
-    glow.appendChild(svgEl('stop', { offset: 0.45, 'stop-color': '#b91c1c', 'stop-opacity': 0.18 }));
+    glow.appendChild(svgEl('stop', { offset: 0, 'stop-color': '#f97316', 'stop-opacity': P.fire }));
+    glow.appendChild(svgEl('stop', { offset: 0.45, 'stop-color': '#b91c1c', 'stop-opacity': P.fire / 3 }));
     glow.appendChild(svgEl('stop', { offset: 1, 'stop-color': '#7f1d1d', 'stop-opacity': 0 }));
     const moonGlow = svgEl('radialGradient', { id: 'campMoon', cx: '50%', cy: '50%', r: '50%' });
-    moonGlow.appendChild(svgEl('stop', { offset: 0, 'stop-color': '#ef4444', 'stop-opacity': 0.45 }));
-    moonGlow.appendChild(svgEl('stop', { offset: 1, 'stop-color': '#ef4444', 'stop-opacity': 0 }));
+    moonGlow.appendChild(svgEl('stop', { offset: 0, 'stop-color': P.halo, 'stop-opacity': P.haloOp }));
+    moonGlow.appendChild(svgEl('stop', { offset: 1, 'stop-color': P.halo, 'stop-opacity': 0 }));
     defs.append(lg, glow, moonGlow); s.appendChild(defs);
     s.appendChild(svgEl('rect', { x: 0, y: 0, width: W, height: H, fill: 'url(#campSky)' }));
     const rnd = DK.util.seeded('camp-grim');
-    // Estrellas tenues
-    for (let i = 0; i < 40; i++) s.appendChild(svgEl('rect', { x: Math.floor(rnd() * W), y: Math.floor(rnd() * (HZ - 30)), width: 1, height: 1, fill: '#fecaca', opacity: 0.25 + rnd() * 0.4, class: rnd() < 0.3 ? 'twinkle' : '' }));
-    // Luna roja con halo
-    s.appendChild(svgEl('circle', { cx: 312, cy: 30, r: 34, fill: 'url(#campMoon)', 'shape-rendering': 'auto' }));
-    const disc = canvas(29, 29).circle(14, 14, 14, '#dc2626').circle(14, 14, 12, '#ef4444').circle(10, 9, 3, '#b91c1c').circle(18, 17, 2, '#b91c1c').circle(16, 7, 1, '#f87171');
-    const ds = pixSvg(disc, 1); ds.setAttribute('x', 298); ds.setAttribute('y', 16); s.appendChild(ds);
-    // Nubes oscuras que pasan delante de la luna
-    [[250, 26, 1.2], [60, 14, 1], [170, 40, 0.9]].forEach(([x, y, k], n) => {
+    // Estrellas tenues (más cuanto más oscuro)
+    for (let i = 0; i < P.stars; i++) s.appendChild(svgEl('rect', { x: Math.floor(rnd() * W), y: Math.floor(rnd() * (HZ - 30)), width: 1, height: 1, fill: '#fecaca', opacity: 0.25 + rnd() * 0.4, class: rnd() < 0.3 ? 'twinkle' : '' }));
+    // Sol pálido / sol de brasas / luna roja, con halo
+    s.appendChild(svgEl('circle', { cx: P.bx + 14, cy: P.by + 14, r: P.body === 'moon' ? 34 : 40, fill: 'url(#campMoon)', 'shape-rendering': 'auto', class: 'camp-body ' + P.body }));
+    const [c0, c1, c2] = P.disc;
+    const disc = P.body === 'moon'
+      ? canvas(29, 29).circle(14, 14, 14, c0).circle(14, 14, 12, c1).circle(10, 9, 3, c2).circle(18, 17, 2, c2).circle(16, 7, 1, '#f87171')
+      : canvas(29, 29).circle(14, 14, 13, c2).circle(14, 14, 11, c0).circle(12, 11, 6, c1);
+    const ds = pixSvg(disc, 1); ds.setAttribute('x', P.bx); ds.setAttribute('y', P.by); s.appendChild(ds);
+    // Nubes oscuras que pasan delante
+    [[250, 26, 1.2], [60, 14, 1], [170, 40, 0.9]].concat(tod === 'day' ? [[330, 8, 1.4], [110, 30, 1.1]] : []).forEach(([x, y, k], n) => {
       const g = svgEl('g', { class: 'camp-cloud', style: `animation-delay:${-n * 18}s` });
-      [[0, 4, 30, 3], [6, 1, 14, 3], [16, 0, 10, 3], [3, 7, 22, 2]].forEach(([cx, cy, cw, ch]) => g.appendChild(svgEl('rect', { x: x + cx * k, y: y + cy, width: cw * k, height: ch, fill: '#1a0a0e', opacity: 0.75 })));
+      [[0, 4, 30, 3], [6, 1, 14, 3], [16, 0, 10, 3], [3, 7, 22, 2]].forEach(([cx, cy, cw, ch]) => g.appendChild(svgEl('rect', { x: x + cx * k, y: y + cy, width: cw * k, height: ch, fill: P.cloud, opacity: P.cloudOp })));
       s.appendChild(g);
     });
     // Montañas afiladas
-    s.appendChild(svgEl('polygon', { points: ridge(W, HZ, [[30, 30, 0.9], [120, 44, 1.1], [215, 28, 0.8], [330, 40, 1.0], [395, 26, 0.9]]), fill: '#1c0d12' }));
+    s.appendChild(svgEl('polygon', { points: ridge(W, HZ, [[30, 30, 0.9], [120, 44, 1.1], [215, 28, 0.8], [330, 40, 1.0], [395, 26, 0.9]]), fill: P.mtn }));
     // Ruinas de una catedral en el horizonte (ventanas encendidas)
-    const ru = '#0f070a';
+    const ru = P.ruin;
     [[86, 26, 10], [96, 38, 6], [104, 30, 8], [116, 18, 10], [150, 22, 6]].forEach(([x, hgt, w]) => {
       s.appendChild(svgEl('rect', { x, y: HZ - hgt, width: w, height: hgt, fill: ru }));
       s.appendChild(svgEl('polygon', { points: `${x},${HZ - hgt} ${x + w / 2},${HZ - hgt - w * 0.9} ${x + w},${HZ - hgt}`, fill: ru }));
@@ -281,11 +296,11 @@
     s.appendChild(svgEl('rect', { x: 84, y: HZ - 12, width: 72, height: 12, fill: ru }));
     [[98, HZ - 30], [106, HZ - 22], [119, HZ - 12], [120, HZ - 26], [140, HZ - 8]].forEach(([x, y]) => s.appendChild(svgEl('rect', { x, y, width: 2, height: 3, fill: '#f97316', opacity: 0.8, class: 'twinkle' })));
     // Colinas cercanas
-    s.appendChild(svgEl('polygon', { points: ridge(W, HZ, [[0, 16, 0.35], [95, 12, 0.3], [205, 18, 0.4], [300, 14, 0.35], [400, 16, 0.4]]), fill: '#140a0d' }));
+    s.appendChild(svgEl('polygon', { points: ridge(W, HZ, [[0, 16, 0.35], [95, 12, 0.3], [205, 18, 0.4], [300, 14, 0.35], [400, 16, 0.4]]), fill: P.hill }));
     // Tierra yerma
-    s.appendChild(svgEl('rect', { x: 0, y: HZ, width: W, height: 10, fill: '#231716' }));
-    s.appendChild(svgEl('rect', { x: 0, y: HZ + 10, width: W, height: 40, fill: '#1b1211' }));
-    s.appendChild(svgEl('rect', { x: 0, y: HZ + 50, width: W, height: H - HZ - 50, fill: '#140d0c' }));
+    s.appendChild(svgEl('rect', { x: 0, y: HZ, width: W, height: 10, fill: P.ground[0] }));
+    s.appendChild(svgEl('rect', { x: 0, y: HZ + 10, width: W, height: 40, fill: P.ground[1] }));
+    s.appendChild(svgEl('rect', { x: 0, y: HZ + 50, width: W, height: H - HZ - 50, fill: P.ground[2] }));
     // Árboles muertos y tumbas
     [[6, 0], [24, 1], [46, 2], [160, 1], [176, 0], [356, 1], [380, 0]].forEach(([x, sh]) => { const p = pixSvg(SPRITES.deadTree(sh), 1); p.setAttribute('x', x); p.setAttribute('y', HZ - 22 + sh * 2); s.appendChild(p); });
     [[38, HZ + 6, 0], [52, HZ + 12, 1], [70, HZ + 4, 2], [348, HZ + 8, 1], [366, HZ + 14, 0], [226, HZ + 3, 2]].forEach(([x, y, k]) => { const p = pixSvg(SPRITES.grave(k), 1); p.setAttribute('x', x); p.setAttribute('y', y); s.appendChild(p); });
@@ -294,7 +309,7 @@
       const tt = (y - HZ) / (H - HZ);
       const cx = 264 - tt * 64 + Math.round(Math.sin(tt * 5) * 6);
       const hw = Math.round(3 + tt * 22);
-      s.appendChild(svgEl('rect', { x: cx - hw, y, width: hw * 2, height: 2, fill: y % 8 < 2 ? '#2a2026' : '#362a2e' }));
+      s.appendChild(svgEl('rect', { x: cx - hw, y, width: hw * 2, height: 2, fill: y % 8 < 2 ? P.path[0] : P.path[1] }));
       if (y % 6 === 0) s.appendChild(svgEl('rect', { x: cx - hw + 2 + Math.floor(rnd() * Math.max(1, hw * 2 - 6)), y, width: 3, height: 1, fill: '#4b3d42' }));
     }
     // Hierba seca y huesos
@@ -354,5 +369,6 @@
       ...team, ...spots);
   };
   DK.views.campTimeOfDay = timeOfDay;
+  DK.views.campBackdrop = backdrop;
   DK.pix.sprites = SPRITES;
 })();

@@ -11,12 +11,8 @@ module.exports = {
         const n = count('normal'), c = count('captura'), f = count('combate');
         DK.expedition.setStart({ kind: 'captura' }); DK.expedition.start({}); const e = DK.expedition.active();
         DK.store.state.expedition = null;
-        // Al azar, y las Mejoras «Rumbo» suben la probabilidad de un tipo
-        const before = DK.expedition.kindChances().captura;
-        DK.store.state.camp = Object.assign({}, DK.store.state.camp, { rumbo_captura: 2 });
-        const after = DK.expedition.kindChances().captura;
         const seen = new Set(); for (let i = 0; i < 200; i++) seen.add(DK.expedition.pickKind());
-        return { n, c, f, kind: e.kind, locked: DK.expedition.kinds().find((k) => k.id === 'desafio').locked, before, after, seen: seen.size };
+        return { n, c, f, kind: e.kind, locked: DK.expedition.kinds().find((k) => k.id === 'desafio').locked, seen: seen.size };
       });
       check(r.c.size === 'short' && r.c.floors < r.n.floors, 'la expedición de captura debería ser corta');
       check(r.c.recruit / r.c.floors > (r.n.recruit || 0) / r.n.floors * 2, 'la de captura debería tener muchos más reclutas: ' + JSON.stringify(r.c));
@@ -24,7 +20,77 @@ module.exports = {
       check(r.kind === 'captura', 'la expedición no guarda su tipo');
       check(r.locked, 'el desafío debería estar bloqueado sin haber vencido a ningún jefe');
       check(r.seen >= 3, 'el tipo debería salir al azar');
-      check(r.after > r.before * 1.5, 'el Rumbo de captura debería subir su probabilidad: ' + r.before + ' → ' + r.after);
+    }),
+  }, {
+    name: 'Runas de expedición: caen, fijan tamaño y tipo, se quitan sin re-sortear y se gastan al partir',
+    views: ['desktop', 'mobile'],
+    run: (browser, view) => play(browser, view, async (p) => {
+      const r = await p.evaluate(() => {
+        const E = DK.expedition, R = DK.runes;
+        DK.store.state.nextExpedition = { zone: 'pradera', seed: 'r1', size: 'small', kind: 'normal', mod: null };
+        R.add('xl', 1); R.add('captura', 2); R.add('desafio', 1);
+        const lockedDesafio = !R.usable('desafio') && !R.toggle('desafio');
+        R.toggle('captura');
+        const k1 = E.nextStart().kind, s1 = E.nextStart().size; // captura → mapa corto
+        R.toggle('xl');
+        const s2 = E.nextStart().size;
+        R.toggle('captura'); // quitarla: vuelve a lo que salió al azar
+        const k3 = E.nextStart().kind, s3 = E.nextStart().size;
+        R.toggle('xl');
+        const back = E.nextStart().size;
+        R.toggle('captura'); R.toggle('xl');
+        // cambiar de zona no quita las runas
+        DK.world.progress(Object.keys(DK.data.zones)[1]).unlocked = true; E.setStart({ zone: Object.keys(DK.data.zones)[1] });
+        const keep = R.selected();
+        E.start({});
+        const e = E.active();
+        const after = { xl: R.count('xl'), captura: R.count('captura') };
+        // caen en cofres y jefes
+        const before = R.total();
+        DK.config.expedition.runes.drop.treasure = 1; const tr = E.openTreasure();
+        const dropped = R.total() - before;
+        return { lockedDesafio, k1, s1, s2, k3, s3, back, keep, kind: e.kind, size: e.size, used: e.runesUsed, after, tr: tr.runes, dropped, next: DK.store.state.nextExpedition };
+      });
+      check(r.lockedDesafio, 'la runa de desafío no debería poder usarse sin haber vencido a un jefe');
+      check(r.k1 === 'captura' && r.s1 === 'short', 'la runa de captura debería fijar el tipo (y su mapa corto): ' + r.k1 + ' ' + r.s1);
+      check(r.s2 === 'xl', 'la runa XL debería fijar el tamaño aunque el tipo sea de captura: ' + r.s2);
+      check(r.k3 === 'normal' && r.s3 === 'xl', 'al quitar la runa de tipo vuelve el tipo que salió al azar: ' + r.k3 + ' ' + r.s3);
+      check(r.back === 'small', 'al quitar la runa de tamaño vuelve el tamaño que salió al azar: ' + r.back);
+      check(r.keep.kind === 'captura' && r.keep.size === 'xl', 'cambiar de zona no debería quitar las runas');
+      check(r.kind === 'captura' && r.size === 'xl', 'la expedición no sale con lo fijado por las runas');
+      check(r.used.length === 2 && r.after.xl === 0 && r.after.captura === 1, 'las runas no se gastan al partir: ' + JSON.stringify(r.after));
+      check(r.tr.length === 1 && r.dropped === 1, 'el cofre debería dar una runa');
+      check(!r.next, 'la próxima expedición debería volver a sortearse');
+    }),
+  }, {
+    name: 'Runas en la preparación: se ponen y quitan con un toque (Batalla)',
+    run: (browser, view) => play(browser, view, async (p) => {
+      await p.evaluate(() => { DK.store.state.nextExpedition = { zone: 'pradera', seed: 'r2', size: 'small', kind: 'normal', mod: null }; DK.runes.add('medium', 1); DK.store.state.camp.rumbo_captura = 2; DK.store.state.emblems = 0; DK.store.migrate(); DK.router.reset('zones'); });
+      await sleep(400);
+      const n0 = await p.locator('.bt-rune').count();
+      await p.click('.bt-rune.r-medium'); await sleep(300);
+      const r1 = await p.evaluate(() => ({ on: !!document.querySelector('.bt-rune.r-medium.on'), size: DK.expedition.nextStart().size, emblems: DK.store.state.emblems, rumbo: DK.store.state.camp.rumbo_captura }));
+      await p.click('.bt-rune.r-medium'); await sleep(300);
+      const r2 = await p.evaluate(() => ({ on: !!document.querySelector('.bt-rune.r-medium.on'), size: DK.expedition.nextStart().size, disabled: document.querySelector('.bt-rune.r-xl').disabled }));
+      check(n0 === 6, 'deberían verse las 6 runas: ' + n0);
+      check(r1.on && r1.size === 'medium', 'la runa no se pone');
+      check(!r2.on && r2.size === 'small', 'la runa no se quita');
+      check(r2.disabled, 'una runa que no tienes debería estar desactivada');
+      check(r1.emblems === 5 && r1.rumbo === undefined, 'el Rumbo antiguo debería devolver sus emblemas: ' + r1.emblems);
+    }),
+  }, {
+    name: 'Campamento: ciclo de día y noche oscuro (cielo, sol o luna y estrellas según la hora)',
+    run: (browser, view) => play(browser, view, async (p) => {
+      const r = await p.evaluate(() => ['day', 'dawn', 'dusk', 'night'].map((tod) => {
+        const s = DK.views.campBackdrop(tod);
+        return { tod, sky: [...s.querySelectorAll('#campSky stop')].map((x) => x.getAttribute('stop-color')).join(), moon: !!s.querySelector('.camp-body.moon'), sun: !!s.querySelector('.camp-body.sun'), stars: s.querySelectorAll('rect[fill="#fecaca"]').length };
+      }));
+      const by = Object.fromEntries(r.map((x) => [x.tod, x]));
+      check(new Set(r.map((x) => x.sky)).size === 4, 'cada momento del día debería tener su cielo');
+      check(by.night.moon && !by.day.moon && by.day.sun, 'de noche luna y de día sol');
+      check(by.day.stars === 0 && by.night.stars > by.dusk.stars, 'las estrellas sólo de noche (y menos al atardecer)');
+      const hours = await p.evaluate(() => [3, 6, 12, 19].map((hr) => { const d = new Date(); d.setHours(hr); return DK.views.campTimeOfDay(d); }));
+      check(hours.join() === 'night,dawn,day,dusk', 'la hora no da el momento del día: ' + hours);
     }),
   }, {
     name: 'Los caminos del mapa no se cruzan y avanzan a carriles cercanos',

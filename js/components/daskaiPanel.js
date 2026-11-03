@@ -48,9 +48,36 @@
       { icon: 'flask', label: t('heal.button'), onClick: async () => { if (await V.healDialog([d])) onChange(); } },
       DK.daskai.canEvolve(d) ? { icon: 'evolve', label: t('evo.button'), onClick: async () => { if (await V.evolveDialog(d)) onChange(); } } : false,
       onCompare ? { icon: 'scale', label: t('detail.compare'), onClick: () => onCompare(d) } : false,
+      // Mover a otra caja (fuera de las expediciones, que las cajas se quedan en el campamento)
+      !DK.expedition.active() && DK.boxes ? { icon: 'grid', label: active ? t('box.storeIn') : t('box.moveTo'), disabled: active && DK.party.active().length <= 1, onClick: () => V.moveToBox(d, onChange) } : false,
       null,
       { icon: 'trash', label: t('detail.release'), danger: true, disabled: DK.party.all().length <= 1, onClick: async () => { if (await release(d)) onChange(); } },
     ].filter((x) => x !== false); // null = separador
+  };
+
+  /**
+   * Elegir caja para un daskai (desde el menú contextual): cada caja con su
+   * nombre, color y huecos libres. Lo coloca en el primer hueco libre.
+   */
+  V.moveToBox = (d, onChange = () => DK.router.refresh()) => {
+    DK.boxes.sync();
+    const here = DK.boxes.locate(d.uid);
+    const m = DK.ui.modal({ title: t('box.moveTitle', { name: DK.daskai.name(d) }), icon: 'grid', content: (close) => h('div', { class: 'box-pick' },
+      DK.boxes.list().map((b, i) => {
+        const used = DK.boxes.count(i), full = used >= DK.boxes.SIZE, cur = here && here.b === i;
+        const c = DK.boxes.colors(b.bg);
+        return h('button', { class: 'box-pick-btn' + (cur ? ' cur' : ''), type: 'button', disabled: full || cur, style: { '--b1': c[0], '--b2': c[1] },
+          onClick: () => {
+            const slot = DK.boxes.box(i).slots.indexOf(null);
+            if (slot < 0 || !DK.boxes.moveTo(d.uid, i, slot)) { DK.audio.sfx('error'); return; }
+            DK.audio.sfx('swap'); DK.ui.toast(t('box.moved', { name: DK.daskai.name(d), box: DK.boxes.name(i) }), { icon: 'grid', kind: 'good' });
+            close(i); onChange();
+          } },
+          h('span', { class: 'box-pick-sw' }), h('b', null, DK.boxes.name(i)), h('small', null, cur ? t('box.here') : full ? t('box.full') : t('box.count', { n: used, max: DK.boxes.SIZE })));
+      }),
+      DK.boxes.list().length < DK.boxes.MAX ? h('button', { class: 'box-pick-btn add', type: 'button', onClick: () => { const i = DK.boxes.add(); if (i >= 0 && DK.boxes.moveTo(d.uid, i, 0)) { DK.audio.sfx('swap'); close(i); onChange(); } } },
+        DK.icon('plus', 18), h('b', null, t('box.newBox'))) : null) });
+    return m.promise;
   };
 
   /** Panel completo de un daskai. */

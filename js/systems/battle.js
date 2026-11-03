@@ -472,6 +472,7 @@
 
     /** ¿Por qué no se puede vincular? (null si se puede) */
     cannotCapture(st) {
+      if (!C().captureEnabled) return t('battle.captureOff');
       if (st.boss) return t('battle.bossNoCapture');
       if (C().captureOnlyInExpedition && !st.expedition) return t('battle.captureExpOnly');
       if (st.expedition && DK.curses.effect('noCapture')) return t('curse.noCaptureMsg');
@@ -669,6 +670,8 @@
         if (wh) DK.party.active().forEach((d) => { if (!DK.daskai.isFainted(d)) { const s = DK.daskai.stats(d); d.cur.hp = Math.min(s.hp, d.cur.hp + Math.round(s.hp * wh)); } });
         out.winHeal = wh;
         // Tras vencer a un rival de élite eliges una reliquia
+        // Runas de expedición: élites a veces, jefes siempre (DK.runes)
+        out.runes = DK.runes.drop(st.secret ? 'secret' : st.boss ? 'boss' : st.elite ? 'elite' : '');
         if (st.elite) { DK.relics.offer(['raro', 'epico'], 3); const ex = DK.expedition.active(); if (ex && !(ex.relicChoice || []).length) DK.relics.offer(['comun', 'raro', 'epico'], 3); out.relicOffer = true; }
       } else { out.drops.forEach((id) => DK.bag.add(id)); DK.wallet.add(out.coins, { silent: true }); }
 

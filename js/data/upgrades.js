@@ -26,8 +26,6 @@
  *   hoguera     +% de curación en las hogueras del mapa           (expedition.rest)
  *   comercio    ofertas extra en cada mercader                    (expedition.makeOffers)
  *   fenix       salvaciones extra de la muerte por expedición     (rules.maxRevives)
- *  Rumbos
- *   rumbo_<tipo>  más probabilidad de que la expedición sea de ese tipo (expedition.kindChances)
  *
  * Para añadir una mejora: añádela aquí, escribe sus textos en
  * lang → camp.up.<id>.{name,desc,effect} y lee DK.camp.value('<id>')
@@ -52,11 +50,6 @@
     { id: 'hoguera', icon: 'campfire', group: 'expedition', levels: L([1, 0.15], [2, 0.3]) },
     { id: 'comercio', icon: 'shop', group: 'expedition', levels: L([1, 1], [2, 2]) },
     { id: 'fenix', icon: 'sparkles', group: 'expedition', levels: L([4, 1], [8, 2]) },
-    // Rumbos: más probable que la expedición sea de ese tipo (× (1 + value) su peso)
-    { id: 'rumbo_captura', icon: 'paw', group: 'rumbos', levels: L([2, 0.75], [3, 1.5], [5, 2.5]) },
-    { id: 'rumbo_combate', icon: 'swords', group: 'rumbos', levels: L([2, 0.75], [3, 1.5], [5, 2.5]) },
-    { id: 'rumbo_tesoro', icon: 'gift', group: 'rumbos', levels: L([2, 0.75], [3, 1.5], [5, 2.5]) },
-    { id: 'rumbo_desafio', icon: 'skull', group: 'rumbos', levels: L([3, 0.75], [4, 1.5], [6, 2.5]) },
   ];
-  DK.data.upgradeGroups = ['combat', 'progress', 'expedition', 'rumbos'];
+  DK.data.upgradeGroups = ['combat', 'progress', 'expedition'];
 })();

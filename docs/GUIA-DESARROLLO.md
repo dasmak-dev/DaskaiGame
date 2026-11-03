@@ -322,7 +322,7 @@ Huecos `config.training.slots` + mejora «Instructor». Al entrar se paga `cost(
 
 ### Tipos de expedición (`config.expedition.kinds`)
 
-El tipo sale **al azar** al preparar cada expedición (`DK.expedition.pickKind()`, según `kindChances()`: el `chance` de cada tipo — normal 50, captura 16, combate 16, tesoro 12, desafío 6 — × (1 + la Mejora «Rumbo de <tipo>», grupo `rumbos` de `data/upgrades.js`, que se compra con emblemas). Queda guardado en `state.nextExpedition.kind` hasta que salgas; Batalla lo enseña con su efecto y la probabilidad de cada tipo. `setStart({ kind })` sigue existiendo para las pruebas. Cada tipo multiplica los pesos de los nodos en `generate()` (como un modificador de mapa) y puede fijar tamaños (`sizes`, p. ej. el `short` de 6 + 2 pisos), garantizar nodos (`minRecruits`, `minElites`, `multiRecruit`) y dar efectos que leen los sistemas con `DK.expedition.kindDef()`: `capture`, `recruit`, `coins` / `exp`, `levels` y `emblems`. `needsBoss` lo bloquea hasta vencer a algún jefe.
+El tipo y el tamaño salen **al azar** al preparar cada expedición (`DK.expedition.pickKind()` según `kindChances()` — el `chance` de cada tipo: normal 50, captura 16, combate 16, tesoro 12, desafío 6 — y `pickSize()`), salvo que el jugador ponga **runas de expedición** (ver más abajo). Quedan guardados en `state.nextExpedition` hasta que salgas; Batalla los enseña (con «Fijado con runa» si hay runa de tipo).
 
 | Tipo | Qué cambia |
 |---|---|
@@ -354,6 +354,28 @@ Se carga la última y sólo sobrescribe: paleta (piedra oscura, bronce, oro `--g
 
 - **Expedición:** al entrar en el mapa, el equipo, la mochila o un combate durante una expedición, `#zone-backdrop` (creado en `screens/expedition.js` con `screen:enter`) pinta detrás de todo la escena de la zona actual, oscurecida; `body.in-exp`.
 - **Combate:** la arena usa la escena de la zona (`components/scenes.js`, ahora con árboles muertos, ruinas, tumbas, cristales o tentáculos según la zona) y los **jefes tienen su propio fondo**: `DK.scenes.bossScene(zona, secreto)` → `boss_<escena>` (menhires bajo luna roja, bosque muerto, naufragio con tormenta, bosque de cristales, forja de lava, santuario con estatua, fauces del abismo, ruinas entre rayos) y `boss_secret` (cripta) para los jefes ocultos.
+
+### Cambios de la v4.22
+
+- **Runas de expedición** (`systems/runes.js`, `config.expedition.runes`): sustituyen a las Mejoras «Rumbo» (las partidas que las tenían recuperan sus emblemas en `store.migrate()`).
+  - Caen en cofres (30%), élites (35%), jefes (1 segura) y jefes ocultos (2). Se guardan para siempre en `state.runes = { id: n }` (no se pierden al caer). Salen en las tarjetas del cofre, en el log/cartel del combate y en el resumen (`lastExpedition.runes`).
+  - Seis runas: tamaño `small` / `medium` / `xl` y tipo `captura` / `combate` / `desafio` (la de desafío necesita haber vencido a un jefe).
+  - En Batalla (`zones.js prepCard → .bt-runes`) se pone una de tamaño y/o una de tipo con un toque (`DK.runes.toggle(id)`); otro toque la quita. `nextExpedition.rolled` guarda lo que salió al azar, así que quitarla vuelve a eso (no sirve para re-sortear). La runa de tamaño gana a los tamaños propios del tipo (captura XL es posible). `DK.runes.apply(n)` calcula tipo/tamaño; `DK.runes.consume(n)` las gasta en `start()` (`expedition.runesUsed`).
+- **Campamento con ciclo de día y noche oscuro** (`components/camp.js → GRIM[tod]`): día ceniciento con sol pálido y sin estrellas, amanecer y atardecer con sol de brasas, noche con luna de sangre y estrellas; según la hora real (`timeOfDay`). `DK.views.campBackdrop(tod)` para pruebas. CSS `.camp-scene.grim.tod-*`.
+- **Hoguera sin parpadeo:** elegir a quién entrenar sólo cambia clases y el botón (no repinta la pantalla).
+- **Mercader:** «Seguir el camino» también arriba (`.mr-top .mr-skip`).
+- **Tema claro:** los paneles del campamento y `.camp-screen` sólo son oscuros en tema oscuro; colores legibles para chips de tamaño/modificador, emblemas, monedas, casas, rarezas, pestañas, botín y runas (grim.css §10). El fondo de la expedición ya no se pone negro en claro (era el destello al cambiar de pantalla). Script de contraste: `scratch/lc.js`.
+
+### Cambios de la v4.21
+
+- **Sin vínculo en combate** (`config.captureEnabled: false`): `DK.battle.cannotCapture` lo bloquea, los cristales no salen en la bolsa del combate ni en el mercader ni en la mochila sugerida, y la reliquia de vínculo no se sortea. Los daskai se consiguen en los nodos de reclutas (que ahora cuentan para el encargo «recluta»). Para volver a activarlo basta con poner `captureEnabled: true`.
+- **Variocolores en los reclutas:** cada candidato tiene `config.expedition.recruitShinyChance` (4%) de serlo, más el `shiny` del tipo de expedición (captura +4%).
+- **Equipo de 6** (`config.maxTeam`); la barra del equipo en expedición tiene 6 huecos.
+- **Hoguera:** dos opciones grandes, Descansar (todo el equipo) o Entrenar, en la que eliges a quién con retratos: `DK.expedition.train(uid)` le da justo la experiencia que le falta para **subir 1 nivel**.
+- **Cofre:** al abrirlo, cada cosa sale en su tarjeta (con animación): monedas, objetos (con su rareza, qué hacen y si van a la Mochila —ya usables— o al Botín —al volver—), reliquias y recetas.
+- **En expedición no se ve el monedero de casa:** la cabecera enseña el botín (con lo que se paga en el mercader) y los emblemas.
+- **Mover entre cajas:** clic derecho en un daskai → «Mover a otra caja…» (`V.moveToBox`: cada caja con sus huecos libres, o una caja nueva), o arrastrarlo y soltarlo sobre el número de otra caja.
+- **Nada de «null» en pantalla:** `replaceChildren`, `append` y `prepend` ignoran null / undefined / false (core/ui.js), como ya hacía `h()`. Era el «null» bajo la vida del rival en los combates normales (la barra de ruptura sólo existe en jefes y élites).
 
 ### Mercader de la expedición
 

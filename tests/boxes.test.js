@@ -19,7 +19,7 @@ module.exports = {
         DK.boxes.rename(1, 'Reserva'); DK.boxes.setBg(1, 'lava');
         return { max: DK.config.maxTeam, team: team.length, boxed, total: DK.party.all().length, okSwap, swapped: DK.store.state.team[0] === first, back: !!back, okMove, at: DK.boxes.box(1).slots[5] != null, name: DK.boxes.name(1), bg: DK.boxes.box(1).bg };
       });
-      check(r.max === 5 && r.team === 5, 'el equipo debería ser de 5');
+      check(r.max === 6 && r.team === 6, 'el equipo debería ser de 6');
       check(r.boxed + r.team === r.total, 'algún daskai no está ni en el equipo ni en una caja');
       check(r.okSwap && r.swapped && r.back, 'pasar de la caja al equipo lleno debería intercambiarlos');
       check(r.okMove && r.at, 'no se ha podido guardar en la caja');
@@ -31,7 +31,7 @@ module.exports = {
     run: (browser, view) => play(browser, view, async (p) => {
       await p.evaluate(() => { const sp = Object.keys(DK.data.species); for (let i = 0; i < 8; i++) DK.party.add(DK.daskai.create(sp[i], 5)); DK.router.reset('team'); });
       await sleep(500);
-      check((await p.$$('.party-mon')).length === 5, 'faltan daskai en el equipo');
+      check((await p.$$('.party-mon')).length === 6, 'faltan daskai en el equipo');
       check((await p.$$('.pc-slot')).length === 30, 'la caja debería tener 30 huecos');
       if (!view.touch) {
         const src = await p.$('.pc-mon'), dst = (await p.$$('.pc-slot.is-empty'))[0];

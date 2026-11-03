@@ -153,18 +153,34 @@
     const lvBonus = E.levelBonus(1) + ((pv.mod && D.mapMods[pv.mod].levels) || 0);
     const best = E.bestDepth();
 
-    // Tipo de expedición: sale al azar (las Mejoras «Rumbo» suben la probabilidad de uno)
-    const cur = E.kindDef(pv.kind), chances = E.kindChances();
+    // Tipo de expedición: sale al azar salvo que pongas una runa de tipo (DK.runes)
+    const cur = E.kindDef(pv.kind), chances = E.kindChances(), sel = DK.runes.selected();
     const kindBox = h('div', { class: 'bt-kind k-' + cur.id },
       h('span', { class: 'bt-kind-icon' }, DK.icon(cur.icon, 24)),
       h('div', { class: 'bt-kind-text' },
-        h('span', { class: 'bt-label' }, t('kind.rolled')),
+        h('span', { class: 'bt-label' }, t('kind.rolled'), sel.kind ? h('span', { class: 'bt-rune-tag' }, DK.icon('rune', 11), t('kind.byRune')) : null),
         h('b', null, t('kind.' + cur.id + '.name')),
         h('span', { class: 'small muted' }, t('kind.' + cur.id + '.desc')),
         h('span', { class: 'chips' }, V.kindEffects(cur))),
-      h('div', { class: 'bt-kind-odds', tip: t('kind.chancesHint'), 'aria-label': t('kind.chances') },
+      sel.kind ? null : h('div', { class: 'bt-kind-odds', tip: t('kind.chancesHint'), 'aria-label': t('kind.chances') },
         E.kinds().map((k) => h('span', { class: 'bt-odd k-' + k.id + (k.id === cur.id ? ' on' : '') + (k.locked ? ' locked' : ''), tip: k.locked ? t('kind.locked') : `${t('kind.' + k.id + '.name')} · ${Math.round((chances[k.id] || 0) * 100)}%` },
           DK.icon(k.locked ? 'lock' : k.icon, 13), h('small', null, k.locked ? '—' : Math.round((chances[k.id] || 0) * 100) + '%')))));
+
+    // Runas: una de tamaño y/o una de tipo fijan la próxima expedición (se gastan al partir)
+    const runeTile = (r) => {
+      const n = DK.runes.count(r.id), on = sel[r.group] === r.id, locked = DK.runes.locked(r.id);
+      const off = !on && (n <= 0 || locked);
+      return h('button', { class: 'bt-rune g-' + r.group + ' r-' + r.id + (on ? ' on' : '') + (n <= 0 ? ' none' : ''), type: 'button', 'aria-pressed': String(on), disabled: off,
+        tip: `${t('rune.' + r.id + '.name')} · ${t('rune.' + r.id + '.effect')} · ${locked ? t('rune.locked') : on ? t('rune.on') : n ? t('rune.tapOn') : t('rune.none')}`,
+        onClick: () => { DK.runes.toggle(r.id); DK.audio.sfx(on ? 'click' : 'select'); refresh(); } },
+        h('span', { class: 'bt-rune-stone' }, DK.icon(locked ? 'lock' : r.icon, 16)),
+        h('span', { class: 'bt-rune-text' }, h('b', null, t('rune.' + r.id + '.effect')), h('small', null, on ? t('rune.on').split(':')[0] : '×' + n)));
+    };
+    const runeBox = h('div', { class: 'bt-runes' + (DK.runes.total() ? '' : ' empty') },
+      h('div', { class: 'bt-label-row' }, h('span', { class: 'bt-label' }, DK.icon('rune', 12), ' ', t('rune.title')), h('span', { class: 'grow' }),
+        h('span', { class: 'small muted', tip: t('rune.help') }, DK.icon('info', 12), ' ', t('rune.random'))),
+      ['size', 'kind'].map((g) => h('div', { class: 'bt-rune-row' }, h('span', { class: 'bt-rune-group' }, t('rune.' + g)), DK.runes.defs(g).map(runeTile))),
+      DK.runes.total() ? null : h('p', { class: 'muted small' }, t('rune.none')));
 
     // Equipo: retratos con su vida
     const teamStrip = h('div', { class: 'bt-team' }, team.map((d, i) => {
@@ -204,6 +220,7 @@
         h('span', { class: 'chip pos', tip: t('brief.rewardTip') }, DK.icon('crown', 13), t('brief.rewardValue', { n: E.bossEmblems(pv.size, pv.kind) })),
         best ? h('span', { class: 'chip' }, DK.icon('trophy', 13), t('exp.best', { n: best })) : null),
       kindBox,
+      runeBox,
       h('div', { class: 'bt-prep-grid' },
         h('div', { class: 'bt-block' },
           h('div', { class: 'bt-label-row' }, h('span', { class: 'bt-label' }, t('pack.team'), ` ${team.length}/${DK.config.maxTeam}`),

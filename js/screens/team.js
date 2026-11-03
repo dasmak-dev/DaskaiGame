@@ -204,7 +204,7 @@
           h('button', { class: 'pc-plate', type: 'button', tip: t('box.rename'), onClick: rename, style: { '--b1': DK.boxes.colors(box.bg)[0], '--b2': DK.boxes.colors(box.bg)[1] } },
             h('b', null, DK.boxes.name(bi)), h('small', null, t('box.count', { n: DK.boxes.count(bi), max: DK.boxes.SIZE }))),
           h('button', { class: 'pc-arrow', type: 'button', 'aria-label': t('box.next'), tip: t('box.next') + ' (E)', onClick: () => go(1) }, DK.icon('next', 22))),
-        h('div', { class: 'pc-tabs', role: 'tablist' }, DK.boxes.list().map((b, i) => h('button', { class: 'pc-tab' + (i === bi ? ' on' : '') + (hits && hits[i] ? ' hit' : ''), type: 'button', role: 'tab', 'aria-selected': String(i === bi),
+        h('div', { class: 'pc-tabs', role: 'tablist' }, DK.boxes.list().map((b, i) => h('button', { class: 'pc-tab drop-zone' + (i === bi ? ' on' : '') + (hits && hits[i] ? ' hit' : ''), type: 'button', role: 'tab', 'aria-selected': String(i === bi), dataset: { zone: 'tab', index: i },
           tip: DK.boxes.name(i) + (hits && hits[i] ? ` · ${t('box.matches', { n: hits[i] })}` : ''), style: { '--b1': DK.boxes.colors(b.bg)[0] }, onClick: () => { DK.boxes.setCur(i); refresh(); } }, String(i + 1))),
           nBoxes < DK.boxes.MAX ? h('button', { class: 'pc-tab add', type: 'button', tip: t('box.add'), 'aria-label': t('box.add'), onClick: () => { DK.boxes.add(); DK.audio.sfx('select'); refresh(); } }, DK.icon('plus', 14)) : null),
         h('div', { class: 'pc-grid', style: boxBg(box.bg) }, cells),
@@ -282,6 +282,12 @@
           ok = DK.party.isActive(uid) && DK.party.removeFromTeam(uid);
           if (!ok && DK.party.isActive(uid)) DK.ui.toast(t('team.needOne'), { icon: 'alert', kind: 'bad' });
           if (!DK.party.isActive(uid) && !ok) return;
+        } else if (z.dataset.zone === 'tab') {
+          // Soltar sobre la pestaña de otra caja: va al primer hueco libre de esa caja
+          const bi2 = parseInt(z.dataset.index, 10), slot = DK.boxes.box(bi2).slots.indexOf(null);
+          ok = slot >= 0 && DK.boxes.moveTo(uid, bi2, slot);
+          if (ok) DK.ui.toast(t('box.moved', { name: DK.daskai.name(DK.party.get(uid)), box: DK.boxes.name(bi2) }), { icon: 'grid', kind: 'good' });
+          else DK.ui.toast(slot < 0 ? t('box.full') : t('team.needOne'), { icon: 'alert', kind: 'bad' });
         } else if (z.dataset.zone === 'box') {
           ok = DK.boxes.moveTo(uid, DK.boxes.cur(), parseInt(z.dataset.index, 10));
           if (!ok && DK.party.isActive(uid)) DK.ui.toast(t('team.needOne'), { icon: 'alert', kind: 'bad' });

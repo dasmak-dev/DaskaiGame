@@ -8,7 +8,7 @@
     maxLevel: 100,
     maxMoves: 4,          // ataques activos por daskai
     maxEquip: 2,          // objetos equipados por daskai
-    maxTeam: 5,           // daskai en el equipo de batalla
+    maxTeam: 6,           // daskai en el equipo de batalla
     starterLevel: 5,
     regenPct: 2,          // % de vida máxima regenerada por turno
 
@@ -93,8 +93,8 @@
         // corto (sólo lo usan algunos tipos de expedición: weight 0 = nunca sale al azar)
         short: { rows: 6, weight: 0, caves: 0, shortcuts: [0, 0], rests: 0, emblems: 1, icon: 'flag' },
       },
-      /* Tipos de expedición: salen AL AZAR (chance = peso; las Mejoras «Rumbo de…»
-       * lo suben: DK.expedition.kindChances) y duran toda la expedición.
+      /* Tipos de expedición: salen AL AZAR (chance = peso: DK.expedition.kindChances)
+       * salvo que gastes una runa de tipo (DK.runes), y duran toda la expedición.
        *   weights   multiplica el peso de cada nodo (como los modificadores de mapa)
        *   sizes     tamaños posibles (si no, cualquiera con su peso)
        *   minRecruits / minElites  nodos garantizados · multiRecruit  puede haber varios reclutas en un piso
@@ -103,10 +103,26 @@
        *   emblems   emblemas extra por cada jefe · needsBoss  hace falta haber vencido a algún jefe */
       kinds: {
         normal: { icon: 'compass', chance: 50, weights: {} },
-        captura: { icon: 'paw', chance: 16, sizes: ['short'], weights: { recruit: 6, fight: 1.3, elite: 0.3, event: 0.6, treasure: 0.6, shop: 0.7, shrine: 0.4, cave: 0 }, minRecruits: 6, multiRecruit: true, capture: 0.15, recruit: 1, coins: -0.3 },
+        captura: { icon: 'paw', chance: 16, sizes: ['short'], weights: { recruit: 6, fight: 1.3, elite: 0.3, event: 0.6, treasure: 0.6, shop: 0.7, shrine: 0.4, cave: 0 }, minRecruits: 6, multiRecruit: true, recruit: 1, shiny: 0.04, coins: -0.3 },
         combate: { icon: 'swords', chance: 16, weights: { fight: 2.4, elite: 2, event: 0.3, recruit: 0.4, treasure: 0.5, shop: 0.7, shrine: 0.6 }, minElites: 2, coins: 0.3, exp: 0.25 },
         tesoro: { icon: 'gift', chance: 12, weights: { treasure: 3, event: 1.6, shop: 1.6, cave: 2, fight: 0.6, elite: 0.6 }, coins: 0.2, levels: 1 },
         desafio: { icon: 'skull', chance: 6, sizes: ['short'], weights: { elite: 4, fight: 0.8, event: 0.3, recruit: 0.2, treasure: 0.5, shop: 0.8 }, minElites: 3, levels: 3, emblems: 1, coins: 0.2, needsBoss: true },
+      },
+      /* Runas de expedición (DK.runes): caen en cofres, élites y jefes y se guardan
+       * para siempre. Antes de salir puedes gastar una de tamaño y/o una de tipo
+       * para fijar el mapa; sin runas el tamaño y el tipo salen al azar.
+       *   drop   probabilidad de runa en cofre / élite; jefe y jefe oculto: nº seguro
+       *   list   runas: group 'size' | 'kind', value = tamaño o tipo, weight = rareza al caer */
+      runes: {
+        drop: { treasure: 0.3, elite: 0.35, boss: 1, secret: 2 },
+        list: {
+          small: { group: 'size', value: 'small', icon: 'map', weight: 26 },
+          medium: { group: 'size', value: 'medium', icon: 'compass', weight: 22 },
+          xl: { group: 'size', value: 'xl', icon: 'mountain', weight: 12 },
+          captura: { group: 'kind', value: 'captura', icon: 'paw', weight: 16 },
+          combate: { group: 'kind', value: 'combate', icon: 'swords', weight: 16 },
+          desafio: { group: 'kind', value: 'desafio', icon: 'skull', weight: 8 },
+        },
       },
       weights: { fight: 36, event: 20, elite: 10, recruit: 9, shop: 7, treasure: 8, rest: 5, shrine: 4, cave: 4 },
       // Atajos: nodos que permiten saltar `shortcutSkip` pisos (a cambio de vida del equipo)
@@ -116,6 +132,7 @@
       modChance: 0.5,      // probabilidad de que un mapa traiga un modificador (data/mapMods.js)
       campfireKeep: 0.5,   // al volver a casa desde una hoguera te llevas este % del botín (y todos los daskai)
       recruitChoices: 3,   // daskai entre los que eliges en un nodo de reclutamiento
+      recruitShinyChance: 0.04, // probabilidad de que un candidato a recluta sea variocolor
       directToBag: ['batalla', 'mejora'], // categorías que van directas a la bolsa (usables ya); el resto espera al final
       chestRelicChance: 0.25, // probabilidad de reliquia en un cofre
       restHeal: 0.5,       // descanso: cura el 50% de vida y maná
@@ -158,6 +175,7 @@
     eliteLevelBonus: 2,   // niveles por encima del máximo de la zona
     lossHpPct: 0.25,      // tras perder, tu equipo vuelve con este % de vida
     expShare: 0.3,        // % de experiencia para los demás daskai del equipo (no debilitados)
+    captureEnabled: false,         // vincular en combate (con cristales): desactivado por ahora; los daskai se consiguen en los nodos de reclutas
     captureOnlyInExpedition: true, // los cristales de vínculo sólo funcionan en expediciones
     historySize: 30,      // combates que guarda el historial del perfil
     expHistorySize: 20,   // expediciones que guarda el historial del perfil

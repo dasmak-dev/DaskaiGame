@@ -123,6 +123,7 @@
           h('div', { class: 'chips' },
             h('span', { class: 'chip pos' }, DK.icon('compass', 13), t('sum.depth', { n: depth, maps: zonesDone.length })),
             s.emblems ? h('span', { class: 'chip pos' }, DK.icon('emblem', 13), t('emblem.plus', { n: s.emblems })) : null,
+            (s.runes || []).length ? h('span', { class: 'chip pos rune-chip', tip: s.runes.map((id) => t('rune.' + id + '.name')).join(', ') }, DK.icon('rune', 13), `+${s.runes.length} ${t('rune.short')}`) : null,
             (s.secrets || []).length ? h('span', { class: 'chip pos' }, DK.icon('cave', 13), tn('sum.secrets', s.secrets.length)) : null,
             h('span', { class: 'chip' }, DK.icon('flag', 13), t('exp.floor', { step: Math.min(s.step, s.total), total: s.total })),
             h('span', { class: 'chip' }, DK.icon('clock', 13), DK.util.duration(mins)),

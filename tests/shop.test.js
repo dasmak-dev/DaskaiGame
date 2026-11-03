@@ -26,6 +26,30 @@ module.exports = {
       check(r.loot === 10 && r.wallet === w0, 'debería pagarse con el botín (100 − 90) y no con el monedero: ' + JSON.stringify(r));
       check(!r.tooMuch, 'no debería poder comprar sin monedas en el botín');
       check((await overflowX(p)) <= 1, 'el mercader se sale por la derecha');
+      check(await p.evaluate(() => document.querySelectorAll('.merchant button.mr-skip').length === 1), 'el mercader debería tener «Seguir» también arriba');
+    }),
+  }, {
+    name: 'Hoguera: elegir a quién entrenar no repinta la pantalla',
+    views: ['desktop', 'mobile'],
+    run: (browser, view) => play(browser, view, async (p) => {
+      await p.evaluate(() => {
+        ['brotin', 'gotin'].forEach((s) => DK.party.add(DK.daskai.create(s, 4)));
+        DK.store.state.team = DK.party.all().slice(0, 3).map((d) => d.uid);
+        DK.store.state.nextExpedition = { zone: 'pradera', seed: 'rest', size: 'small', kind: 'normal', mod: null };
+        DK.expedition.start({}); const e = DK.expedition.active(); e.curseOffer = null; e.relicChoice = null; e.introShown = `1|${e.seed}`;
+        const n = e.map.rows[1][0]; n.type = 'rest'; e.pending = n.id; DK.router.reset('expedition');
+      });
+      await sleep(900);
+      await p.evaluate(() => { window.__panel = document.querySelector('.rest-panel'); });
+      await p.click('.rest-pick >> nth=2'); await sleep(200);
+      const r = await p.evaluate(() => ({ same: window.__panel === document.querySelector('.rest-panel'), on: [...document.querySelectorAll('.rest-pick')].findIndex((b) => b.classList.contains('on')), uid: DK.expedition.active().trainUid, want: DK.party.active()[2].uid, label: document.querySelector('.rest-train-btn').textContent }));
+      check(r.same, 'elegir a quién entrenar repinta la hoguera (parpadea)');
+      check(r.on === 2 && r.uid === r.want, 'no se marca el elegido');
+      check(r.label.includes(await p.evaluate(() => DK.daskai.name(DK.party.active()[2]))), 'el botón de entrenar no cambia de nombre');
+      const lv = await p.evaluate(() => DK.party.active()[2].level);
+      await p.click('.rest-train-btn'); await sleep(600);
+      await p.evaluate(async () => { for (let i = 0; i < 6; i++) { const b = document.querySelector('.modal .btn-primary, .modal-actions .btn'); if (b) b.click(); await new Promise((r) => setTimeout(r, 200)); } });
+      check((await p.evaluate(() => DK.party.active()[2].level)) === lv + 1, 'entrenar no sube al elegido');
     }),
   }, {
     name: 'Entrenamiento: elegir daskai en cuadrícula y mejoras caras con monedas',
@@ -57,6 +81,35 @@ module.exports = {
       const seq = ['high', 'up', 'normal', 'down', 'low'].map((k) => r[k]).filter((x) => x != null);
       check(seq.every((x, i) => i === 0 || x < seq[i - 1]), 'un ritmo más alto debería subir más de media: ' + JSON.stringify(r));
       if (r.high != null && r.normal != null) check(r.high > r.normal * 1.4, '▲▲ debería subir bastante más que lo normal: ' + JSON.stringify(r));
+    }),
+  }, {
+    name: 'Sin vínculo en combate, hoguera que sube 1 nivel al elegido, mover entre cajas y sin «null» en el combate',
+    run: (browser, view) => play(browser, view, async (p) => {
+      const r = await p.evaluate(() => {
+        ['brotin', 'gotin', 'plumin'].forEach((s) => DK.party.add(DK.daskai.create(s, 4)));
+        DK.store.state.team = DK.party.all().slice(0, 3).map((d) => d.uid);
+        // Mover entre cajas
+        DK.party.add(DK.daskai.create('chispon', 3)); DK.boxes.sync();
+        const extra = DK.party.all()[3]; const i2 = DK.boxes.list().length > 1 ? 1 : DK.boxes.add();
+        const okMove = DK.boxes.moveTo(extra.uid, i2, DK.boxes.box(i2).slots.indexOf(null));
+        const where = DK.boxes.locate(extra.uid);
+        // Expedición: hoguera
+        DK.store.state.nextExpedition = { zone: 'pradera', seed: 'r', size: 'small', kind: 'normal', mod: null };
+        DK.expedition.start({}); const e = DK.expedition.active();
+        const d = DK.party.active()[2], lv = d.level;
+        DK.expedition.train(d.uid);
+        const offers = DK.expedition.makeOffers().map((o) => o.id);
+        return { okMove, box: where && where.b, i2, up: d.level - lv, others: DK.party.active()[0].level, crystals: offers.filter((id) => DK.data.items[id].use && DK.data.items[id].use.capture).length, off: !!DK.battle.cannotCapture({ expedition: true }) };
+      });
+      check(r.okMove && r.box === r.i2, 'no se puede mover a otra caja');
+      check(r.up === 1, 'entrenar en la hoguera debería subir 1 nivel al elegido: ' + r.up);
+      check(r.crystals === 0 && r.off, 'con el vínculo desactivado no debería haber cristales ni poder vincular');
+      await p.evaluate(() => DK.router.reset('expedition')); await sleep(600);
+      const hud = await p.evaluate(() => ({ coins: !!document.querySelector('.hud-pill.coins:not(.loot)'), loot: !!document.querySelector('.hud-pill.loot') }));
+      check(!hud.coins && hud.loot, 'en expedición sólo debería verse el botín, no el monedero');
+      await p.evaluate(() => DK.router.go('battle', { zone: 'pradera', leaderUid: DK.party.active()[0].uid })); await sleep(1500);
+      const txt = await p.evaluate(() => document.querySelector('.arena').textContent);
+      check(!/null|undefined/.test(txt), 'sale «null» en la pantalla de combate');
     }),
   }],
 };
