@@ -16,10 +16,11 @@
     // level: puntos de nivel (todos los atributos)
     // natureBonus: puntos extra si la naturaleza lo potencia (▲) → total 2-5
     // naturePenalty: puntos que quita si la naturaleza lo reduce (▼)
-    growth: { level: [1, 3], natureBonus: [1, 2], naturePenalty: [0, 1] },
+    // Puntos por nivel: [mín, máx] × ritmo (decimales al azar). Rango estrecho para que el ritmo (▲▲ / ▼▼) se note de verdad
+    growth: { level: [2, 3], natureBonus: [1, 2], naturePenalty: [0, 1] },
     // Ritmo de crecimiento de cada atributo al subir de nivel (systems/daskai.js → growthWeight):
     //   especie (sus atributos fuertes crecen más) + pasivas (+/-) → multiplica los puntos por nivel
-    growthBias: { species: 0.6, passive: 1.5, min: 0.5, max: 1.8 },
+    growthBias: { species: 0.8, passive: 1.5, min: 0.45, max: 2 },
     evolveBonus: { hp: 6, mp: 3, atk: 2, matk: 2, def: 2, mdef: 2, spd: 2 }, // puntos extra al evolucionar
     // Tónicos (mejora permanente de un atributo): cuánto da cada uno y cuántos admite cada daskai
     tonic: { per: { hp: 6, mp: 4, atk: 2, matk: 2, def: 2, mdef: 2, spd: 2 }, cap: 15 },
@@ -35,8 +36,15 @@
       statHours: 1.5,                             // horas efectivas por punto de atributo
       statPer: { hp: 4, mp: 3, atk: 1, matk: 1, def: 1, mdef: 1, spd: 1 },
       statMax: 12,                                // puntos entrenados como mucho por daskai
-      // Mejora «Instructor» (índice = nivel comprado): huecos extra, +% de ritmo y +niveles de tope
-      instructor: [{ slots: 0, rate: 0, cap: 0 }, { slots: 1, rate: 0.25, cap: 2 }, { slots: 1, rate: 0.5, cap: 4 }, { slots: 2, rate: 1, cap: 6 }],
+      // Mejoras del campo (Instructor), se compran con MONEDAS en el propio campo (DK.training.buyLevel):
+      // huecos extra, +% de ritmo, +niveles de tope y +puntos de atributo entrenables. Muy buenas y muy caras.
+      instructor: [
+        { slots: 0, rate: 0, cap: 0, statMax: 0 },
+        { slots: 1, rate: 0.5, cap: 3, statMax: 4, cost: 2500 },
+        { slots: 1, rate: 1, cap: 6, statMax: 8, cost: 8000 },
+        { slots: 2, rate: 2, cap: 10, statMax: 14, cost: 20000 },
+        { slots: 3, rate: 3, cap: 15, statMax: 20, cost: 50000 },
+      ],
     },
 
     // --- Casas: atacante fuerte → daño x1.5 ; defensor fuerte → recibe un 25% menos ---
@@ -82,6 +90,23 @@
         small: { rows: 10, weight: 45, caves: 1, shortcuts: [1, 2], rests: 1, emblems: 1, icon: 'map' },
         medium: { rows: 18, weight: 35, caves: 2, shortcuts: [2, 3], rests: 2, emblems: 2, icon: 'compass' },
         xl: { rows: 29, weight: 20, caves: 3, shortcuts: [3, 4], rests: 3, emblems: 3, icon: 'mountain' },
+        // corto (sólo lo usan algunos tipos de expedición: weight 0 = nunca sale al azar)
+        short: { rows: 6, weight: 0, caves: 0, shortcuts: [0, 0], rests: 0, emblems: 1, icon: 'flag' },
+      },
+      /* Tipos de expedición: salen AL AZAR (chance = peso; las Mejoras «Rumbo de…»
+       * lo suben: DK.expedition.kindChances) y duran toda la expedición.
+       *   weights   multiplica el peso de cada nodo (como los modificadores de mapa)
+       *   sizes     tamaños posibles (si no, cualquiera con su peso)
+       *   minRecruits / minElites  nodos garantizados · multiRecruit  puede haber varios reclutas en un piso
+       *   capture   + probabilidad de vínculo · recruit  + candidatos en cada nodo de reclutas
+       *   coins / exp  +% de monedas / experiencia · levels  + niveles de los rivales
+       *   emblems   emblemas extra por cada jefe · needsBoss  hace falta haber vencido a algún jefe */
+      kinds: {
+        normal: { icon: 'compass', chance: 50, weights: {} },
+        captura: { icon: 'paw', chance: 16, sizes: ['short'], weights: { recruit: 6, fight: 1.3, elite: 0.3, event: 0.6, treasure: 0.6, shop: 0.7, shrine: 0.4, cave: 0 }, minRecruits: 6, multiRecruit: true, capture: 0.15, recruit: 1, coins: -0.3 },
+        combate: { icon: 'swords', chance: 16, weights: { fight: 2.4, elite: 2, event: 0.3, recruit: 0.4, treasure: 0.5, shop: 0.7, shrine: 0.6 }, minElites: 2, coins: 0.3, exp: 0.25 },
+        tesoro: { icon: 'gift', chance: 12, weights: { treasure: 3, event: 1.6, shop: 1.6, cave: 2, fight: 0.6, elite: 0.6 }, coins: 0.2, levels: 1 },
+        desafio: { icon: 'skull', chance: 6, sizes: ['short'], weights: { elite: 4, fight: 0.8, event: 0.3, recruit: 0.2, treasure: 0.5, shop: 0.8 }, minElites: 3, levels: 3, emblems: 1, coins: 0.2, needsBoss: true },
       },
       weights: { fight: 36, event: 20, elite: 10, recruit: 9, shop: 7, treasure: 8, rest: 5, shrine: 4, cave: 4 },
       // Atajos: nodos que permiten saltar `shortcutSkip` pisos (a cambio de vida del equipo)
@@ -117,6 +142,7 @@
     },
     weakMult: 1.25,       // daño extra al punto débil de una especie (su defensa más baja)
     autoHeal: { at: 0.3, max: 3 }, // automático: cura con un objeto por debajo de este % de vida (máx. por combate)
+    roleChance: 0.2,      // probabilidad de nacer con un RASGO (D.roles); el resto no tienen
     genes: 0.1,           // cada daskai nace con sus atributos base ±10% sobre los de su especie (al azar)
     stab: 1.2,            // ataque de la misma casa que el daskai que lo usa
     // Ruptura (jefes y élites): golpes buenos llenan la barra; al llenarse el rival pierde

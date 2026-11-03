@@ -71,7 +71,7 @@
       nameEl = h('div', { class: 'row gap-s wrap' }, input, btn({ icon: 'check', label: t('common.accept'), size: 'sm', variant: 'primary', onClick: save }), btn({ icon: 'x', label: t('common.cancel'), size: 'sm', variant: 'ghost', onClick: () => toggle('rename') }));
     } else {
       nameEl = h('div', { class: 'row gap-s wrap' }, h('h2', null, DK.daskai.name(d)), d.nickname ? h('span', { class: 'muted' }, `(${sp.name})`) : null,
-        V.level(d.level), V.houseBadge(sp.house), V.shinyTag(d), V.tempTag(d), V.statusTag(d.status),
+        V.level(d.level), V.houseBadge(sp.house), V.roleBadge(d, { neutral: true }), V.shinyTag(d), V.tempTag(d), V.statusTag(d.status),
         DK.daskai.isFainted(d) ? h('span', { class: 'badge bad' }, DK.icon('skull', 13), t('common.fainted')) : null,
         active ? h('span', { class: 'badge good' }, DK.icon('check', 13), isLeader ? t('detail.teamLeader') : t('team.inTeam')) : null);
     }

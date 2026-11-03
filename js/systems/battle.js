@@ -482,7 +482,7 @@
     captureChance(st, it) {
       if (st.boss) return 0;
       const e = st.enemy, a = this.ally(st);
-      let p = it.use.capture * (1 - 0.7 * DK.daskai.hpPct(e)) + (e.status ? 0.1 : 0) + (st.expedition ? DK.relics.sum('capture') : 0);
+      let p = it.use.capture * (1 - 0.7 * DK.daskai.hpPct(e)) + (e.status ? 0.1 : 0) + (st.expedition ? DK.relics.sum('capture') + (DK.expedition.kindDef().capture || 0) : 0);
       const diff = e.level - a.level;
       if (diff > 0) p *= Math.max(0.25, 1 - 0.06 * diff);
       return U.clamp(p, 0.02, 0.95);
@@ -616,7 +616,7 @@
     rewards(st) {
       const ally = this.ally(st), e = st.enemy, sp = D.species[e.species], zone = D.zones[st.zoneId];
       const out = { exp: 0, coins: 0, drops: [], unlocked: null, captured: st.outcome === 'captured', boss: st.boss, toLoot: st.expedition };
-      out.exp = Math.round(C().expGain(sp.exp, e.level) * (st.boss ? 2 : st.elite ? 1.5 : 1) * (1 + DK.camp.value('sabiduria') + (st.expedition ? DK.relics.sum('exp') : 0)));
+      out.exp = Math.round(C().expGain(sp.exp, e.level) * (st.boss ? 2 : st.elite ? 1.5 : 1) * (1 + DK.camp.value('sabiduria') + (st.expedition ? DK.relics.sum('exp') + (DK.expedition.kindDef().exp || 0) : 0)));
       out.levelInfo = DK.daskai.gainExp(ally, out.exp);
       // Experiencia compartida con el resto del equipo (no debilitados)
       out.shared = DK.party.active().filter((d) => d.uid !== ally.uid && !DK.daskai.isFainted(d) && d.level < DK.config.maxLevel).map((d) => {

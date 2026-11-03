@@ -76,6 +76,22 @@
     quemadura: { name: 'Quemado', icon: 'flame', color: '#f97316', dot: 0.05, atkMult: 0.8, desc: 'Pierde un 5% de vida por turno y su ataque físico baja un 20%.' },
   };
 
+  /* RASGOS (en el código, «roles»): cada daskai nace con uno AL AZAR
+     (config.roleChance, 20%) o sin rasgo. Tener rasgo es una ventaja: `mods`
+     suma o resta un % a su atributo base (systems/daskai.js → baseOf), así
+     que cambia lo que se ve en su ficha y lo que pega y aguanta en combate.
+     `weight` = rareza relativa. */
+  D.roles = {
+    equilibrado: { name: 'Sin rasgo', icon: 'scale', mods: {} },
+    tanque: { name: 'Coloso', icon: 'shield', weight: 1, mods: { hp: 0.15, def: 0.2, spd: -0.05 } },
+    muro: { name: 'Guardián', icon: 'shieldStar', weight: 1, mods: { hp: 0.15, mdef: 0.2, atk: -0.05 } },
+    fisico: { name: 'Bravo', icon: 'swords', weight: 1, mods: { atk: 0.2, spd: 0.05, matk: -0.05 } },
+    mago: { name: 'Arcano', icon: 'wand', weight: 1, mods: { matk: 0.2, mp: 0.15, atk: -0.05 } },
+    veloz: { name: 'Raudo', icon: 'wind', weight: 1, mods: { spd: 0.25, atk: 0.05, def: -0.05 } },
+    soporte: { name: 'Sabio', icon: 'heart', weight: 1, mods: { mp: 0.2, hp: 0.1, mdef: 0.1, atk: -0.05 } },
+    cristal: { name: 'Temerario', icon: 'flame', weight: 0.6, mods: { atk: 0.12, matk: 0.12, spd: 0.12, def: -0.1, mdef: -0.1 } },
+  };
+
   D.rarities = {
     comun: { name: 'Común', order: 1 },
     raro: { name: 'Raro', order: 2 },
@@ -97,7 +113,7 @@
     enrage: { icon: 'flame' }, regen: { icon: 'regen' }, shield: { icon: 'shield' }, frenzy: { icon: 'bolt' },
   };
 
-  [D.stats, D.natures, D.passives, D.statuses, D.rarities].forEach((group) => Object.entries(group).forEach(([id, o]) => (o.id = id)));
+  [D.stats, D.natures, D.passives, D.statuses, D.rarities, D.roles].forEach((group) => Object.entries(group).forEach(([id, o]) => (o.id = id)));
 
   /** Color de una casa según el modo daltónico. */
   D.houseColor = (id) => {

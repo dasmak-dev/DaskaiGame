@@ -84,7 +84,7 @@
    * Las conexiones van al nodo "de enfrente" (y a veces al vecino) para
    * que no se crucen, y se garantiza que todo nodo tenga entrada y salida.
    */
-  function generate(zoneId, seed, size = 'small', mod = null) {
+  function generate(zoneId, seed, size = 'small', mod = null, kind = 'normal') {
     const rnd = U.seeded(seed);
     const pick = (weights) => U.weightedKey(weights, rnd, 'fight');
     // Tamaño del mapa (config.expedition.sizes): pisos, cuevas, atajos y hogueras
@@ -93,23 +93,52 @@
     // Modificador del mapa: cambia el peso de algunos nodos (p. ej. luna llena → más mini jefes)
     const md = mod && D.mapMods[mod];
     if (md && md.weights) { c.weights = Object.assign({}, c.weights); Object.entries(md.weights).forEach(([k, m]) => { c.weights[k] = (c.weights[k] || 0) * m; }); }
+    // Tipo de expedición (captura, combate…): también cambia el peso de los nodos
+    const kd = cfg().kinds[kind] || cfg().kinds.normal;
+    if (kd.weights) { c.weights = Object.assign({}, c.weights); Object.entries(kd.weights).forEach(([k, m]) => { c.weights[k] = (c.weights[k] || 0) * m; }); }
+    /*
+     * Estructura en CAMINOS (como los roguelike de cartas): hay LANES carriles
+     * y 4-5 caminos que suben piso a piso; cada paso sigue recto (lo más
+     * probable) o pasa al carril de al lado, nunca cruzándose con otro camino.
+     * Los nodos son los carriles por los que pasa algún camino, así que de vez
+     * en cuando dos caminos se juntan en el mismo nodo (y luego pueden separarse).
+     */
+    const LANES = 7, laneX = (l) => 0.2 + l * 0.1;
+    const lanes = Array.from({ length: c.rows }, () => new Set());
+    const edges = new Set();                       // `${fila}:${carril}>${carril siguiente}`
+    // 3 entradas repartidas (izquierda, centro, derecha) y 1-2 caminos más que salen de ellas
+    const entry = [Math.floor(rnd() * 2), 3, 5 + Math.floor(rnd() * 2)];
+    const starts = entry.concat(entry[Math.floor(rnd() * 3)], rnd() < 0.6 ? [entry[Math.floor(rnd() * 3)]] : []);
+    starts.forEach((start) => {
+      let l = start; lanes[0].add(l);
+      for (let r = 1; r < c.rows; r++) {
+        const opts = [[l, 0.6], [l - 1, 0.2], [l + 1, 0.2]].filter(([nl]) => nl >= 0 && nl < LANES)
+          // sin cruces: si otro camino ya va de nl a l, no se puede ir de l a nl
+          .filter(([nl]) => nl === l || !edges.has(`${r - 1}:${nl}>${l}`))
+          // juntarse con otro camino es posible pero menos probable
+          .map(([nl, w]) => [nl, lanes[r].has(nl) && !edges.has(`${r - 1}:${l}>${nl}`) ? w * 0.45 : w]);
+        let x = rnd() * opts.reduce((acc, o) => acc + o[1], 0), nl = opts[0][0];
+        for (const [cand, w] of opts) { if ((x -= w) < 0) { nl = cand; break; } }
+        edges.add(`${r - 1}:${l}>${nl}`); lanes[r].add(nl); l = nl;
+      }
+    });
     const rows = [];
     for (let r = 0; r < c.rows; r++) {
-      const n = r === 0 ? 3 : 2 + Math.floor(rnd() * 3);
+      const ls = [...lanes[r]].sort((p, q) => p - q);
       const row = [];
-      for (let i = 0; i < n; i++) {
+      ls.forEach((lane, i) => {
         let type = 'fight';
         if (r > 0) {
           const w = Object.assign({}, c.weights);
           if (r < c.eliteFrom) delete w.elite;
-          if (row.some((x) => x.type === 'recruit')) delete w.recruit;
+          if (!kd.multiRecruit && row.some((x) => x.type === 'recruit')) delete w.recruit;
           if (r < 2) { delete w.rest; delete w.cave; }
           if (row.some((x) => x.type === 'shop')) delete w.shop;
           if (row.some((x) => x.type === 'cave')) delete w.cave;
           type = pick(w);
         }
-        row.push({ id: `${r}-${i}`, row: r, x: (i + 1) / (n + 1) + (rnd() - 0.5) * (0.5 / (n + 1)), type, links: [] });
-      }
+        row.push({ id: `${r}-${i}`, row: r, x: laneX(lane) + (rnd() - 0.5) * 0.06, lane, type, links: [] });
+      });
       rows.push(row);
     }
     // Siempre hay ocasión de reclutar: al menos uno en los pisos 1-2 y otro en los pisos 3-5
@@ -118,6 +147,14 @@
       if (!pool.length || pool.some((n) => n.type === 'recruit')) return;
       const swap = pool.filter((n) => n.type === 'fight' || n.type === 'event');
       U.pick(swap.length ? swap : pool, rnd).type = 'recruit';
+    });
+    // Garantías del tipo de expedición: reclutas (captura) y mini jefes (combate, desafío)
+    [['recruit', kd.minRecruits], ['elite', kd.minElites]].forEach(([type, min]) => {
+      for (let k = rows.flat().filter((n) => n.type === type).length; k < (min || 0); k++) {
+        const pool = rows.slice(type === 'elite' ? Math.min(c.eliteFrom, c.rows - 1) : 1).flat().filter((n) => (n.type === 'fight' || n.type === 'event') && !(type === 'recruit' && !kd.multiRecruit && rows[n.row].some((x) => x.type === 'recruit')));
+        if (!pool.length) break;
+        U.pick(pool, rnd).type = type;
+      }
     });
     // Hogueras repartidas por el camino (para descansar o volver a casa): 1, 2 o 3 según el tamaño
     for (let k = 1; k <= (c.rests || 1); k++) {
@@ -143,7 +180,13 @@
     const secret = !!(sb && DK.world.secret(zoneId).defeated > 0 && rnd() < (c.secretFinalChance || 0));
     rows.push([{ id: `${c.rows + 1}-0`, row: c.rows + 1, x: 0.5, type: 'boss', links: [], secret }]);
 
-    for (let r = 0; r < rows.length - 1; r++) {
+    // Conexiones de los caminos (pisos normales)
+    for (let r = 0; r < c.rows - 1; r++) {
+      rows[r].forEach((node) => rows[r + 1].forEach((nx) => { if (edges.has(`${r}:${node.lane}>${nx.lane}`)) node.links.push(nx.id); }));
+    }
+    rows.flat().forEach((n) => delete n.lane);
+    // Del último piso normal a la hoguera final y al jefe
+    for (let r = c.rows - 1; r < rows.length - 1; r++) {
       const a = rows[r], b = rows[r + 1];
       a.forEach((node, i) => {
         const j = a.length === 1 ? Math.floor(b.length / 2) : Math.round((i * (b.length - 1)) / (a.length - 1));
@@ -169,7 +212,7 @@
       const target = rows[n.row + skip].slice().sort((p, q) => Math.abs(p.x - n.x) - Math.abs(q.x - n.x))[0];
       n.type = 'shortcut'; n.jump = target.id;
     }
-    return { rows, size, mod };
+    return { rows, size, mod, kind };
   }
 
   /** Nodo por id. */
@@ -201,10 +244,12 @@
      * con la profundidad y las zonas cercanas a él pesan más. Se evita
      * (sin prohibirlo) repetir la zona anterior.
      */
-    pickZone(depth = 1, avoid = null, rnd = Math.random) {
+    pickZone(depth = 1, avoid = null, rnd = Math.random, base = null) {
       const list = DK.world.unlockedZones();
       if (!list.length) return Object.keys(D.zones)[0];
-      const target = Math.min(list.length - 1, (depth - 1) * cfg().depthZoneStep);
+      // `base`: zona en la que empezó la expedición (el objetivo avanza desde ella)
+      const b0 = Math.max(0, list.findIndex((z) => z.id === base));
+      const target = Math.min(list.length - 1, b0 + (depth - 1) * cfg().depthZoneStep);
       const weights = list.map((z, i) => (z.id === avoid && list.length > 1 ? 0.35 : 1) / Math.pow(1 + 1.6 * Math.abs(i - target), 2));
       let r = rnd() * weights.reduce((a, b) => a + b, 0);
       for (let i = 0; i < list.length; i++) if ((r -= weights[i]) < 0) return list[i].id;
@@ -272,13 +317,50 @@
       return r;
     },
 
-    pickSize(rnd = Math.random) {
-      return U.weightedKey(U.weightsOf(cfg().sizes), rnd, Object.keys(cfg().sizes)[0]);
+    pickSize(rnd = Math.random, kind = null) {
+      const kd = kind && cfg().kinds[kind];
+      if (kd && kd.sizes) { const w = {}; kd.sizes.forEach((k) => (w[k] = (cfg().sizes[k] && cfg().sizes[k].weight) || 1)); return U.weightedKey(w, rnd, kd.sizes[0]); }
+      return U.weightedKey(U.weightsOf(cfg().sizes), rnd, 'small');
+    },
+    /* ---------------- Tipos de expedición (config.expedition.kinds) ---------------- */
+    /** Datos del tipo de la expedición en curso (o del de la próxima). */
+    kindDef(kind) { const e = this.active(); const k = kind || (e && e.kind) || 'normal'; return Object.assign({ id: k }, cfg().kinds[k] || cfg().kinds.normal); },
+    /**
+     * Probabilidad (0-1) de cada tipo de expedición: su `chance` × (1 + Mejora
+     * «Rumbo de <tipo>»). Los bloqueados (desafío sin haber vencido a un jefe) no salen.
+     */
+    kindChances() {
+      const w = {};
+      this.kinds().forEach((k) => { if (!k.locked) w[k.id] = (k.chance || 0) * (1 + DK.camp.value('rumbo_' + k.id)); });
+      const tot = Object.values(w).reduce((a, b) => a + b, 0) || 1;
+      return Object.fromEntries(Object.entries(w).map(([id, v]) => [id, v / tot]));
+    },
+    /** Tipo al azar según kindChances(). */
+    pickKind(rnd = Math.random) { return U.weightedKey(this.kindChances(), rnd, 'normal'); },
+    /** Tipos que se pueden elegir ahora (desafío: tras vencer a algún jefe). */
+    kinds() {
+      const anyBoss = Object.keys(D.zones).some((z) => DK.world.boss(z).defeated > 0);
+      return Object.entries(cfg().kinds).map(([id, k]) => Object.assign({ id, locked: !!(k.needsBoss && !anyBoss) }, k));
+    },
+    /**
+     * Cambia dónde y de qué tipo será la próxima expedición (Batalla y Preparar).
+     * Cambiar de zona o de tipo genera otro mapa (nueva semilla).
+     */
+    setStart({ zone, kind } = {}) {
+      const n = Object.assign({}, this.nextStart());
+      if (zone && DK.world.isUnlocked(zone)) n.zone = zone;
+      if (kind && cfg().kinds[kind] && !(this.kinds().find((k) => k.id === kind) || {}).locked) n.kind = kind;
+      const old = st().nextExpedition;
+      if (old && old.zone === n.zone && (old.kind || 'normal') === (n.kind || 'normal')) return old;
+      n.seed = `${n.zone}-${Date.now()}`;
+      if (!old || (old.kind || 'normal') !== (n.kind || 'normal')) n.size = this.pickSize(Math.random, n.kind);
+      st().nextExpedition = n; DK.store.save();
+      return n;
     },
     /** Pisos totales de un tamaño (incluye la hoguera final y el jefe). */
     sizeFloors(size) { return (cfg().sizes[size] || cfg().sizes.small).rows + 2; },
     /** Emblemas que da cada jefe en un mapa de ese tamaño (pequeño 1, mediano 2, XL 3). */
-    bossEmblems(size) { size = size || this.size(); return cfg().emblemsPerBoss * ((cfg().sizes[size] || {}).emblems || 1); },
+    bossEmblems(size, kind) { size = size || this.size(); return cfg().emblemsPerBoss * ((cfg().sizes[size] || {}).emblems || 1) + (this.kindDef(kind).emblems || 0); },
     /** Tamaño del mapa actual. */
     size() { const e = this.active(); return (e && (e.size || (e.map && e.map.size))) || 'small'; },
 
@@ -288,7 +370,7 @@
       const d = depth || (e ? e.depth || 1 : 1);
       const over = Math.max(0, d - Object.keys(D.zones).length);
       const md = depth ? null : this.mod();
-      return (d - 1) * cfg().depthLevel + over * cfg().depthLevelOver + (DK.curses ? DK.curses.effect('enemyLevels') : 0) + ((md && md.levels) || 0);
+      return (d - 1) * cfg().depthLevel + over * cfg().depthLevelOver + (DK.curses ? DK.curses.effect('enemyLevels') : 0) + ((md && md.levels) || 0) + (this.kindDef(e ? e.kind : (st().nextExpedition || {}).kind).levels || 0);
     },
     /** Multiplicador de monedas al terminar tras superar `maps` mapas. */
     bonusMult(maps) { return DK.config.expeditionBonus + Math.max(0, (maps || 1) - 1) * cfg().depthCoinBonus; },
@@ -301,7 +383,10 @@
      */
     nextStart() {
       let n = st().nextExpedition;
-      if (!n || !DK.world.isUnlocked(n.zone)) { const zone = this.pickZone(1); n = st().nextExpedition = { zone, seed: `${zone}-${Date.now()}`, size: this.pickSize(), mod: this.pickMod() }; DK.store.save(); }
+      // Por defecto empieza en la zona recomendada para tu equipo (se puede cambiar en el mapa del mundo: setStart)
+      if (!n || !DK.world.isUnlocked(n.zone)) { const rec = DK.world.recommended(); const zone = rec ? rec.id : this.pickZone(1); const kind = (n && n.kind) || this.pickKind(); n = st().nextExpedition = { zone, kind, seed: `${zone}-${Date.now()}`, size: this.pickSize(Math.random, kind), mod: this.pickMod() }; DK.store.save(); }
+      // El tipo sale al azar (y no cambia hasta que salgas); partidas antiguas: se sortea ahora
+      if (!n.kind || !cfg().kinds[n.kind]) { n.kind = this.pickKind(); n.size = this.pickSize(Math.random, n.kind); DK.store.save(); }
       if (!n.size) { n.size = this.pickSize(); DK.store.save(); } // vistas previas guardadas antes de los tamaños
       if (n.mod === undefined) { n.mod = this.pickMod(); DK.store.save(); }
       return n;
@@ -309,8 +394,8 @@
     /** Mapa de la próxima expedición (vista previa en Batalla). */
     preview() {
       const n = this.nextStart();
-      const map = generate(n.zone, n.seed, n.size, n.mod);
-      return { zone: n.zone, size: n.size, mod: n.mod, map, cleared: [], pending: null, pos: null, step: 1, total: map.rows.length };
+      const map = generate(n.zone, n.seed, n.size, n.mod, n.kind);
+      return { zone: n.zone, size: n.size, mod: n.mod, kind: n.kind, map, cleared: [], pending: null, pos: null, step: 1, total: map.rows.length };
     },
 
     /* ---------- Mochila ---------- */
@@ -354,8 +439,9 @@
       });
       st().lastPack = Object.assign({}, chosen); // para repetir la próxima vez
       st().nextExpedition = null; // la próxima vista previa será otra
-      const map = generate(n.zone, n.seed, n.size, n.mod);
+      const map = generate(n.zone, n.seed, n.size, n.mod, n.kind || 'normal');
       st().expedition = {
+        kind: n.kind || 'normal', startZone: n.zone,
         zone: n.zone, seed: n.seed, size: n.size, mod: n.mod || null, map, marks: { lines: [], notes: [] }, pos: null, pending: null, cleared: [], recruits: [], step: 1, total: map.rows.length,
         loot: { items: {}, coins: 0 }, startedAt: Date.now(), mapStartedAt: Date.now(),
         relics: [], relicChoice: null,
@@ -365,7 +451,7 @@
         revivesUsed: 0, blessed: null, // salvaciones de la muerte (DK.expedition.trySave)
         quest: this.pickQuest(n.size || 'small'),
       };
-      this.logEvent('start', { zone: n.zone, size: n.size, mod: n.mod || null });
+      this.logEvent('start', { zone: n.zone, size: n.size, mod: n.mod || null, kind: n.kind || 'normal' });
       // Pactos opcionales del primer mapa (se eligen antes que la reliquia)
       DK.curses.offer();
       // Al empezar eliges una reliquia entre las DESBLOQUEADAS (DK.camp.unlock):
@@ -420,8 +506,8 @@
       e.zones.push(e.zone);
       this.logEvent('mapCleared', { zone: e.zone });
       e.awaitingChoice = true;
-      const zone = this.pickZone(e.depth + 1, e.zone);
-      e.next = { zone, seed: `${zone}-${Date.now()}`, size: this.pickSize(), mod: this.pickMod() };
+      const zone = this.pickZone(e.depth + 1, e.zone, Math.random, e.startZone);
+      e.next = { zone, seed: `${zone}-${Date.now()}`, size: this.pickSize(Math.random, e.kind), mod: this.pickMod() };
       const s = st().stats;
       s.expeditions++;
       s.bestDepth = Math.max(s.bestDepth || 0, e.depth);
@@ -439,8 +525,8 @@
     /** Continuar: siguiente mapa (más profundo) con una reliquia a elegir. */
     continueRun() {
       const e = this.active(); if (!e || !e.awaitingChoice) return null;
-      const n = e.next || { zone: this.pickZone(e.depth + 1, e.zone), seed: `${Date.now()}`, size: this.pickSize() };
-      const map = generate(n.zone, n.seed, n.size || 'small', n.mod || null);
+      const n = e.next || { zone: this.pickZone(e.depth + 1, e.zone, Math.random, e.startZone), seed: `${Date.now()}`, size: this.pickSize(Math.random, e.kind) };
+      const map = generate(n.zone, n.seed, n.size || 'small', n.mod || null, e.kind || 'normal');
       Object.assign(e, { zone: n.zone, seed: n.seed, size: n.size || 'small', mod: n.mod || null, map, marks: { lines: [], notes: [] }, pos: null, pending: null, cleared: [], step: 1, total: map.rows.length,
         depth: e.depth + 1, awaitingChoice: false, next: null, altarUsed: false, mapStartedAt: Date.now(), quest: this.pickQuest(n.size || 'small') });
       delete e.offers; delete e.event; delete e.result; delete e.candidates;
@@ -600,7 +686,7 @@
         else { e.loot.items[id] = (e.loot.items[id] || 0) + 1; out.loot.push(id); }
       });
       const md = this.mod();
-      e.loot.coins += Math.round(coins * (1 + DK.relics.sum('coins') + DK.camp.value('mochila') + DK.curses.coinBonus() + ((md && md.coins) || 0)));
+      e.loot.coins += Math.round(coins * Math.max(0.1, 1 + DK.relics.sum('coins') + DK.camp.value('mochila') + DK.curses.coinBonus() + ((md && md.coins) || 0) + (this.kindDef().coins || 0)));
       return out;
     },
 
@@ -693,18 +779,15 @@
       if (U.chance(0.12)) out.push(offer('pluma_fenix', 1));
       return out;
     },
-    /** Compra n unidades de una oferta (con las monedas del monedero). */
+    /** Compra n unidades de una oferta. Sólo se paga con las monedas del botín de la expedición. */
     buyOffer(i, n = 1) {
       const e = this.active(); const o = e && e.offers && e.offers[i];
       if (o && o.left == null) o.left = o.sold ? 0 : 1; // ofertas guardadas en versiones anteriores
-      if (!o || o.left < n) return false;
-      // Se paga primero con las monedas del botín y el resto con el monedero
+      if (!o || n < 1 || o.left < n) return false;
       const cost = o.price * n;
-      const fromLoot = Math.min(e.loot.coins, cost);
-      if (DK.wallet.get() < cost - fromLoot) return false;
-      e.loot.coins -= fromLoot;
-      if (cost - fromLoot > 0) DK.wallet.spend(cost - fromLoot);
-      this.ensureFields(); e.log.lootSpent += fromLoot;
+      if (e.loot.coins < cost) return false;
+      e.loot.coins -= cost;
+      this.ensureFields(); e.log.lootSpent += cost;
       o.left -= n;
       o.sold = o.left <= 0;
       DK.bag.add(o.id, n);
@@ -812,7 +895,7 @@
      */
     makeCandidates(node) {
       const e = this.active(), zone = D.zones[e.zone];
-      const n = DK.config.expedition.recruitChoices + (DK.camp.level('reclutador') ? 1 : 0);
+      const n = DK.config.expedition.recruitChoices + (DK.camp.level('reclutador') ? 1 : 0) + (this.kindDef().recruit || 0);
       const species = [];
       for (let i = 0; i < 20 && species.length < n; i++) {
         const sp = U.weighted(zone.enemies).species;

@@ -49,7 +49,7 @@
       h('div', { class: 'dk-row-sprite', style: { '--c': D.houseColor(sp.house) } }, V.dSprite(d, { size: compact ? 44 : 56 })),
       h('div', { class: 'dk-row-main' },
         h('div', { class: 'dk-row-title' }, h('span', { class: 'dk-name' }, DK.daskai.name(d)), V.level(d.level)),
-        h('div', { class: 'dk-row-tags' }, V.houseBadge(sp.house), V.shinyTag(d), V.tempTag(d), V.statusTag(d.status),
+        h('div', { class: 'dk-row-tags' }, V.houseBadge(sp.house), V.roleBadge(d), V.shinyTag(d), V.tempTag(d), V.statusTag(d.status),
           fainted ? h('span', { class: 'badge bad' }, DK.icon('skull', 13), t('common.fainted')) : null,
           DK.daskai.canEvolve(d) ? h('span', { class: 'badge evo', tip: t('evo.readyTip') }, DK.icon('evolve', 13), t('evo.ready')) : null, ...V.extraTags(d), ...tags),
         V.vitals(d)),
@@ -185,7 +185,8 @@
   V.growthBadge = (d, k) => {
     const r = DK.daskai.growthRate(d, k);
     const w = DK.daskai.growthWeight(d, k);
-    return h('span', { class: 'grow-rate r-' + r, tip: t('stats.rateTip', { rate: t('stats.rate.' + r), pct: Math.round(w * 100) }), 'aria-label': t('stats.rate.' + r) }, RATE[r]);
+    const avg = DK.daskai.growthAvg(d, k);
+    return h('span', { class: 'grow-rate r-' + r, tip: t('stats.rateTip', { rate: t('stats.rate.' + r), pct: Math.round(w * 100), n: (Math.round(avg * 10) / 10).toLocaleString(DK.i18n.lang) }), 'aria-label': t('stats.rate.' + r) }, RATE[r]);
   };
 
   /** Resumen de mejoras permanentes: tónicos usados y puntos entrenados. */
@@ -194,7 +195,7 @@
     if (!used && !tr && !DK.training.isTraining(d.uid)) return null;
     return h('div', { class: 'chips' },
       h('span', { class: 'chip', tip: t('stats.tonicTip') }, DK.icon('flask', 13), t('stats.tonics', { n: used, max: DK.config.tonic.cap })),
-      h('span', { class: 'chip', tip: t('stats.trainedTip') }, DK.icon('dumbbell', 13), t('stats.trained', { n: Math.round(tr), max: DK.config.training.statMax })),
+      h('span', { class: 'chip', tip: t('stats.trainedTip') }, DK.icon('dumbbell', 13), t('stats.trained', { n: Math.round(tr), max: DK.training.statMax() })),
       DK.training.isTraining(d.uid) ? h('span', { class: 'chip warnc' }, DK.icon('clock', 13), t('train.inTraining')) : null);
   };
 
@@ -228,7 +229,7 @@
   /** Texto del desglose: "56 base · 10 nivel · +4 naturaleza · +6 equipo · +12% pasiva". */
   V.breakdownText = (b) => {
     const sg = (n) => (n > 0 ? '+' : '') + n;
-    const parts = [t('stats.part.base', { n: b.base }) + (b.gene ? ' ' + t('stats.part.gene', { n: sg(Math.round(b.gene * 100)) }) : ''), t('stats.part.level', { n: b.level })];
+    const parts = [t('stats.part.base', { n: b.base }) + (b.gene ? ' ' + t('stats.part.gene', { n: sg(Math.round(b.gene * 100)) }) : '') + (b.trait ? ' ' + t('stats.part.trait', { n: sg(Math.round(b.trait * 100)) }) : ''), t('stats.part.level', { n: b.level })];
     if (b.nature) parts.push(t('stats.part.nature', { n: sg(b.nature) }));
     if (b.evo) parts.push(t('stats.part.evo', { n: sg(b.evo) }));
     if (b.tonic) parts.push(t('stats.part.tonic', { n: sg(b.tonic) }));
@@ -252,7 +253,7 @@
       const stage = stages && stages[k];
       const diff = other ? s[k] - other[k] : 0;
       return h('div', { class: 'stat-row' },
-        h('span', { class: 'stat-name' }, DK.icon(D.stats[k].icon, 16), h('span', { tip: DK.t('tips.stat.' + k) }, DK.tr('stats', D.stats[k])), V.natureArrow(d, k), V.growthBadge(d, k)),
+        h('span', { class: 'stat-name' }, DK.icon(D.stats[k].icon, 16), h('span', { tip: DK.t('tips.stat.' + k) }, DK.tr('stats', D.stats[k])), V.natureArrow(d, k), V.growthBadge(d, k), b.trait ? h('span', { class: 'trait-mark ' + (b.trait > 0 ? 'up' : 'down'), tip: t('trait.statTip', { name: DK.tr('roles', DK.daskai.roleOf(d)), n: (b.trait > 0 ? '+' : '') + Math.round(b.trait * 100) }) }, DK.icon(DK.daskai.roleOf(d).icon, 12)) : null),
         h('span', { class: 'stat-val' }, s[k],
           stage ? h('span', { class: 'stage ' + (stage > 0 ? 'pos' : 'neg') }, (stage > 0 ? '▲' : '▼') + Math.abs(stage)) : null,
           other && diff ? h('span', { class: 'stage ' + (diff > 0 ? 'pos' : 'neg') }, (diff > 0 ? '+' : '') + diff) : null),

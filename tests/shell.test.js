@@ -69,5 +69,20 @@ module.exports = {
       check(!hiddenNow, 'la música sigue sonando con el juego minimizado');
       check(after, 'la música no vuelve al abrir el juego');
     }),
+  }, {
+    name: 'Cada zona tiene su música y su fondo de jefe; en expedición suena la de la zona',
+    run: (browser, view) => play(browser, view, async (p) => {
+      const r = await p.evaluate(() => {
+        const zones = Object.values(DK.data.zones);
+        const bossScenes = zones.map((z) => DK.scenes.bossScene(z)).filter((id) => id.startsWith('boss_')).length;
+        DK.world.progress('volcan').unlocked = true;
+        DK.store.state.nextExpedition = { zone: 'volcan', seed: 't', size: 'small', kind: 'normal', mod: null };
+        DK.expedition.start({});
+        return { bossScenes, n: zones.length, track: DK.audio.zoneTrack(), secret: DK.scenes.bossScene(zones[0], true) };
+      });
+      check(r.bossScenes === r.n, 'faltan fondos de jefe: ' + r.bossScenes + '/' + r.n);
+      check(r.secret === 'boss_secret', 'el jefe oculto debería tener su fondo');
+      check(r.track === 'volcano', 'en expedición debería sonar la música de la zona: ' + r.track);
+    }),
   }],
 };

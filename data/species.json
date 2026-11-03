@@ -9,11 +9,11 @@
     "desc": "Un zorrito que guarda la luz del amanecer en su cola. Curioso y leal.",
     "learn": [
       [1,"placaje"], [1,"destello"], [4,"concentracion"], [8,"aranazo"], [12,"golpe_aureo"],
-      [16,"curacion"], [21,"rayo_luz"], [27,"agilidad"], [34,"golpe_feroz"], [42,"juicio"],
+      [16,"curacion"], [21,"rayo_luz"], [27,"velo_aurora"], [34,"aguas_curativas"], [42,"juicio"],
       [55,"impacto_final"], [68,"supernova"]
     ],
-    "sprite": {"c1":"#ffd65a","c2":"#fff6d5","rx":30,"ry":26,"ears":"cat","tail":"orb","eyes":"big","mark":"star"},
-    "evolves": {"to":"luminar","level":20}
+    "sprite": {"c1":"#ffd65a","c2":"#fff6d5","rx":30,"ry":26,"ears":"cat","tail":"orb","eyes":"big","mark":"star","extra":["whiskers"]},
+    "evolves": {"to":"luminar","level":16}
   },
   "umbrix": {
     "name": "Umbrix",
@@ -25,21 +25,11 @@
     "desc": "Felino de sombra que acecha en silencio. Rápido y astuto.",
     "learn": [
       [1,"aranazo"], [1,"sombra_vil"], [4,"intimidar"], [8,"mordisco"], [12,"colmillo_venenoso"],
-      [16,"garra_umbria"], [21,"drenaje_vital"], [27,"pulso_umbrio"], [34,"agilidad"],
-      [42,"golpe_feroz"], [55,"impacto_final"], [68,"eclipse"]
+      [16,"garra_umbria"], [21,"drenaje_vital"], [27,"pulso_umbrio"], [34,"agilidad"], [42,"telarana"],
+      [55,"impacto_final"], [68,"eclipse"]
     ],
-    "sprite": {
-      "c1": "#6d4bd8",
-      "c2": "#c4b5fd",
-      "rx": 29,
-      "ry": 25,
-      "ears": "cat",
-      "tail": "curl",
-      "eyes": "sharp",
-      "eyeColor": "#facc15",
-      "mark": "moon"
-    },
-    "evolves": {"to":"umbrakat","level":20}
+    "sprite": {"c1":"#6d4bd8","c2":"#c4b5fd","rx":29,"ry":25,"ears":"cat","tail":"curl","eyes":"sharp","eyeColor":"#facc15","mark":"moon","extra":["whiskers"]},
+    "evolves": {"to":"umbrakat","level":16}
   },
   "pyrex": {
     "name": "Pyrex",
@@ -51,11 +41,11 @@
     "desc": "Salamandra temperamental cuya cola arde con más fuerza cuanto más se enfada.",
     "learn": [
       [1,"aranazo"], [1,"chispa"], [4,"rugido"], [8,"colmillo_ardiente"], [12,"embestida"],
-      [16,"puno_igneo"], [21,"lanzallamas"], [27,"agilidad"], [34,"golpe_feroz"], [42,"llamarada"],
+      [16,"puno_igneo"], [21,"lanzallamas"], [27,"mordisco_brasa"], [34,"golpe_feroz"], [42,"llamarada"],
       [55,"impacto_final"], [68,"infierno"]
     ],
-    "sprite": {"c1":"#f97316","c2":"#fed7aa","rx":31,"ry":25,"ears":"crest","tail":"flame","eyes":"big","mark":"stripes"},
-    "evolves": {"to":"pyrosaur","level":20}
+    "sprite": {"c1":"#f97316","c2":"#fed7aa","rx":31,"ry":25,"ears":"crest","tail":"flame","eyes":"big","mark":"stripes","body":"long"},
+    "evolves": {"to":"pyrosaur","level":16}
   },
   "aquelo": {
     "name": "Aquelo",
@@ -67,11 +57,11 @@
     "desc": "Nutria juguetona que nada entre corrientes. Muy resistente.",
     "learn": [
       [1,"placaje"], [1,"burbuja"], [4,"coraza"], [8,"mordisco"], [12,"acua_cola"],
-      [16,"aguas_curativas"], [21,"hidrochorro"], [27,"concentracion"], [34,"embestida"],
-      [42,"maremoto"], [55,"golpe_feroz"], [68,"diluvio"]
+      [16,"aguas_curativas"], [21,"hidrochorro"], [27,"concentracion"], [34,"vapor"], [42,"maremoto"],
+      [55,"velo_aurora"], [68,"diluvio"]
     ],
-    "sprite": {"c1":"#38bdf8","c2":"#e0f2fe","rx":31,"ry":27,"ears":"fins","tail":"fin","eyes":"big","mark":"spots"},
-    "evolves": {"to":"aqualutra","level":20}
+    "sprite": {"c1":"#38bdf8","c2":"#e0f2fe","rx":31,"ry":27,"ears":"fins","tail":"fin","eyes":"big","mark":"spots","extra":["whiskers"]},
+    "evolves": {"to":"aqualutra","level":16}
   },
   "terron": {
     "name": "Terrón",
@@ -83,11 +73,11 @@
     "desc": "Pequeño topo acorazado. Lento, pero casi imposible de derribar.",
     "learn": [
       [1,"placaje"], [1,"lodo"], [4,"coraza"], [8,"embestida"], [12,"golpe_roca"],
-      [16,"raiz_drenante"], [21,"polen_toxico"], [27,"rugido"], [34,"golpe_feroz"], [42,"terremoto"],
+      [16,"raiz_drenante"], [21,"polen_toxico"], [27,"rugido"], [34,"muralla"], [42,"terremoto"],
       [55,"impacto_final"], [68,"avalancha"]
     ],
-    "sprite": {"c1":"#a16207","c2":"#fde68a","rx":34,"ry":26,"ears":"horns","tail":"spike","eyes":"big","mark":"gem"},
-    "evolves": {"to":"terragor","level":20}
+    "sprite": {"c1":"#a16207","c2":"#fde68a","rx":34,"ry":26,"ears":"horns","tail":"spike","eyes":"big","mark":"gem","extra":["claws"]},
+    "evolves": {"to":"terragor","level":16}
   },
   "brotin": {
     "name": "Brotín",
@@ -101,7 +91,7 @@
       [1,"placaje"], [3,"lodo"], [6,"raiz_drenante"], [10,"coraza"], [15,"golpe_roca"],
       [22,"polen_toxico"], [30,"terremoto"]
     ],
-    "sprite": {"c1":"#84cc16","c2":"#ecfccb","rx":27,"ry":23,"ears":"leaf","tail":"none","eyes":"sleepy"},
+    "sprite": {"c1":"#84cc16","c2":"#ecfccb","rx":27,"ry":23,"ears":"leaf","tail":"none","eyes":"sleepy","body":"egg"},
     "evolves": {"to":"hojaral","level":14}
   },
   "chispon": {
@@ -116,7 +106,7 @@
       [1,"aranazo"], [3,"chispa"], [7,"colmillo_ardiente"], [12,"rugido"], [16,"puno_igneo"],
       [24,"lanzallamas"], [36,"llamarada"]
     ],
-    "sprite": {"c1":"#fb923c","c2":"#ffedd5","rx":25,"ry":22,"ears":"flame","tail":"flame","eyes":"big"},
+    "sprite": {"c1":"#fb923c","c2":"#ffedd5","rx":25,"ry":22,"ears":"flame","tail":"flame","eyes":"big","body":"ghost"},
     "evolves": {"to":"magmon","level":26}
   },
   "gotin": {
@@ -131,7 +121,7 @@
       [1,"placaje"], [2,"burbuja"], [6,"coraza"], [10,"aguas_curativas"], [14,"acua_cola"],
       [22,"hidrochorro"], [34,"maremoto"]
     ],
-    "sprite": {"c1":"#7dd3fc","c2":"#f0f9ff","rx":25,"ry":25,"ears":"none","tail":"none","eyes":"big","mark":"spots"},
+    "sprite": {"c1":"#7dd3fc","c2":"#f0f9ff","rx":25,"ry":25,"ears":"none","tail":"none","eyes":"big","mark":"spots","body":"egg","legs":"none"},
     "evolves": {"to":"coralin","level":16}
   },
   "plumin": {
@@ -146,7 +136,7 @@
       [1,"picotazo"], [3,"destello"], [7,"agilidad"], [11,"ala_cortante"], [15,"rayo_luz"],
       [22,"curacion"], [30,"juicio"]
     ],
-    "sprite": {"c1":"#fde047","c2":"#fffbeb","rx":23,"ry":22,"ears":"crest","tail":"none","eyes":"big","wings":true},
+    "sprite": {"c1":"#fde047","c2":"#fffbeb","rx":23,"ry":22,"ears":"crest","tail":"none","eyes":"big","wings":true,"legs":"tall","extra":["beak"]},
     "evolves": {"to":"gaviolux","level":14}
   },
   "musguin": {
@@ -161,7 +151,7 @@
       [1,"placaje"], [5,"lodo"], [8,"coraza"], [12,"golpe_roca"], [16,"raiz_drenante"],
       [24,"terremoto"], [36,"avalancha"]
     ],
-    "sprite": {"c1":"#4d7c0f","c2":"#bef264","rx":32,"ry":22,"ears":"spikes","tail":"none","eyes":"sleepy","mark":"spots"},
+    "sprite": {"c1":"#4d7c0f","c2":"#bef264","rx":32,"ry":22,"ears":"spikes","tail":"none","eyes":"sleepy","mark":"spots","body":"block","legs":"quad"},
     "evolves": {"to":"rocadon","level":22}
   },
   "sombrilo": {
@@ -176,7 +166,7 @@
       [1,"aranazo"], [4,"sombra_vil"], [8,"colmillo_venenoso"], [12,"intimidar"], [16,"drenaje_vital"],
       [22,"pulso_umbrio"], [38,"eclipse"]
     ],
-    "sprite": {"c1":"#4c1d95","c2":"#a78bfa","rx":24,"ry":24,"ears":"long","tail":"curl","eyes":"glow","eyeColor":"#f0abfc"},
+    "sprite": {"c1":"#4c1d95","c2":"#a78bfa","rx":24,"ry":24,"ears":"long","tail":"curl","eyes":"glow","eyeColor":"#f0abfc","body":"ghost"},
     "evolves": {"to":"murcisombra","level":18}
   },
   "hojaral": {
@@ -191,7 +181,7 @@
       [1,"placaje"], [4,"polen_toxico"], [7,"lodo"], [11,"raiz_drenante"], [15,"concentracion"],
       [22,"golpe_roca"], [30,"terremoto"]
     ],
-    "sprite": {"c1":"#22c55e","c2":"#dcfce7","rx":26,"ry":28,"ears":"leaf","tail":"leaf","eyes":"big"}
+    "sprite": {"c1":"#22c55e","c2":"#dcfce7","rx":26,"ry":28,"ears":"leaf","tail":"leaf","eyes":"big","body":"egg","extra":["arms"]}
   },
   "lucibicho": {
     "name": "Lucibicho",
@@ -205,7 +195,7 @@
       [1,"picotazo"], [3,"destello"], [8,"concentracion"], [12,"curacion"], [16,"rayo_luz"],
       [26,"juicio"], [40,"supernova"]
     ],
-    "sprite": {"c1":"#facc15","c2":"#fef9c3","rx":22,"ry":20,"ears":"antenna","tail":"orb","eyes":"big","wings":true},
+    "sprite": {"c1":"#facc15","c2":"#fef9c3","rx":22,"ry":20,"ears":"antenna","tail":"orb","eyes":"big","wings":true,"legs":"none"},
     "evolves": {"to":"gemolito","level":20}
   },
   "coralin": {
@@ -216,8 +206,11 @@
     "drops": [["coral",0.5],["gota",0.35],["perla_marina",0.03],["superpocion",0.05]],
     "passives": ["espiritu_ferreo","caparazon"],
     "desc": "Arrecife andante que protege a los pequeños peces.",
-    "learn": [[1,"burbuja"],[5,"coraza"],[10,"acua_cola"],[14,"aguas_curativas"],[18,"hidrochorro"],[28,"maremoto"]],
-    "sprite": {"c1":"#fb7185","c2":"#ffe4e6","rx":28,"ry":24,"ears":"spikes","tail":"none","eyes":"big","mark":"spots"}
+    "learn": [
+      [1,"burbuja"], [5,"coraza"], [10,"acua_cola"], [14,"aguas_curativas"], [18,"hidrochorro"],
+      [28,"maremoto"]
+    ],
+    "sprite": {"c1":"#fb7185","c2":"#ffe4e6","rx":28,"ry":24,"ears":"spikes","tail":"none","eyes":"big","mark":"spots","body":"block"}
   },
   "cangrejon": {
     "name": "Cangrejón",
@@ -231,7 +224,7 @@
       [1,"tenaza"], [6,"coraza"], [8,"embestida"], [10,"golpe_roca"], [14,"rugido"],
       [22,"golpe_feroz"], [32,"avalancha"]
     ],
-    "sprite": {"c1":"#dc2626","c2":"#fecaca","rx":36,"ry":20,"ears":"antenna","tail":"none","eyes":"big"}
+    "sprite": {"c1":"#dc2626","c2":"#fecaca","rx":36,"ry":20,"ears":"antenna","tail":"none","eyes":"big","legs":"quad","extra":["claws"]}
   },
   "salpicon": {
     "name": "Salpicón",
@@ -245,7 +238,7 @@
       [1,"placaje"], [4,"burbuja"], [9,"agilidad"], [12,"acua_cola"], [16,"mordisco"],
       [20,"hidrochorro"], [30,"golpe_feroz"], [40,"maremoto"]
     ],
-    "sprite": {"c1":"#0284c7","c2":"#bae6fd","rx":28,"ry":22,"ears":"fins","tail":"fin","eyes":"sharp","eyeColor":"#0f172a"},
+    "sprite": {"c1":"#0284c7","c2":"#bae6fd","rx":28,"ry":22,"ears":"fins","tail":"fin","eyes":"sharp","eyeColor":"#0f172a","body":"long","legs":"none"},
     "evolves": {"to":"leviatan","level":46}
   },
   "gaviolux": {
@@ -260,17 +253,7 @@
       [1,"picotazo"], [5,"destello"], [9,"ala_cortante"], [13,"agilidad"], [18,"golpe_aureo"],
       [24,"rayo_luz"], [34,"juicio"]
     ],
-    "sprite": {
-      "c1": "#f8fafc",
-      "c2": "#fde68a",
-      "rx": 25,
-      "ry": 22,
-      "ears": "crest",
-      "tail": "spike",
-      "eyes": "sharp",
-      "eyeColor": "#0f172a",
-      "wings": true
-    }
+    "sprite": {"c1":"#f8fafc","c2":"#fde68a","rx":25,"ry":22,"ears":"crest","tail":"spike","eyes":"sharp","eyeColor":"#0f172a","wings":true,"legs":"tall","extra":["beak"]}
   },
   "murcisombra": {
     "name": "Murcisombra",
@@ -281,20 +264,10 @@
     "passives": ["pies_ligeros","instinto"],
     "desc": "Cuelga del techo de las cuevas y caza a ciegas.",
     "learn": [
-      [1,"mordisco"], [8,"sombra_vil"], [14,"colmillo_venenoso"], [18,"drenaje_vital"],
-      [22,"garra_umbria"], [28,"pulso_umbrio"], [40,"eclipse"]
+      [1,"mordisco"], [8,"sombra_vil"], [14,"colmillo_venenoso"], [18,"drenaje_vital"], [22,"garra_umbria"],
+      [28,"pulso_umbrio"], [40,"eclipse"]
     ],
-    "sprite": {
-      "c1": "#3b0764",
-      "c2": "#c084fc",
-      "rx": 24,
-      "ry": 21,
-      "ears": "cat",
-      "tail": "none",
-      "eyes": "glow",
-      "eyeColor": "#f43f5e",
-      "wings": true
-    }
+    "sprite": {"c1":"#3b0764","c2":"#c084fc","rx":24,"ry":21,"ears":"cat","tail":"none","eyes":"glow","eyeColor":"#f43f5e","wings":true,"legs":"none","extra":["fangs"]}
   },
   "rocadon": {
     "name": "Rocadón",
@@ -307,7 +280,7 @@
       [1,"placaje"], [8,"golpe_roca"], [14,"coraza"], [18,"embestida"], [22,"terremoto"],
       [30,"golpe_feroz"], [40,"avalancha"]
     ],
-    "sprite": {"c1":"#78716c","c2":"#d6d3d1","rx":36,"ry":28,"ears":"spikes","tail":"none","eyes":"sleepy","mark":"stripes"},
+    "sprite": {"c1":"#78716c","c2":"#d6d3d1","rx":36,"ry":28,"ears":"spikes","tail":"none","eyes":"sleepy","mark":"stripes","body":"block","extra":["arms"]},
     "evolves": {"to":"obsidiano","level":30}
   },
   "gemolito": {
@@ -322,7 +295,7 @@
       [1,"destello"], [8,"coraza"], [14,"rayo_luz"], [18,"curacion"], [24,"concentracion"],
       [30,"juicio"], [44,"supernova"]
     ],
-    "sprite": {"c1":"#67e8f9","c2":"#ecfeff","rx":26,"ry":28,"ears":"spikes","tail":"none","eyes":"cyclops","mark":"gem"}
+    "sprite": {"c1":"#67e8f9","c2":"#ecfeff","rx":26,"ry":28,"ears":"spikes","tail":"none","eyes":"cyclops","mark":"gem","body":"block","legs":"none"}
   },
   "lavagusano": {
     "name": "Lavagusano",
@@ -332,18 +305,11 @@
     "drops": [["brasa",0.5],["obsidiana",0.06],["balsamo",0.2],["anillo_brasas",0.03]],
     "passives": ["sangre_caliente","vitalidad"],
     "desc": "Excava túneles fundiendo la roca a su paso.",
-    "learn": [[1,"placaje"],[8,"chispa"],[12,"colmillo_ardiente"],[17,"puno_igneo"],[22,"lanzallamas"],[32,"llamarada"]],
-    "sprite": {
-      "c1": "#b91c1c",
-      "c2": "#fdba74",
-      "rx": 38,
-      "ry": 18,
-      "ears": "none",
-      "tail": "spike",
-      "eyes": "glow",
-      "eyeColor": "#fde047",
-      "mark": "stripes"
-    }
+    "learn": [
+      [1,"placaje"], [8,"chispa"], [12,"colmillo_ardiente"], [17,"puno_igneo"], [22,"lanzallamas"],
+      [32,"llamarada"]
+    ],
+    "sprite": {"c1":"#b91c1c","c2":"#fdba74","rx":38,"ry":18,"ears":"none","tail":"spike","eyes":"glow","eyeColor":"#fde047","mark":"stripes","body":"long","legs":"none"}
   },
   "magmon": {
     "name": "Magmón",
@@ -353,17 +319,11 @@
     "drops": [["brasa",0.55],["obsidiana",0.2],["superpocion",0.08],["anillo_brasas",0.04]],
     "passives": ["sangre_caliente","furia"],
     "desc": "Su cuerpo es roca fundida en constante ebullición.",
-    "learn": [[1,"chispa"],[10,"puno_igneo"],[20,"lanzallamas"],[26,"rugido"],[30,"llamarada"],[44,"infierno"]],
-    "sprite": {
-      "c1": "#ea580c",
-      "c2": "#facc15",
-      "rx": 34,
-      "ry": 28,
-      "ears": "flame",
-      "tail": "flame",
-      "eyes": "glow",
-      "eyeColor": "#fef08a"
-    }
+    "learn": [
+      [1,"chispa"], [10,"puno_igneo"], [20,"lanzallamas"], [26,"rugido"], [30,"llamarada"],
+      [44,"infierno"]
+    ],
+    "sprite": {"c1":"#ea580c","c2":"#facc15","rx":34,"ry":28,"ears":"flame","tail":"flame","eyes":"glow","eyeColor":"#fef08a","body":"block","extra":["arms"]}
   },
   "cenizon": {
     "name": "Cenizón",
@@ -374,19 +334,10 @@
     "passives": ["mente_arcana","pozo_mana"],
     "desc": "Espíritu nacido de la ceniza de las erupciones.",
     "learn": [
-      [1,"sombra_vil"], [10,"intimidar"], [18,"drenaje_vital"], [24,"pulso_umbrio"],
-      [32,"concentracion"], [46,"eclipse"]
+      [1,"sombra_vil"], [10,"intimidar"], [18,"drenaje_vital"], [24,"pulso_umbrio"], [32,"concentracion"],
+      [46,"eclipse"]
     ],
-    "sprite": {
-      "c1": "#44403c",
-      "c2": "#a8a29e",
-      "rx": 26,
-      "ry": 30,
-      "ears": "horns",
-      "tail": "curl",
-      "eyes": "glow",
-      "eyeColor": "#fb923c"
-    },
+    "sprite": {"c1":"#44403c","c2":"#a8a29e","rx":26,"ry":30,"ears":"horns","tail":"curl","eyes":"glow","eyeColor":"#fb923c","body":"ghost"},
     "evolves": {"to":"nocturnis","level":50}
   },
   "ignisaurio": {
@@ -401,17 +352,7 @@
       [1,"aranazo"], [10,"colmillo_ardiente"], [18,"puno_igneo"], [24,"golpe_feroz"], [30,"rugido"],
       [38,"impacto_final"], [50,"llamarada"]
     ],
-    "sprite": {
-      "c1": "#c2410c",
-      "c2": "#fed7aa",
-      "rx": 34,
-      "ry": 26,
-      "ears": "crest",
-      "tail": "spike",
-      "eyes": "sharp",
-      "eyeColor": "#facc15",
-      "mark": "stripes"
-    },
+    "sprite": {"c1":"#c2410c","c2":"#fed7aa","rx":34,"ry":26,"ears":"crest","tail":"spike","eyes":"sharp","eyeColor":"#facc15","mark":"stripes","body":"long","legs":"quad","extra":["fangs"]},
     "evolves": {"to":"draconyx","level":60}
   },
   "obsidiano": {
@@ -423,7 +364,7 @@
     "passives": ["caparazon","espiritu_ferreo"],
     "desc": "Coloso de cristal volcánico, frío al tacto.",
     "learn": [[1,"golpe_roca"],[12,"coraza"],[20,"embestida"],[26,"terremoto"],[34,"avalancha"]],
-    "sprite": {"c1":"#1e293b","c2":"#64748b","rx":35,"ry":29,"ears":"spikes","tail":"none","eyes":"cyclops","mark":"gem"},
+    "sprite": {"c1":"#1e293b","c2":"#64748b","rx":35,"ry":29,"ears":"spikes","tail":"none","eyes":"cyclops","mark":"gem","body":"block","extra":["arms","horn"]},
     "evolves": {"to":"titanor","level":62}
   },
   "aurelion": {
@@ -434,18 +375,11 @@
     "drops": [["polvo_brillante",0.45],["nucleo_arcano",0.06],["orbe_solar",0.02],["cristal_vinculo",0.08]],
     "passives": ["equilibrio","furia"],
     "desc": "León dorado que custodia las puertas del templo.",
-    "learn": [[1,"golpe_aureo"],[12,"rayo_luz"],[20,"rugido"],[30,"juicio"],[38,"golpe_feroz"],[50,"supernova"]],
-    "sprite": {
-      "c1": "#eab308",
-      "c2": "#fef3c7",
-      "rx": 33,
-      "ry": 27,
-      "ears": "cat",
-      "tail": "orb",
-      "eyes": "sharp",
-      "eyeColor": "#7c2d12",
-      "mark": "star"
-    }
+    "learn": [
+      [1,"golpe_aureo"], [12,"rayo_luz"], [20,"rugido"], [30,"juicio"], [38,"golpe_feroz"],
+      [50,"supernova"]
+    ],
+    "sprite": {"c1":"#eab308","c2":"#fef3c7","rx":33,"ry":27,"ears":"cat","tail":"orb","eyes":"sharp","eyeColor":"#7c2d12","mark":"star","legs":"quad","extra":["mane","whiskers"]}
   },
   "guardian_solar": {
     "name": "Guardián Solar",
@@ -456,7 +390,7 @@
     "passives": ["caparazon","vitalidad"],
     "desc": "Estatua animada por la luz del sol.",
     "learn": [[1,"golpe_aureo"],[10,"coraza"],[20,"curacion"],[30,"juicio"],[40,"impacto_final"]],
-    "sprite": {"c1":"#d4a017","c2":"#fde68a","rx":32,"ry":32,"ears":"halo","tail":"none","eyes":"cyclops","mark":"gem"}
+    "sprite": {"c1":"#d4a017","c2":"#fde68a","rx":32,"ry":32,"ears":"halo","tail":"none","eyes":"cyclops","mark":"gem","body":"block","extra":["arms"]}
   },
   "esfinxa": {
     "name": "Esfinxa",
@@ -466,19 +400,11 @@
     "drops": [["piedra_runica",0.4],["hilo",0.3],["nucleo_arcano",0.05],["supereter",0.08]],
     "passives": ["mente_arcana","espiritu_ferreo"],
     "desc": "Plantea acertijos a quien se atreve a entrar.",
-    "learn": [[1,"lodo"],[12,"raiz_drenante"],[20,"concentracion"],[28,"terremoto"],[36,"polen_toxico"],[44,"avalancha"]],
-    "sprite": {
-      "c1": "#ca8a04",
-      "c2": "#fef9c3",
-      "rx": 31,
-      "ry": 27,
-      "ears": "long",
-      "tail": "curl",
-      "eyes": "sharp",
-      "eyeColor": "#0ea5e9",
-      "mark": "gem",
-      "wings": true
-    }
+    "learn": [
+      [1,"lodo"], [12,"raiz_drenante"], [20,"concentracion"], [28,"terremoto"], [36,"polen_toxico"],
+      [44,"avalancha"]
+    ],
+    "sprite": {"c1":"#ca8a04","c2":"#fef9c3","rx":31,"ry":27,"ears":"long","tail":"curl","eyes":"sharp","eyeColor":"#0ea5e9","mark":"gem","wings":true,"legs":"quad","extra":["mane"]}
   },
   "llamasanta": {
     "name": "Llamasanta",
@@ -488,18 +414,11 @@
     "drops": [["brasa",0.4],["polvo_brillante",0.3],["panacea",0.08],["orbe_solar",0.02]],
     "passives": ["pozo_mana","mente_arcana"],
     "desc": "Llama eterna que arde en el altar del templo.",
-    "learn": [[1,"chispa"],[12,"lanzallamas"],[20,"concentracion"],[30,"curacion"],[36,"llamarada"],[50,"infierno"]],
-    "sprite": {
-      "c1": "#f59e0b",
-      "c2": "#fff7ed",
-      "rx": 24,
-      "ry": 30,
-      "ears": "flame",
-      "tail": "none",
-      "eyes": "glow",
-      "eyeColor": "#ffffff",
-      "mark": "star"
-    }
+    "learn": [
+      [1,"chispa"], [12,"lanzallamas"], [20,"concentracion"], [30,"curacion"], [36,"llamarada"],
+      [50,"infierno"]
+    ],
+    "sprite": {"c1":"#f59e0b","c2":"#fff7ed","rx":24,"ry":30,"ears":"flame","tail":"none","eyes":"glow","eyeColor":"#ffffff","mark":"star","body":"ghost","extra":["crown"]}
   },
   "abisalto": {
     "name": "Abisalto",
@@ -510,17 +429,7 @@
     "passives": ["furia","vitalidad"],
     "desc": "Depredador de las profundidades sin luz.",
     "learn": [[1,"acua_cola"],[16,"hidrochorro"],[28,"golpe_feroz"],[40,"maremoto"],[54,"impacto_final"]],
-    "sprite": {
-      "c1": "#1e3a8a",
-      "c2": "#60a5fa",
-      "rx": 36,
-      "ry": 24,
-      "ears": "fins",
-      "tail": "fin",
-      "eyes": "glow",
-      "eyeColor": "#67e8f9",
-      "mark": "spots"
-    }
+    "sprite": {"c1":"#1e3a8a","c2":"#60a5fa","rx":36,"ry":24,"ears":"fins","tail":"fin","eyes":"glow","eyeColor":"#67e8f9","mark":"spots","body":"long","legs":"none","extra":["fangs"]}
   },
   "nocturnis": {
     "name": "Nocturnis",
@@ -531,18 +440,7 @@
     "passives": ["pies_ligeros","mente_arcana"],
     "desc": "Señor de la noche perpetua del abismo.",
     "learn": [[1,"sombra_vil"],[16,"pulso_umbrio"],[26,"drenaje_vital"],[36,"agilidad"],[48,"eclipse"]],
-    "sprite": {
-      "c1": "#1e1b4b",
-      "c2": "#818cf8",
-      "rx": 28,
-      "ry": 28,
-      "ears": "horns",
-      "tail": "curl",
-      "eyes": "sharp",
-      "eyeColor": "#f43f5e",
-      "wings": true,
-      "mark": "moon"
-    }
+    "sprite": {"c1":"#1e1b4b","c2":"#818cf8","rx":28,"ry":28,"ears":"horns","tail":"curl","eyes":"sharp","eyeColor":"#f43f5e","wings":true,"mark":"moon","body":"ghost","extra":["crown"]}
   },
   "espectron": {
     "name": "Espectrón",
@@ -553,10 +451,10 @@
     "passives": ["mente_arcana","pozo_mana"],
     "desc": "Un eco de algo que una vez estuvo vivo.",
     "learn": [
-      [1,"sombra_vil"], [14,"intimidar"], [24,"pulso_umbrio"], [34,"drenaje_vital"],
-      [44,"concentracion"], [52,"eclipse"]
+      [1,"sombra_vil"], [14,"intimidar"], [24,"pulso_umbrio"], [34,"drenaje_vital"], [44,"concentracion"],
+      [52,"eclipse"]
     ],
-    "sprite": {"c1":"#a5b4fc","c2":"#eef2ff","rx":25,"ry":31,"ears":"none","tail":"curl","eyes":"glow","eyeColor":"#312e81"},
+    "sprite": {"c1":"#a5b4fc","c2":"#eef2ff","rx":25,"ry":31,"ears":"none","tail":"curl","eyes":"glow","eyeColor":"#312e81","body":"ghost"},
     "evolves": {"to":"vacuo","level":64}
   },
   "leviatan": {
@@ -568,17 +466,7 @@
     "passives": ["vitalidad","caparazon"],
     "desc": "Serpiente marina de leyenda.",
     "learn": [[1,"mordisco"],[20,"hidrochorro"],[30,"golpe_feroz"],[44,"maremoto"],[58,"diluvio"]],
-    "sprite": {
-      "c1": "#0e7490",
-      "c2": "#a5f3fc",
-      "rx": 38,
-      "ry": 26,
-      "ears": "crest",
-      "tail": "fin",
-      "eyes": "sharp",
-      "eyeColor": "#fde047",
-      "mark": "stripes"
-    }
+    "sprite": {"c1":"#0e7490","c2":"#a5f3fc","rx":38,"ry":26,"ears":"crest","tail":"fin","eyes":"sharp","eyeColor":"#fde047","mark":"stripes","body":"long","legs":"none","extra":["fangs"]}
   },
   "celestor": {
     "name": "Celestor",
@@ -589,17 +477,7 @@
     "passives": ["equilibrio","pozo_mana"],
     "desc": "Ser celestial que sólo aparece entre las nubes.",
     "learn": [[1,"golpe_aureo"],[1,"rayo_luz"],[30,"juicio"],[50,"curacion"],[62,"supernova"]],
-    "sprite": {
-      "c1": "#fef08a",
-      "c2": "#ffffff",
-      "rx": 30,
-      "ry": 30,
-      "ears": "halo",
-      "tail": "orb",
-      "eyes": "big",
-      "mark": "star",
-      "wings": true
-    }
+    "sprite": {"c1":"#fef08a","c2":"#ffffff","rx":30,"ry":30,"ears":"halo","tail":"orb","eyes":"big","mark":"star","wings":true,"legs":"none","extra":["crown"]}
   },
   "draconyx": {
     "name": "Draconyx",
@@ -610,18 +488,7 @@
     "passives": ["furia","sangre_caliente"],
     "desc": "Dragón que anida en la cima del mundo.",
     "learn": [[1,"puno_igneo"],[30,"llamarada"],[50,"golpe_feroz"],[66,"infierno"],[72,"impacto_final"]],
-    "sprite": {
-      "c1": "#991b1b",
-      "c2": "#fca5a5",
-      "rx": 36,
-      "ry": 30,
-      "ears": "horns",
-      "tail": "flame",
-      "eyes": "sharp",
-      "eyeColor": "#fde047",
-      "wings": true,
-      "mark": "stripes"
-    }
+    "sprite": {"c1":"#991b1b","c2":"#fca5a5","rx":36,"ry":30,"ears":"horns","tail":"flame","eyes":"sharp","eyeColor":"#fde047","wings":true,"mark":"stripes","body":"long","legs":"quad","extra":["fangs","horn"]}
   },
   "titanor": {
     "name": "Titanor",
@@ -632,7 +499,7 @@
     "passives": ["caparazon","vitalidad"],
     "desc": "Su paso hace temblar las montañas.",
     "learn": [[1,"golpe_roca"],[30,"terremoto"],[50,"coraza"],[64,"avalancha"],[74,"impacto_final"]],
-    "sprite": {"c1":"#57534e","c2":"#a3e635","rx":40,"ry":31,"ears":"horns","tail":"spike","eyes":"cyclops","mark":"gem"}
+    "sprite": {"c1":"#57534e","c2":"#a3e635","rx":40,"ry":31,"ears":"horns","tail":"spike","eyes":"cyclops","mark":"gem","body":"block","legs":"quad","extra":["horn","shell"]}
   },
   "vacuo": {
     "name": "Vacuo",
@@ -643,17 +510,7 @@
     "passives": ["mente_arcana","pies_ligeros"],
     "desc": "Un agujero en el cielo con forma de criatura.",
     "learn": [[1,"garra_umbria"],[1,"pulso_umbrio"],[30,"drenaje_vital"],[50,"agilidad"],[66,"eclipse"]],
-    "sprite": {
-      "c1": "#0f0a1f",
-      "c2": "#7c3aed",
-      "rx": 30,
-      "ry": 30,
-      "ears": "spikes",
-      "tail": "orb",
-      "eyes": "glow",
-      "eyeColor": "#22d3ee",
-      "mark": "moon"
-    }
+    "sprite": {"c1":"#0f0a1f","c2":"#7c3aed","rx":30,"ry":30,"ears":"spikes","tail":"orb","eyes":"glow","eyeColor":"#22d3ee","mark":"moon","body":"ghost","extra":["crown"]}
   },
   "tempestis": {
     "name": "Tempestis",
@@ -664,25 +521,15 @@
     "passives": ["regeneracion","espiritu_ferreo"],
     "desc": "Tormenta viviente que descarga sobre la cumbre.",
     "learn": [[1,"acua_cola"],[1,"hidrochorro"],[30,"maremoto"],[50,"aguas_curativas"],[68,"diluvio"]],
-    "sprite": {
-      "c1": "#475569",
-      "c2": "#bae6fd",
-      "rx": 32,
-      "ry": 28,
-      "ears": "antenna",
-      "tail": "curl",
-      "eyes": "glow",
-      "eyeColor": "#fef08a",
-      "wings": true
-    }
+    "sprite": {"c1":"#475569","c2":"#bae6fd","rx":32,"ry":28,"ears":"antenna","tail":"curl","eyes":"glow","eyeColor":"#fef08a","wings":true,"body":"ghost"}
   },
   "luminar": {
     "name": "Luminar",
     "from": "lumino",
     "base": {"hp":72,"mp":52,"atk":15,"matk":21,"def":15,"mdef":19,"spd":19},
     "desc": "Su cola brilla como un pequeño sol. Protege a los suyos con luz curativa.",
-    "sprite": {"c1":"#ffcc33","c2":"#fff6d5","rx":33,"ry":29,"ears":"long","tail":"orb","eyes":"big","mark":"star"},
-    "evolves": {"to":"solaris","level":45}
+    "sprite": {"c1":"#ffcc33","c2":"#fff6d5","rx":33,"ry":29,"ears":"long","tail":"orb","eyes":"big","mark":"star","extra":["whiskers","scarf"]},
+    "evolves": {"to":"solaris","level":34}
   },
   "solaris": {
     "name": "Solaris",
@@ -690,130 +537,112 @@
     "base": {"hp":90,"mp":64,"atk":18,"matk":28,"def":18,"mdef":24,"spd":24},
     "learnExtra": [[60,"curacion"]],
     "desc": "Una leyenda dice que su luz guió a los primeros aventureros.",
-    "sprite": {
-      "c1": "#fbbf24",
-      "c2": "#fffbeb",
-      "rx": 36,
-      "ry": 32,
-      "ears": "halo",
-      "tail": "orb",
-      "eyes": "sharp",
-      "eyeColor": "#b45309",
-      "mark": "star",
-      "wings": true
-    }
+    "sprite": {"c1":"#fbbf24","c2":"#fffbeb","rx":36,"ry":32,"ears":"halo","tail":"orb","eyes":"sharp","eyeColor":"#b45309","mark":"star","wings":true,"legs":"quad","extra":["mane","whiskers"]},
+    "evolves": {"to":"astrelion","level":54}
+  },
+  "astrelion": {
+    "name": "Astrelion",
+    "from": "solaris",
+    "base": {"hp":104,"mp":74,"atk":21,"matk":32,"def":21,"mdef":28,"spd":28},
+    "learnExtra": [[54,"velo_aurora"]],
+    "desc": "Dicen que es el sol del amanecer hecho criatura. Su luz cura cualquier herida.",
+    "sprite": {"c1":"#f59e0b","c2":"#fffbeb","rx":38,"ry":32,"ears":"halo","tail":"orb","eyes":"glow","eyeColor":"#fde047","mark":"star","wings":true,"body":"egg","legs":"quad","extra":["mane","crown"]}
   },
   "umbrakat": {
     "name": "Umbrakat",
     "from": "umbrix",
     "base": {"hp":68,"mp":44,"atk":21,"matk":18,"def":14,"mdef":15,"spd":22},
     "desc": "Se funde con cualquier sombra y ataca sin hacer ruido.",
-    "sprite": {
-      "c1": "#5b3cc4",
-      "c2": "#c4b5fd",
-      "rx": 31,
-      "ry": 27,
-      "ears": "cat",
-      "tail": "curl",
-      "eyes": "sharp",
-      "eyeColor": "#facc15",
-      "mark": "moon"
-    },
-    "evolves": {"to":"noctyrion","level":45}
+    "sprite": {"c1":"#5b3cc4","c2":"#c4b5fd","rx":31,"ry":27,"ears":"cat","tail":"curl","eyes":"sharp","eyeColor":"#facc15","mark":"moon","legs":"quad","extra":["whiskers","fangs"]},
+    "evolves": {"to":"noctyrion","level":34}
   },
   "noctyrion": {
     "name": "Noctyrion",
     "from": "umbrakat",
     "base": {"hp":84,"mp":54,"atk":28,"matk":24,"def":18,"mdef":19,"spd":28},
     "desc": "Señor felino de la noche. Sus ojos ven a través de la oscuridad absoluta.",
-    "sprite": {
-      "c1": "#3b1f8f",
-      "c2": "#a78bfa",
-      "rx": 34,
-      "ry": 30,
-      "ears": "horns",
-      "tail": "curl",
-      "eyes": "glow",
-      "eyeColor": "#fde047",
-      "mark": "moon",
-      "wings": true
-    }
+    "sprite": {"c1":"#3b1f8f","c2":"#a78bfa","rx":34,"ry":30,"ears":"horns","tail":"curl","eyes":"glow","eyeColor":"#fde047","mark":"moon","wings":true,"legs":"quad","extra":["mane","fangs"]},
+    "evolves": {"to":"eclipsar","level":54}
+  },
+  "eclipsar": {
+    "name": "Eclipsar",
+    "from": "noctyrion",
+    "base": {"hp":97,"mp":63,"atk":32,"matk":28,"def":21,"mdef":22,"spd":32},
+    "learnExtra": [[54,"telarana"]],
+    "desc": "Cuando abre las alas, el día se vuelve noche. Nadie lo ve llegar.",
+    "sprite": {"c1":"#1e1b4b","c2":"#8b5cf6","rx":34,"ry":28,"ears":"horns","tail":"curl","eyes":"glow","eyeColor":"#fde047","mark":"moon","wings":true,"body":"long","legs":"quad","extra":["fangs","mane"]}
   },
   "pyrosaur": {
     "name": "Pyrosaur",
     "from": "pyrex",
     "base": {"hp":70,"mp":44,"atk":22,"matk":19,"def":15,"mdef":14,"spd":18},
     "desc": "Su cuerpo desprende tanto calor que derrite la roca a su paso.",
-    "sprite": {
-      "c1": "#ea580c",
-      "c2": "#fed7aa",
-      "rx": 33,
-      "ry": 27,
-      "ears": "crest",
-      "tail": "flame",
-      "eyes": "sharp",
-      "eyeColor": "#7c2d12",
-      "mark": "stripes"
-    },
-    "evolves": {"to":"infernyx","level":45}
+    "sprite": {"c1":"#ea580c","c2":"#fed7aa","rx":33,"ry":27,"ears":"crest","tail":"flame","eyes":"sharp","eyeColor":"#7c2d12","mark":"stripes","body":"long","legs":"quad","extra":["fangs"]},
+    "evolves": {"to":"infernyx","level":34}
   },
   "infernyx": {
     "name": "Infernyx",
     "from": "pyrosaur",
     "base": {"hp":88,"mp":54,"atk":30,"matk":26,"def":19,"mdef":17,"spd":22},
     "desc": "Dragón de fuego. Cuando ruge, el cielo se tiñe de rojo.",
-    "sprite": {
-      "c1": "#c2410c",
-      "c2": "#fdba74",
-      "rx": 36,
-      "ry": 30,
-      "ears": "horns",
-      "tail": "flame",
-      "eyes": "sharp",
-      "eyeColor": "#fde047",
-      "mark": "stripes",
-      "wings": true
-    }
+    "sprite": {"c1":"#c2410c","c2":"#fdba74","rx":36,"ry":30,"ears":"horns","tail":"flame","eyes":"sharp","eyeColor":"#fde047","mark":"stripes","wings":true,"body":"long","legs":"quad","extra":["fangs","horn"]},
+    "evolves": {"to":"volcanor","level":54}
+  },
+  "volcanor": {
+    "name": "Volcanor",
+    "from": "infernyx",
+    "base": {"hp":102,"mp":63,"atk":35,"matk":30,"def":22,"mdef":20,"spd":26},
+    "learnExtra": [[54,"mordisco_brasa"]],
+    "desc": "Un volcán con patas. Cada paso suyo deja la tierra en llamas.",
+    "sprite": {"c1":"#991b1b","c2":"#fb923c","rx":36,"ry":30,"ears":"horns","tail":"flame","eyes":"sharp","eyeColor":"#fde047","mark":"stripes","wings":true,"body":"long","legs":"quad","extra":["fangs","mane"]}
   },
   "aqualutra": {
     "name": "Aqualutra",
     "from": "aquelo",
     "base": {"hp":78,"mp":48,"atk":17,"matk":19,"def":17,"mdef":20,"spd":15},
     "desc": "Nada a gran velocidad y cura a sus aliados con agua pura.",
-    "sprite": {"c1":"#0ea5e9","c2":"#e0f2fe","rx":33,"ry":29,"ears":"fins","tail":"fin","eyes":"big","mark":"spots"},
-    "evolves": {"to":"tidaleon","level":45}
+    "sprite": {"c1":"#0ea5e9","c2":"#e0f2fe","rx":33,"ry":29,"ears":"fins","tail":"fin","eyes":"big","mark":"spots","body":"long","extra":["whiskers"]},
+    "evolves": {"to":"tidaleon","level":34}
   },
   "tidaleon": {
     "name": "Tidaleón",
     "from": "aqualutra",
     "base": {"hp":98,"mp":58,"atk":22,"matk":26,"def":22,"mdef":26,"spd":18},
     "desc": "Guardián de las mareas. Puede invocar olas gigantescas.",
-    "sprite": {
-      "c1": "#0369a1",
-      "c2": "#bae6fd",
-      "rx": 37,
-      "ry": 31,
-      "ears": "crest",
-      "tail": "fin",
-      "eyes": "sharp",
-      "eyeColor": "#0f172a",
-      "mark": "spots"
-    }
+    "sprite": {"c1":"#0369a1","c2":"#bae6fd","rx":37,"ry":31,"ears":"crest","tail":"fin","eyes":"sharp","eyeColor":"#0f172a","mark":"spots","legs":"quad","extra":["mane","whiskers"]},
+    "evolves": {"to":"oceanyx","level":54}
+  },
+  "oceanyx": {
+    "name": "Oceanyx",
+    "from": "tidaleon",
+    "base": {"hp":114,"mp":67,"atk":26,"matk":30,"def":26,"mdef":30,"spd":21},
+    "learnExtra": [[54,"vapor"]],
+    "desc": "El rey de los mares. Las olas se calman cuando habla.",
+    "sprite": {"c1":"#1e3a8a","c2":"#7dd3fc","rx":36,"ry":30,"ears":"crest","tail":"fin","eyes":"sharp","eyeColor":"#fde047","mark":"spots","body":"long","legs":"quad","extra":["mane","crown"]}
   },
   "terragor": {
     "name": "Terragor",
     "from": "terron",
     "base": {"hp":86,"mp":34,"atk":20,"matk":14,"def":22,"mdef":17,"spd":11},
     "desc": "Su caparazón es tan duro como el granito.",
-    "sprite": {"c1":"#92400e","c2":"#fde68a","rx":36,"ry":28,"ears":"horns","tail":"spike","eyes":"big","mark":"gem"},
-    "evolves": {"to":"gaiadon","level":45}
+    "sprite": {"c1":"#92400e","c2":"#fde68a","rx":36,"ry":28,"ears":"horns","tail":"spike","eyes":"big","mark":"gem","legs":"quad","extra":["shell"]},
+    "evolves": {"to":"gaiadon","level":34}
   },
   "gaiadon": {
     "name": "Gaiadón",
     "from": "terragor",
     "base": {"hp":108,"mp":42,"atk":27,"matk":18,"def":30,"mdef":22,"spd":13},
     "desc": "Una montaña viviente. Sobre su espalda crecen bosques enteros.",
-    "sprite": {"c1":"#78350f","c2":"#a3e635","rx":40,"ry":31,"ears":"spikes","tail":"spike","eyes":"sleepy","mark":"gem"}
+    "sprite": {"c1":"#78350f","c2":"#a3e635","rx":40,"ry":31,"ears":"spikes","tail":"spike","eyes":"sleepy","mark":"gem","body":"block","legs":"quad","extra":["shell","horn"]},
+    "evolves": {"to":"titanterra","level":54}
+  },
+  "titanterra": {
+    "name": "Titanterra",
+    "from": "gaiadon",
+    "base": {"hp":125,"mp":49,"atk":31,"matk":21,"def":35,"mdef":26,"spd":15},
+    "learnExtra": [[54,"muralla"]],
+    "desc": "Tan antiguo como las montañas. Sobre su caparazón nacen ríos.",
+    "sprite": {"c1":"#57534e","c2":"#84cc16","rx":40,"ry":31,"ears":"spikes","tail":"spike","eyes":"cyclops","eyeColor":"#fbbf24","mark":"gem","body":"block","legs":"quad","extra":["shell","horn","crown"]}
   },
   "ratonchi": {
     "name": "Ratonchi",
@@ -827,7 +656,7 @@
       [1,"placaje"], [1,"destello"], [4,"agilidad"], [8,"golpe_aureo"], [13,"velo_aurora"],
       [18,"rayo_luz"], [26,"golpe_feroz"]
     ],
-    "sprite": {"c1":"#fde047","c2":"#fffbeb","rx":25,"ry":23,"ears":"long","tail":"curl","eyes":"big","mark":"stripes"},
+    "sprite": {"c1":"#fde047","c2":"#fffbeb","rx":25,"ry":23,"ears":"long","tail":"curl","eyes":"big","mark":"stripes","extra":["whiskers"]},
     "evolves": {"to":"ratonix","level":16}
   },
   "charquito": {
@@ -842,7 +671,7 @@
       [1,"placaje"], [1,"burbuja"], [5,"aguas_curativas"], [9,"acua_cola"], [14,"vapor"],
       [20,"hidrochorro"], [30,"maremoto"]
     ],
-    "sprite": {"c1":"#4ade80","c2":"#dcfce7","rx":28,"ry":22,"ears":"none","tail":"none","eyes":"big","mark":"spots"}
+    "sprite": {"c1":"#4ade80","c2":"#dcfce7","rx":28,"ry":22,"ears":"none","tail":"none","eyes":"big","mark":"spots","legs":"quad"}
   },
   "ratonix": {
     "name": "Ratonix",
@@ -851,17 +680,7 @@
     "drops": [["pluma",0.4],["polvo_brillante",0.3],["pluma_veloz",0.04]],
     "desc": "Sus chispas doradas se ven a kilómetros. Rapidísimo.",
     "learnExtra": [[34,"juicio"],[48,"impacto_final"]],
-    "sprite": {
-      "c1": "#facc15",
-      "c2": "#fef9c3",
-      "rx": 28,
-      "ry": 26,
-      "ears": "long",
-      "tail": "orb",
-      "eyes": "sharp",
-      "eyeColor": "#b45309",
-      "mark": "stripes"
-    }
+    "sprite": {"c1":"#facc15","c2":"#fef9c3","rx":28,"ry":26,"ears":"long","tail":"orb","eyes":"sharp","eyeColor":"#b45309","mark":"stripes","extra":["whiskers","fangs"]}
   },
   "setabruja": {
     "name": "Setabruja",
@@ -875,7 +694,7 @@
       [1,"sombra_vil"], [3,"esporas"], [7,"intimidar"], [11,"drenaje_vital"], [16,"telarana"],
       [22,"pulso_umbrio"], [32,"eclipse"]
     ],
-    "sprite": {"c1":"#9333ea","c2":"#f5d0fe","rx":27,"ry":26,"ears":"leaf","tail":"none","eyes":"sleepy","mark":"spots"},
+    "sprite": {"c1":"#9333ea","c2":"#f5d0fe","rx":27,"ry":26,"ears":"leaf","tail":"none","eyes":"sleepy","mark":"spots","extra":["cap"]},
     "evolves": {"to":"hongoscuro","level":22}
   },
   "ardillama": {
@@ -890,7 +709,7 @@
       [1,"aranazo"], [1,"chispa"], [5,"mordisco"], [9,"colmillo_ardiente"], [14,"agilidad"],
       [19,"mordisco_brasa"], [26,"lanzallamas"]
     ],
-    "sprite": {"c1":"#ea580c","c2":"#ffedd5","rx":26,"ry":24,"ears":"cat","tail":"flame","eyes":"big","mark":"stripes"},
+    "sprite": {"c1":"#ea580c","c2":"#ffedd5","rx":26,"ry":24,"ears":"cat","tail":"flame","eyes":"big","mark":"stripes","legs":"tall"},
     "evolves": {"to":"fogardilla","level":20}
   },
   "hongoscuro": {
@@ -901,17 +720,7 @@
     "drops": [["esencia_sombria",0.5],["nucleo_arcano",0.06],["velo_mistico",0.03]],
     "desc": "Rey de los hongos del bosque. Donde pisa, crece la niebla.",
     "learnExtra": [[40,"curacion"],[52,"eclipse"]],
-    "sprite": {
-      "c1": "#6b21a8",
-      "c2": "#e9d5ff",
-      "rx": 32,
-      "ry": 30,
-      "ears": "leaf",
-      "tail": "none",
-      "eyes": "glow",
-      "eyeColor": "#a3e635",
-      "mark": "spots"
-    }
+    "sprite": {"c1":"#6b21a8","c2":"#e9d5ff","rx":32,"ry":30,"ears":"leaf","tail":"none","eyes":"glow","eyeColor":"#a3e635","mark":"spots","extra":["cap","arms"]}
   },
   "fogardilla": {
     "name": "Fogardilla",
@@ -921,17 +730,7 @@
     "drops": [["brasa",0.5],["fragmento_garra",0.3],["anillo_brasas",0.03]],
     "desc": "Salta de rama en rama dejando un rastro de fuego.",
     "learnExtra": [[34,"puno_igneo"],[44,"llamarada"]],
-    "sprite": {
-      "c1": "#dc2626",
-      "c2": "#fed7aa",
-      "rx": 29,
-      "ry": 26,
-      "ears": "flame",
-      "tail": "flame",
-      "eyes": "sharp",
-      "eyeColor": "#fde047",
-      "mark": "stripes"
-    }
+    "sprite": {"c1":"#dc2626","c2":"#fed7aa","rx":29,"ry":26,"ears":"flame","tail":"flame","eyes":"sharp","eyeColor":"#fde047","mark":"stripes","legs":"quad","extra":["fangs"]}
   },
   "medusina": {
     "name": "Medusina",
@@ -945,16 +744,7 @@
       [1,"burbuja"], [6,"vapor"], [10,"concentracion"], [14,"hidrochorro"], [20,"aguas_curativas"],
       [28,"maremoto"], [40,"diluvio"]
     ],
-    "sprite": {
-      "c1": "#a78bfa",
-      "c2": "#e0f2fe",
-      "rx": 25,
-      "ry": 28,
-      "ears": "antenna",
-      "tail": "none",
-      "eyes": "glow",
-      "eyeColor": "#22d3ee"
-    }
+    "sprite": {"c1":"#a78bfa","c2":"#e0f2fe","rx":25,"ry":28,"ears":"antenna","tail":"none","eyes":"glow","eyeColor":"#22d3ee","body":"ghost"}
   },
   "tortuarena": {
     "name": "Tortuarena",
@@ -968,7 +758,7 @@
       [1,"placaje"], [5,"muralla"], [9,"golpe_roca"], [14,"lodo"], [20,"embestida"],
       [26,"raiz_drenante"], [34,"terremoto"]
     ],
-    "sprite": {"c1":"#ca8a04","c2":"#fef3c7","rx":34,"ry":23,"ears":"none","tail":"spike","eyes":"sleepy","mark":"gem"},
+    "sprite": {"c1":"#ca8a04","c2":"#fef3c7","rx":34,"ry":23,"ears":"none","tail":"spike","eyes":"sleepy","mark":"gem","legs":"quad","extra":["shell"]},
     "evolves": {"to":"tortumonte","level":30}
   },
   "tortumonte": {
@@ -979,17 +769,7 @@
     "drops": [["piedra_runica",0.4],["escama_dura",0.06],["corazon_roca",0.04]],
     "desc": "Lleva una pequeña montaña a la espalda. Casi indestructible.",
     "learnExtra": [[44,"avalancha"],[56,"impacto_final"]],
-    "sprite": {
-      "c1": "#854d0e",
-      "c2": "#fde68a",
-      "rx": 38,
-      "ry": 27,
-      "ears": "horns",
-      "tail": "spike",
-      "eyes": "sharp",
-      "eyeColor": "#fbbf24",
-      "mark": "gem"
-    }
+    "sprite": {"c1":"#854d0e","c2":"#fde68a","rx":38,"ry":27,"ears":"horns","tail":"spike","eyes":"sharp","eyeColor":"#fbbf24","mark":"gem","legs":"quad","extra":["shell","horn"]}
   },
   "topazio": {
     "name": "Topazio",
@@ -999,18 +779,11 @@
     "drops": [["polvo_brillante",0.45],["piedra_runica",0.2],["orbe_solar",0.02]],
     "passives": ["pozo_mana","equilibrio"],
     "desc": "Cristal vivo que guarda la luz de la superficie.",
-    "learn": [[1,"destello"],[16,"velo_aurora"],[19,"rayo_luz"],[24,"curacion"],[30,"concentracion"],[38,"juicio"]],
-    "sprite": {
-      "c1": "#f0abfc",
-      "c2": "#fdf4ff",
-      "rx": 27,
-      "ry": 30,
-      "ears": "spikes",
-      "tail": "none",
-      "eyes": "cyclops",
-      "eyeColor": "#7c3aed",
-      "mark": "gem"
-    }
+    "learn": [
+      [1,"destello"], [16,"velo_aurora"], [19,"rayo_luz"], [24,"curacion"], [30,"concentracion"],
+      [38,"juicio"]
+    ],
+    "sprite": {"c1":"#f0abfc","c2":"#fdf4ff","rx":27,"ry":30,"ears":"spikes","tail":"none","eyes":"cyclops","eyeColor":"#7c3aed","mark":"gem","body":"egg","legs":"none"}
   },
   "aranuria": {
     "name": "Arañuria",
@@ -1024,17 +797,7 @@
       [1,"mordisco"], [16,"telarana"], [18,"colmillo_venenoso"], [22,"garra_umbria"], [28,"agilidad"],
       [36,"golpe_feroz"]
     ],
-    "sprite": {
-      "c1": "#1e1b4b",
-      "c2": "#c7d2fe",
-      "rx": 28,
-      "ry": 22,
-      "ears": "antenna",
-      "tail": "spike",
-      "eyes": "sharp",
-      "eyeColor": "#ef4444",
-      "mark": "spots"
-    }
+    "sprite": {"c1":"#1e1b4b","c2":"#c7d2fe","rx":28,"ry":22,"ears":"antenna","tail":"spike","eyes":"sharp","eyeColor":"#ef4444","mark":"spots","legs":"quad","extra":["fangs"]}
   },
   "salamandrox": {
     "name": "Salamandrox",
@@ -1045,20 +808,10 @@
     "passives": ["furia","instinto"],
     "desc": "Salamandra veloz que nada en lava como si fuera agua.",
     "learn": [
-      [1,"colmillo_ardiente"], [24,"mordisco_brasa"], [28,"agilidad"], [32,"lanzallamas"],
-      [40,"golpe_feroz"], [48,"llamarada"]
+      [1,"colmillo_ardiente"], [24,"mordisco_brasa"], [28,"agilidad"], [32,"lanzallamas"], [40,"golpe_feroz"],
+      [48,"llamarada"]
     ],
-    "sprite": {
-      "c1": "#ef4444",
-      "c2": "#fecaca",
-      "rx": 31,
-      "ry": 22,
-      "ears": "crest",
-      "tail": "flame",
-      "eyes": "sharp",
-      "eyeColor": "#fde047",
-      "mark": "stripes"
-    }
+    "sprite": {"c1":"#ef4444","c2":"#fecaca","rx":31,"ry":22,"ears":"crest","tail":"flame","eyes":"sharp","eyeColor":"#fde047","mark":"stripes","body":"long","legs":"quad"}
   },
   "geyseron": {
     "name": "Géyserón",
@@ -1068,8 +821,11 @@
     "drops": [["gota",0.5],["obsidiana",0.2],["perla_marina",0.05]],
     "passives": ["vitalidad","espiritu_ferreo"],
     "desc": "Vive en los géiseres del volcán. El fuego no le asusta.",
-    "learn": [[1,"burbuja"],[24,"vapor"],[28,"aguas_curativas"],[32,"hidrochorro"],[40,"coraza"],[48,"maremoto"]],
-    "sprite": {"c1":"#0ea5e9","c2":"#f0f9ff","rx":32,"ry":28,"ears":"fins","tail":"fin","eyes":"big","mark":"spots"}
+    "learn": [
+      [1,"burbuja"], [24,"vapor"], [28,"aguas_curativas"], [32,"hidrochorro"], [40,"coraza"],
+      [48,"maremoto"]
+    ],
+    "sprite": {"c1":"#0ea5e9","c2":"#f0f9ff","rx":32,"ry":28,"ears":"fins","tail":"fin","eyes":"big","mark":"spots","body":"egg","extra":["arms"]}
   },
   "sacerdon": {
     "name": "Sacerdón",
@@ -1079,18 +835,11 @@
     "drops": [["polvo_brillante",0.5],["nucleo_arcano",0.08],["orbe_solar",0.03]],
     "passives": ["pozo_mana","mente_arcana"],
     "desc": "Búho guardián del templo. Cura a sus aliados con cánticos.",
-    "learn": [[1,"rayo_luz"],[34,"curacion"],[38,"velo_aurora"],[42,"juicio"],[52,"concentracion"],[60,"supernova"]],
-    "sprite": {
-      "c1": "#fef3c7",
-      "c2": "#ffffff",
-      "rx": 29,
-      "ry": 30,
-      "ears": "halo",
-      "tail": "none",
-      "eyes": "big",
-      "mark": "star",
-      "wings": true
-    }
+    "learn": [
+      [1,"rayo_luz"], [34,"curacion"], [38,"velo_aurora"], [42,"juicio"], [52,"concentracion"],
+      [60,"supernova"]
+    ],
+    "sprite": {"c1":"#fef3c7","c2":"#ffffff","rx":29,"ry":30,"ears":"halo","tail":"none","eyes":"big","mark":"star","wings":true,"legs":"tall","extra":["beak"]}
   },
   "golemar": {
     "name": "Golemar",
@@ -1100,18 +849,11 @@
     "drops": [["piedra_runica",0.5],["obsidiana",0.3],["coraza_obsidiana",0.03]],
     "passives": ["caparazon","espiritu_ferreo"],
     "desc": "Golem de piedra dorada que protege las puertas del templo.",
-    "learn": [[1,"golpe_roca"],[34,"muralla"],[38,"embestida"],[44,"avalancha"],[52,"rugido"],[60,"impacto_final"]],
-    "sprite": {
-      "c1": "#a8a29e",
-      "c2": "#fde68a",
-      "rx": 36,
-      "ry": 30,
-      "ears": "spikes",
-      "tail": "none",
-      "eyes": "cyclops",
-      "eyeColor": "#f59e0b",
-      "mark": "gem"
-    }
+    "learn": [
+      [1,"golpe_roca"], [34,"muralla"], [38,"embestida"], [44,"avalancha"], [52,"rugido"],
+      [60,"impacto_final"]
+    ],
+    "sprite": {"c1":"#a8a29e","c2":"#fde68a","rx":36,"ry":30,"ears":"spikes","tail":"none","eyes":"cyclops","eyeColor":"#f59e0b","mark":"gem","body":"block","extra":["arms"]}
   },
   "kraknoir": {
     "name": "Kraknoir",
@@ -1122,20 +864,10 @@
     "passives": ["furia","instinto"],
     "desc": "Calamar de las profundidades. Envuelve a sus presas en tinta negra.",
     "learn": [
-      [1,"garra_umbria"], [46,"telarana"], [50,"drenaje_vital"], [54,"golpe_feroz"],
-      [60,"pulso_umbrio"], [70,"eclipse"]
+      [1,"garra_umbria"], [46,"telarana"], [50,"drenaje_vital"], [54,"golpe_feroz"], [60,"pulso_umbrio"],
+      [70,"eclipse"]
     ],
-    "sprite": {
-      "c1": "#312e81",
-      "c2": "#a5b4fc",
-      "rx": 33,
-      "ry": 30,
-      "ears": "antenna",
-      "tail": "curl",
-      "eyes": "glow",
-      "eyeColor": "#f472b6",
-      "mark": "spots"
-    }
+    "sprite": {"c1":"#312e81","c2":"#a5b4fc","rx":33,"ry":30,"ears":"antenna","tail":"curl","eyes":"glow","eyeColor":"#f472b6","mark":"spots","body":"ghost"}
   },
   "fuegofatuo": {
     "name": "Fuego Fatuo",
@@ -1145,17 +877,11 @@
     "drops": [["brasa",0.5],["nucleo_arcano",0.1],["lagrima_estelar",0.03]],
     "passives": ["mente_arcana","pies_ligeros"],
     "desc": "Llama errante que guía a los perdidos hacia el abismo.",
-    "learn": [[1,"lanzallamas"],[46,"vapor"],[50,"concentracion"],[54,"llamarada"],[62,"agilidad"],[72,"infierno"]],
-    "sprite": {
-      "c1": "#22d3ee",
-      "c2": "#ecfeff",
-      "rx": 24,
-      "ry": 30,
-      "ears": "flame",
-      "tail": "flame",
-      "eyes": "glow",
-      "eyeColor": "#ffffff"
-    }
+    "learn": [
+      [1,"lanzallamas"], [46,"vapor"], [50,"concentracion"], [54,"llamarada"], [62,"agilidad"],
+      [72,"infierno"]
+    ],
+    "sprite": {"c1":"#22d3ee","c2":"#ecfeff","rx":24,"ry":30,"ears":"flame","tail":"flame","eyes":"glow","eyeColor":"#ffffff","body":"ghost"}
   },
   "auroris": {
     "name": "Auroris",
@@ -1166,20 +892,10 @@
     "passives": ["pozo_mana","equilibrio"],
     "desc": "Ave de las auroras. Su canto hace llover estrellas.",
     "learn": [
-      [1,"hidrochorro"], [62,"velo_aurora"], [66,"aguas_curativas"], [70,"maremoto"],
-      [78,"concentracion"], [86,"diluvio"]
+      [1,"hidrochorro"], [62,"velo_aurora"], [66,"aguas_curativas"], [70,"maremoto"], [78,"concentracion"],
+      [86,"diluvio"]
     ],
-    "sprite": {
-      "c1": "#67e8f9",
-      "c2": "#f0fdfa",
-      "rx": 29,
-      "ry": 28,
-      "ears": "crest",
-      "tail": "fin",
-      "eyes": "big",
-      "mark": "star",
-      "wings": true
-    }
+    "sprite": {"c1":"#67e8f9","c2":"#f0fdfa","rx":29,"ry":28,"ears":"crest","tail":"fin","eyes":"big","mark":"star","wings":true,"legs":"tall","extra":["beak"]}
   },
   "petrodraco": {
     "name": "Petrodraco",
@@ -1189,18 +905,10 @@
     "drops": [["piedra_runica",0.5],["corazon_roca",0.05],["corona_celeste",0.005]],
     "passives": ["furia","caparazon"],
     "desc": "Dragón de roca que duerme bajo la cumbre desde hace siglos.",
-    "learn": [[1,"avalancha"],[62,"muralla"],[66,"terremoto"],[72,"rugido"],[80,"golpe_feroz"],[88,"impacto_final"]],
-    "sprite": {
-      "c1": "#57534e",
-      "c2": "#fbbf24",
-      "rx": 37,
-      "ry": 30,
-      "ears": "horns",
-      "tail": "spike",
-      "eyes": "sharp",
-      "eyeColor": "#f97316",
-      "mark": "gem",
-      "wings": true
-    }
+    "learn": [
+      [1,"avalancha"], [62,"muralla"], [66,"terremoto"], [72,"rugido"], [80,"golpe_feroz"],
+      [88,"impacto_final"]
+    ],
+    "sprite": {"c1":"#57534e","c2":"#fbbf24","rx":37,"ry":30,"ears":"horns","tail":"spike","eyes":"sharp","eyeColor":"#f97316","mark":"gem","wings":true,"body":"long","legs":"quad","extra":["horn","fangs"]}
   }
 }

@@ -103,7 +103,7 @@ js/systems/
 js/components/             camp (escena del campamento y DK.pix), common, daskaiViews (fichas, tarjetas, tablas), daskaiPanel, itemViews,
                            avatar, shareCard, palette (Ctrl+K), guides (ayuda), celebrations, talentViews, todoCard (Qué hacer ahora), fx, scenes
 js/screens/                mainMenu, newGame, hub (Campamento), camp (Mejoras), training (Entrenamiento), team, inventory, craft (Crafteo),
-                           codex, zones (Batalla), expPrepare (mochila), expedition, expSummary, battle, progress, profile, gameOver, settings
+                           codex, zones (Batalla: mapa del mundo y preparar la expedición), expPrepare (piezas de la mochila), expedition, expSummary, battle, progress, profile, gameOver, settings
 ```
 
 ---
@@ -152,7 +152,7 @@ Más opciones:
 
 | Quiero añadir... | Archivo | Cómo |
 |---|---|---|
-| Un daskai | `data/species.json` | `"id": { "name", "house", "base": { hp, mp, atk, matk, def, mdef, spd }, "learn": [[nivel, "ataque"], …], "drops", "passives", "sprite", "desc" }`. Por defecto: `exp` 40, sin botín y **cualquier pasiva** al azar. Para que aparezca, ponlo en `"enemies"` de una zona |
+| Un daskai | `data/species.json` | `"id": { "name", "house", "base": { hp, mp, atk, matk, def, mdef, spd }, "learn": [[nivel, "ataque"], …], "drops", "passives", "sprite", "desc", "role" }`. En `sprite`, además de colores, orejas, cola, ojos y marca: `body` (`round`/`egg`/`block`/`ghost`/`long`), `legs` (`feet`/`none`/`quad`/`tall`) y `extra` (`beak`, `horn`, `shell`, `mane`, `whiskers`, `fangs`, `arms`, `claws`, `cap`, `crown`, `scarf`) en `systems/sprites.js`. Por defecto: `exp` 40, sin botín y **cualquier pasiva** al azar. Para que aparezca, ponlo en `"enemies"` de una zona |
 | Una evolución | `data/species.json` | en la especie de origen `"evolves": { "to": "destino", "level": 20 }` y en la nueva `"from": "origen"`: hereda casa, pasivas, ataques (+ `"learnExtra"`) y `exp` + 25 |
 | Un ataque | `data/moves.json` | `"id": { "name", "kind": "fisico"\|"magico", "house", "power", "mp", "acc", "effect", "priority", "desc" }` (por defecto `acc` 100, `mp`/`power` 0, sin casa) |
 | Un objeto | `data/items.json` + `js/data/shop.js` | `"id": { "name", "category", "rarity", "icon", "color", "use" / "stats", "grants", "desc" }` y su precio. Un tónico es `"use": { "perm": "atributo" }` |
@@ -285,7 +285,7 @@ Huecos `config.training.slots` + mejora «Instructor». Al entrar se paga `cost(
   - `DK.expedition.preview()` enseña el primer mapa de la próxima expedición; `start()` usa esa misma zona, semilla y tamaño.
   - **Dibujar en el mapa** (`screens/expedition.js`): botón «Dibujar» o clic derecho en el mapa. Lápiz de colores, goma, notas de texto, deshacer y borrar. Se guarda por mapa en `e.marks = { lines: [{ c, pts: [[x 0..1, y px]] }], notes: [{ x, y, text, c }] }` (`DK.expedition.addLine/addNote/removeMark/undoMark/clearMarks`) y se ve también en el resumen.
   - Mientras hay un nodo sin combate pendiente o una reliquia por elegir, el mapa se oculta (vista centrada).
-- **Preparar (briefing):** `screens/expPrepare.js` enseña en la cabecera la zona, el tamaño, el nivel de los rivales, la dificultad, tus emblemas y los emblemas por jefe; debajo, Equipo · Mochila · Bolsa en `.brief-grid`: tres bloques **del mismo tamaño** (540 px de alto en columnas; 440 px apilados en ≤900 px; `css/game.css` §7) con la lista desplazándose por dentro, y los objetivos debajo. Mochila y bolsa son LISTAS (`.pk-row`): − / + por objeto en la mochila, + en la bolsa (Mayús = todas) y arrastrar entre ambas (`DK.ui.pointerDrag`, también con el dedo).
+- **Preparar (en Batalla):** ya no hay pantalla aparte: en `screens/zones.js` (`prepCard`), bajo el mapa del mundo, salen los datos del primer mapa en chips (tamaño, nivel de los rivales, clima, emblemas por jefe, récord), el **tipo de expedición** en pastillas (el elegido explica qué cambia), tu equipo (retratos con su vida), la mochila (chips de objetos; pulsar uno quita una unidad; «Sugerir», «Repetir» y «Elegir objetos», que abre el editor completo `V.packEditor` de `screens/expPrepare.js` en un panel), avisos en una línea y «Partir» (Enter). Al lado, la ficha de la zona con los récords plegados y el combate libre. La pantalla `expPrepare` sólo redirige a Batalla.
 - **Mapa en pantalla:** los nodos se separan hacia los lados al pintarlos (`xOf` en `mapView`) y cada piso mide `ROW_FULL` px (los dibujos se guardan en esos px).
 - **Mochila:** antes de salir, `screens/expPrepare.js` elige qué objetos de casa te llevas (`packCapacity()` = `config.expedition.packCapacity` + Mejora «Equipaje»; categorías en `packCategories`). `DK.expedition.start(pack)` los pasa a `e.pack`.
   - Mientras hay expedición, **`DK.bag` trabaja sobre la mochila** (`DK.bag.raw()`); la bolsa de casa es `DK.bag.home()`. Así combate, curar, mercader, sucesos y equipar usan la mochila sin cambios.
@@ -313,6 +313,68 @@ Huecos `config.training.slots` + mejora «Instructor». Al entrar se paga `cost(
 - Objetos: `markItem(id)` se llama solo desde `DK.bag.add/addHome` (`state.codex.itemsSeen`); `itemKnown(id)`.
 - `DK.codex.totals()` = descubiertos / total de especies, objetos y jefes (incluidos los ocultos).
 - Pantalla `screens/codex.js`: pestañas Daskai · Objetos · Jefes, filtros por casa, zona y estado, cuadrícula con siluetas y ficha lateral (escritorio) o en hoja (móvil).
+
+### Especies: papeles, siluetas y evoluciones
+
+- **Rasgo** (en el código `d.role` / `D.roles`, por daskai, no por especie): cada daskai nace con uno AL AZAR (`DK.daskai.rollRole()`): el 80% no tiene (`equilibrado`, «Sin rasgo») y el `config.roleChance` (20%) restante saca uno de `D.roles` según su `weight`: Coloso, Guardián, Bravo, Arcano, Raudo, Sabio o Temerario. Tener rasgo es una ventaja: `D.roles[x].mods` suma o resta un % al atributo base (`baseOf`), así que cuenta en todo lo que usa `DK.daskai.stats()`: la ficha, la tabla de atributos (el desglose dice «rasgo +20%» y hay una marca junto al atributo) y el combate (daño, defensa, velocidad, vida). Los jefes no tienen. Las partidas antiguas lo sortean la primera vez (`roleOf`). Insignia: `V.roleBadge(d)` en la ficha, las filas, el equipo, los reclutas y el combate (los dos lados).
+- **Iniciales con tres evoluciones** (cuatro formas): evolucionan en los niveles 16, 34 y 54 (Lumino → Luminar → Solaris → Astrelion; Umbrix → Umbrakat → Noctyrion → Eclipsar; Pyrex → Pyrosaur → Infernyx → Volcanor; Aquelo → Aqualutra → Tidaleón → Oceanyx; Terrón → Terragor → Gaiadón → Titanterra). La pantalla de elegir inicial enseña la línea completa.
+- **Siluetas:** cada especie combina forma del cuerpo, patas y añadidos, así que ya no son todas «bolas con orejas» (fantasmas que flotan, cuadrúpedos, aves con pico y patas, serpientes con segmentos, setas, tortugas con caparazón…).
+
+### Tipos de expedición (`config.expedition.kinds`)
+
+El tipo sale **al azar** al preparar cada expedición (`DK.expedition.pickKind()`, según `kindChances()`: el `chance` de cada tipo — normal 50, captura 16, combate 16, tesoro 12, desafío 6 — × (1 + la Mejora «Rumbo de <tipo>», grupo `rumbos` de `data/upgrades.js`, que se compra con emblemas). Queda guardado en `state.nextExpedition.kind` hasta que salgas; Batalla lo enseña con su efecto y la probabilidad de cada tipo. `setStart({ kind })` sigue existiendo para las pruebas. Cada tipo multiplica los pesos de los nodos en `generate()` (como un modificador de mapa) y puede fijar tamaños (`sizes`, p. ej. el `short` de 6 + 2 pisos), garantizar nodos (`minRecruits`, `minElites`, `multiRecruit`) y dar efectos que leen los sistemas con `DK.expedition.kindDef()`: `capture`, `recruit`, `coins` / `exp`, `levels` y `emblems`. `needsBoss` lo bloquea hasta vencer a algún jefe.
+
+| Tipo | Qué cambia |
+|---|---|
+| Normal | Mixto, como siempre |
+| Captura | Corta, muchos reclutas (varios por piso), +1 candidato, +15% vínculo, −30% monedas |
+| Combate | Casi todo peleas y mini jefes, +30% monedas, +25% experiencia |
+| Tesoro | Cofres, tiendas, sucesos y cuevas; rivales +1 nivel; +20% monedas |
+| Desafío | Corta, mini jefes por todas partes, rivales +3 niveles, +1 emblema por jefe (tras vencer a un jefe) |
+
+**Zona de inicio:** la zona elegida en el mapa del mundo es la del primer mapa (`setStart({ zone })`, marcada «Inicio»; la ficha tiene «Empezar aquí»). Por defecto, la recomendada para tu equipo. Los mapas siguientes avanzan desde ella (`pickZone(depth, evitar, rnd, e.startZone)`).
+
+### Tipografía
+
+Estilo fantasía oscura (variables en `css/theme.css` y `css/base.css`): `--font-title` (Cinzel: títulos h1/h2, cinta de la cabecera, cortinillas, placas del campamento, nombres), `--font-pixel` (Alegreya Sans SC, versalitas: etiquetas, botones, chips, números, h3) y `--font` (Alegreya Sans: textos). Reglas en `css/game.css` §16. Se cargan de Google Fonts en `index.html`.
+
+### Fondo
+
+El fondo de la página es el de `<body>` (`css/theme.css` / `css/game.css` §2). `<html>` no debe tener fondo propio ni `body` una altura fija: si no, el fondo se corta al bajar y se ve el color liso (§11 lo deja con `height: auto`).
+
+### Mapa de la expedición: caminos
+
+`generate()` crea la estructura en **caminos**: 7 carriles (x de 0.2 a 0.8) y 4-5 caminos que salen de 3 entradas (izquierda, centro, derecha) y suben piso a piso; en cada paso siguen recto (60%) o pasan al carril de al lado (20% cada uno). Nunca se cruzan (se prohíbe ir de A a B si otro camino ya va de B a A en ese piso) y juntarse con otro camino es posible pero menos probable, así que de vez en cuando dos se unen en un nodo. Los nodos de cada piso son los carriles por los que pasa algún camino; los tipos se reparten después con las mismas reglas de siempre. El último piso normal se une a la hoguera final y ésta al jefe.
+
+### Estética de fantasía oscura en todo el juego (`css/grim.css`)
+
+Se carga la última y sólo sobrescribe: paleta (piedra oscura, bronce, oro `--gold` y carmesí `--primary`; en el tema claro, pergamino), fondo de la página, tarjetas y paneles de piedra con filo dorado, ventanas y paneles deslizantes, títulos dorados en Cinzel, cabecera y barra de accesos de hierro con la ranura activa carmesí y oro, botones, chips y la arena de combate (viñeta; jefes con marco rojo y el oculto morado). Si quieres volver al aspecto anterior, quita `css/grim.css` de `index.html` y de `sw.js`.
+
+### Fondos de zona y de jefe
+
+- **Expedición:** al entrar en el mapa, el equipo, la mochila o un combate durante una expedición, `#zone-backdrop` (creado en `screens/expedition.js` con `screen:enter`) pinta detrás de todo la escena de la zona actual, oscurecida; `body.in-exp`.
+- **Combate:** la arena usa la escena de la zona (`components/scenes.js`, ahora con árboles muertos, ruinas, tumbas, cristales o tentáculos según la zona) y los **jefes tienen su propio fondo**: `DK.scenes.bossScene(zona, secreto)` → `boss_<escena>` (menhires bajo luna roja, bosque muerto, naufragio con tormenta, bosque de cristales, forja de lava, santuario con estatua, fauces del abismo, ruinas entre rayos) y `boss_secret` (cripta) para los jefes ocultos.
+
+### Mercader de la expedición
+
+`merchantPanel` (screens/expedition.js) es una lista de filas iguales (icono, nombre, efecto, quedan, precio, cantidad − / + y «Comprar»), con pestañas Comprar · Vender. **Se paga sólo con las monedas del botín** (`DK.expedition.buyOffer` ya no toca el monedero) y lo que se vende en una expedición también va al botín (`DK.shop.sell`). Cambiar la cantidad o comprar redibuja sólo el panel (`draw()`), no la pantalla, así que no parpadea; los contadores del botín de la cabecera se actualizan aparte (`[data-loot-coins]`, `DK.app.renderRes`).
+
+### Campo de entrenamiento
+
+- **Elegir daskai** (`picker` en screens/training.js): cuadrícula de fichas con retrato, nivel, coste, si está en el equipo y la penalización por encima del nivel recomendado; filtros Todos · Equipo · Cajas; los que no pueden entrar, aparte y plegados, con el motivo.
+- **Mejoras del campo** (antes la Mejora «Instructor» de emblemas): ahora se compran con **monedas** en el propio campo (`DK.training.buyLevel()`, `level()` en `state.training.level`; las partidas antiguas conservan el nivel que tenían). Niveles en `config.training.instructor`: huecos, +% de ritmo, +niveles de tope y +puntos de atributo entrenables (`statMax()`), por 2.500 / 8.000 / 20.000 / 50.000 monedas.
+
+### Crecimiento por nivel
+
+Cada nivel da `config.growth.level` ([2, 3]) × el ritmo del atributo (`growthWeight`: especie y pasiva, entre `growthBias.min` y `max`) + la naturaleza. La flecha (▲▲ ▲ ● ▼ ▼▼, `growthRate`) sale de la **media real** (`DK.daskai.growthAvg`) comparada con la normal, y su tooltip dice cuánto gana de media por nivel. Antes el rango 1-3 era tan amplio y la flecha mezclaba la naturaleza de otra forma, que un ▲▲ podía subir lo mismo que uno normal en una subida concreta.
+
+### Música
+
+`systems/audio.js` compone en tiempo real con capas: dron grave filtrado, pad de coro lento, melodía escasa (`pluck` cuerda, `harp`, `bell` campana, `brass` metal), tambores (`soft` o `war`) y ambiente (`wind`, `waves`, `drip`, `whisper`), sobre escalas menores (eólica, frigia, armónica, dórica). Cada zona tiene su pista (la de su `scene`), el campamento `menu` (guitarra junto al fuego), los jefes `boss` y los ocultos `boss_secret`. En expedición, el mapa, el equipo y la mochila suenan con la pista de la zona (`DK.audio.zoneTrack()`), y cambia al pasar a un mapa nuevo.
+
+### Campamento oscuro
+
+`components/camp.js` pinta un campamento de fantasía oscura: cielo sangriento con luna roja, ruinas de una catedral con ventanas encendidas, montañas afiladas, árboles muertos, tumbas, camino de losas hacia un **portal** de piedra con un vórtice rojo (lleva a Batalla), antorchas, niebla que se desliza y ascuas que suben de la hoguera. Las placas son de hierro con filo dorado y letra Cinzel. Los paneles del Inicio son de piedra oscura con borde dorado y botones carmesí (`css/game.css` §18). La hora real sólo cambia el saludo y algo la luz del cielo.
 
 ### Mapa del mundo (pantalla Batalla, `screens/zones.js`)
 

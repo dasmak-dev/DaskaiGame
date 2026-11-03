@@ -11,7 +11,11 @@
 
 /* ---------- 1. Paleta y tipografía ---------- */
 :root {
-  --font-pixel: 'Pixelify Sans', 'Outfit', system-ui, sans-serif;
+  /* Tipografías (estilo fantasía oscura): títulos en Cinzel (romana
+     grabada en piedra), etiquetas, botones y números en Alegreya Sans SC
+     (versalitas legibles) y textos en Alegreya Sans. */
+  --font-title: 'Cinzel', 'Times New Roman', serif;
+  --font-pixel: 'Alegreya Sans SC', 'Alegreya Sans', system-ui, sans-serif;
   --radius: 12px; --radius-sm: 8px; --radius-lg: 16px;
 }
 :root, :root[data-theme="dark"] {

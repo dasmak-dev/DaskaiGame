@@ -34,7 +34,7 @@ module.exports = {
     run: (browser, view) => play(browser, view, async (p) => {
       await p.evaluate(() => { const ids = Object.keys(DK.data.zones); ids.slice(0, 3).forEach((id) => (DK.world.progress(id).unlocked = true)); DK.router.reset('zones'); });
       await sleep(500);
-      const r = await p.evaluate(() => ({ open: document.querySelectorAll('button.wm2-node').length, locked: document.querySelectorAll('.wm2-node.locked').length, more: document.querySelectorAll('.wm2-node.more').length, leader: !!document.querySelector('.wm2-node.selected .wm2-leader'), card: document.querySelector('.bz-card h3') && document.querySelector('.bz-card h3').textContent, hero: !!document.querySelector('.bt-hero .play-btn') }));
+      const r = await p.evaluate(() => ({ open: document.querySelectorAll('button.wm2-node').length, locked: document.querySelectorAll('.wm2-node.locked').length, more: document.querySelectorAll('.wm2-node.more').length, leader: !!document.querySelector('.wm2-node.selected .wm2-leader'), card: document.querySelector('.bz-card h3') && document.querySelector('.bz-card h3').textContent, hero: !!document.querySelector('.bt-prep .bt-go') }));
       check(r.open === 3 && r.locked === 1 && r.more === 1, 'el mapa del mundo no muestra bien las zonas: ' + JSON.stringify(r));
       check(r.leader && r.card && r.hero, 'faltan el líder, la ficha o el botón de la expedición');
       await p.click('button.wm2-node >> nth=2'); await sleep(300);

@@ -61,14 +61,22 @@ module.exports = {
       check(r.team >= 1, 'el equipo debería seguir visible');
     }),
   }, {
-    name: 'Preparar la expedición: equipo, mochila y bolsa miden lo mismo',
+    name: 'Batalla: se prepara y se sale de expedición en la misma pantalla',
     views: ['desktop', 'mobile'],
     run: (browser, view) => play(browser, view, async (p) => {
       await p.evaluate(() => { DK.bag.add('pocion', 3); DK.router.reset('expPrepare'); });
-      await sleep(500);
-      const s = await p.$$eval('.brief-grid > .panel', (els) => els.map((e) => { const r = e.getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)]; }));
-      check(s.length === 3, 'deberían ser tres bloques');
-      check(s.every((x) => x[0] === s[0][0] && x[1] === s[0][1]), 'los bloques no miden lo mismo: ' + JSON.stringify(s));
+      await sleep(600);
+      const r = await p.evaluate(() => ({ id: DK.router.current().id, prep: !!document.querySelector('.bt-prep'), pills: document.querySelectorAll('.bt-kind .bt-odd').length, team: document.querySelectorAll('.bt-mon').length }));
+      check(r.id === 'zones' && r.prep, 'Preparar debería estar en la pantalla de Batalla: ' + JSON.stringify(r));
+      check(r.pills >= 4 && r.team >= 1, 'faltan el tipo de expedición o el equipo');
+      await p.click('.bt-pack-btn'); await sleep(400);
+      check(await p.$('.drawer .pk-pack') && await p.$('.drawer .pk-bag'), 'el panel de objetos no muestra mochila y bolsa');
+      await p.click('.drawer .pk-bag .pk-btn.add'); await sleep(300);
+      await p.keyboard.press('Escape'); await sleep(300);
+      check((await p.$$('.bt-item')).length === 1, 'el objeto elegido no aparece en la mochila');
+      await p.click('.bt-go'); await sleep(800);
+      const e = await p.evaluate(() => DK.expedition.active() && DK.expedition.active().pack);
+      check(e && e.pocion === 1, 'la expedición no sale con la mochila elegida');
     }),
   }],
 };

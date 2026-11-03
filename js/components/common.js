@@ -23,6 +23,14 @@
     return h('span', { class: 'badge house', style: { '--c': D.houseColor(house) }, tip }, DK.icon(hs.icon, 13), DK.tr('houses', hs));
   };
 
+  /** Insignia del RASGO de un daskai (D.roles). Sin rasgo no se muestra (null) salvo con { neutral: true }. */
+  V.roleBadge = (d, { neutral = false } = {}) => {
+    if (!d || !DK.daskai.roleOf) return null;
+    const r = DK.daskai.roleOf(d);
+    if (r.id === 'equilibrado' && !neutral) return null;
+    return h('span', { class: 'badge role role-' + r.id, tip: t('roleDesc.' + r.id) }, DK.icon(r.icon, 13), DK.tr('roles', r));
+  };
+
   V.rarity = (r) => h('span', { class: 'badge rarity r-' + r, tip: t('tips.rarity') }, DK.tr('rarities', D.rarities[r]));
   V.level = (l) => h('span', { class: 'lvl' }, t('common.lvl') + ' ', h('b', null, l));
   /** Etiqueta de daskai temporal (recluta de una expedición en curso). */

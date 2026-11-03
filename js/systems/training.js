@@ -11,15 +11,30 @@
  *   Experiencia: siempre se puede. Por encima del nivel recomendado
  *   (levelCap()) cuesta más: o pagas ×mult (plan 'coins') o tarda ×mult
  *   horas (plan 'time'). Slot: { ..., plan, mult }.
- *   La mejora «Instructor» da huecos, ritmo y tope extra (instr()).
+ *   Las mejoras del campo («Instructor», niveles en config.training.instructor)
+ *   se compran con MONEDAS aquí mismo (buyLevel) y dan huecos, ritmo, tope de
+ *   nivel y puntos de atributo extra (instr()). Estado: state.training.level.
  * ============================================================= */
 (function () {
   const C = () => DK.config.training;
   const st = () => { const s = DK.store.state; s.training = s.training || { slots: [] }; return s.training; };
 
   DK.training = {
-    /** Bonificación de la mejora «Instructor». */
-    instr() { const I = C().instructor; return I[Math.min(I.length - 1, DK.camp.value('instructor') || 0)]; },
+    /** Nivel de las mejoras del campo (las partidas antiguas conservan el Instructor comprado con emblemas). */
+    level() { const s = st(); const old = (DK.camp.raw() || {}).instructor || 0; if (old > (s.level || 0)) s.level = old; return Math.min(C().instructor.length - 1, s.level || 0); },
+    /** Bonificación del nivel actual. */
+    instr() { return C().instructor[this.level()]; },
+    /** Siguiente nivel a la venta (o null si está al máximo). */
+    nextLevel() { return C().instructor[this.level() + 1] || null; },
+    /** Compra el siguiente nivel con monedas. @returns {boolean} */
+    buyLevel() {
+      const n = this.nextLevel(); if (!n || !DK.wallet.spend(n.cost)) return false;
+      st().level = this.level() + 1;
+      DK.emit('training:upgraded', { level: st().level }); DK.store.save();
+      return true;
+    },
+    /** Puntos de atributo que se pueden entrenar como mucho por daskai. */
+    statMax() { return C().statMax + (this.instr().statMax || 0); },
     /** Huecos disponibles. */
     slotCount() { return C().slots + this.instr().slots; },
     /** Huecos máximos posibles (con el Instructor al máximo). */
@@ -65,7 +80,7 @@
       if (st().slots.length >= this.slotCount()) return t('train.full');
       if (DK.party.isActive(d.uid) && DK.store.state.team.length <= 1) return t('train.lastOne');
       if (kind === 'exp' && d.level >= DK.config.maxLevel) return t('train.atCap', { n: DK.config.maxLevel });
-      if (kind === 'stat' && this.trainedTotal(d) >= C().statMax) return t('train.statMax', { n: C().statMax });
+      if (kind === 'stat' && this.trainedTotal(d) >= this.statMax()) return t('train.statMax', { n: this.statMax() });
       if (DK.wallet.get() < this.cost(d, kind, plan)) return t('train.noMoney');
       return null;
     },
@@ -102,7 +117,7 @@
         room = Math.max(0, room - d.exp);
         out.exp = Math.min(want, room); out.capped = want >= room;
       } else {
-        const left = Math.max(0, C().statMax - this.trainedTotal(d));
+        const left = Math.max(0, this.statMax() - this.trainedTotal(d));
         const pts = Math.floor(eff / C().statHours);
         out.points = Math.min(pts, left); out.capped = pts >= left;
         out.gain = out.points * C().statPer[slot.stat];

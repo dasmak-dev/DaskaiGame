@@ -41,8 +41,11 @@ DK.i18n.register('es', {
   },
   bye: { title: '¡Gracias por jugar!', text: 'Tu progreso está guardado. Ya puedes cerrar esta pestaña.', back: 'Volver al menú principal' },
 
+  roleDesc: { tanque: 'Rasgo Coloso: +15% vida y +20% defensa, −5% velocidad.', muro: 'Rasgo Guardián: +15% vida y +20% defensa mágica, −5% ataque.', fisico: 'Rasgo Bravo: +20% ataque y +5% velocidad, −5% ataque mágico.', mago: 'Rasgo Arcano: +20% ataque mágico y +15% maná, −5% ataque.', veloz: 'Rasgo Raudo: +25% velocidad y +5% ataque, −5% defensa.', soporte: 'Rasgo Sabio: +20% maná, +10% vida y +10% defensa mágica, −5% ataque.', cristal: 'Rasgo Temerario: +12% ataque, ataque mágico y velocidad, −10% defensas.', equilibrado: 'Sin rasgo: la mayoría de daskai son así. Sólo 1 de cada 5 nace con un rasgo, que mejora sus atributos.' },
+  trait: { title: 'Rasgo', statTip: 'Rasgo {name}: {n}% en este atributo' },
   newGame: {
-    strong: 'Fuerte contra {house}', weak: 'Débil contra {house}', statsTitle: 'Atributos', statsNote: 'Barra: comparado con el mejor inicial · cada daskai nace con ±{n}%', 
+    lineTitle: 'Línea evolutiva', 
+    strong: 'Fuerte contra {house}', weak: 'Débil contra {house}', statsTitle: 'Atributos', statsNote: 'Barra: comparado con el mejor inicial · cada daskai nace con ±{n}% y 1 de cada 5 con un rasgo que mejora sus atributos', 
     nameTitle: 'Nuevo aventurero', pickTitle: 'Elige tu daskai',
     nameQ: '¿Cómo te llamas, aventurero?', nameHint: 'Tu partida se guardará en la ranura {slot}.',
     nameLabel: 'Nombre de aventurero', placeholder: 'Escribe tu nombre...', nameError: 'El nombre debe tener al menos 2 caracteres.',
@@ -115,13 +118,13 @@ DK.i18n.register('es', {
   },
   stats: {
     rate: { high: 'Muy rápido', up: 'Rápido', normal: 'Normal', down: 'Lento', low: 'Muy lento' },
-    rateTip: 'Crecimiento al subir de nivel: {rate} ({pct}% del normal, sin contar la naturaleza)',
+    rateTip: 'Crecimiento al subir de nivel: {rate}. Gana de media ≈ +{n} por nivel (especie y pasiva ×{pct}%, más la naturaleza)',
     tonics: 'Tónicos {n}/{max}', tonicTip: 'Tónicos tomados (mejoras permanentes). El elixir de olvido los devuelve.',
     trained: 'Entrenado {n}/{max}', trainedTip: 'Puntos de atributo ganados en el campo de entrenamiento',
     regenShort: 'Regen.',
     breakdown: '{base} base + {growth} nivel', equip: '{n} equipo', passive: '{n}% pasiva', regenPerTurn: '{n} PV por turno',
     legend: { base: 'Base', level: 'Nivel', nature: 'Naturaleza', equip: 'Equipo', bonus: 'Pasiva y bonos', evo: 'Evolución', perm: 'Tónicos y entrenamiento', minus: 'Resta', rate: 'Ritmo de crecimiento', rateTip: 'Cuánto crece al subir de nivel según su especie, pasivas, talentos y naturaleza', arrows: 'Efecto de la naturaleza' },
-    part: { gene: '(genes {n}%)', base: '{n} base', level: '{n} nivel', nature: '{n} naturaleza', equip: '{n} equipo', passive: '{n}% pasiva', bonus: '{n} bonos', evo: '{n} evolución', tonic: '{n} tónicos', trained: '{n} entrenamiento' },
+    part: { gene: '(genes {n}%)', base: '{n} base', level: '{n} nivel', nature: '{n} naturaleza', equip: '{n} equipo', passive: '{n}% pasiva', bonus: '{n} bonos', evo: '{n} evolución', tonic: '{n} tónicos', trained: '{n} entrenamiento', trait: '(rasgo {n}%)' },
     natUp: '{nature}: crece más al subir de nivel', natDown: '{nature}: crece menos al subir de nivel', natEq: '{nature}: no afecta a este atributo',
   },
   move: {
@@ -178,6 +181,7 @@ DK.i18n.register('es', {
     confirm: 'Curar', done: 'Equipo curado con objetos.', noItems: 'No tienes objetos curativos adecuados.', nothingToHeal: 'Tu equipo ya está al máximo.',
   },
   shop: {
+    sellHelpLoot: 'Te dan el {n}% de su precio, que va al botín de la expedición.', haveN: 'Tienes {n}', 
     left: 'Quedan {n}',
     buyFor: 'Comprar · {n}', sellFor: 'Vender · {n}', missing: 'Te faltan {n} monedas', sellAll: 'Vender todo ({n})',
     forFav: 'Receta favorita', favTip: 'Lo necesitas para una de tus recetas favoritas', soldN: 'Vendido: {item} x{n} (+{coins})',
@@ -210,7 +214,8 @@ DK.i18n.register('es', {
   },
 
   zones: {
-    heroNew: 'Nueva expedición', heroLine: 'Mapas al azar entre tus zonas, cada vez más difíciles. Tras cada jefe decides si seguir o cobrar.', heroOnLine: 'Tu equipo sigue en el camino. Vuelve al mapa para continuar.', hardMode: 'Modo difícil', moreShort: 'Por descubrir', pickHint: 'Pulsa una zona · ← →', winsShort: 'Victorias', codexShort: 'Códice', 
+    startHere: 'Empezar aquí', startHereDesc: 'El primer mapa de la expedición será de esta zona', startTag: 'Inicio', 
+    heroNew: 'Nueva expedición', heroLine: 'Empiezas en la zona marcada en el mapa (pulsa otra para cambiarla). Tras cada jefe decides si seguir o cobrar.', heroOnLine: 'Tu equipo sigue en el camino. Vuelve al mapa para continuar.', hardMode: 'Modo difícil', moreShort: 'Por descubrir', pickHint: 'Pulsa una zona para empezar ahí · ← →', winsShort: 'Victorias', codexShort: 'Códice', 
     worldMap: 'Mapa del mundo', moreHidden: '{n} zonas por descubrir', records: 'Récords',
     recMaps: 'Mapas superados', recDepth: 'Más profundo', recXl: 'Mapas XL', recSecret: 'Jefe oculto', recFast: 'Mapa más rápido',
     preview: 'Ver el primer mapa', zonesTitle: 'Zonas', unlockedN: '{n}/{total} zonas',
@@ -236,6 +241,7 @@ DK.i18n.register('es', {
     allGood: 'Tu equipo está listo.',
   },
   pack: {
+    chooseTitle: 'Elegir objetos para la mochila', choose: 'Elegir objetos', emptyShort: 'La mochila está vacía: pulsa «Sugerir» o «Elegir objetos».', tapRemove: '{name}: pulsa para quitar uno', consolationShort: 'Consuelo', riskShort: 'Si pierdes, pierdes la mochila', 
     less: 'Quitar uno', more: 'Añadir otro', haveTip: 'Unidades que quedan en tu bolsa', tipAdd2: 'Añadir 1 (Mayús: todas)', dropHint2: 'Pulsa + en tu bolsa o arrastra objetos aquí.', bagHint2: 'Pulsa + o arrastra a la mochila',
     consolation: 'Recompensa por caer ante el jefe: empiezas con una reliquia rara o épica y 2 superpociones (no ocupan hueco).',
     tipAdd: 'Clic: llevar 1 · Mayús+clic: todas · o arrástralo a la mochila', tipRemove: 'Clic: devolver 1 · Mayús+clic: todas · o arrástralo a la bolsa', noMore: 'No tienes más', bagHint: 'Pulsa o arrastra a la mochila', allPacked: 'Ya lo llevas todo', dropHint: 'Arrastra objetos aquí o púlsalos en tu bolsa.',
@@ -313,7 +319,7 @@ DK.i18n.register('es', {
     revivesHelp: 'Si un daskai cae, se salva con una bendición del santuario o, si te quedan salvaciones, con una pluma de fénix o el altar del campamento.',
     shrineSkip: 'Seguir sin bendecir', shrineText: 'Un santuario antiguo. Su luz puede proteger a uno de tus daskai de la muerte.',
     seeSummary: 'Ver resumen', seeSummaryDesc: 'Camino, botín, reclutas y reliquias', toBagTip: 'Va directo a tu mochila: ya puedes usarlo', lootCoinsTip: 'Monedas del botín de la expedición',
-    payNote: 'Pagas primero con las monedas del botín y, si no llegan, con tu monedero.',
+    payNoteLoot: 'Sólo puedes pagar con las monedas del botín de esta expedición.', payNote: 'Pagas primero con las monedas del botín y, si no llegan, con tu monedero.',
     shopText2: 'La única tienda del camino. Unidades limitadas: aprovecha.', recipeFound: 'Entre las cosas del cofre hay unas notas: ¡aprendes a fabricar {item}!', newRecipe: 'Receta: {item}',
     temp: 'Temporal', tempTip: 'Recluta de la expedición: se queda contigo sólo si derrotas al jefe.',
     tempNote: '{name} viaja contigo de forma temporal: si derrotas al jefe se quedará para siempre.',
@@ -646,6 +652,7 @@ DK.i18n.register('es', {
   /* Taller de fusión (screens/inventory.js) */
   /* Crafteo (screens/craft.js) */
   train: {
+    whoAll: 'Todos ({n})', whoTeam: 'Equipo', whoBox: 'Cajas', cantList: 'No pueden entrenar ahora ({n})', up: { title: 'Mejoras del campo', level: 'Nivel {n}/{max}', text: 'Un buen instructor cambia mucho el entrenamiento. Cada nivel cuesta muchas monedas, pero se nota de verdad.', slots: '+{n} hueco(s) para entrenar', rate: '+{n}% de ritmo', cap: '+{n} niveles recomendados', stat: '+{n} puntos de atributo por daskai', owned: 'Tuyo', buy: 'Mejorar a nivel {n} · {c}', have: 'Tienes {n} monedas', noMoney: 'Te faltan {n} monedas', bought: '¡Campo de entrenamiento a nivel {n}!', maxed: 'El campo está al máximo.' }, 
     title: 'Campo de entrenamiento', text: 'Deja daskai entrenando en tiempo real, aunque cierres el juego. Mientras entrenan no pueden ir de expedición.',
     slots: 'Huecos {n}/{max}', cap: 'Nivel recomendado {n}', capTip: 'El nivel de tu daskai más fuerte menos {m} (el Instructor lo sube). Por encima también pueden entrenar, pero cada nivel de más cuesta un {p}% más de monedas o de horas.', instructor: 'Instructor +{n}% ritmo',
     free: 'Hueco libre', freeHint: 'Mete a un daskai a entrenar', locked: 'Bloqueado', lockedTip: 'Compra la mejora «Instructor» para tener más huecos',
@@ -698,11 +705,22 @@ DK.i18n.register('es', {
     title: 'Emblemas', plus: 'Emblemas +{n}', have: 'Tienes {n} emblemas', thisRun: '{n} en esta expedición',
     help: 'Cada jefe derrotado da 1 emblema (también los ocultos de las cuevas). Se gastan en las Mejoras permanentes al terminar la expedición.',
   },
+  kind: {
+    rolled: 'Esta expedición', chances: 'Probabilidad de cada tipo', chancesHint: 'El tipo sale al azar. Puedes hacer más probable uno con emblemas en Mejoras → Rumbos.',
+    title: 'Tipo de expedición', label: 'Expedición: {name}', locked: 'Derrota a algún jefe para desbloquearla',
+    normal: { name: 'Normal', desc: 'De todo un poco: combates, sucesos, cofres, reclutas y tiendas.' },
+    captura: { name: 'Captura', desc: 'Corta y llena de daskai salvajes: muchos reclutas, más candidatos y más fácil vincular. Menos monedas.' },
+    combate: { name: 'Combate', desc: 'Casi todo son peleas y mini jefes. Más monedas y experiencia.' },
+    tesoro: { name: 'Tesoro', desc: 'Cofres, tiendas, sucesos y cuevas. Pocas peleas, pero los rivales son algo más fuertes.' },
+    desafio: { name: 'Desafío', desc: 'Corta y dura: mini jefes por todas partes, rivales +3 niveles y +1 emblema por jefe.' },
+    fx: { capture: '+{n}% vínculo', recruit: '+{n} candidato', coins: '{n}% monedas', exp: '+{n}% exp.', levels: 'Rivales +{n} Nv.', emblems: '+{n} emblema por jefe', short: 'Corta' },
+  },
   size: {
     label: '{name} · {n} pisos',
     small: { name: 'Mapa pequeño', desc: 'Expedición corta: {n} pisos con el jefe. 1 hoguera en el camino. Cada jefe da 1 emblema.' },
     medium: { name: 'Mapa mediano', desc: 'Expedición media: {n} pisos con el jefe. 2 hogueras, más cuevas y atajos. Cada jefe da 2 emblemas.' },
     xl: { name: 'Mapa XL', desc: 'Expedición larga: {n} pisos con el jefe. 3 hogueras y muchas cuevas y atajos. Cada jefe da 3 emblemas. Prepara bien la mochila.' },
+    short: { name: 'Mapa corto', desc: 'Expedición rápida: {n} pisos con el jefe y una hoguera. Cada jefe da 1 emblema.' },
   },
   draw: {
     start: 'Dibujar', stop: 'Dejar de dibujar', tip: 'Dibuja tu ruta o deja notas en el mapa (también con clic derecho)', done: 'Listo',
@@ -750,7 +768,7 @@ DK.i18n.register('es', {
   pause: { title: 'Pausa', resume: 'Continuar', menu: 'Menú', menuTip: 'Menú de pausa (Esc)' },
   scene: {
     title: 'Campamento', path: 'Expediciones', board: 'Misiones', tent: 'Inventario', anvil: 'Crafteo', fire: 'Equipo', lectern: 'Códice', dummy: 'Entrenamiento', locked: 'Bloqueado',
-    greet: { day: 'Un buen día para explorar', dawn: 'Amanece en el campamento', dusk: 'Cae la tarde en el campamento', night: 'La hoguera calienta la noche' },
+    greet: { day: 'Un cielo rojo cubre el campamento', dawn: 'El alba no logra vencer a la bruma', dusk: 'La oscuridad acecha más allá del fuego', night: 'La hoguera mantiene a raya la noche' },
   },
   box: {
     dragHintExp: 'Arrastra entre tu equipo y quienes van contigo (en el móvil, mantén pulsado).', 
@@ -841,8 +859,12 @@ campfire: 'Volviste a casa desde una hoguera: te llevas la mitad del botín y to
     buy: 'Mejorar · {n}', bought: '¡Mejora conseguida: {name}!', noMoney: 'No tienes monedas suficientes', missing: 'Te faltan {n} emblemas', closeMenu: 'Hecho', saveHint: 'Si no te alcanza, guarda los emblemas: podrás gastarlos al terminar la próxima expedición.', noEmblems: 'No tienes emblemas suficientes', buyAtEnd: 'Se compra al terminar una expedición', howTo: 'Derrota jefes para ganar emblemas y cámbialos por mejoras en el resumen de cada expedición.',
     now: 'Ahora:', nextLevel: 'Siguiente nivel:', firstLevel: 'Al comprarla:', maxed: 'Al máximo', levelTip: 'Nivel actual / máximo',
     spent: '{n} monedas invertidas', levels: '{n} de {total} niveles',
-    group: { combat: 'Combate', progress: 'Progreso', expedition: 'Expedición' },
+    group: { combat: 'Combate', progress: 'Progreso', expedition: 'Expedición', rumbos: 'Rumbos (tipo de expedición)' },
     up: {
+      rumbo_captura: { name: 'Rumbo de captura', desc: 'Más probable que la expedición sea de captura.', effect: '+{n}%', lv1: '+75% de probabilidad', lv2: '+150% de probabilidad', lv3: '+250% de probabilidad' },
+      rumbo_combate: { name: 'Rumbo de combate', desc: 'Más probable que la expedición sea de combate.', effect: '+{n}%', lv1: '+75% de probabilidad', lv2: '+150% de probabilidad', lv3: '+250% de probabilidad' },
+      rumbo_tesoro: { name: 'Rumbo del tesoro', desc: 'Más probable que la expedición sea de tesoro.', effect: '+{n}%', lv1: '+75% de probabilidad', lv2: '+150% de probabilidad', lv3: '+250% de probabilidad' },
+      rumbo_desafio: { name: 'Rumbo del desafío', desc: 'Más probable que la expedición sea un desafío (cuando esté desbloqueado).', effect: '+{n}%', lv1: '+75% de probabilidad', lv2: '+150% de probabilidad', lv3: '+250% de probabilidad' },
       instructor: { name: 'Instructor', desc: 'Mejora el campo de entrenamiento: más huecos, más ritmo y más tope de nivel.', effect: 'nivel {n}', lv1: '+1 hueco · +25% ritmo · +2 niveles de tope', lv2: '+1 hueco · +50% ritmo · +4 niveles de tope', lv3: '+2 huecos · +100% ritmo · +6 niveles de tope' },
       vigor: { name: 'Vigor', desc: 'Tus daskai tienen más vida máxima durante las expediciones.', effect: '+{n}% de vida' },
       fuerza: { name: 'Entrenamiento de fuerza', desc: 'Tus daskai hacen más daño con todos sus ataques.', effect: '+{n}% de daño' },

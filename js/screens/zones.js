@@ -1,12 +1,12 @@
 /* =============================================================
  * screens/zones.js — Batalla.
- *   Arriba: el cartel de la expedición (empezar una nueva o seguir la que
- *   está en curso). Las expediciones son infinitas y eligen zona al azar
- *   (systems/expedition.js), así que aquí no se elige zona para ellas.
- *   En medio: el mapa del mundo (un camino en pixel art con las zonas
- *   desbloqueadas, la siguiente «???» y el resto «+N»; ← → cambia de zona).
- *   Abajo: la ficha de la zona elegida, con sus récords y el combate libre
- *   (que se desbloquea al derrotar al jefe de esa zona).
+ *   Una sola pantalla para salir de expedición:
+ *   - Arriba, el mapa del mundo (camino en pixel art con las zonas
+ *     desbloqueadas, la siguiente «???» y el resto «+N»; ← → cambia de zona).
+ *     La zona elegida es donde empieza la expedición.
+ *   - Debajo, «Preparar» (prepCard): datos del primer mapa, tipo de
+ *     expedición, equipo, mochila (el editor completo en un panel) y «Partir».
+ *   - Al lado, la ficha de la zona (récords plegados y combate libre).
  *
  *   DK.play.start(zona, { expedition })  → combate libre, o expedición (la zona se ignora)
  *   DK.play.quick()                      → continúa la expedición o empieza una
@@ -36,9 +36,11 @@
       const exp = DK.expedition.active();
       if (exp && !expedition) { DK.ui.toast(t('zones.expBusy'), { icon: 'flag', kind: 'bad' }); return false; }
       if (expedition) {
-        // Antes de salir se prepara la mochila (screens/expPrepare.js);
+        // Se prepara en Batalla (zona, tipo, equipo y mochila en la misma pantalla);
         // las expediciones se juegan desde su mapa (screens/expedition.js)
-        DK.router.go(exp ? 'expedition' : 'expPrepare');
+        if (exp) DK.router.go('expedition');
+        else if (!DK.router.current() || DK.router.current().id !== 'zones') DK.router.go('zones');
+        else { const b = document.querySelector('.bt-go'); if (b) { b.scrollIntoView({ behavior: 'smooth', block: 'center' }); b.focus(); } }
         return true;
       }
       if (!DK.world.freeUnlocked(zoneId)) { DK.audio.sfx('error'); DK.ui.toast(t('zones.freeLocked'), { icon: 'lock', kind: 'bad' }); return false; }
@@ -83,7 +85,7 @@
           h('div', { class: 'grow' }, h('h3', null, z.name), h('span', { class: 'muted small' }, `${t('common.lvl')} ${z.levels[0]}-${z.levels[1]}`)),
           z.boss ? h('span', { class: 'chip' + (bossDone ? ' pos' : '') }, DK.icon('crown', 13), bossDone ? t('zones.bossDone') : t('zones.bossLevel', { n: z.boss.level })) : null),
         h('p', { class: 'muted small bz-desc' }, z.desc),
-        recordsStrip(z),
+        h('details', { class: 'bz-records' }, h('summary', null, DK.icon('trophy', 14), ' ', t('zones.records')), recordsStrip(z)),
         h('div', { class: 'bz-actions' },
           free
             ? btn({ icon: 'swords', label: t('zones.free'), desc: t('zones.freeDesc'), variant: 'tone', disabled: !ok || !!exp, tip: exp ? t('zones.expBusy') : null, onClick: () => DK.play.start(z.id) })
@@ -103,7 +105,7 @@
       ? [h('span', { class: 'chip' }, DK.icon('compass', 13), t('exp.depth', { n: exp.depth || 1 })),
         h('span', { class: 'chip' }, DK.icon('flag', 13), t('exp.floor', { step: Math.min(exp.step, exp.total), total: exp.total })),
         h('span', { class: 'chip' }, DK.icon('gift', 13), t('exp.lootNow', { items: DK.expedition.lootCount(), coins: exp.loot.coins }))]
-      : [h('span', { class: 'chip' }, DK.icon(z.icon, 13), t('exp.nextZone', { zone: z.name })), V.sizeChip(pv.size), V.modChip(pv.mod),
+      : [h('span', { class: 'chip' }, DK.icon(z.icon, 13), t('exp.nextZone', { zone: z.name })), V.kindChip(pv.kind), V.sizeChip(pv.size), V.modChip(pv.mod),
         best ? h('span', { class: 'chip pos' }, DK.icon('trophy', 13), t('exp.best', { n: best })) : null,
         DK.rules.permadeath() ? h('span', { class: 'chip neg', tip: t('zones.permadeath') }, DK.icon('skull', 13), t('zones.hardMode')) : null];
     const problems = DK.world.warnings(z.id).filter((w) => w.kind !== 'good');
@@ -119,6 +121,106 @@
           btn({ icon: exp ? 'map' : 'flag', label: exp ? t('exp.openMap') : t('exp.start'), size: 'lg', variant: 'primary', disabled: !ok, hotkey: '↵', cls: 'play-btn', onClick: () => DK.play.quick() }),
           exp ? h('span', { class: 'bt-hero-note', tip: t('exp.exitRuleTip') }, DK.icon('campfire', 13), ' ', t('exp.exitRule')) : null)),
       problems.length ? V.warnings(problems, async () => { if (await V.healDialog(team)) refresh(); }) : null);
+  }
+
+  /* ---------------- Preparar la expedición (en la misma pantalla) ----------------
+   * Todo lo necesario para salir, sin abrumar:
+   *   - la zona de inicio (la elegida en el mapa) con sus datos en chips,
+   *   - el tipo de expedición (sale al azar; las Mejoras «Rumbo» suben uno),
+   *   - tu equipo (retratos con su vida) y la mochila (objetos en chips;
+   *     «Elegir objetos» abre el editor completo en un panel deslizante),
+   *   - avisos en una línea y el botón «Partir».
+   */
+  function packDrawer(params, refresh) {
+    const holder = h('div', { class: 'pk-editor' });
+    const draw = () => {
+      const ed = V.packEditor(params, () => { draw(); refresh(); });
+      holder.replaceChildren(...[h('div', { class: 'pk-editor-grid' }, ed.packPanel, ed.bagPanel), ed.goalsPanel].filter(Boolean));
+    };
+    draw();
+    DK.ui.drawer({ id: 'pack', title: t('pack.chooseTitle'), icon: 'bag', size: 'wide', content: holder, actions: [{ label: t('camp.closeMenu'), icon: 'check', variant: 'primary' }] });
+  }
+
+  function prepCard(params, refresh) {
+    const E = DK.expedition;
+    const pv = E.preview(), z = D.zones[pv.zone];
+    const team = DK.party.active();
+    const ok = DK.party.aliveActive().length > 0;
+    params.pack = params.pack || {};
+    const pack = params.pack, cap = E.packCapacity(), used = E.packSize(pack);
+    const go = () => { if (!ok) return; E.start(pack); params.pack = {}; DK.audio.sfx('select'); DK.router.reset('expedition'); };
+    DK.keys.on('Enter', go);
+    const lvBonus = E.levelBonus(1) + ((pv.mod && D.mapMods[pv.mod].levels) || 0);
+    const best = E.bestDepth();
+
+    // Tipo de expedición: sale al azar (las Mejoras «Rumbo» suben la probabilidad de uno)
+    const cur = E.kindDef(pv.kind), chances = E.kindChances();
+    const kindBox = h('div', { class: 'bt-kind k-' + cur.id },
+      h('span', { class: 'bt-kind-icon' }, DK.icon(cur.icon, 24)),
+      h('div', { class: 'bt-kind-text' },
+        h('span', { class: 'bt-label' }, t('kind.rolled')),
+        h('b', null, t('kind.' + cur.id + '.name')),
+        h('span', { class: 'small muted' }, t('kind.' + cur.id + '.desc')),
+        h('span', { class: 'chips' }, V.kindEffects(cur))),
+      h('div', { class: 'bt-kind-odds', tip: t('kind.chancesHint'), 'aria-label': t('kind.chances') },
+        E.kinds().map((k) => h('span', { class: 'bt-odd k-' + k.id + (k.id === cur.id ? ' on' : '') + (k.locked ? ' locked' : ''), tip: k.locked ? t('kind.locked') : `${t('kind.' + k.id + '.name')} · ${Math.round((chances[k.id] || 0) * 100)}%` },
+          DK.icon(k.locked ? 'lock' : k.icon, 13), h('small', null, k.locked ? '—' : Math.round((chances[k.id] || 0) * 100) + '%')))));
+
+    // Equipo: retratos con su vida
+    const teamStrip = h('div', { class: 'bt-team' }, team.map((d, i) => {
+      const s = DK.daskai.stats(d), hp = DK.util.percent(d.cur.hp, s.hp);
+      return h('button', { class: 'bt-mon' + (DK.daskai.isFainted(d) ? ' ko' : ''), type: 'button', tip: `${DK.daskai.name(d)} · ${t('common.lvl')} ${d.level} · ${d.cur.hp}/${s.hp}`, onClick: () => DK.router.go('team', { uid: d.uid }) },
+        i === 0 ? h('span', { class: 'bt-mon-lead' }, DK.icon('crown', 10)) : null,
+        V.dSprite(d, { size: 40 }), h('span', { class: 'bt-mon-lv' }, d.level),
+        h('span', { class: 'bt-mon-hp' + (hp < 30 ? ' crit' : hp < 60 ? ' mid' : '') }, h('i', { style: { width: hp + '%' } })));
+    }));
+
+    // Mochila: chips de lo que llevas (pulsar uno quita una unidad)
+    const chosen = Object.keys(pack).filter((id) => pack[id] > 0);
+    const last = V.lastPack();
+    const packChips = chosen.length
+      ? h('div', { class: 'bt-pack-items' }, chosen.map((id) => h('button', { class: 'bt-item r-' + D.items[id].rarity, type: 'button', tip: t('pack.tapRemove', { name: D.items[id].name }),
+        onClick: () => { pack[id]--; if (pack[id] <= 0) delete pack[id]; DK.audio.sfx('select'); refresh(); } }, V.itemIcon(D.items[id], 18), h('b', null, '×' + pack[id]))))
+      : h('p', { class: 'muted small bt-pack-empty' }, t('pack.emptyShort'));
+
+    const notes = [
+      DK.rules.permadeath() ? h('span', { class: 'chip neg', tip: t('zones.permadeath') }, DK.icon('skull', 12), t('zones.hardMode')) : null,
+      DK.store.state.consolation ? h('span', { class: 'chip pos', tip: t('pack.consolation') }, DK.icon('crown', 12), t('pack.consolationShort')) : null,
+      DK.camp.value('provisiones') ? h('span', { class: 'chip pos', tip: t('pack.free', { n: DK.camp.value('provisiones') }) }, DK.icon('flask', 12), '+' + DK.camp.value('provisiones')) : null,
+      h('span', { class: 'chip', tip: t('brief.unlocksTip', { r: DK.camp.unlocked('relic').length, c: DK.camp.unlocked('curse').length }) }, DK.icon('amulet', 12), `${DK.camp.unlocked('relic').length} · ${DK.camp.unlocked('curse').length}`),
+      h('span', { class: 'chip', tip: t('pack.risk') + ' ' + t('exp.exitRuleTip') }, DK.icon('info', 12), t('pack.riskShort')),
+    ].filter(Boolean);
+    const problems = DK.world.warnings(pv.zone).filter((w) => w.kind !== 'good');
+
+    return h('section', { class: 'card bt-prep', style: { '--z1': z.colors[0], '--z2': z.colors[1] } },
+      h('div', { class: 'bt-prep-head' },
+        h('span', { class: 'bt-prep-icon' }, DK.icon(z.icon, 22)),
+        h('div', { class: 'grow' }, h('span', { class: 'bt-kicker' }, DK.icon('compass', 12), t('zones.heroNew')), h('h2', null, z.name)),
+        V.emblems(DK.camp.emblems())),
+      h('div', { class: 'chips bt-facts' },
+        V.sizeChip(pv.size),
+        h('span', { class: 'chip', tip: t('brief.levelsTip') }, DK.icon('star', 13), `${t('brief.levels')} ${t('common.lvl')} ${z.levels[0] + lvBonus}-${z.levels[1] + lvBonus}`),
+        V.modChip(pv.mod),
+        h('span', { class: 'chip pos', tip: t('brief.rewardTip') }, DK.icon('crown', 13), t('brief.rewardValue', { n: E.bossEmblems(pv.size, pv.kind) })),
+        best ? h('span', { class: 'chip' }, DK.icon('trophy', 13), t('exp.best', { n: best })) : null),
+      kindBox,
+      h('div', { class: 'bt-prep-grid' },
+        h('div', { class: 'bt-block' },
+          h('div', { class: 'bt-label-row' }, h('span', { class: 'bt-label' }, t('pack.team'), ` ${team.length}/${DK.config.maxTeam}`),
+            h('span', { class: 'grow' }),
+            h('button', { class: 'icon-btn bt-icon', type: 'button', tip: t('heal.button'), 'aria-label': t('heal.button'), onClick: async () => { if (await V.healDialog(team)) refresh(); } }, DK.icon('flask', 16)),
+            h('button', { class: 'icon-btn bt-icon', type: 'button', tip: t('home.manage'), 'aria-label': t('home.manage'), onClick: () => DK.router.go('team') }, DK.icon('edit', 16))),
+          teamStrip),
+        h('div', { class: 'bt-block' },
+          h('div', { class: 'bt-label-row' }, h('span', { class: 'bt-label' }, t('pack.backpack'), ` ${used}/${cap}`), h('span', { class: 'grow' }),
+            Object.keys(last).length ? btn({ icon: 'repeat', label: t('pack.repeat'), size: 'sm', variant: 'ghost', onClick: () => { params.pack = Object.assign({}, last); refresh(); } }) : null,
+            btn({ icon: 'sparkles', label: t('pack.suggest'), size: 'sm', variant: 'ghost', onClick: () => { params.pack = E.suggestPack(); refresh(); } })),
+          h('div', { class: 'cap-bar' + (used >= cap ? ' full' : ''), style: { '--p': Math.min(100, (used / cap) * 100) + '%' } }, h('span')),
+          packChips,
+          btn({ icon: 'bag', label: t('pack.choose'), size: 'sm', variant: 'tone', cls: 'bt-pack-btn', onClick: () => packDrawer(params, refresh) }))),
+      problems.length ? V.warnings(problems, async () => { if (await V.healDialog(team)) refresh(); }) : null,
+      h('div', { class: 'bt-prep-foot' }, h('div', { class: 'chips' }, notes),
+        btn({ icon: 'flag', label: t('pack.go'), desc: t('pack.goDesc', { n: used }), size: 'lg', variant: 'primary', hotkey: '↵', disabled: !ok, cls: 'bt-go play-btn', onClick: go })));
   }
 
   /* ---------------- Mapa del mundo ----------------
@@ -185,6 +287,7 @@
 
     // Paradas
     const leader = DK.party.active()[0];
+    const start = exp ? null : DK.expedition.nextStart().zone;
     const nodes = stops.map((s, i) => {
       const [x, y] = pts[i];
       const pos = { left: cx(x), top: y + 'px' };
@@ -204,7 +307,9 @@
         isSel && leader ? h('span', { class: 'wm2-leader', 'aria-hidden': 'true' }, V.dSprite(leader, { size: 46 })) : null,
         h('span', { class: 'wm2-pin' }, DK.icon(z.icon, 24), bossDone ? h('span', { class: 'wm2-crown', tip: t('zones.bossDone') }, DK.icon('crown', 12)) : null),
         h('span', { class: 'wm2-label' }, h('b', null, z.name), h('small', null, `${t('common.lvl')} ${z.levels[0]}-${z.levels[1]}`)),
-        here ? h('span', { class: 'wm2-tag exp' }, DK.icon('flag', 11), t('zones.inExpedition')) : isRec ? h('span', { class: 'wm2-tag' }, DK.icon('star', 11), t('zones.recommended')) : null);
+        here ? h('span', { class: 'wm2-tag exp' }, DK.icon('flag', 11), t('zones.inExpedition'))
+          : !exp && start === z.id ? h('span', { class: 'wm2-tag start' }, DK.icon('flag', 11), t('zones.startTag'))
+          : isRec ? h('span', { class: 'wm2-tag' }, DK.icon('star', 11), t('zones.recommended')) : null);
     });
 
     const map = h('div', { class: 'wm2-map', style: { width: W + 'px', height: MAP_H + 'px' } }, regions, svg, decor, nodes);
@@ -227,23 +332,29 @@
       const refresh = () => DK.router.refresh();
       const rec = DK.world.recommended();
       const exp = DK.expedition.active();
-      if (!params.zone || !DK.world.isUnlocked(params.zone)) params.zone = exp ? exp.zone : rec && rec.id;
+      // La zona elegida en el mapa es donde empieza la próxima expedición (DK.expedition.setStart)
+      if (!params.zone || !DK.world.isUnlocked(params.zone)) params.zone = exp ? exp.zone : DK.expedition.nextStart().zone;
+      else if (!exp) DK.expedition.setStart({ zone: params.zone });
       const sel = D.zones[params.zone];
       const unlocked = Object.values(D.zones).filter((z) => DK.world.isUnlocked(z.id));
 
       const choose = (z) => {
-        params.zone = z.id; refresh();
+        params.zone = z.id;
+        if (!exp) DK.expedition.setStart({ zone: z.id });
+        refresh();
         // En el móvil la ficha queda debajo del mapa: se lleva a la vista
-        if (DK.ui.isNarrow()) setTimeout(() => { const c = document.querySelector('.bz-card'); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 30);
+        if (DK.ui.isNarrow()) setTimeout(() => { const c = document.querySelector('.bt-prep'); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 30);
       };
       const step = (dir) => { const i = unlocked.findIndex((z) => z.id === params.zone); const z = unlocked[(i + dir + unlocked.length) % unlocked.length]; if (z) { DK.audio.sfx('select'); choose(z); } };
       DK.keys.on('ArrowLeft', () => step(-1)); DK.keys.on('ArrowRight', () => step(1));
-      DK.keys.on('Enter', () => DK.play.quick());
-
+      if (exp) {
+        // (durante una expedición esta pantalla no se abre: el router lleva al mapa)
+        DK.keys.on('Enter', () => DK.play.quick());
+        return h('div', { class: 'screen zones-screen bt-screen' }, expeditionHero(refresh), worldMap(sel, choose), sel ? zoneCard(sel) : null);
+      }
       return h('div', { class: 'screen zones-screen bt-screen' },
-        expeditionHero(refresh),
         worldMap(sel, choose),
-        sel ? zoneCard(sel) : null);
+        h('div', { class: 'bt-main' }, prepCard(params, refresh), sel ? zoneCard(sel) : null));
     },
   });
 })();

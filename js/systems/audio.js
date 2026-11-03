@@ -126,31 +126,59 @@
     swap: () => { tone(500, 0.1, { type: 'triangle', vol: 0.1, slide: 800 }); tone(800, 0.12, { type: 'triangle', vol: 0.08, slide: 500, delay: 0.1 }); },
   };
 
-  /* ---------------- Música ----------------
-   * Cada pista: tempo, tónica (MIDI), progresión [semitonos, 'M'|'m'],
-   * forma de onda del arpegio y si lleva percusión.
+  /* ---------------- Música (fantasía oscura) ----------------
+   * Cada pista se compone en tiempo real con capas:
+   *   drone   nota grave sostenida (raíz + quinta) con filtro paso bajo
+   *   pad     acorde menor lento, como un coro lejano (dos osciladores desafinados)
+   *   lead    melodía escasa sobre la escala (pluck = cuerda, bell = campana,
+   *           harp = arpa, brass = metal grave)
+   *   drums   none | soft (tambor lejano) | war (tambores de guerra)
+   *   fx      ambiente: drip (gotas), wind (viento), waves (olas), whisper (susurros)
+   * Campos: bpm, root (MIDI), scale (semitonos), prog (grados de la escala por compás),
+   * density (0-1, cuántas notas de la melodía suenan).
+   * Para una pista nueva: DK.audio.registerTrack('id', { … }) y úsala como `music` de una pantalla.
    */
-  const MAJ = [[0, 'M'], [7, 'M'], [9, 'm'], [5, 'M']];
-  const MIN = [[0, 'm'], [8, 'M'], [3, 'M'], [10, 'M']];
+  const AEOL = [0, 2, 3, 5, 7, 8, 10], PHRY = [0, 1, 3, 5, 7, 8, 10], HARM = [0, 2, 3, 5, 7, 8, 11], DOR = [0, 2, 3, 5, 7, 9, 10];
   const TRACKS = {
-    menu: { bpm: 80, root: 60, prog: [[0, 'M'], [9, 'm'], [5, 'M'], [7, 'M']], wave: 'triangle', drums: false },
-    meadow: { bpm: 104, root: 65, prog: MAJ, wave: 'square', drums: true },
-    forest: { bpm: 94, root: 62, prog: [[0, 'm'], [5, 'M'], [10, 'M'], [7, 'm']], wave: 'triangle', drums: true },
-    beach: { bpm: 110, root: 67, prog: MAJ, wave: 'triangle', drums: true },
-    cave: { bpm: 90, root: 57, prog: MIN, wave: 'sine', drums: true },
-    volcano: { bpm: 126, root: 64, prog: [[0, 'm'], [1, 'M'], [0, 'm'], [10, 'M']], wave: 'sawtooth', drums: true },
-    temple: { bpm: 98, root: 70, prog: [[0, 'M'], [2, 'M'], [7, 'M'], [5, 'M']], wave: 'triangle', drums: true },
-    abyss: { bpm: 78, root: 48, prog: MIN, wave: 'sine', drums: false },
-    sky: { bpm: 116, root: 64, prog: MAJ, wave: 'triangle', drums: true },
-    boss: { bpm: 144, root: 62, prog: [[0, 'm'], [10, 'M'], [8, 'M'], [7, 'M']], wave: 'sawtooth', drums: true },
+    // Campamento: guitarra triste junto al fuego (como la música de un pueblo maldito)
+    menu: { bpm: 72, root: 50, scale: HARM, prog: [0, 5, 3, 4], lead: 'pluck', pad: 0.5, drone: 0.8, drums: 'none', fx: 'wind', density: 0.65 },
+    meadow: { bpm: 76, root: 52, scale: AEOL, prog: [0, 5, 6, 4], lead: 'pluck', pad: 0.6, drone: 0.7, drums: 'soft', fx: 'wind', density: 0.55 },
+    forest: { bpm: 70, root: 47, scale: DOR, prog: [0, 3, 6, 4], lead: 'harp', pad: 0.8, drone: 0.9, drums: 'soft', fx: 'whisper', density: 0.45 },
+    beach: { bpm: 68, root: 50, scale: AEOL, prog: [0, 5, 2, 6], lead: 'bell', pad: 0.7, drone: 0.6, drums: 'none', fx: 'waves', density: 0.4 },
+    cave: { bpm: 60, root: 49, scale: PHRY, prog: [0, 1, 0, 6], lead: 'bell', pad: 0.5, drone: 1, drums: 'none', fx: 'drip', density: 0.3 },
+    volcano: { bpm: 92, root: 45, scale: PHRY, prog: [0, 1, 5, 6], lead: 'brass', pad: 0.4, drone: 1, drums: 'war', fx: 'none', density: 0.5 },
+    temple: { bpm: 62, root: 52, scale: HARM, prog: [0, 3, 4, 0], lead: 'bell', pad: 1, drone: 0.7, drums: 'soft', fx: 'whisper', density: 0.35 },
+    abyss: { bpm: 52, root: 41, scale: PHRY, prog: [0, 1, 6, 1], lead: 'bell', pad: 0.9, drone: 1.2, drums: 'none', fx: 'whisper', density: 0.22 },
+    sky: { bpm: 66, root: 54, scale: DOR, prog: [0, 6, 3, 4], lead: 'harp', pad: 1, drone: 0.6, drums: 'soft', fx: 'wind', density: 0.45 },
+    // Jefes: tambores de guerra y metales graves
+    boss: { bpm: 118, root: 45, scale: HARM, prog: [0, 5, 1, 4], lead: 'brass', pad: 0.6, drone: 1.1, drums: 'war', fx: 'none', density: 0.7 },
+    boss_secret: { bpm: 104, root: 44, scale: PHRY, prog: [0, 1, 0, 6], lead: 'bell', pad: 0.9, drone: 1.2, drums: 'war', fx: 'whisper', density: 0.5 },
   };
+
+  /** Nota con filtro paso bajo y envolvente (instrumentos de la música). */
+  function voice(freq, dur, { type = 'sawtooth', vol = 0.05, delay = 0, attack = 0.01, release = null, cutoff = 1200, detune = 0, out = musicGain } = {}) {
+    if (!ctx) return;
+    const t = ctx.currentTime + delay;
+    const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = cutoff; f.Q.value = 0.7;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(vol, t + attack);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur + (release || 0));
+    f.connect(g); g.connect(out);
+    (detune ? [-detune, detune] : [0]).forEach((dt) => {
+      const o = ctx.createOscillator(); o.type = type; o.frequency.setValueAtTime(freq, t); o.detune.value = dt;
+      o.connect(f); o.start(t); o.stop(t + dur + (release || 0) + 0.05);
+    });
+  }
+  /** Generador pseudoaleatorio estable por pista y compás (la melodía se repite con variaciones). */
+  const hashRnd = (str) => { let x = 0; for (let i = 0; i < str.length; i++) x = (x * 31 + str.charCodeAt(i)) | 0; return () => { x = (x * 1103515245 + 12345) | 0; return ((x >>> 0) % 10000) / 10000; }; };
 
   function startTrack(name) {
     stopTrack();
     const tr = TRACKS[name];
     if (!tr || !ctx) return;
     const eighth = 60 / tr.bpm / 2;
-    seq = { tr, step: 0, next: ctx.currentTime + 0.1, eighth };
+    seq = { tr, name, step: 0, next: ctx.currentTime + 0.1, eighth };
     seq.timer = setInterval(() => {
       if (!ctx || !seq) return;
       while (seq.next < ctx.currentTime + 0.3) { playStep(seq.step, seq.next - ctx.currentTime); seq.next += seq.eighth; seq.step++; }
@@ -158,23 +186,44 @@
   }
   function stopTrack() { if (seq) { clearInterval(seq.timer); seq = null; } }
 
+  /** Nota de la escala (grado g, puede pasar de 7) sobre la tónica. */
+  const deg = (tr, g) => tr.root + tr.scale[((g % 7) + 7) % 7] + 12 * Math.floor(g / 7);
+
   /** Toca un paso (corchea) de la pista activa. */
   function playStep(step, delay) {
-    const { tr, eighth } = seq;
-    const bar = Math.floor(step / 8) % tr.prog.length, beat = step % 8;
-    const [r, q] = tr.prog[bar];
-    const chord = [0, q === 'M' ? 4 : 3, 7, 12];
-    const root = tr.root + r;
-    const o = { out: musicGain, delay: Math.max(0, delay) };
-    if (beat === 0) chord.slice(0, 3).forEach((n) => tone(midi(root + n - 12), eighth * 8, { ...o, type: 'sine', vol: 0.035, attack: 0.2 }));
-    if (beat % 4 === 0) tone(midi(root - 24), eighth * 3.5, { ...o, type: 'triangle', vol: 0.16 });
-    const pattern = [0, 1, 2, 3, 2, 1, 2, 3];
-    if (!(tr.bpm < 85 && beat % 2)) tone(midi(root + chord[pattern[beat]]), eighth * 0.9, { ...o, type: tr.wave, vol: tr.wave === 'sawtooth' || tr.wave === 'square' ? 0.025 : 0.05 });
-    if (tr.drums) {
-      if (beat % 4 === 0) tone(110, 0.12, { ...o, type: 'sine', vol: 0.18, slide: 40 });
-      if (beat % 2 === 1) noise(0.04, { ...o, vol: 0.05, freq: 7000 });
-      if (beat === 4) noise(0.12, { ...o, vol: 0.09, freq: 1800 });
+    const { tr, eighth, name } = seq;
+    const barN = Math.floor(step / 8), bar = barN % tr.prog.length, beat = step % 8;
+    const g0 = tr.prog[bar];
+    const o = { delay: Math.max(0, delay) };
+    const barLen = eighth * 8;
+    // Drone y pad al empezar el compás
+    if (beat === 0) {
+      if (tr.drone) { voice(midi(deg(tr, g0) - 24), barLen * 1.05, { ...o, type: 'sawtooth', vol: 0.05 * tr.drone, attack: 0.6, release: 0.6, cutoff: 260, detune: 7 }); voice(midi(deg(tr, g0 + 4) - 24), barLen * 1.05, { ...o, type: 'sawtooth', vol: 0.03 * tr.drone, attack: 0.8, release: 0.6, cutoff: 220 }); }
+      if (tr.pad) [0, 2, 4].forEach((k, i) => voice(midi(deg(tr, g0 + k) - 12), barLen, { ...o, delay: o.delay + i * 0.05, type: 'triangle', vol: 0.022 * tr.pad, attack: barLen * 0.35, release: 0.8, cutoff: 900, detune: 9 }));
     }
+    // Melodía escasa (estable por compás)
+    const rnd = hashRnd(name + ':' + (barN % (tr.prog.length * 2)) + ':' + beat);
+    const playLead = rnd() < tr.density * (beat % 2 ? 0.55 : 1);
+    if (playLead) {
+      const g = g0 + [0, 2, 4, 7, 4, 2, 1, 6][Math.floor(rnd() * 8)];
+      const n = deg(tr, g) + (tr.lead === 'brass' ? -12 : 0);
+      if (tr.lead === 'pluck') { voice(midi(n), eighth * 2.6, { ...o, type: 'triangle', vol: 0.07, attack: 0.004, cutoff: 1800 }); voice(midi(n + 12), eighth * 1.2, { ...o, type: 'sawtooth', vol: 0.012, attack: 0.004, cutoff: 2400 }); }
+      else if (tr.lead === 'harp') voice(midi(n + 12), eighth * 3, { ...o, type: 'triangle', vol: 0.05, attack: 0.003, cutoff: 2600 });
+      else if (tr.lead === 'bell') { voice(midi(n + 12), eighth * 6, { ...o, type: 'sine', vol: 0.05, attack: 0.003, cutoff: 5000 }); voice(midi(n + 31), eighth * 3, { ...o, type: 'sine', vol: 0.012, attack: 0.003, cutoff: 6000 }); }
+      else if (tr.lead === 'brass') voice(midi(n), eighth * 1.8, { ...o, type: 'sawtooth', vol: 0.045, attack: 0.04, cutoff: 700, detune: 6 });
+    }
+    // Percusión
+    if (tr.drums === 'soft' && beat === 0) tone(70, 0.5, { ...o, out: musicGain, type: 'sine', vol: 0.12, slide: 40 });
+    if (tr.drums === 'war') {
+      if (beat === 0 || beat === 3 || beat === 6) tone(62, 0.35, { ...o, out: musicGain, type: 'sine', vol: 0.2, slide: 34 });
+      if (beat === 4) { noise(0.18, { ...o, out: musicGain, vol: 0.08, freq: 260, q: 0.8 }); tone(110, 0.2, { ...o, out: musicGain, type: 'triangle', vol: 0.06, slide: 60 }); }
+      if (beat % 2 === 1) noise(0.05, { ...o, out: musicGain, vol: 0.025, freq: 3200 });
+    }
+    // Ambiente
+    if (tr.fx === 'drip' && rnd() < 0.08) tone(midi(96 + Math.floor(rnd() * 8)), 0.12, { ...o, out: musicGain, type: 'sine', vol: 0.03, slide: midi(84) });
+    if (tr.fx === 'wind' && beat === 0 && bar % 2 === 0) noise(barLen * 1.6, { ...o, out: musicGain, vol: 0.018, freq: 500, q: 0.4 });
+    if (tr.fx === 'waves' && beat === 0) noise(barLen * 0.9, { ...o, out: musicGain, vol: 0.03, freq: 380, q: 0.3 });
+    if (tr.fx === 'whisper' && beat === 2 && bar % 2 === 1) noise(eighth * 3, { ...o, out: musicGain, vol: 0.014, freq: 2400, q: 2 });
   }
 
   DK.audio = {
@@ -191,6 +240,8 @@
       if (!name || hidden()) stopTrack(); else startTrack(name);
     },
     updateVolumes,
+    /** Pista de la zona de la expedición en curso (o la del campamento). */
+    zoneTrack() { const e = DK.expedition && DK.expedition.active(); const z = e && DK.data.zones[e.zone]; return z && TRACKS[z.scene] ? z.scene : 'menu'; },
     /** ¿Está sonando la música? (para las pruebas) */
     playing: () => !!seq && !!ctx && ctx.state === 'running',
     /** Lista de efectos disponibles (para la guía y pruebas). */

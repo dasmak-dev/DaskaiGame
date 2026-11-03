@@ -40,8 +40,11 @@ DK.i18n.register('en', {
   },
   bye: { title: 'Thanks for playing!', text: 'Your progress is saved. You can close this tab now.', back: 'Back to main menu' },
 
+  roleDesc: { tanque: 'Colossus trait: +15% HP and +20% defense, −5% speed.', muro: 'Guardian trait: +15% HP and +20% magic defense, −5% attack.', fisico: 'Brave trait: +20% attack and +5% speed, −5% magic attack.', mago: 'Arcane trait: +20% magic attack and +15% mana, −5% attack.', veloz: 'Swift trait: +25% speed and +5% attack, −5% defense.', soporte: 'Sage trait: +20% mana, +10% HP and +10% magic defense, −5% attack.', cristal: 'Reckless trait: +12% attack, magic attack and speed, −10% defenses.', equilibrado: 'No trait: most daskai are like this. Only 1 in 5 is born with a trait, which improves its stats.' },
+  trait: { title: 'Trait', statTip: '{name} trait: {n}% on this stat' },
   newGame: {
-    strong: 'Strong vs {house}', weak: 'Weak vs {house}', statsTitle: 'Stats', statsNote: 'Bar: compared to the best starter · each daskai is born ±{n}%', 
+    lineTitle: 'Evolution line', 
+    strong: 'Strong vs {house}', weak: 'Weak vs {house}', statsTitle: 'Stats', statsNote: 'Bar: compared to the best starter · each daskai is born ±{n}% and 1 in 5 with a trait that improves its stats', 
     nameTitle: 'New adventurer', pickTitle: 'Choose your daskai',
     nameQ: "What's your name, adventurer?", nameHint: 'Your game will be saved in slot {slot}.',
     nameLabel: 'Adventurer name', placeholder: 'Type your name...', nameError: 'The name must have at least 2 characters.',
@@ -114,13 +117,13 @@ DK.i18n.register('en', {
   },
   stats: {
     rate: { high: 'Very fast', up: 'Fast', normal: 'Normal', down: 'Slow', low: 'Very slow' },
-    rateTip: 'Growth per level: {rate} ({pct}% of normal, nature not included)',
+    rateTip: 'Growth per level: {rate}. Gains ≈ +{n} per level on average (species and passive ×{pct}%, plus nature)',
     tonics: 'Tonics {n}/{max}', tonicTip: 'Tonics taken (permanent upgrades). The elixir of oblivion returns them.',
     trained: 'Trained {n}/{max}', trainedTip: 'Stat points earned at the training grounds',
     regenShort: 'Regen',
     breakdown: '{base} base + {growth} level', equip: '{n} gear', passive: '{n}% passive', regenPerTurn: '{n} HP per turn',
     legend: { base: 'Base', level: 'Level', nature: 'Nature', equip: 'Gear', bonus: 'Passive & bonuses', evo: 'Evolution', perm: 'Tonics & training', minus: 'Reduction', rate: 'Growth rate', rateTip: 'How much it grows per level based on species, passives, talents and nature', arrows: 'Nature effect' },
-    part: { gene: '(genes {n}%)', base: '{n} base', level: '{n} level', nature: '{n} nature', equip: '{n} gear', passive: '{n}% passive', bonus: '{n} bonuses', evo: '{n} evolution', tonic: '{n} tonics', trained: '{n} training' },
+    part: { gene: '(genes {n}%)', base: '{n} base', level: '{n} level', nature: '{n} nature', equip: '{n} gear', passive: '{n}% passive', bonus: '{n} bonuses', evo: '{n} evolution', tonic: '{n} tonics', trained: '{n} training', trait: '(trait {n}%)' },
     natUp: '{nature}: grows more on level up', natDown: '{nature}: grows less on level up', natEq: "{nature}: doesn't affect this stat",
   },
   move: {
@@ -177,6 +180,7 @@ DK.i18n.register('en', {
     confirm: 'Heal', done: 'Team healed with items.', noItems: "You don't have suitable healing items.", nothingToHeal: 'Your team is already at full.',
   },
   shop: {
+    sellHelpLoot: 'You get {n}% of its price, added to the expedition loot.', haveN: 'You have {n}', 
     left: '{n} left',
     buyFor: 'Buy · {n}', sellFor: 'Sell · {n}', missing: 'You need {n} more coins', sellAll: 'Sell all ({n})',
     forFav: 'Favorite recipe', favTip: 'Needed for one of your favorite recipes', soldN: 'Sold: {item} x{n} (+{coins})',
@@ -209,7 +213,8 @@ DK.i18n.register('en', {
   },
 
   zones: {
-    heroNew: 'New expedition', heroLine: 'Random maps among your zones, harder each time. After each boss you choose to go on or cash in.', heroOnLine: 'Your team is still on the road. Go back to the map to continue.', hardMode: 'Hard mode', moreShort: 'Undiscovered', pickHint: 'Tap a zone · ← →', winsShort: 'Wins', codexShort: 'Codex', 
+    startHere: 'Start here', startHereDesc: 'The first map of the expedition will be in this zone', startTag: 'Start', 
+    heroNew: 'New expedition', heroLine: 'You start in the zone marked on the map (tap another to change it). After each boss you choose to go on or cash in.', heroOnLine: 'Your team is still on the road. Go back to the map to continue.', hardMode: 'Hard mode', moreShort: 'Undiscovered', pickHint: 'Tap a zone to start there · ← →', winsShort: 'Wins', codexShort: 'Codex', 
     worldMap: 'World map', moreHidden: '{n} zones to discover', records: 'Records',
     recMaps: 'Maps cleared', recDepth: 'Deepest', recXl: 'XL maps', recSecret: 'Hidden boss', recFast: 'Fastest map',
     preview: 'See the first map', zonesTitle: 'Zones', unlockedN: '{n}/{total} zones',
@@ -235,6 +240,7 @@ DK.i18n.register('en', {
     allGood: 'Your team is ready.',
   },
   pack: {
+    chooseTitle: 'Choose items for the backpack', choose: 'Choose items', emptyShort: 'The backpack is empty: tap «Suggest» or «Choose items».', tapRemove: '{name}: tap to remove one', consolationShort: 'Consolation', riskShort: 'If you lose, you lose the backpack', 
     less: 'Remove one', more: 'Add another', haveTip: 'Units left in your bag', tipAdd2: 'Add 1 (Shift: all)', dropHint2: 'Press + in your bag or drag items here.', bagHint2: 'Press + or drag to the backpack',
     consolation: 'Reward for falling to the boss: you start with a rare or epic relic and 2 super potions (they take no slot).',
     tipAdd: 'Click: take 1 · Shift+click: all · or drag it to the backpack', tipRemove: 'Click: return 1 · Shift+click: all · or drag it to the bag', noMore: 'You have no more', bagHint: 'Click or drag to the backpack', allPacked: 'You are taking everything', dropHint: 'Drag items here or click them in your bag.',
@@ -312,7 +318,7 @@ DK.i18n.register('en', {
     revivesHelp: 'If a daskai falls, it is saved by a shrine blessing or, if you have saves left, by a phoenix feather or the camp altar.',
     shrineSkip: 'Continue without blessing', shrineText: 'An ancient shrine. Its light can protect one of your daskai from death.',
     seeSummary: 'See summary', seeSummaryDesc: 'Path, loot, recruits and relics', toBagTip: 'Goes straight to your backpack: usable now', lootCoinsTip: 'Expedition loot coins',
-    payNote: 'You pay with loot coins first and, if short, with your wallet.',
+    payNoteLoot: 'You can only pay with the coins in this expedition\'s loot.', payNote: 'You pay with loot coins first and, if short, with your wallet.',
     shopText2: 'The only shop on the road. Limited stock: make it count.', recipeFound: 'Among the chest contents there are some notes: you learn to make {item}!', newRecipe: 'Recipe: {item}',
     temp: 'Temporary', tempTip: 'Expedition recruit: stays with you only if you beat the boss.',
     tempNote: '{name} travels with you temporarily: beat the boss and it stays for good.',
@@ -642,6 +648,7 @@ DK.i18n.register('en', {
   },
   /* Crafting (screens/craft.js) */
   train: {
+    whoAll: 'All ({n})', whoTeam: 'Team', whoBox: 'Boxes', cantList: 'Cannot train now ({n})', up: { title: 'Grounds upgrades', level: 'Level {n}/{max}', text: 'A good instructor changes training a lot. Each level costs a lot of coins, but it really shows.', slots: '+{n} training slot(s)', rate: '+{n}% pace', cap: '+{n} recommended levels', stat: '+{n} stat points per daskai', owned: 'Owned', buy: 'Upgrade to level {n} · {c}', have: 'You have {n} coins', noMoney: 'You need {n} more coins', bought: 'Training grounds at level {n}!', maxed: 'The grounds are maxed out.' }, 
     title: 'Training grounds', text: 'Leave daskai training in real time, even with the game closed. While training they cannot go on expeditions.',
     slots: 'Slots {n}/{max}', cap: 'Recommended level {n}', capTip: 'Your strongest daskai\'s level minus {m} (the Instructor raises it). Above it they can still train, but each extra level costs {p}% more coins or hours.', instructor: 'Instructor +{n}% pace',
     free: 'Free slot', freeHint: 'Send a daskai to train', locked: 'Locked', lockedTip: 'Buy the «Instructor» upgrade for more slots',
@@ -694,11 +701,22 @@ DK.i18n.register('en', {
     title: 'Emblems', plus: 'Emblems +{n}', have: 'You have {n} emblems', thisRun: '{n} this expedition',
     help: 'Each boss defeated gives 1 emblem (hidden cave bosses too). Spend them on permanent Upgrades when the expedition ends.',
   },
+  kind: {
+    rolled: 'This expedition', chances: 'Chance of each type', chancesHint: 'The type is random. You can make one more likely with emblems in Upgrades → Courses.',
+    title: 'Expedition type', label: 'Expedition: {name}', locked: 'Defeat any boss to unlock it',
+    normal: { name: 'Normal', desc: 'A bit of everything: fights, events, chests, recruits and shops.' },
+    captura: { name: 'Capture', desc: 'Short and full of wild daskai: many recruits, more candidates and easier bonding. Fewer coins.' },
+    combate: { name: 'Combat', desc: 'Almost all fights and mini bosses. More coins and experience.' },
+    tesoro: { name: 'Treasure', desc: 'Chests, shops, events and caves. Few fights, but rivals are a bit stronger.' },
+    desafio: { name: 'Challenge', desc: 'Short and tough: mini bosses everywhere, rivals +3 levels and +1 emblem per boss.' },
+    fx: { capture: '+{n}% bonding', recruit: '+{n} candidate', coins: '{n}% coins', exp: '+{n}% exp.', levels: 'Rivals +{n} Lv.', emblems: '+{n} emblem per boss', short: 'Short' },
+  },
   size: {
     label: '{name} · {n} floors',
     small: { name: 'Small map', desc: 'Short expedition: {n} floors including the boss. 1 campfire on the way. Each boss gives 1 emblem.' },
     medium: { name: 'Medium map', desc: 'Medium expedition: {n} floors including the boss. 2 campfires, more caves and shortcuts. Each boss gives 2 emblems.' },
     xl: { name: 'XL map', desc: 'Long expedition: {n} floors including the boss. 3 campfires and lots of caves and shortcuts. Each boss gives 3 emblems. Pack well.' },
+    short: { name: 'Short map', desc: 'Quick expedition: {n} floors with the boss and one campfire. Each boss gives 1 emblem.' },
   },
   draw: {
     start: 'Draw', stop: 'Stop drawing', tip: 'Draw your route or leave notes on the map (also with right click)', done: 'Done',
@@ -746,7 +764,7 @@ DK.i18n.register('en', {
   pause: { title: 'Paused', resume: 'Resume', menu: 'Menu', menuTip: 'Pause menu (Esc)' },
   scene: {
     title: 'Camp', path: 'Expeditions', board: 'Missions', tent: 'Inventory', anvil: 'Crafting', fire: 'Team', lectern: 'Codex', dummy: 'Training', locked: 'Locked',
-    greet: { day: 'A fine day to explore', dawn: 'Dawn breaks over the camp', dusk: 'Evening falls over the camp', night: 'The campfire warms the night' },
+    greet: { day: 'A red sky covers the camp', dawn: 'Dawn cannot beat the mist', dusk: 'Darkness lurks beyond the fire', night: 'The bonfire keeps the night at bay' },
   },
   box: {
     dragHintExp: 'Drag between your team and those with you (on mobile, long press).', 
@@ -832,8 +850,12 @@ campfire: 'You went home from a campfire: you keep half the loot and all your re
     buy: 'Upgrade · {n}', bought: 'Upgrade bought: {name}!', noMoney: 'Not enough coins', missing: 'You need {n} more emblems', closeMenu: 'Done', saveHint: 'If you cannot afford one, save your emblems: you can spend them when your next expedition ends.', noEmblems: 'Not enough emblems', buyAtEnd: 'Bought when an expedition ends', howTo: 'Defeat bosses to earn emblems and trade them for upgrades in each expedition summary.',
     now: 'Now:', nextLevel: 'Next level:', firstLevel: 'When bought:', maxed: 'Maxed', levelTip: 'Current / max level',
     spent: '{n} coins invested', levels: '{n} of {total} levels',
-    group: { combat: 'Combat', progress: 'Progress', expedition: 'Expedition' },
+    group: { combat: 'Combat', progress: 'Progress', expedition: 'Expedition', rumbos: 'Courses (expedition type)' },
     up: {
+      rumbo_captura: { name: 'Capture course', desc: 'The expedition is more likely to be a capture one.', effect: '+{n}%', lv1: '+75% chance', lv2: '+150% chance', lv3: '+250% chance' },
+      rumbo_combate: { name: 'Combat course', desc: 'The expedition is more likely to be a combat one.', effect: '+{n}%', lv1: '+75% chance', lv2: '+150% chance', lv3: '+250% chance' },
+      rumbo_tesoro: { name: 'Treasure course', desc: 'The expedition is more likely to be a treasure one.', effect: '+{n}%', lv1: '+75% chance', lv2: '+150% chance', lv3: '+250% chance' },
+      rumbo_desafio: { name: 'Challenge course', desc: 'The expedition is more likely to be a challenge (once unlocked).', effect: '+{n}%', lv1: '+75% chance', lv2: '+150% chance', lv3: '+250% chance' },
       instructor: { name: 'Instructor', desc: 'Improves the training grounds: more slots, faster pace and a higher level cap.', effect: 'level {n}', lv1: '+1 slot · +25% pace · +2 level cap', lv2: '+1 slot · +50% pace · +4 level cap', lv3: '+2 slots · +100% pace · +6 level cap' },
       vigor: { name: 'Vigor', desc: 'Your daskai have more max HP during expeditions.', effect: '+{n}% HP' },
       fuerza: { name: 'Strength training', desc: 'Your daskai deal more damage with every move.', effect: '+{n}% damage' },
@@ -921,7 +943,8 @@ campfire: 'You went home from a campfire: you keep half the loot and all your re
       veneno: { name: 'Poisoned', desc: 'Loses 6% HP per turn.' },
       quemadura: { name: 'Burned', desc: 'Loses 5% HP per turn and attack drops 20%.' },
     },
-    rarities: { comun: { name: 'Common' }, raro: { name: 'Rare' }, epico: { name: 'Epic' }, legendario: { name: 'Legendary' } },
+roles: { tanque: { name: 'Colossus' }, muro: { name: 'Guardian' }, fisico: { name: 'Brave' }, mago: { name: 'Arcane' }, veloz: { name: 'Swift' }, soporte: { name: 'Sage' }, cristal: { name: 'Reckless' }, equilibrado: { name: 'No trait' } },
+        rarities: { comun: { name: 'Common' }, raro: { name: 'Rare' }, epico: { name: 'Epic' }, legendario: { name: 'Legendary' } },
     categories: {
       batalla: { name: 'Battle', desc: 'Potions and items to use in battle.' },
       mejora: { name: 'Upgrade', desc: 'Items that give your daskai experience outside battle.' },

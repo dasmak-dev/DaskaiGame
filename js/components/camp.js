@@ -4,9 +4,10 @@
  * Una escena en pixel art con lugares que se pueden pulsar:
  *   hoguera → Equipo · tienda → Inventario · yunque → Crafteo
  *   muñeco → Entrenamiento · atril → Códice · tablón → Progreso (misiones)
- *   camino con el cartel → Batalla (expediciones)
- * El cielo cambia con la hora real (día, atardecer, noche) y tu equipo
- * descansa junto a la hoguera.
+ *   portal de piedra → Batalla (expediciones)
+ * Estética oscura (estilo «dark fantasy»): luna roja, ruinas de una
+ * catedral, árboles muertos, tumbas, niebla y ascuas. La hora real sólo
+ * cambia el saludo y un poco la luz. Tu equipo descansa junto a la hoguera.
  *
  * Los dibujos se hacen con DK.pix: una cuadrícula de píxeles que se
  * pinta como SVG (nítido a cualquier tamaño). Para añadir un lugar,
@@ -81,8 +82,8 @@
   const SPRITES = {
     tent() {
       const c = canvas(26, 20);
-      c.rect(13, 0, 1, 4, WOOD_D).rect(14, 0, 4, 2, '#facc15').rect(14, 2, 2, 1, '#eab308');
-      c.tri(13, 3, 19, 12, (x, y, hw, dx) => (Math.abs(dx) === hw ? OUT : Math.floor((x + 1) / 3) % 2 ? '#dc2626' : '#fde9c4'));
+      c.rect(13, 0, 1, 4, WOOD_D).rect(14, 0, 4, 3, '#991b1b').rect(14, 3, 2, 1, '#7f1d1d');
+      c.tri(13, 3, 19, 12, (x, y, hw, dx) => (Math.abs(dx) === hw ? OUT : Math.floor((x + 1) / 3) % 2 ? '#7f1d1d' : '#57493a'));
       c.tri(13, 9, 19, 4, (x, y, hw, dx) => (Math.abs(dx) === hw ? '#3b1d0e' : '#140b06'));
       c.rect(1, 19, 25, 1, '#3b2414');
       return c;
@@ -160,6 +161,41 @@
       c.circle(3, 4, 3, g1).circle(8, 4, 3, g1).circle(6, 3, 3, g2).set(5, 2, '#86efac').set(9, 3, '#f472b6');
       return c;
     },
+    /** Portal de piedra con una runa encendida (camino a las expediciones). */
+    portal(frame = 0) {
+      const c = canvas(26, 30);
+      const ST = '#4b4350', STL = '#6b6270', STD = '#2a2430';
+      c.rect(2, 8, 5, 22, ST).rect(19, 8, 5, 22, ST).rect(2, 8, 1, 22, STL).rect(19, 8, 1, 22, STL);
+      c.rect(0, 4, 26, 5, ST).rect(0, 4, 26, 1, STL).rect(0, 8, 26, 1, STD).rect(10, 1, 6, 4, ST).rect(10, 1, 6, 1, STL);
+      c.rect(1, 28, 7, 2, STD).rect(18, 28, 7, 2, STD);
+      // vórtice rojo
+      const red = frame ? ['#7f1d1d', '#dc2626', '#f97316'] : ['#991b1b', '#ef4444', '#fb923c'];
+      c.rect(7, 9, 12, 20, red[0]).rect(9, 11, 8, 16, red[1]).rect(11, 14, 4, 10, red[2]).rect(12, 17, 2, 4, '#fde68a');
+      c.set(12, 2, '#f97316').set(13, 2, '#fde047');
+      return c;
+    },
+    /** Árbol muerto (ramas desnudas). */
+    deadTree(shade = 0) {
+      const c = canvas(16, 24), W = ['#2a1d17', '#1f1612', '#17100d'][shade];
+      c.rect(7, 8, 2, 16, W).rect(6, 21, 4, 3, W);
+      [[6, 12, -1], [9, 10, 1], [6, 6, -1], [9, 5, 1], [8, 2, 0]].forEach(([x, y, d]) => { for (let i = 0; i < 5; i++) c.set(x + d * i, y - Math.floor(i / 2), W); });
+      c.rect(2, 7, 1, 3, W).rect(13, 4, 1, 3, W).rect(1, 10, 2, 1, W);
+      return c;
+    },
+    /** Lápida o cruz de piedra. */
+    grave(kind = 0) {
+      const c = canvas(10, 12), ST = ['#4b4350', '#3f3844', '#57505c'][kind % 3];
+      if (kind % 2) c.rect(4, 0, 2, 12, ST).rect(1, 3, 8, 2, ST).rect(4, 0, 1, 12, '#6b6270');
+      else c.rect(1, 3, 8, 9, ST).rect(2, 1, 6, 2, ST).rect(3, 0, 4, 1, ST).rect(1, 3, 1, 9, '#6b6270').rect(3, 6, 4, 1, '#2a2430');
+      return c;
+    },
+    /** Antorcha en un poste. */
+    torch(frame = 0) {
+      const c = canvas(8, 22);
+      c.rect(3, 8, 2, 14, '#3b2414').rect(2, 7, 4, 2, '#57534e');
+      c.tri(4, frame ? 0 : 1, 6, 2, '#f97316').rect(3, 3, 2, 3, '#fde047').set(frame ? 2 : 5, 2, '#ef4444');
+      return c;
+    },
     pine(shade = 0) {
       const c = canvas(14, 22);
       const g1 = ['#14532d', '#0f3d22', '#0b2a18'][shade], g2 = ['#166534', '#14532d', '#0f3d22'][shade];
@@ -173,7 +209,7 @@
    * x, y: posición (en %) del pie del dibujo dentro de la escena.
    * xs, ys: posición en pantallas estrechas (móvil). */
   const SPOTS = [
-    { id: 'path', sprite: 'sign', screen: 'zones', nav: 'battle', x: 66, y: 55, xs: 73, ys: 45, label: () => t('scene.path'), main: true },
+    { id: 'path', sprite: 'portal', screen: 'zones', nav: 'battle', x: 66, y: 55, xs: 73, ys: 45, label: () => t('scene.path'), main: true },
     { id: 'board', sprite: 'board', screen: 'progress', nav: 'progress', x: 37, y: 57, xs: 31, ys: 43, label: () => t('scene.board') },
     { id: 'tent', sprite: 'tent', screen: 'inventory', nav: 'inventory', x: 17, y: 70, xs: 17, ys: 66, label: () => t('scene.tent') },
     { id: 'anvil', sprite: 'anvil', screen: 'craft', nav: 'craft', x: 82, y: 72, xs: 83, ys: 65, label: () => t('scene.anvil') },
@@ -204,68 +240,68 @@
     return pts.map(([x, y]) => `${x},${y}`).join(' ');
   }
 
-  /** Fondo: cielo, astro, nubes, montañas, bosque, suelo y el camino hacia el cartel. */
+  /** Fondo oscuro: cielo sangriento, luna roja, ruinas, montañas, tierra yerma, tumbas y el camino al portal. */
   function backdrop(tod) {
-    const W = 400, H = 180, HZ = 80, sky = SKY[tod];   // HZ: línea del horizonte
+    const W = 400, H = 180, HZ = 82;
     const s = svgEl('svg', { viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: 'xMidYMax slice', class: 'camp-bg', 'shape-rendering': 'crispEdges', 'aria-hidden': 'true' });
     const defs = svgEl('defs');
+    const sky = tod === 'day' ? ['#1a1016', '#3a1a1c', '#6b2a1f'] : tod === 'night' ? ['#050308', '#14070c', '#3d0c10'] : ['#0b0509', '#2a0b10', '#5c1410'];
     const lg = svgEl('linearGradient', { id: 'campSky', x1: 0, y1: 0, x2: 0, y2: 1 });
     sky.forEach((c, i) => lg.appendChild(svgEl('stop', { offset: i / 2, 'stop-color': c })));
-    const glow = svgEl('radialGradient', { id: 'campGlow', cx: '50%', cy: '80%', r: '42%' });
-    glow.appendChild(svgEl('stop', { offset: 0, 'stop-color': '#fb923c', 'stop-opacity': tod === 'day' ? 0.12 : 0.5 }));
-    glow.appendChild(svgEl('stop', { offset: 1, 'stop-color': '#fb923c', 'stop-opacity': 0 }));
-    defs.append(lg, glow); s.appendChild(defs);
+    const glow = svgEl('radialGradient', { id: 'campGlow', cx: '50%', cy: '82%', r: '46%' });
+    glow.appendChild(svgEl('stop', { offset: 0, 'stop-color': '#f97316', 'stop-opacity': 0.55 }));
+    glow.appendChild(svgEl('stop', { offset: 0.45, 'stop-color': '#b91c1c', 'stop-opacity': 0.18 }));
+    glow.appendChild(svgEl('stop', { offset: 1, 'stop-color': '#7f1d1d', 'stop-opacity': 0 }));
+    const moonGlow = svgEl('radialGradient', { id: 'campMoon', cx: '50%', cy: '50%', r: '50%' });
+    moonGlow.appendChild(svgEl('stop', { offset: 0, 'stop-color': '#ef4444', 'stop-opacity': 0.45 }));
+    moonGlow.appendChild(svgEl('stop', { offset: 1, 'stop-color': '#ef4444', 'stop-opacity': 0 }));
+    defs.append(lg, glow, moonGlow); s.appendChild(defs);
     s.appendChild(svgEl('rect', { x: 0, y: 0, width: W, height: H, fill: 'url(#campSky)' }));
-    const rnd = DK.util.seeded('camp-' + tod);
-    // Estrellas
-    if (tod === 'night' || tod === 'dusk') {
-      for (let i = 0; i < 60; i++) s.appendChild(svgEl('rect', { x: Math.floor(rnd() * W), y: Math.floor(rnd() * (HZ - 20)), width: rnd() < 0.2 ? 2 : 1, height: 1, fill: '#fff', opacity: tod === 'dusk' ? 0.45 : 0.9, class: rnd() < 0.35 ? 'twinkle' : '' }));
-    }
-    // Sol o luna (círculo en escalones)
-    const astro = tod === 'night' ? { x: 300, y: 26, r: 9, c: '#f8fafc' } : tod === 'day' ? { x: 110, y: 24, r: 10, c: '#fde047' } : { x: 290, y: 58, r: 12, c: '#fdba74' };
-    const disc = canvas(astro.r * 2 + 1, astro.r * 2 + 1).circle(astro.r, astro.r, astro.r, astro.c);
-    if (tod === 'night') disc.circle(astro.r + 4, astro.r - 2, astro.r - 1, null);
-    const ds = pixSvg(disc, 1); ds.setAttribute('x', astro.x - astro.r); ds.setAttribute('y', astro.y - astro.r); s.appendChild(ds);
-    if (tod === 'day' || tod === 'dawn') s.appendChild(svgEl('circle', { cx: astro.x, cy: astro.y, r: astro.r + 6, fill: astro.c, opacity: 0.18, 'shape-rendering': 'auto' }));
-    // Nubes de píxeles (de día y al amanecer), se mueven despacio
-    if (tod === 'day' || tod === 'dawn') {
-      [[40, 18, 1], [190, 12, 0.8], [330, 30, 1.1]].forEach(([x, y, k], n) => {
-        const g = svgEl('g', { class: 'camp-cloud', style: `animation-delay:${-n * 14}s` });
-        const c = '#ffffff', o = tod === 'dawn' ? 0.55 : 0.9;
-        [[0, 4, 26, 5], [5, 1, 12, 4], [14, 0, 9, 4], [3, 8, 20, 2]].forEach(([cx, cy, cw, ch]) => g.appendChild(svgEl('rect', { x: x + cx * k, y: y + cy, width: cw * k, height: ch, fill: c, opacity: o })));
-        s.appendChild(g);
-      });
-    }
-    // Montañas lejanas y colinas
-    const mtn = { day: ['#94a3b8', '#64748b', '#475569'], dawn: ['#7c3aed', '#6b21a8', '#4c1d95'], dusk: ['#5b21b6', '#4c1d95', '#2e1065'], night: ['#334155', '#1e293b', '#0f172a'] }[tod];
-    s.appendChild(svgEl('polygon', { points: ridge(W, HZ, [[40, 34, 0.7], [150, 40, 0.75], [250, 30, 0.6], [350, 42, 0.8]]), fill: mtn[0] }));
-    // Nieve en las cumbres
-    if (tod !== 'night') [[40, 34], [150, 40], [350, 42]].forEach(([px, ph]) => { const y = Math.round((HZ - ph) / 2) * 2; s.appendChild(svgEl('rect', { x: px - 4, y, width: 8, height: 2, fill: '#f8fafc', opacity: 0.85 })); s.appendChild(svgEl('rect', { x: px - 8, y: y + 2, width: 4, height: 2, fill: '#f8fafc', opacity: 0.6 })); });
-    s.appendChild(svgEl('polygon', { points: ridge(W, HZ, [[0, 18, 0.35], [95, 22, 0.4], [205, 16, 0.35], [300, 24, 0.45], [400, 18, 0.4]]), fill: mtn[1] }));
-    // Suelo
-    const grass = { day: ['#4ade80', '#22c55e', '#16a34a'], dawn: ['#65a30d', '#4d7c0f', '#3f6212'], dusk: ['#3f6212', '#365314', '#1a2e05'], night: ['#14532d', '#0f3d22', '#052e16'] }[tod];
-    s.appendChild(svgEl('rect', { x: 0, y: HZ, width: W, height: 10, fill: grass[0] }));
-    s.appendChild(svgEl('rect', { x: 0, y: HZ + 10, width: W, height: 40, fill: grass[1] }));
-    s.appendChild(svgEl('rect', { x: 0, y: HZ + 50, width: W, height: H - HZ - 50, fill: grass[2] }));
-    // Bosque en el horizonte
-    [[4, 2], [18, 1], [33, 2], [62, 0], [104, 1], [118, 2], [168, 0], [286, 1], [302, 2], [330, 0], [350, 1], [366, 2], [382, 1]].forEach(([x, sh]) => {
-      const p = pixSvg(SPRITES.pine(sh), 1); p.setAttribute('x', x); p.setAttribute('y', HZ - 20 + (sh === 1 ? 2 : sh === 0 ? -2 : 0)); s.appendChild(p);
+    const rnd = DK.util.seeded('camp-grim');
+    // Estrellas tenues
+    for (let i = 0; i < 40; i++) s.appendChild(svgEl('rect', { x: Math.floor(rnd() * W), y: Math.floor(rnd() * (HZ - 30)), width: 1, height: 1, fill: '#fecaca', opacity: 0.25 + rnd() * 0.4, class: rnd() < 0.3 ? 'twinkle' : '' }));
+    // Luna roja con halo
+    s.appendChild(svgEl('circle', { cx: 312, cy: 30, r: 34, fill: 'url(#campMoon)', 'shape-rendering': 'auto' }));
+    const disc = canvas(29, 29).circle(14, 14, 14, '#dc2626').circle(14, 14, 12, '#ef4444').circle(10, 9, 3, '#b91c1c').circle(18, 17, 2, '#b91c1c').circle(16, 7, 1, '#f87171');
+    const ds = pixSvg(disc, 1); ds.setAttribute('x', 298); ds.setAttribute('y', 16); s.appendChild(ds);
+    // Nubes oscuras que pasan delante de la luna
+    [[250, 26, 1.2], [60, 14, 1], [170, 40, 0.9]].forEach(([x, y, k], n) => {
+      const g = svgEl('g', { class: 'camp-cloud', style: `animation-delay:${-n * 18}s` });
+      [[0, 4, 30, 3], [6, 1, 14, 3], [16, 0, 10, 3], [3, 7, 22, 2]].forEach(([cx, cy, cw, ch]) => g.appendChild(svgEl('rect', { x: x + cx * k, y: y + cy, width: cw * k, height: ch, fill: '#1a0a0e', opacity: 0.75 })));
+      s.appendChild(g);
     });
-    // Camino de tierra: de la hoguera (abajo) al cartel (horizonte), cada vez más estrecho
-    const dirt = tod === 'night' ? '#4a3220' : tod === 'dusk' ? '#6b4423' : '#a16207';
-    const dirtL = tod === 'night' ? '#5c3d26' : tod === 'dusk' ? '#7c4f2a' : '#ca8a04';
+    // Montañas afiladas
+    s.appendChild(svgEl('polygon', { points: ridge(W, HZ, [[30, 30, 0.9], [120, 44, 1.1], [215, 28, 0.8], [330, 40, 1.0], [395, 26, 0.9]]), fill: '#1c0d12' }));
+    // Ruinas de una catedral en el horizonte (ventanas encendidas)
+    const ru = '#0f070a';
+    [[86, 26, 10], [96, 38, 6], [104, 30, 8], [116, 18, 10], [150, 22, 6]].forEach(([x, hgt, w]) => {
+      s.appendChild(svgEl('rect', { x, y: HZ - hgt, width: w, height: hgt, fill: ru }));
+      s.appendChild(svgEl('polygon', { points: `${x},${HZ - hgt} ${x + w / 2},${HZ - hgt - w * 0.9} ${x + w},${HZ - hgt}`, fill: ru }));
+    });
+    s.appendChild(svgEl('rect', { x: 84, y: HZ - 12, width: 72, height: 12, fill: ru }));
+    [[98, HZ - 30], [106, HZ - 22], [119, HZ - 12], [120, HZ - 26], [140, HZ - 8]].forEach(([x, y]) => s.appendChild(svgEl('rect', { x, y, width: 2, height: 3, fill: '#f97316', opacity: 0.8, class: 'twinkle' })));
+    // Colinas cercanas
+    s.appendChild(svgEl('polygon', { points: ridge(W, HZ, [[0, 16, 0.35], [95, 12, 0.3], [205, 18, 0.4], [300, 14, 0.35], [400, 16, 0.4]]), fill: '#140a0d' }));
+    // Tierra yerma
+    s.appendChild(svgEl('rect', { x: 0, y: HZ, width: W, height: 10, fill: '#231716' }));
+    s.appendChild(svgEl('rect', { x: 0, y: HZ + 10, width: W, height: 40, fill: '#1b1211' }));
+    s.appendChild(svgEl('rect', { x: 0, y: HZ + 50, width: W, height: H - HZ - 50, fill: '#140d0c' }));
+    // Árboles muertos y tumbas
+    [[6, 0], [24, 1], [46, 2], [160, 1], [176, 0], [356, 1], [380, 0]].forEach(([x, sh]) => { const p = pixSvg(SPRITES.deadTree(sh), 1); p.setAttribute('x', x); p.setAttribute('y', HZ - 22 + sh * 2); s.appendChild(p); });
+    [[38, HZ + 6, 0], [52, HZ + 12, 1], [70, HZ + 4, 2], [348, HZ + 8, 1], [366, HZ + 14, 0], [226, HZ + 3, 2]].forEach(([x, y, k]) => { const p = pixSvg(SPRITES.grave(k), 1); p.setAttribute('x', x); p.setAttribute('y', y); s.appendChild(p); });
+    // Camino de losas hacia el portal
     for (let y = HZ + 2; y < H; y += 2) {
-      const tt = (y - HZ) / (H - HZ);               // 0 en el horizonte, 1 abajo
+      const tt = (y - HZ) / (H - HZ);
       const cx = 264 - tt * 64 + Math.round(Math.sin(tt * 5) * 6);
       const hw = Math.round(3 + tt * 22);
-      s.appendChild(svgEl('rect', { x: cx - hw, y, width: hw * 2, height: 2, fill: dirt }));
-      if (y % 6 === 0) s.appendChild(svgEl('rect', { x: cx - hw + 2 + Math.floor(rnd() * Math.max(1, hw * 2 - 6)), y, width: 2, height: 1, fill: dirtL }));
+      s.appendChild(svgEl('rect', { x: cx - hw, y, width: hw * 2, height: 2, fill: y % 8 < 2 ? '#2a2026' : '#362a2e' }));
+      if (y % 6 === 0) s.appendChild(svgEl('rect', { x: cx - hw + 2 + Math.floor(rnd() * Math.max(1, hw * 2 - 6)), y, width: 3, height: 1, fill: '#4b3d42' }));
     }
-    // Matas de hierba y flores
+    // Hierba seca y huesos
     for (let i = 0; i < 70; i++) {
       const x = Math.floor(rnd() * W), y = HZ + 6 + Math.floor(rnd() * (H - HZ - 8));
-      s.appendChild(svgEl('rect', { x, y, width: 1, height: 2, fill: grass[0], opacity: 0.8 })); s.appendChild(svgEl('rect', { x: x + 2, y: y + 1, width: 1, height: 1, fill: grass[0], opacity: 0.8 }));
-      if (i % 9 === 0 && tod !== 'night') s.appendChild(svgEl('rect', { x: x + 1, y: y - 1, width: 1, height: 1, fill: ['#fde047', '#f472b6', '#f8fafc'][i % 3] }));
+      s.appendChild(svgEl('rect', { x, y, width: 1, height: 2, fill: '#4a3a24', opacity: 0.8 }));
+      if (i % 11 === 0) s.appendChild(svgEl('rect', { x: x + 1, y: y + 1, width: 3, height: 1, fill: '#d6cfc0', opacity: 0.55 }));
     }
     s.appendChild(svgEl('rect', { x: 0, y: 0, width: W, height: H, fill: 'url(#campGlow)' }));
     return s;
@@ -285,7 +321,9 @@
       const locked = sp.unlock && !DK.unlocks.has(sp.unlock);
       const it = nav[sp.nav];
       const badge = !locked && it && it.badge ? it.badge() : '';
-      const art = sp.fire ? h('span', { class: 'camp-fire' }, pixSvg(SPRITES.fire(0), scale, 'f0'), pixSvg(SPRITES.fire(1), scale, 'f1')) : pixSvg(SPRITES[sp.sprite](), scale);
+      const art = sp.fire ? h('span', { class: 'camp-fire' }, pixSvg(SPRITES.fire(0), scale, 'f0'), pixSvg(SPRITES.fire(1), scale, 'f1'))
+        : sp.sprite === 'portal' ? h('span', { class: 'camp-fire camp-portal' }, pixSvg(SPRITES.portal(0), scale, 'f0'), pixSvg(SPRITES.portal(1), scale, 'f1'))
+        : pixSvg(SPRITES[sp.sprite](), scale);
       const label = typeof sp.label === 'function' ? sp.label() : sp.label;
       return h('button', {
         class: `camp-spot s-${sp.id}` + (locked ? ' locked' : '') + (sp.main ? ' main' : ''), type: 'button',
@@ -305,9 +343,13 @@
       'aria-label': DK.daskai.name(d), tip: `${DK.daskai.name(d)} · ${t('common.lvl')} ${d.level}`,
       onClick: () => { DK.audio.sfx('select'); DK.router.reset('team', { uid: d.uid }); },
     }, DK.views.sprite(d.species, { size: narrow ? 54 : 76, shiny: d.shiny, flip: offs[i][0] > 0 })));
-    const flies = tod === 'night' || tod === 'dusk' ? h('div', { class: 'camp-flies', 'aria-hidden': 'true' }, Array.from({ length: 10 }, (_, i) => h('i', { style: { left: (8 + i * 9) % 96 + '%', top: 50 + ((i * 37) % 40) + '%', animationDelay: (i * 0.7) + 's' } }))) : null;
-    return h('section', { class: 'camp-scene tod-' + tod, 'aria-label': t('scene.title') },
-      backdrop(tod), flies,
+    // Ascuas que suben de la hoguera, niebla baja y antorchas
+    const embers = h('div', { class: 'camp-embers', 'aria-hidden': 'true', style: { left: fx + '%', top: fy + '%' } }, Array.from({ length: 16 }, (_, i) => h('i', { style: { '--dx': ((i * 37) % 60 - 30) + 'px', left: ((i * 13) % 40 - 20) + 'px', animationDelay: (i * 0.35) + 's', animationDuration: (2.6 + (i % 5) * 0.5) + 's' } })));
+    const fog = h('div', { class: 'camp-fog', 'aria-hidden': 'true' }, h('i'), h('i'));
+    const torches = (narrow ? [[6, 62], [94, 60]] : [[28, 66], [74, 62], [4, 80], [97, 78]]).map(([x, y], i) =>
+      h('span', { class: 'camp-torch', 'aria-hidden': 'true', style: { left: x + '%', top: y + '%', animationDelay: (i * 0.2) + 's' } }, pixSvg(SPRITES.torch(0), scale * 0.8, 'f0'), pixSvg(SPRITES.torch(1), scale * 0.8, 'f1')));
+    return h('section', { class: 'camp-scene grim tod-' + tod, 'aria-label': t('scene.title') },
+      backdrop(tod), fog, ...torches, embers,
       h('div', { class: 'camp-greet' }, h('span', { class: 'camp-greet-text' }, t('scene.greet.' + tod))),
       ...team, ...spots);
   };

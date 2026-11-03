@@ -26,7 +26,7 @@
   const CAT_ORDER = ['batalla', 'mejora', 'equipo', 'pieza'];
 
   DK.screens.register('inventory', {
-    title: () => (DK.bag.inPack() ? t('nav.pack') : t('inv.title')), icon: 'bag', section: 'inventory', tutorial: 'inventory', music: 'menu',
+    title: () => (DK.bag.inPack() ? t('nav.pack') : t('inv.title')), icon: 'bag', section: 'inventory', tutorial: 'inventory', music: () => DK.audio.zoneTrack(),
     render(params) {
       const refresh = () => DK.router.refresh();
       const exp = DK.bag.inPack() && DK.expedition.active();

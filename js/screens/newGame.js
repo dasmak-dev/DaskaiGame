@@ -74,7 +74,7 @@
     DK.keys.on('Enter', start);
 
     const sp = D.species[params.pick], hs = D.houses[sp.house];
-    const evo = sp.evolve ? D.species[sp.evolve.into] : null;
+    const line = [sp]; while (line[line.length - 1].evolve && line.length < 6) line.push(D.species[line[line.length - 1].evolve.into]);
 
     const picker = h('div', { class: 'st-picker', role: 'radiogroup', 'aria-label': t('newGame.pickTitle') }, starters.map((s, i) =>
       h('button', { class: 'st-pick' + (s.id === params.pick ? ' on' : ''), type: 'button', role: 'radio', 'aria-checked': String(s.id === params.pick), 'aria-label': s.name,
@@ -102,7 +102,11 @@
       h('div', { class: 'chips' },
         h('span', { class: 'chip pos' }, DK.icon('swords', 13), t('newGame.strong', { house: DK.tr('houses', D.houses[hs.strongVs]) })),
         h('span', { class: 'chip neg' }, DK.icon('shield', 13), t('newGame.weak', { house: DK.tr('houses', V.weakAgainst(sp.house)) })),
-        evo ? h('span', { class: 'chip' }, DK.icon('evolve', 13), t('newGame.evolves', { into: evo.name, n: sp.evolve.level })) : null),
+        null),
+      // Línea evolutiva completa (los iniciales tienen tres evoluciones)
+      line.length > 1 ? h('div', { class: 'st-line', 'aria-label': t('newGame.lineTitle') }, line.map((x, i) => [
+        i ? h('span', { class: 'st-line-step' }, DK.icon('next', 14), h('small', null, `${t('common.lvl')} ${line[i - 1].evolve.level}`)) : null,
+        h('span', { class: 'st-line-mon' + (i ? '' : ' on'), tip: x.name }, V.sprite(x.id, { size: 44 }), h('small', null, x.name))])) : null,
       h('div', { class: 'st-stats-head' }, h('b', null, t('newGame.statsTitle')), h('span', { class: 'muted small' }, t('newGame.statsNote', { n: Math.round(DK.config.genes * 100) }))),
       stats);
 

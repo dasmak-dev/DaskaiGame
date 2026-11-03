@@ -205,7 +205,9 @@
     /** Vende n unidades. */
     sell(id, n = 1) {
       if (!this.canSell(id) || !DK.bag.remove(id, n)) return false;
-      DK.wallet.add(this.sellPrice(id) * n);
+      // En una expedición (mercader) lo que vendes va al botín; en casa, al monedero
+      const e = DK.expedition && DK.expedition.active();
+      if (e) e.loot.coins += this.sellPrice(id) * n; else DK.wallet.add(this.sellPrice(id) * n);
       DK.emit('sold', { id, n });
       DK.store.save();
       return true;

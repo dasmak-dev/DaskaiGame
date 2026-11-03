@@ -7,6 +7,9 @@
  *   tail:  'none'|'flame'|'leaf'|'spike'|'fin'|'curl'|'orb'
  *   eyes:  'big'|'sharp'|'glow'|'cyclops'|'sleepy'   eyeColor
  *   mark:  'star'|'gem'|'moon'|'stripes'|'spots'     wings: true
+ *   body:  'round' (por defecto) | 'egg' | 'block' | 'ghost' (flota, sin pies) | 'long' (con segmentos detrás)
+ *   legs:  'feet' (por defecto) | 'none' | 'quad' (cuatro patas) | 'tall' (patas de ave)
+ *   extra: lista de añadidos: 'beak' | 'horn' | 'shell' | 'mane' | 'whiskers' | 'fangs' | 'arms' | 'claws' | 'cap' | 'crown' | 'scarf'
  * Para usar una imagen propia: sprite: { img: 'img/x.png' }
  *
  *   DK.sprites.svg(especie, { flip, shiny }) → texto SVG
@@ -141,6 +144,79 @@
     }
   }
 
+  /* ---------- Formas del cuerpo, patas y añadidos ---------- */
+  /** Contorno del cuerpo (en lugar de la elipse redonda). */
+  function bodyShape(kind, { cx, cy, t, rx, ry }, fill, dk) {
+    const st = `fill="${fill}" stroke="${dk}" stroke-width="2.2" stroke-linejoin="round"`;
+    switch (kind) {
+      case 'egg': return `<path d="M ${f(cx)} ${f(t - 2)} C ${f(cx + rx * 0.95)} ${f(t - 2)} ${f(cx + rx * 1.08)} ${f(cy + ry)} ${f(cx)} ${f(cy + ry)} C ${f(cx - rx * 1.08)} ${f(cy + ry)} ${f(cx - rx * 0.95)} ${f(t - 2)} ${f(cx)} ${f(t - 2)} Z" ${st}/>`;
+      case 'block': return `<rect x="${f(cx - rx)}" y="${f(t + 2)}" width="${f(rx * 2)}" height="${f(ry * 2 - 2)}" rx="${f(ry * 0.42)}" ${st}/>`;
+      case 'ghost': {
+        const n = 4, w = (rx * 2) / n, yb = cy + ry * 0.92;
+        let d = `M ${f(cx - rx)} ${f(cy)} A ${rx} ${ry} 0 0 1 ${f(cx + rx)} ${f(cy)} L ${f(cx + rx)} ${f(yb)}`;
+        for (let i = 0; i < n; i++) { const x0 = cx + rx - i * w; d += ` Q ${f(x0 - w * 0.25)} ${f(yb + 8)} ${f(x0 - w * 0.5)} ${f(yb)} Q ${f(x0 - w * 0.75)} ${f(yb - 7)} ${f(x0 - w)} ${f(yb)}`; }
+        return `<path d="${d} Z" ${st}/>`;
+      }
+      default: return `<ellipse cx="${cx}" cy="${f(cy)}" rx="${rx}" ry="${ry}" ${st}/>`;
+    }
+  }
+  /** Segmentos de un cuerpo largo (serpiente, gusano, dragón), detrás del cuerpo. */
+  function segments({ cx, cy, rx, ry }, fill, c2, dk) {
+    return [[0.95, 0.62, 0.15], [1.5, 0.42, 0.35]].map(([ox, r, oy]) =>
+      `<ellipse cx="${f(cx + rx * ox)}" cy="${f(cy + ry * oy)}" rx="${f(ry * r * 1.1)}" ry="${f(ry * r)}" fill="${fill}" stroke="${dk}" stroke-width="2"/>` +
+      `<ellipse cx="${f(cx + rx * ox - 2)}" cy="${f(cy + ry * oy + ry * r * 0.35)}" rx="${f(ry * r * 0.6)}" ry="${f(ry * r * 0.35)}" fill="${c2}" opacity=".7"/>`).join('');
+  }
+  /** Patas: pies (por defecto), ninguna, cuatro o de ave. */
+  function legs(kind, { cx, cy, rx, ry }, dk, c2) {
+    const y = cy + ry;
+    switch (kind) {
+      case 'none': return '';
+      case 'quad': return [-0.72, -0.3, 0.22, 0.62].map((o, i) => `<rect x="${f(cx + rx * o - 4.5)}" y="${f(y - ry * 0.35)}" width="9" height="${f(ry * 0.35 + 9)}" rx="4" fill="${i % 2 ? shade(dk, 0.15) : dk}"/>`).join('');
+      case 'tall': return [-0.32, 0.18].map((o) => { const x = cx + rx * o; return `<path d="M ${f(x)} ${f(y - 4)} L ${f(x)} ${f(y + 9)} M ${f(x - 5)} ${f(y + 10)} L ${f(x + 4)} ${f(y + 10)}" stroke="${c2 === '#fff' ? '#f59e0b' : '#f59e0b'}" stroke-width="3.5" stroke-linecap="round"/>`; }).join('');
+      default: return `<ellipse cx="${f(cx - rx * 0.5)}" cy="${f(y - 2)}" rx="7.5" ry="5" fill="${dk}"/><ellipse cx="${f(cx + rx * 0.38)}" cy="${f(y - 2)}" rx="7.5" ry="5" fill="${dk}"/>`;
+    }
+  }
+  /** Añadidos detrás del cuerpo. */
+  const EXTRA_BACK = {
+    mane: ({ cx, cy, t, rx, ry, c2, dk }) => {
+      const hx = cx - rx * 0.2, hy = cy - ry * 0.15, R = Math.max(rx, ry) * 1.02;
+      return Array.from({ length: 9 }, (_, i) => { const a = Math.PI * (0.95 + i * 0.13); const x = hx + Math.cos(a) * R, y = hy + Math.sin(a) * R; const a1 = a - 0.18, a2 = a + 0.18, r2 = R * 0.72;
+        return `<polygon points="${f(hx + Math.cos(a1) * r2)},${f(hy + Math.sin(a1) * r2)} ${f(x + Math.cos(a) * 9)},${f(y + Math.sin(a) * 9)} ${f(hx + Math.cos(a2) * r2)},${f(hy + Math.sin(a2) * r2)}" fill="${c2}" stroke="${dk}" stroke-width="1.6" stroke-linejoin="round"/>`; }).join('');
+    },
+    scarf: () => '',
+  };
+  /** Añadidos delante del cuerpo (después del cuerpo, antes de los ojos). */
+  const EXTRA_MID = {
+    shell: ({ cx, cy, rx, ry, c2, dk }) => {
+      const sx = cx + rx * 0.28, sy = cy - ry * 0.28, srx = rx * 0.78, sry = ry * 0.72;
+      return `<path d="M ${f(sx - srx)} ${f(sy + sry * 0.55)} A ${f(srx)} ${f(sry)} 0 0 1 ${f(sx + srx)} ${f(sy + sry * 0.55)} Z" fill="${c2}" stroke="${dk}" stroke-width="2.2"/>` +
+        `<path d="M ${f(sx - srx * 0.5)} ${f(sy + sry * 0.5)} L ${f(sx - srx * 0.3)} ${f(sy - sry * 0.2)} L ${f(sx + srx * 0.3)} ${f(sy - sry * 0.2)} L ${f(sx + srx * 0.5)} ${f(sy + sry * 0.5)} M ${f(sx - srx * 0.3)} ${f(sy - sry * 0.2)} L ${f(sx - srx * 0.1)} ${f(sy - sry * 0.85)} M ${f(sx + srx * 0.3)} ${f(sy - sry * 0.2)} L ${f(sx + srx * 0.25)} ${f(sy - sry * 0.8)}" stroke="${dk}" stroke-width="1.6" fill="none" opacity=".55"/>`;
+    },
+    cap: ({ cx, cy, t, rx, ry, c2, dk }) => {
+      const y0 = cy - ry * 0.48;
+      return `<path d="M ${f(cx - rx * 1.25)} ${f(y0)} Q ${f(cx - rx * 1.1)} ${f(t - ry * 0.55)} ${f(cx)} ${f(t - ry * 0.5)} Q ${f(cx + rx * 1.1)} ${f(t - ry * 0.55)} ${f(cx + rx * 1.25)} ${f(y0)} Q ${f(cx)} ${f(y0 + 7)} ${f(cx - rx * 1.25)} ${f(y0)} Z" fill="${c2}" stroke="${dk}" stroke-width="2.2"/>` +
+        [[-0.6, -0.25, 4.5], [0.1, -0.55, 5.5], [0.7, -0.2, 4]].map(([ox, oy, r]) => `<circle cx="${f(cx + rx * ox)}" cy="${f(y0 + ry * oy)}" r="${r}" fill="#fff" opacity=".85"/>`).join('');
+    },
+    arms: ({ cx, cy, rx, ry, c1, dk }) =>
+      `<ellipse cx="${f(cx - rx * 0.92)}" cy="${f(cy + ry * 0.22)}" rx="6" ry="9" transform="rotate(25 ${f(cx - rx * 0.92)} ${f(cy + ry * 0.22)})" fill="${shade(c1, -0.12)}" stroke="${dk}" stroke-width="2"/>`,
+    claws: ({ cx, cy, rx, ry, c2, dk }) => [[-1.02, 0.05], [0.95, 0.1]].map(([ox, oy]) => {
+      const x = cx + rx * ox, y = cy + ry * oy;
+      return `<path d="M ${f(x)} ${f(y + 6)} Q ${f(x - 12)} ${f(y - 2)} ${f(x - 4)} ${f(y - 12)} L ${f(x - 1)} ${f(y - 4)} L ${f(x + 6)} ${f(y - 11)} Q ${f(x + 10)} ${f(y + 2)} ${f(x)} ${f(y + 6)} Z" fill="${c2}" stroke="${dk}" stroke-width="2" stroke-linejoin="round"/>`;
+    }).join(''),
+    scarf: ({ cx, cy, rx, ry }) =>
+      `<path d="M ${f(cx - rx * 0.85)} ${f(cy + ry * 0.05)} Q ${f(cx - rx * 0.1)} ${f(cy + ry * 0.32)} ${f(cx + rx * 0.75)} ${f(cy + ry * 0.02)} L ${f(cx + rx * 0.72)} ${f(cy + ry * 0.24)} Q ${f(cx - rx * 0.1)} ${f(cy + ry * 0.55)} ${f(cx - rx * 0.85)} ${f(cy + ry * 0.25)} Z" fill="#dc2626" stroke="#450a0a" stroke-width="1.6"/>` +
+      `<path d="M ${f(cx + rx * 0.55)} ${f(cy + ry * 0.2)} l 10 16 l -9 2 z" fill="#b91c1c" stroke="#450a0a" stroke-width="1.4"/>`,
+  };
+  /** Añadidos de la cara (encima de todo). */
+  const EXTRA_FRONT = {
+    beak: ({ mx, my }) => `<polygon points="${f(mx + 2)},${f(my - 4)} ${f(mx - 12)},${f(my + 1)} ${f(mx + 2)},${f(my + 5)}" fill="#f59e0b" stroke="#7c2d12" stroke-width="1.6" stroke-linejoin="round"/>`,
+    horn: ({ cx, t, rx, c2, dk }) => `<polygon points="${f(cx - rx * 0.32)},${f(t + 7)} ${f(cx - rx * 0.2)},${f(t - 18)} ${f(cx - rx * 0.02)},${f(t + 7)}" fill="${c2 === '#fff' ? '#fde68a' : c2}" stroke="${dk}" stroke-width="2" stroke-linejoin="round"/>`,
+    whiskers: ({ cx, cy, rx, ry, dk }) => [[-1, -0.06], [-1, 0.08], [1, -0.08], [1, 0.06]].map(([s2, oy]) => {
+      const x = s2 < 0 ? cx - rx * 0.62 : cx + rx * 0.22; return `<path d="M ${f(x)} ${f(cy + ry * oy)} l ${f(s2 * 13)} ${f(oy * 30)}" stroke="${dk}" stroke-width="1.4" opacity=".7"/>`; }).join(''),
+    fangs: ({ mx, my }) => `<polygon points="${f(mx - 4)},${f(my + 1)} ${f(mx - 2.5)},${f(my + 6)} ${f(mx - 1)},${f(my + 1)}" fill="#fff"/><polygon points="${f(mx + 1)},${f(my + 1)} ${f(mx + 2.5)},${f(my + 6)} ${f(mx + 4)},${f(my + 1)}" fill="#fff"/>`,
+    crown: ({ cx, t, rx }) => { const x = cx - rx * 0.2, y = t - 2; return `<path d="M ${f(x - 12)} ${f(y + 4)} L ${f(x - 12)} ${f(y - 8)} L ${f(x - 6)} ${f(y - 2)} L ${f(x)} ${f(y - 12)} L ${f(x + 6)} ${f(y - 2)} L ${f(x + 12)} ${f(y - 8)} L ${f(x + 12)} ${f(y + 4)} Z" fill="#facc15" stroke="#713f12" stroke-width="1.8" stroke-linejoin="round"/><circle cx="${f(x)}" cy="${f(y - 1)}" r="2.4" fill="#ef4444"/>`; },
+  };
+
   let seq = 0;
   /**
    * Genera el SVG de una especie.
@@ -156,20 +232,30 @@
     const id = 'dkg' + ++seq;
     const c1 = s.c1 || '#94a3b8', c2 = s.c2 || '#e2e8f0';
     const dk = shade(c1, -0.5), light = shade(c1, 0.4);
-    const rx = s.rx || 30, ry = s.ry || 27, cx = 60, cy = 98 - ry, t = cy - ry;
-    const P = { cx, cy, t, rx, ry, c1, c2, dk, x: cx + rx * 0.82, y: cy + ry * 0.15 };
-    const back = (TAILS[s.tail] || TAILS.none)(P) + (s.wings ? WINGS(P) : '') + (EARS[s.ears] || EARS.none)(P);
-    const body = `<ellipse cx="${cx}" cy="${f(cy)}" rx="${rx}" ry="${ry}" fill="url(#${id})" stroke="${dk}" stroke-width="2.2"/>`;
-    const belly = `<ellipse cx="${cx - 4}" cy="${f(cy + ry * 0.32)}" rx="${f(rx * 0.55)}" ry="${f(ry * 0.48)}" fill="${c2}" opacity=".8"/>`;
-    const feet = `<ellipse cx="${f(cx - rx * 0.5)}" cy="${f(cy + ry - 2)}" rx="7.5" ry="5" fill="${dk}"/><ellipse cx="${f(cx + rx * 0.38)}" cy="${f(cy + ry - 2)}" rx="7.5" ry="5" fill="${dk}"/>`;
+    const rx = s.rx || 30, ry = s.ry || 27;
+    const kind = s.body || 'round', legKind = s.legs || (kind === 'ghost' ? 'none' : 'feet'), extra = s.extra || [];
+    // Cuerpos largos se desplazan a la izquierda (los segmentos van detrás); con patas largas o
+    // cuatro patas se levantan; los fantasmas flotan.
+    const cx = kind === 'long' ? 52 : 60;
+    const lift = legKind === 'quad' ? 7 : legKind === 'tall' ? 10 : legKind === 'none' ? 6 : 0;
+    const cy = 98 - ry - lift, t = cy - ry;
+    const P = { cx, cy, t, rx, ry, c1, c2, dk, x: cx + rx * (kind === 'long' ? 1.7 : 0.82), y: cy + ry * (kind === 'long' ? 0.4 : 0.15) };
     const mouthX = cx - rx * 0.22, mouthY = cy - ry * 0.02;
-    const mouth = s.eyes === 'glow' ? '' : `<path d="M ${f(mouthX - 4)} ${f(mouthY)} Q ${f(mouthX - 2)} ${f(mouthY + 3.5)} ${f(mouthX)} ${f(mouthY)} Q ${f(mouthX + 2)} ${f(mouthY + 3.5)} ${f(mouthX + 4)} ${f(mouthY)}" stroke="${dk}" stroke-width="2" fill="none" stroke-linecap="round"/>`;
-    const cheeks = s.eyes === 'glow' ? '' : `<circle cx="${f(cx - rx * 0.66)}" cy="${f(cy + 1)}" r="4" fill="#ff6b9a" opacity=".35"/><circle cx="${f(cx + rx * 0.26)}" cy="${f(cy)}" r="4" fill="#ff6b9a" opacity=".3"/>`;
-    const front = mark(s, P) + eyes(s, P) + mouth + cheeks;
+    P.mx = mouthX; P.my = mouthY;
+    const back = (TAILS[s.tail] || TAILS.none)(P) + (s.wings ? WINGS(P) : '') + (EARS[s.ears] || EARS.none)(P) +
+      extra.map((k) => (EXTRA_BACK[k] ? EXTRA_BACK[k](P) : '')).join('') + (kind === 'long' ? segments(P, `url(#${id})`, c2, dk) : '');
+    const body = bodyShape(kind, P, `url(#${id})`, dk);
+    const belly = kind === 'ghost' ? '' : `<ellipse cx="${cx - 4}" cy="${f(cy + ry * 0.32)}" rx="${f(rx * 0.55)}" ry="${f(ry * 0.48)}" fill="${c2}" opacity=".8"/>`;
+    const feet = legs(legKind, P, dk, c2);
+    const mid = extra.map((k) => (EXTRA_MID[k] ? EXTRA_MID[k](P) : '')).join('');
+    const beak = extra.includes('beak');
+    const mouth = s.eyes === 'glow' || beak ? '' : `<path d="M ${f(mouthX - 4)} ${f(mouthY)} Q ${f(mouthX - 2)} ${f(mouthY + 3.5)} ${f(mouthX)} ${f(mouthY)} Q ${f(mouthX + 2)} ${f(mouthY + 3.5)} ${f(mouthX + 4)} ${f(mouthY)}" stroke="${dk}" stroke-width="2" fill="none" stroke-linecap="round"/>`;
+    const cheeks = s.eyes === 'glow' || kind === 'block' ? '' : `<circle cx="${f(cx - rx * 0.66)}" cy="${f(cy + 1)}" r="4" fill="#ff6b9a" opacity=".35"/><circle cx="${f(cx + rx * 0.26)}" cy="${f(cy)}" r="4" fill="#ff6b9a" opacity=".3"/>`;
+    const front = mark(s, P) + eyes(s, P) + mouth + cheeks + extra.map((k) => (EXTRA_FRONT[k] ? EXTRA_FRONT[k](P) : '')).join('');
     return `<svg viewBox="4 -6 112 116" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${sp.name}">` +
       `<defs><radialGradient id="${id}" cx="35%" cy="28%" r="80%"><stop offset="0%" stop-color="${light}"/><stop offset="55%" stop-color="${c1}"/><stop offset="100%" stop-color="${shade(c1, -0.28)}"/></radialGradient></defs>` +
-      `<ellipse class="sprite-shadow" cx="60" cy="104" rx="${f(rx * 0.95)}" ry="6" fill="#000" opacity=".2"/>` +
-      `<g ${flip ? 'transform="translate(120 0) scale(-1 1)"' : ''}><g class="sprite-body">${back}${feet}${body}${belly}${front}</g></g>` +
+      `<ellipse class="sprite-shadow" cx="60" cy="104" rx="${f(rx * (legKind === 'none' ? 0.7 : 0.95))}" ry="6" fill="#000" opacity="${legKind === 'none' ? '.12' : '.2'}"/>` +
+      `<g ${flip ? 'transform="translate(120 0) scale(-1 1)"' : ''}><g class="sprite-body">${back}${feet}${body}${belly}${mid}${front}</g></g>` +
       (shiny ? '<g class="shiny-sparkles" fill="#fff8b0"><path d="M18 20l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/><path d="M100 8l1.5 4.5 4.5 1.5-4.5 1.5-1.5 4.5-1.5-4.5-4.5-1.5 4.5-1.5z"/><path d="M104 70l1.2 3.6 3.6 1.2-3.6 1.2-1.2 3.6-1.2-3.6-3.6-1.2 3.6-1.2z"/></g>' : '') + '</svg>';
   }
 

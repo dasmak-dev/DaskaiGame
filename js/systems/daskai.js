@@ -88,6 +88,7 @@
         nature: U.pick(Object.keys(D.natures)),
         passive: U.pick(sp.passives),
         genes: api.rollGenes(),    // ±config.genes sobre cada atributo base de la especie: no hay dos iguales
+        role: o.boss ? 'equilibrado' : api.rollRole(), // rasgo (raro: config.roleChance)
         growth: zeroStats(),       // puntos ganados al subir de nivel (nivel + naturaleza)
         natureGrowth: zeroStats(), // parte de `growth` que viene de la naturaleza (+ o -)
         cur: { hp: 0, mp: 0 },
@@ -113,17 +114,43 @@
       KEYS().forEach((k) => (out[k] = Math.round(U.randf(-g, g) * 100) / 100));
       return out;
     },
-    /** Atributo base de ESTE daskai: el de su especie con sus genes. */
+    /** Rasgo al nacer: casi siempre ninguno; con config.roleChance, uno de D.roles según su peso. */
+    rollRole() {
+      if (!U.chance(DK.config.roleChance || 0)) return 'equilibrado';
+      const w = {}; Object.entries(D.roles).forEach(([id, r]) => { if (r.weight) w[id] = r.weight; });
+      return U.weightedKey(w, Math.random, 'equilibrado');
+    },
+    /** Rasgo de un daskai (las partidas antiguas lo sortean la primera vez). */
+    roleOf(d) {
+      if (!d.role || !D.roles[d.role]) { d.role = d.boss ? 'equilibrado' : api.rollRole(); api.touch(); }
+      return D.roles[d.role];
+    },
+    /** ¿Tiene rasgo? */
+    hasRole(d) { return api.roleOf(d).id !== 'equilibrado'; },
+    /** Atributo base de ESTE daskai: el de su especie con sus genes y su rasgo. */
     baseOf(d, k) {
       const b = D.species[d.species].base[k];
-      return Math.max(1, Math.round(b * (1 + ((d.genes && d.genes[k]) || 0))));
+      const role = (api.roleOf(d).mods || {})[k] || 0;
+      return Math.max(1, Math.round(b * (1 + ((d.genes && d.genes[k]) || 0)) * (1 + role)));
     },
 
     /** Ritmo de crecimiento de un atributo (ver growthWeight) y su etiqueta para la interfaz. */
     growthWeight(d, k) { return growthWeight(d, k); },
+    /**
+     * Puntos que gana de media por nivel en un atributo: nivel × ritmo + naturaleza.
+     * La etiqueta (▲▲ ▲ ● ▼ ▼▼) sale de comparar esta media con la normal, así
+     * que lo que se ve es lo que de verdad sube.
+     */
+    growthAvg(d, k) {
+      const G = DK.config.growth, eff = D.natureEffect(d.nature, k);
+      const lvl = ((G.level[0] + G.level[1]) / 2) * growthWeight(d, k);
+      const nat = eff > 0 ? (G.natureBonus[0] + G.natureBonus[1]) / 2 : eff < 0 ? -(G.naturePenalty[0] + G.naturePenalty[1]) / 2 : 0;
+      return Math.max(0, lvl + nat);
+    },
     growthRate(d, k) {
-      const w = growthWeight(d, k) + D.natureEffect(d.nature, k) * 0.35;
-      return w >= 1.3 ? 'high' : w >= 1.1 ? 'up' : w <= 0.7 ? 'low' : w <= 0.9 ? 'down' : 'normal';
+      const G = DK.config.growth, normal = (G.level[0] + G.level[1]) / 2;
+      const r = api.growthAvg(d, k) / normal;
+      return r >= 1.5 ? 'high' : r >= 1.15 ? 'up' : r <= 0.6 ? 'low' : r <= 0.85 ? 'down' : 'normal';
     },
 
     /* ---------- Mejoras permanentes: tónicos y entrenamiento ---------- */
@@ -307,7 +334,7 @@
       const perm = api.permBonus(d, k), evo = (d.evoBonus && d.evoBonus[k]) || 0;
       const flat = api.baseOf(d, k) + d.growth[k] + equip + perm;
       return {
-        base: api.baseOf(d, k), gene: (d.genes && d.genes[k]) || 0, level: d.growth[k] - nature - evo, nature, natureEffect: D.natureEffect(d.nature, k), evo,
+        base: api.baseOf(d, k), gene: (d.genes && d.genes[k]) || 0, trait: (api.roleOf(d).mods || {})[k] || 0, level: d.growth[k] - nature - evo, nature, natureEffect: D.natureEffect(d.nature, k), evo,
         perm, tonic: ((d.tonics && d.tonics[k]) || 0) * DK.config.tonic.per[k], trained: (d.trained && d.trained[k]) || 0,
         equip, passivePct: pas.mods[k] || 0, bonus: total - flat, total, rate: api.growthRate(d, k),
       };

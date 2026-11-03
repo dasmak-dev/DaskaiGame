@@ -16,7 +16,6 @@
  *   sabiduria   +% de experiencia en todos los combates           (battle.rewards)
  *   mochila     +% de monedas en expediciones                     (expedition.addLoot)
  *   atajo       atajos extra en cada mapa                         (expedition.generate)
- *   instructor  campo de entrenamiento: huecos, ritmo y tope extra (training.instr → config.training.instructor)
  *  Expedición
  *   equipaje    +N unidades en la mochila al salir                (expedition.packCapacity)
  *   provisiones pociones con las que empiezas cada expedición     (expedition.start)
@@ -27,6 +26,8 @@
  *   hoguera     +% de curación en las hogueras del mapa           (expedition.rest)
  *   comercio    ofertas extra en cada mercader                    (expedition.makeOffers)
  *   fenix       salvaciones extra de la muerte por expedición     (rules.maxRevives)
+ *  Rumbos
+ *   rumbo_<tipo>  más probabilidad de que la expedición sea de ese tipo (expedition.kindChances)
  *
  * Para añadir una mejora: añádela aquí, escribe sus textos en
  * lang → camp.up.<id>.{name,desc,effect} y lee DK.camp.value('<id>')
@@ -43,7 +44,6 @@
     { id: 'sabiduria', icon: 'star', group: 'progress', levels: L([1, 0.2], [2, 0.4], [4, 0.7]) },
     { id: 'mochila', icon: 'coin', group: 'progress', levels: L([1, 0.15], [2, 0.3], [4, 0.5]) },
     { id: 'atajo', icon: 'compass', group: 'progress', levels: L([3, 1], [6, 2]) },
-    { id: 'instructor', icon: 'dumbbell', group: 'progress', levels: L([2, 1], [3, 2], [5, 3]) },
     // Expedición
     { id: 'equipaje', icon: 'bag', group: 'expedition', levels: L([1, 4], [2, 8], [3, 14]) },
     { id: 'provisiones', icon: 'flask', group: 'expedition', levels: L([1, 2], [1, 3], [2, 5]) },
@@ -52,6 +52,11 @@
     { id: 'hoguera', icon: 'campfire', group: 'expedition', levels: L([1, 0.15], [2, 0.3]) },
     { id: 'comercio', icon: 'shop', group: 'expedition', levels: L([1, 1], [2, 2]) },
     { id: 'fenix', icon: 'sparkles', group: 'expedition', levels: L([4, 1], [8, 2]) },
+    // Rumbos: más probable que la expedición sea de ese tipo (× (1 + value) su peso)
+    { id: 'rumbo_captura', icon: 'paw', group: 'rumbos', levels: L([2, 0.75], [3, 1.5], [5, 2.5]) },
+    { id: 'rumbo_combate', icon: 'swords', group: 'rumbos', levels: L([2, 0.75], [3, 1.5], [5, 2.5]) },
+    { id: 'rumbo_tesoro', icon: 'gift', group: 'rumbos', levels: L([2, 0.75], [3, 1.5], [5, 2.5]) },
+    { id: 'rumbo_desafio', icon: 'skull', group: 'rumbos', levels: L([3, 0.75], [4, 1.5], [6, 2.5]) },
   ];
-  DK.data.upgradeGroups = ['combat', 'progress', 'expedition'];
+  DK.data.upgradeGroups = ['combat', 'progress', 'expedition', 'rumbos'];
 })();

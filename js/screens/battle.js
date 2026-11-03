@@ -22,7 +22,7 @@
 
   DK.screens.register('battle', {
     title: (p) => D.zones[p.zone].name, icon: 'swords', back: false, nav: false, section: 'battle', tutorial: 'battle',
-    music: (p) => (p.boss ? 'boss' : D.zones[p.zone].scene),
+    music: (p) => (p.boss || p.secret ? (p.secret ? 'boss_secret' : 'boss') : D.zones[p.zone].scene),
     /**
      * Entrada al combate: la pantalla se tapa con una cortinilla, el
      * combate se monta detrás y se descubre. Jefes y mini jefes llevan
@@ -74,8 +74,10 @@
     const toolbar = h('div', { class: 'arena-controls' });
     const ticker = h('button', { class: 'log-ticker', type: 'button', tip: t('battle.expandLog'), onClick: () => expandLog() });
     const autoBadge = h('div', { class: 'auto-badge hidden' }, DK.icon('bolt', 14), h('span', null, t('battle.autoRunning')));
-    const arena = h('div', { class: 'arena' + (st.boss ? ' is-boss' : '') + (st.elite ? ' is-elite' : ''), style: { '--z1': zone.colors[0], '--z2': zone.colors[1] } },
-      DK.scenes.render(zone.scene, zone.colors),
+    // Los jefes tienen su propio fondo (uno por zona y otro para el jefe oculto)
+    const sceneId = st.boss ? DK.scenes.bossScene(zone, st.secret) : zone.scene;
+    const arena = h('div', { class: 'arena' + (st.boss ? ' is-boss' : '') + (st.secret ? ' is-secret' : '') + (st.elite ? ' is-elite' : ''), style: { '--z1': zone.colors[0], '--z2': zone.colors[1] } },
+      DK.scenes.render(sceneId, zone.colors),
       h('div', { class: 'platform p-enemy' }), h('div', { class: 'platform p-ally' }),
       enemyHud, enemySlot, allySlot, allyHud, orderChip, toolbar, ticker, autoBadge, fx, banner);
     // Registro completo (se abre en un panel lateral con L o pulsando las últimas líneas)
@@ -102,7 +104,7 @@
       (st.phases || []).forEach((p) => ui.eHp.querySelector('.bar-track').append(h('i', { class: 'phase-mark', style: { left: p.at * 100 + '%' }, tip: t('phase.name.' + p.type) })));
       enemyHud.replaceChildren(
         h('div', { class: 'hud-title' }, h('b', null, st.boss ? (st.bossInfo || zone.boss).title : sp.name), V.level(e.level)),
-        h('div', { class: 'hud-tags' }, st.boss ? h('span', { class: 'badge leader' }, DK.icon('crown', 13), t('battle.boss')) : null, V.houseBadge(sp.house, { known: st.known }), V.shinyTag(e), ui.eStatus, ui.ePhase),
+        h('div', { class: 'hud-tags' }, st.boss ? h('span', { class: 'badge leader' }, DK.icon('crown', 13), t('battle.boss')) : null, V.houseBadge(sp.house, { known: st.known }), V.roleBadge(e), V.shinyTag(e), ui.eStatus, ui.ePhase),
         ui.eHp, ui.eMp, ui.eBreak, ui.intent);
       updateBreak();
       ui.eSprite = V.dSprite(e, { size: st.boss ? 210 : 180, cls: 'idle' });
@@ -117,7 +119,7 @@
       ui.aLevel = h('span', null, V.level(a.level));
       allyHud.replaceChildren(
         h('div', { class: 'hud-title' }, h('b', null, DK.daskai.name(a)), ui.aLevel),
-        h('div', { class: 'hud-tags' }, V.houseBadge(sp.house), V.shinyTag(a), V.tempTag(a), ui.aStatus),
+        h('div', { class: 'hud-tags' }, V.houseBadge(sp.house), V.roleBadge(a), V.shinyTag(a), V.tempTag(a), ui.aStatus),
         ui.aHp, ui.aMp, ui.aExp);
       ui.aSprite = V.dSprite(a, { size: 210, flip: true, cls: 'idle' });
       allySlot.replaceChildren(ui.aSprite);

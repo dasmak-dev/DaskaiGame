@@ -302,7 +302,7 @@
     if (compact) return h('div', { class: 'exp-map-compact' }, h('div', { class: 'exp-scroll terrain', style: terrain }, map), legend());
     return h('div', { class: 'card exp-map-card' },
       h('div', { class: 'panel-head' }, DK.icon(zone.icon, 18), h('h3', null, zone.name),
-        V.sizeChip(e.size || (e.map && e.map.size)), V.modChip(e.mod || (e.map && e.map.mod)),
+        V.kindChip(e.kind || (e.map && e.map.kind)), V.sizeChip(e.size || (e.map && e.map.size)), V.modChip(e.mod || (e.map && e.map.mod)),
         h('span', { class: 'chip', tip: t('exp.depthTip') }, DK.icon('compass', 13), t('exp.depth', { n: e.depth || 1 })),
         h('span', { class: 'chip' }, DK.icon('flag', 13), t('exp.floor', { step: Math.min(e.step, e.total), total: e.total })),
         readonly ? null : h('span', { class: 'grow' }),
@@ -520,43 +520,65 @@
 
   /**
    * Mercader: la única tienda del juego. Comprar (unidades limitadas por
-   * oferta) o vender lo que llevas en la bolsa.
+   * oferta) o vender lo que llevas. Se paga SÓLO con las monedas del botín
+   * de esta expedición (lo vendido también va al botín).
+   * Lista de filas (todas iguales, sin huecos raros). Cambiar la cantidad
+   * o comprar redibuja sólo este panel, no la pantalla (sin parpadeos).
    */
   const shopUi = { mode: 'buy', qty: {} };
   function merchantPanel(e, refresh) {
     if (shopUi.node !== e.pending) { shopUi.node = e.pending; shopUi.mode = 'buy'; shopUi.qty = {}; }
     DK.keys.on('Enter', () => { E().completeNode(); refresh(); });
-    const q = (k) => shopUi.qty[shopUi.mode + k] || 1;
-    const setQ = (k) => (n) => { shopUi.qty[shopUi.mode + k] = n; refresh(); };
-    const sellable = DK.bag.list().filter((x) => DK.shop.canSell(x.item.id));
-    const mode = DK.ui.segmented({ value: shopUi.mode, onChange: (v) => { shopUi.mode = v; refresh(); },
-      options: [{ value: 'buy', label: t('shop.buy'), icon: 'bag' }, { value: 'sell', label: `${t('shop.sell')} (${sellable.length})`, icon: 'coin' }] });
-    let grid;
-    if (shopUi.mode === 'buy') {
-      grid = h('div', { class: 'shop-grid side' }, (e.offers || []).map((o, i) => {
-        if (o.left == null) o.left = o.sold ? 0 : 1;
-        const it = D.items[o.id];
-        const n = Math.min(q(i), Math.max(1, o.left));
-        const buy = () => { if (E().buyOffer(i, n)) { DK.audio.sfx('coin'); DK.ui.toast(t('shop.bought', { item: it.name, n }), { icon: 'bag', kind: 'good' }); shopUi.qty['buy' + i] = 1; refresh(); } else DK.audio.sfx('error'); };
-        if (o.left > 0 && i < 9) DK.keys.on(String(i + 1), buy);
-        return V.shopCard(o.id, { price: o.price, oldPrice: D.prices[o.id], sold: o.left <= 0, qty: n, max: o.left, onQty: o.left > 1 ? setQ(i) : null, hotkey: i < 9 ? String(i + 1) : null, onBuy: buy,
-          badges: o.left > 0 ? [h('span', { class: 'badge' }, t('shop.left', { n: o.left }))] : [] });
-      }));
-    } else {
-      grid = sellable.length ? h('div', { class: 'shop-grid side' }, sellable.map(({ item, qty }) => {
-        const n = Math.min(q(item.id), qty);
-        return V.shopCard(item.id, { mode: 'sell', price: DK.shop.sellPrice(item.id), qty: n, max: qty, onQty: qty > 1 ? setQ(item.id) : null,
-          onBuy: () => { const coins = DK.shop.sellPrice(item.id) * n; DK.shop.sell(item.id, n); DK.ui.toast(t('shop.soldN', { item: item.name, n, coins }), { icon: 'coin', kind: 'good' }); shopUi.qty['sell' + item.id] = 1; refresh(); } });
-      })) : DK.ui.empty('coin', t('shop.nothingToSell'), '');
-    }
-    return h('div', { class: 'card stack-s merchant' }, head('shop', t('exp.node.shop'), t('exp.shopText2')),
-      h('div', { class: 'row between wrap gap-s' }, mode,
-        h('div', { class: 'row gap-s' },
-          h('span', { class: 'shop-wallet', tip: t('exp.lootCoinsTip') }, DK.icon('flag', 14), ' ', V.coins(e.loot.coins)),
-          h('span', { class: 'shop-wallet', tip: t('exp.yourCoins') }, DK.icon('user', 14), ' ', V.coins(DK.wallet.get())))),
-      shopUi.mode === 'buy' ? h('p', { class: 'muted small' }, t('exp.payNote')) : null,
-      shopUi.mode === 'sell' ? h('p', { class: 'muted small' }, t('shop.sellHelp2', { n: Math.round(DK.config.sellRatio * 100) })) : null,
-      grid, cont(refresh));
+    const card = h('div', { class: 'card stack-s merchant' });
+    const draw = () => {
+      const coins = e.loot.coins;
+      const q = (k) => shopUi.qty[shopUi.mode + k] || 1;
+      const sellable = DK.bag.list().filter((x) => DK.shop.canSell(x.item.id));
+      const stepper = (k, n, max) => h('span', { class: 'mr-qty', role: 'group', 'aria-label': t('shop.qty') },
+        h('button', { type: 'button', class: 'pk-btn', 'aria-label': '−', disabled: n <= 1, onClick: () => { shopUi.qty[shopUi.mode + k] = Math.max(1, n - 1); DK.audio.sfx('click'); draw(); } }, DK.icon('minus', 13)),
+        h('b', null, String(n)),
+        h('button', { type: 'button', class: 'pk-btn', 'aria-label': '+', disabled: n >= max, onClick: () => { shopUi.qty[shopUi.mode + k] = Math.min(max, n + 1); DK.audio.sfx('click'); draw(); } }, DK.icon('plus', 13)));
+      const row = ({ id, price, left, k, sell, owned }) => {
+        const it = D.items[id];
+        const max = sell ? owned : left;
+        const n = Math.max(1, Math.min(q(k), max || 1));
+        const total = price * n, sold = !sell && left <= 0, cant = !sell && total > coins;
+        const act = () => {
+          if (sell) { DK.shop.sell(id, n); DK.audio.sfx('coin'); DK.ui.toast(t('shop.soldN', { item: it.name, n, coins: total }), { icon: 'coin', kind: 'good' }); }
+          else if (E().buyOffer(k, n)) { DK.audio.sfx('coin'); DK.ui.toast(t('shop.bought', { item: it.name, n }), { icon: 'bag', kind: 'good' }); }
+          else { DK.audio.sfx('error'); return; }
+          shopUi.qty[shopUi.mode + k] = 1; draw();
+          // el botín de la cabecera y de la barra también cambian (sin repintar la pantalla)
+          if (DK.app.renderRes) DK.app.renderRes();
+          document.querySelectorAll('[data-loot-coins]').forEach((el) => { el.textContent = t('exp.lootNow', { items: E().lootCount(), coins: e.loot.coins }); });
+        };
+        return h('div', { class: 'mr-row r-' + it.rarity + (sold ? ' sold' : ''), tip: it.desc },
+          h('span', { class: 'mr-icon' }, V.itemIcon(it, 26)),
+          h('span', { class: 'mr-main' }, h('b', null, it.name), h('span', { class: 'muted small' }, V.useText(it) || it.desc),
+            h('span', { class: 'mr-meta small' }, V.rarity(it.rarity),
+              sell ? h('span', { class: 'muted' }, t('shop.haveN', { n: owned })) : h('span', { class: left ? '' : 'muted' }, t('shop.left', { n: left })),
+              h('span', { class: 'muted' }, DK.icon('bag', 11), ' ', DK.bag.count(id)))),
+          h('span', { class: 'mr-price' }, DK.icon('coin', 15), h('b', null, price.toLocaleString(DK.i18n.lang))),
+          sold ? h('span', { class: 'badge good mr-sold' }, DK.icon('check', 13), t('exp.sold'))
+            : h('span', { class: 'mr-buy' }, max > 1 ? stepper(k, n, max) : null,
+              btn({ icon: sell ? 'coin' : 'bag', label: (sell ? t('shop.sellFor', { n: total }) : t('shop.buyFor', { n: total })), size: 'sm', variant: sell ? 'tone' : cant ? 'ghost' : 'primary', disabled: cant,
+                tip: cant ? t('shop.missing', { n: total - coins }) : null, onClick: act })));
+      };
+      const list = shopUi.mode === 'buy'
+        ? (e.offers || []).map((o, i) => { if (o.left == null) o.left = o.sold ? 0 : 1; return row({ id: o.id, price: o.price, left: o.left, k: i }); })
+        : sellable.map(({ item, qty }) => row({ id: item.id, price: DK.shop.sellPrice(item.id), k: item.id, sell: true, owned: qty }));
+      const tabs = h('div', { class: 'mr-tabs', role: 'tablist' }, [['buy', 'bag', t('shop.buy')], ['sell', 'coin', `${t('shop.sell')} (${sellable.length})`]].map(([id, ic, label]) =>
+        h('button', { class: 'mr-tab' + (shopUi.mode === id ? ' on' : ''), type: 'button', role: 'tab', 'aria-selected': String(shopUi.mode === id), onClick: () => { shopUi.mode = id; DK.audio.sfx('select'); draw(); } }, DK.icon(ic, 15), label)));
+      card.replaceChildren(
+        head('shop', t('exp.node.shop'), t('exp.shopText2')),
+        h('div', { class: 'mr-bar' }, tabs,
+          h('span', { class: 'mr-purse', tip: t('exp.lootCoinsTip') }, DK.icon('gift', 15), h('small', null, t('exp.loot')), V.coins(coins))),
+        h('p', { class: 'muted small mr-note' }, shopUi.mode === 'buy' ? t('exp.payNoteLoot') : t('shop.sellHelpLoot', { n: Math.round(DK.config.sellRatio * 100) })),
+        list.length ? h('div', { class: 'mr-list' }, list) : DK.ui.empty('coin', t('shop.nothingToSell'), ''),
+        cont(refresh));
+    };
+    draw();
+    return card;
   }
 
   /**
@@ -661,7 +683,7 @@
         return h('div', { class: 'recruit-card', style: { '--c': D.houseColor(sp.house) } },
           h('div', { class: 'recruit-art' }, V.dSprite(c, { size: 84, cls: 'float' })),
           h('div', { class: 'row gap-s wrap' }, h('b', null, sp.name), V.level(c.level), V.shinyTag(c)),
-          h('div', { class: 'row gap-s wrap' }, V.houseBadge(sp.house)),
+          h('div', { class: 'row gap-s wrap' }, V.houseBadge(sp.house), V.roleBadge(c)),
           h('div', { class: 'chips' },
             h('span', { class: 'chip', tip: DK.tr('natures', D.natures[c.nature], 'desc') }, DK.icon('leaf', 13), DK.tr('natures', D.natures[c.nature])),
             h('span', { class: 'chip', tip: DK.tr('passives', D.passives[c.passive], 'desc') }, DK.icon('sparkle', 13), DK.tr('passives', D.passives[c.passive]))),
@@ -845,6 +867,27 @@
     if (cur && !['mainMenu', 'newGame', 'battle'].includes(cur.id)) DK.ui.toast(t('exp.focusOnly'), { icon: 'flag' });
     return { id: 'expedition' };
   };
+  /*
+   * Fondo de la zona durante la expedición: la escena de la zona actual,
+   * oscurecida, detrás de todas las pantallas (mapa, equipo, mochila).
+   * En combate la escena va dentro de la arena.
+   */
+  DK.on('screen:enter', ({ id }) => {
+    const e = E().active();
+    let bd = document.getElementById('zone-backdrop');
+    const on = !!e && ['expedition', 'team', 'inventory', 'battle'].includes(id);
+    document.body.classList.toggle('in-exp', on);
+    if (!on) { if (bd) bd.classList.remove('on'); return; }
+    const z = D.zones[e.zone];
+    if (!bd) { bd = h('div', { id: 'zone-backdrop', 'aria-hidden': 'true' }); document.body.prepend(bd); }
+    if (bd.dataset.zone !== z.id) {
+      bd.dataset.zone = z.id;
+      bd.style.setProperty('--z1', z.colors[0]); bd.style.setProperty('--z2', z.colors[1]);
+      bd.replaceChildren(h('div', { class: 'zb-sky' }), DK.scenes.render(z.scene, z.colors));
+    }
+    requestAnimationFrame(() => bd.classList.add('on'));
+  });
+
   DK.menus.add('nav', { id: 'expmap', icon: 'map', order: 5, screen: 'expedition', expedition: 'only', label: () => t('nav.expMap'), badge: () => (E().active() && E().active().awaitingChoice ? '!' : '') });
 
   /** Tarjeta de la barra lateral durante una expedición: zona, mapa y piso. */
@@ -858,13 +901,14 @@
 
   DK.screens.register('expedition', {
     title: () => { const e = E().active(); return e ? t('exp.title', { zone: D.zones[e.zone].name }) : t('exp.titleNone'); },
-    icon: 'flag', section: 'battle', music: 'menu', tutorial: 'expedition',
+    icon: 'flag', section: 'battle', music: () => DK.audio.zoneTrack(), tutorial: 'expedition',
     render(params) {
       const refresh = () => DK.router.refresh();
       const e = E().active();
       if (!e) return h('div', { class: 'screen' }, DK.ui.empty('flag', t('exp.none'), t('exp.noneText')),
         btn({ icon: 'map', label: t('nav.battle'), variant: 'primary', onClick: () => DK.router.reset('zones') }));
       E().ensureMap(); E().ensureFields();
+      DK.audio.music(DK.audio.zoneTrack()); // al pasar a un mapa nuevo cambia la música de la zona
       // Cortinilla al llegar a un mapa nuevo (una vez por mapa)
       const introKey = `${e.depth || 1}|${e.seed}`;
       if (e.introShown !== introKey) {
@@ -883,10 +927,10 @@
         return h('div', { class: 'screen exp-screen exp-focus' },
           h('div', { class: 'exp-focus-bar', style: { '--z1': zone.colors[0], '--z2': zone.colors[1] } },
             DK.icon(zone.icon, 18), h('b', null, zone.name),
-            V.sizeChip(e.size), V.modChip(e.mod), e.awaitingChoice ? null : V.questChip(),
+            V.kindChip(e.kind), V.sizeChip(e.size), V.modChip(e.mod), e.awaitingChoice ? null : V.questChip(),
             h('span', { class: 'chip', tip: t('exp.depthTip') }, DK.icon('compass', 13), t('exp.depth', { n: e.depth || 1 })),
             h('span', { class: 'chip' }, DK.icon('flag', 13), t('exp.floor', { step: Math.min(e.step, e.total), total: e.total })),
-            h('span', { class: 'chip', tip: t('exp.lootCoinsTip') }, DK.icon('gift', 13), t('exp.lootNow', { items: E().lootCount(), coins: e.loot.coins })),
+            h('span', { class: 'chip', tip: t('exp.lootCoinsTip') }, DK.icon('gift', 13), h('span', { 'data-loot-coins': '1' }, t('exp.lootNow', { items: E().lootCount(), coins: e.loot.coins }))),
             h('span', { class: 'grow' }), relicBar()),
           h('div', { class: 'exp-focus-body' }, focus));
       }
