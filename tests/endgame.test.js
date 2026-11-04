@@ -7,6 +7,55 @@ const bosses = (n) => `(() => { Object.keys(DK.data.zones).filter((z) => !DK.dat
 module.exports = {
   name: 'Final del juego',
   cases: [{
+    name: 'Desafío semanal: mapa fijo de la semana, pactos obligatorios, sin gastar runas y tabla de récords',
+    run: (browser, view) => play(browser, view, async (p) => {
+      const r = await p.evaluate((B) => {
+        eval(B);
+        const W = DK.weekly, d1 = JSON.stringify(W.def()), d2 = JSON.stringify(W.def());
+        DK.runes.add('oro', 1); DK.store.state.nextExpedition = null; const n0 = DK.expedition.nextStart(); DK.runes.socket('oro');
+        const e = W.start({});
+        const w = W.def();
+        const same = e.seed === w.seed && e.size === w.size && e.kind === w.kind && e.mod === w.mod;
+        const curses = DK.curses.active().slice().sort().join() === w.curses.slice().sort().join();
+        const runeKept = DK.runes.count('oro') === 1 && (DK.store.state.nextExpedition || {}).zone === n0.zone;
+        e.cleared = e.map.rows.flat().slice(0, 5).map((n) => n.id); e.loot.coins = 300;
+        DK.expedition.claim(false);
+        const s1 = DK.store.state.lastExpedition.weekly;
+        return { stable: d1 === d2, same, curses, runeKept, s1, tries: W.tries(), board: W.board().length, unlocked: W.unlocked() };
+      }, bosses(1));
+      check(r.unlocked && r.stable && r.same, 'el desafío no usa el mapa fijo de la semana: ' + JSON.stringify(r));
+      check(r.curses, 'los pactos de la semana deberían ser obligatorios');
+      check(r.runeKept, 'el desafío no debería gastar las runas ni cambiar la expedición preparada');
+      check(r.s1 && r.s1.score === 5 * 100 + 30 && r.s1.isBest && r.tries === 1 && r.board === 1, 'no se guarda el intento: ' + JSON.stringify(r.s1));
+    }),
+  }, {
+    name: 'Runas con rareza: mágicas/raras con modificadores, pisos según el tier de la runa de tamaño y fundir sin importar la rareza',
+    run: (browser, view) => play(browser, view, async (p) => {
+      const r = await p.evaluate(() => {
+        const R = DK.runes;
+        const rolls = Array.from({ length: 400 }, () => R.parse(R.roll1('oro', 1)).rarity);
+        const mag = R.make('small', 2, 'm', [{ k: 'elitePct', v: 60 }]), rare = R.make('oro', 1, 'r', [{ k: 'coins', v: 15 }, { k: 'treasures', v: 2 }]);
+        const p1 = R.parse(rare);
+        const floors = {};
+        ['small', 'medium', 'xl'].forEach((sz) => [1, 2, 3].forEach((tt) => { floors[sz + tt] = R.mapExtra([R.make(sz, tt)]).rows + 2; }));
+        R.add(mag); R.add(rare);
+        DK.store.state.nextExpedition = { zone: 'pradera', seed: 'rr', size: 'medium', kind: 'normal', mod: null };
+        R.socket(mag); R.socket(rare);
+        const pv = DK.expedition.preview(), flat = pv.map.rows.flat();
+        const bonusCoins = R.bonus('coins', R.slots());
+        // fundir: 2 normales + 1 rara del mismo tier → tier II raro
+        R.add('saber', 2); R.add(R.make('saber', 1, 'r', [{ k: 'exp', v: 10 }, { k: 'caves', v: 1 }])); DK.wallet.add(5000, { silent: true });
+        const fused = R.fuse('saber');
+        return { m: rolls.filter((x) => x === 'm').length, rr: rolls.filter((x) => x === 'r').length, n: rolls.filter((x) => x === 'n').length, p1, floors, rows: pv.map.rows.length, elites: flat.filter((n) => n.type === 'elite').length, treasures: flat.filter((n) => n.type === 'treasure').length, bonusCoins, fused, fusedP: R.parse(fused), left: R.countKey('saber') };
+      });
+      check(r.m > 40 && r.rr > 5 && r.n > 150, 'las rarezas no salen en su proporción: ' + JSON.stringify([r.n, r.m, r.rr]));
+      check(r.p1.rarity === 'r' && r.p1.affixes.length === 2, 'una runa rara debería tener 2 modificadores');
+      check(r.floors.small1 === 8 && r.floors.small2 === 14 && r.floors.small3 === 18 && r.floors.medium1 === 14 && r.floors.xl3 === 36, 'los pisos por tier no cuadran: ' + JSON.stringify(r.floors));
+      check(r.elites >= 3 && r.treasures >= 2, 'los modificadores no cambian el mapa: ' + JSON.stringify(r));
+      check(Math.abs(r.bonusCoins - (0.25 + 0.15)) < 1e-9, 'el modificador de monedas no se suma: ' + r.bonusCoins);
+      check(r.fusedP.tier === 2 && r.fusedP.rarity === 'r' && r.fusedP.affixes.length === 2 && r.left === 0, 'fundir debería dar tier II con la rareza más alta: ' + JSON.stringify(r.fusedP));
+    }),
+  }, {
     name: 'Runas con tier: se funden 3 en 1, multiplican su efecto y suben emblemas; las de final de juego cambian el mapa',
     run: (browser, view) => play(browser, view, async (p) => {
       const r = await p.evaluate((B) => {

@@ -89,7 +89,7 @@
     const pick = (weights) => U.weightedKey(weights, rnd, 'fight');
     // Tamaño del mapa (config.expedition.sizes): pisos, cuevas, atajos y hogueras
     const sz = cfg().sizes[size] || cfg().sizes.small;
-    const c = Object.assign({}, cfg(), { rows: sz.rows, caveMin: sz.caves + (extra.caves || 0), shortcuts: extra.noShortcuts ? [0, 0] : sz.shortcuts, rests: extra.noRest ? 0 : sz.rests });
+    const c = Object.assign({}, cfg(), { rows: extra.rows || sz.rows, caveMin: sz.caves + (extra.caves || 0), shortcuts: extra.noShortcuts ? [0, 0] : sz.shortcuts, rests: extra.noRest ? 0 : sz.rests });
     // Modificador del mapa: cambia el peso de algunos nodos (p. ej. luna llena → más mini jefes)
     const md = mod && D.mapMods[mod];
     if (md && md.weights) { c.weights = Object.assign({}, c.weights); Object.entries(md.weights).forEach(([k, m]) => { c.weights[k] = (c.weights[k] || 0) * m; }); }
@@ -154,6 +154,14 @@
         const pool = rows.slice(type === 'elite' ? Math.min(c.eliteFrom, c.rows - 1) : 1).flat().filter((n) => (n.type === 'fight' || n.type === 'event') && !(type === 'recruit' && !kd.multiRecruit && rows[n.row].some((x) => x.type === 'recruit')));
         if (!pool.length) break;
         U.pick(pool, rnd).type = type;
+      }
+    });
+    // Modificadores de las runas mágicas/raras: combates → élites, tesoros y reclutas extra
+    if (extra.elitePct) rows.slice(Math.min(c.eliteFrom, c.rows - 1)).flat().forEach((n) => { if (n.type === 'fight' && rnd() < extra.elitePct) n.type = 'elite'; });
+    [['treasure', extra.treasures], ['recruit', extra.recruits]].forEach(([type, k]) => {
+      for (let i = 0; i < (k || 0); i++) {
+        const pool = rows.slice(1).flat().filter((n) => n.type === 'fight' || n.type === 'event');
+        if (pool.length) U.pick(pool, rnd).type = type;
       }
     });
     // Hogueras repartidas por el camino (para descansar o volver a casa): 1, 2 o 3 según el tamaño
@@ -931,7 +939,7 @@
       const lv = U.clamp(zone.levels[0] + node.row, zone.levels[0], zone.levels[1]) + DK.camp.value('reclutador') + this.levelBonus();
       return species.map((sp) => {
         // Variocolor: más probable que en combate (y aún más en una expedición de captura)
-        const shiny = U.chance(cfg().recruitShinyChance + (this.kindDef().shiny || 0) + DK.endgame.shiny(sp));
+        const shiny = U.chance(cfg().recruitShinyChance + (this.kindDef().shiny || 0) + DK.endgame.shiny(sp) + DK.runes.bonus('shiny'));
         const d = DK.daskai.create(sp, U.clamp(lv + U.rand(-1, 1), 1, DK.config.maxLevel), { wild: true, shiny });
         DK.daskai.fullHeal(d);
         return d;
@@ -1022,6 +1030,8 @@
         fallen: (e.log.fallen || []).slice(), difficulty: DK.rules.difficulty(),
         size: e.size || 'small', mod: e.mod || null, marks: e.marks || null,
         emblems: e.log.emblems || 0, timeline: (e.log.timeline || []).slice(), secrets: (e.log.secrets || []).slice(), shortcuts: e.log.shortcuts || 0, runes: (e.log.runes || []).slice(), runesUsed: (e.runesUsed || []).slice(),
+        // Desafío semanal: puntos, récord y premio (DK.weekly)
+        weekly: e.weekly && DK.weekly ? DK.weekly.record(e, outcome) : null,
       }, extra);
       // Historial de expediciones (Perfil): las últimas config.expHistorySize
       st().expHistory = st().expHistory || [];

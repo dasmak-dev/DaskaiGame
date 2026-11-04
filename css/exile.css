@@ -1,0 +1,148 @@
+/* =============================================================
+ * css/exile.css — Estilo «Exilio» (v4.36), inspirado en los ARPG oscuros
+ * tipo Path of Exile 2. Ajustes → Apariencia → Estilo → Exilio (por defecto).
+ *
+ * Se activa con <html data-skin="exile"> sobre el estilo limpio
+ * (data-style="clean") y sólo con tema oscuro; con tema claro se ve el
+ * estilo limpio. Rasgos:
+ *   · Fondo de piedra casi negra con grano y viñeta.
+ *   · Paneles de metal oscuro, esquinas casi rectas, borde de bronce fino
+ *     y remates dorados en las cuatro esquinas.
+ *   · Títulos grabados (Cinzel) en oro viejo con filigranas a los lados.
+ *   · Botones como placas de hierro con canto biselado; el principal,
+ *     lacre granate con filo dorado.
+ *   · Barras enmarcadas, pestañas de cuero y bronce, tooltips de objeto.
+ *   · Rarezas con los colores clásicos: normal, mágico (azul), raro
+ *     (amarillo) y único (naranja).
+ * X = prefijo con especificidad suficiente para ganar al estilo limpio.
+ * ============================================================= */
+:root[data-skin="exile"]:not([data-theme="light"]) {
+  --ex-bg: #0a0908; --ex-panel: linear-gradient(180deg, #17130f 0%, #100d0b 100%);
+  --ex-panel-2: rgba(0, 0, 0, .28); --ex-line: #3a3024; --ex-line-2: #5a4a32; --ex-gold: #c8a96a; --ex-gold-2: #e8d3a0;
+  --ex-text: #d6ccb6; --ex-muted: #8a7f6c; --ex-red: #7a1c12;
+  --text: var(--ex-text); --muted: var(--ex-muted); --gold: var(--ex-gold);
+  --surface: #14110e; --surface-2: #1a1612; --surface-3: #241e17; --border: var(--ex-line);
+  --cl-line: rgba(200, 169, 106, .14); --cl-line-2: rgba(200, 169, 106, .3);
+  --cl-card: var(--ex-panel); --cl-r: 4px; --cl-r-s: 3px; --radius: 4px; --radius-sm: 3px; --radius-lg: 6px;
+  --cl-shadow: 0 0 0 1px #000, 0 1px 0 rgba(255, 230, 180, .04) inset, 0 14px 30px -12px rgba(0, 0, 0, .9);
+  --cl-focus: 0 0 0 2px rgba(200, 169, 106, .45);
+  --r-comun: #c8c8c8; --r-raro: #8888ff; --r-epico: #ffff77; --r-legendario: #af6025;
+  /* Remates dorados en las esquinas (se suman al fondo de los paneles) */
+  --ex-corners:
+    linear-gradient(var(--ex-gold), var(--ex-gold)) top left / 9px 1px no-repeat, linear-gradient(var(--ex-gold), var(--ex-gold)) top left / 1px 9px no-repeat,
+    linear-gradient(var(--ex-gold), var(--ex-gold)) top right / 9px 1px no-repeat, linear-gradient(var(--ex-gold), var(--ex-gold)) top right / 1px 9px no-repeat,
+    linear-gradient(var(--ex-gold), var(--ex-gold)) bottom left / 9px 1px no-repeat, linear-gradient(var(--ex-gold), var(--ex-gold)) bottom left / 1px 9px no-repeat,
+    linear-gradient(var(--ex-gold), var(--ex-gold)) bottom right / 9px 1px no-repeat, linear-gradient(var(--ex-gold), var(--ex-gold)) bottom right / 1px 9px no-repeat;
+}
+
+/* ---------- Fondo: piedra oscura con grano y viñeta ---------- */
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] body {
+  background:
+    radial-gradient(ellipse 90% 60% at 50% -5%, rgba(150, 90, 40, .12), transparent 60%),
+    radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, .75)),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .8 0 0 0 0 .7 0 0 0 0 .55 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"),
+    var(--ex-bg);
+  background-attachment: fixed;
+  color: var(--ex-text);
+}
+
+/* ---------- Paneles ---------- */
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] :is(.card, .panel) { border: 1px solid var(--ex-line-2); border-radius: 4px; background: var(--ex-corners), var(--ex-panel); box-shadow: var(--cl-shadow); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] :is(.card, .panel) :is(.card, .panel) { background: var(--ex-panel-2); border-color: var(--ex-line); box-shadow: inset 0 1px 0 rgba(255, 230, 180, .03); border-radius: 3px; }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .panel-head { border-bottom: 1px solid transparent; border-image: linear-gradient(90deg, transparent, var(--ex-line-2) 15%, var(--ex-gold) 50%, var(--ex-line-2) 85%, transparent) 1; }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] :is(.panel-head h3, .card > h3, .section-head h3, .modal-head h3, .drawer-head h3, h2) { font-family: var(--font-title); color: var(--ex-gold-2); letter-spacing: .06em; font-weight: 700; text-shadow: 0 1px 0 #000, 0 0 12px rgba(200, 150, 70, .15); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .panel-head > .icon, :root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .section-head > .icon { color: var(--ex-gold); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .inv-group-head { color: var(--ex-gold); font-family: var(--font-title); letter-spacing: .12em; font-size: .72rem; }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .inv-group-head::after { content: ''; flex: 1; height: 1px; margin-left: 6px; background: linear-gradient(90deg, var(--ex-line-2), transparent); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] :is(.modal, .drawer) { border: 1px solid var(--ex-line-2); border-radius: 4px; background: var(--ex-corners), linear-gradient(180deg, #1a1511, #0e0c0a); box-shadow: 0 0 0 1px #000, 0 0 0 3px rgba(58, 48, 36, .6), 0 40px 90px -20px #000; }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] :is(.modal-head, .drawer-head) { background: linear-gradient(180deg, rgba(200, 169, 106, .08), transparent); border-bottom: 1px solid var(--ex-line); color: var(--ex-gold); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .muted { color: var(--ex-muted); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .warning { border-radius: 3px; border-color: var(--ex-line); background: rgba(0, 0, 0, .3); }
+
+/* ---------- Botones: placas de hierro ---------- */
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .btn { border-radius: 3px; border: 1px solid var(--ex-line-2); background: linear-gradient(180deg, #2a241d, #16120f); color: var(--ex-text); box-shadow: inset 0 1px 0 rgba(255, 230, 180, .09), inset 0 -1px 0 rgba(0, 0, 0, .6), 0 1px 0 rgba(0, 0, 0, .7); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .btn .btn-label { font-family: var(--font-title); font-weight: 700; font-size: .8rem; letter-spacing: .07em; }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .btn-sm .btn-label { font-size: .72rem; }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .btn .btn-desc { font-family: var(--font); letter-spacing: 0; }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .btn .icon { color: var(--ex-gold); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .btn:hover:not(:disabled) { border-color: #a88a55; color: #f3e6c4; background: linear-gradient(180deg, #342c22, #1b1712); box-shadow: inset 0 1px 0 rgba(255, 230, 180, .12), 0 0 0 1px rgba(0, 0, 0, .6), 0 0 14px -2px rgba(200, 150, 70, .35); transform: none; }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .btn:active:not(:disabled) { background: linear-gradient(180deg, #14110d, #211b15); transform: translateY(1px); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .btn-primary { border-color: #b08a4e; background: linear-gradient(180deg, #6a2116 0%, #431109 55%, #2e0b06 100%); color: #f3dfb3; box-shadow: inset 0 1px 0 rgba(255, 200, 150, .22), inset 0 0 0 1px rgba(0, 0, 0, .35), 0 0 0 1px #000, 0 6px 16px -6px rgba(140, 30, 15, .7); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .btn-primary .icon { color: #f3dfb3; }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .btn-primary:hover:not(:disabled) { border-color: #e2c58a; background: linear-gradient(180deg, #82291c 0%, #55160d 55%, #3a0e08 100%); box-shadow: inset 0 1px 0 rgba(255, 210, 160, .28), 0 0 0 1px #000, 0 0 18px -2px rgba(220, 120, 60, .5); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .btn-ghost { background: transparent; border-color: transparent; box-shadow: none; }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .btn-ghost:hover:not(:disabled) { background: rgba(200, 169, 106, .07); border-color: var(--ex-line); box-shadow: none; }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .btn-tone { background: linear-gradient(180deg, #221d17, #13100d); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .btn-danger { border-color: #8a2a1e; background: linear-gradient(180deg, #4a120c, #260906); color: #f2c8b8; }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .icon-btn { border-radius: 3px; border-color: var(--ex-line); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .btn-lg .icon { border-radius: 3px; background: rgba(0, 0, 0, .35); box-shadow: inset 0 0 0 1px var(--ex-line); }
+
+/* ---------- Pestañas, selectores, chips ---------- */
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .inv-tabs { border-radius: 3px; padding: 3px; gap: 2px; background: rgba(0, 0, 0, .45); border: 1px solid var(--ex-line); box-shadow: inset 0 1px 3px rgba(0, 0, 0, .8); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .inv-tabs > button { border-radius: 2px; color: var(--ex-muted); font-family: var(--font-title); font-size: .78rem; letter-spacing: .06em; font-weight: 700; }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .inv-tabs > button:hover { color: var(--ex-text); background: rgba(200, 169, 106, .06); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .inv-tabs > button.on { color: var(--ex-gold-2); background: linear-gradient(180deg, #2c251c, #18140f); box-shadow: inset 0 0 0 1px var(--ex-line-2), inset 0 2px 0 -1px var(--ex-gold), 0 0 12px -4px rgba(200, 169, 106, .5); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .inv-tabs > button b { border-radius: 2px; background: rgba(0, 0, 0, .4); font-family: var(--font); letter-spacing: 0; }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .inv-tabs > button.on b { color: var(--ex-gold-2); background: rgba(200, 169, 106, .14); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .seg[role="radiogroup"] { border-radius: 3px; background: rgba(0, 0, 0, .45); border-color: var(--ex-line); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .seg[role="radiogroup"] .btn { border-radius: 2px; background: transparent; box-shadow: none; border: 0; }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .seg[role="radiogroup"] .btn-primary { background: linear-gradient(180deg, #2c251c, #18140f); color: var(--ex-gold-2); box-shadow: inset 0 0 0 1px var(--ex-line-2), inset 0 2px 0 -1px var(--ex-gold); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .tabs { border-bottom-color: var(--ex-line); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .tab.active { color: var(--ex-gold-2); border-bottom-color: var(--ex-gold); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .chip { border-radius: 2px; border-color: var(--ex-line); background: rgba(0, 0, 0, .35); color: var(--ex-text); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .chip .icon { color: var(--ex-gold); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .badge { border-radius: 2px; }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] :is(.input, .select, select, textarea, .inv-search input) { border-radius: 2px; border-color: var(--ex-line-2); background-color: rgba(0, 0, 0, .45); box-shadow: inset 0 1px 3px rgba(0, 0, 0, .8); color: var(--ex-text); }
+
+/* ---------- Barras enmarcadas ---------- */
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .bar-track { height: 8px; border-radius: 1px; border: 1px solid #000; background: #0b0907; box-shadow: 0 0 0 1px var(--ex-line); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .bar-fill { border-radius: 0; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), inset 0 -2px 0 rgba(0, 0, 0, .25); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .bar-mp .bar-fill { background: linear-gradient(90deg, #142f78, #3a6be0); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .bar-exp .bar-fill { background: linear-gradient(90deg, #6b4a12, #d4a948); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .bar-exp .bar-track { height: 6px; }
+
+/* ---------- Cabecera y barra de accesos ---------- */
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .game-hud { background: linear-gradient(180deg, #16120e, #0c0a08); border-bottom: 1px solid transparent; border-image: linear-gradient(90deg, transparent, var(--ex-line-2) 20%, var(--ex-gold) 50%, var(--ex-line-2) 80%, transparent) 1; box-shadow: 0 10px 30px -10px #000; backdrop-filter: none; }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .hud-ribbon { color: var(--ex-gold-2); font-family: var(--font-title); letter-spacing: .14em; text-transform: uppercase; font-size: .95rem; text-shadow: 0 1px 0 #000, 0 0 14px rgba(200, 150, 70, .3); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .hud-ribbon::before, :root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .hud-ribbon::after { content: ''; width: 34px; height: 7px; flex: none; background: linear-gradient(90deg, transparent, var(--ex-gold)) center / 100% 1px no-repeat, linear-gradient(45deg, transparent 40%, var(--ex-gold) 40% 60%, transparent 60%) right center / 7px 7px no-repeat; opacity: .8; }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .hud-ribbon::after { transform: scaleX(-1); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .hud-pill { border-radius: 2px; border-color: var(--ex-line); background: rgba(0, 0, 0, .45); box-shadow: inset 0 1px 3px rgba(0, 0, 0, .8); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .hud-pill b { color: var(--ex-gold-2); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .dock-bar { border-radius: 4px; border: 1px solid var(--ex-line-2); background: var(--ex-corners), linear-gradient(180deg, #1b1612, #0d0b09); box-shadow: 0 0 0 1px #000, 0 20px 50px -14px #000; backdrop-filter: none; }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .dock-slot { border-radius: 2px; color: var(--ex-muted); font-family: var(--font-title); letter-spacing: .04em; font-size: .7rem; }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .dock-slot:hover { color: var(--ex-text); background: rgba(200, 169, 106, .06); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .dock-slot.active { color: var(--ex-gold-2); background: radial-gradient(ellipse at 50% 100%, rgba(200, 150, 70, .25), transparent 70%); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .dock-slot.active::after { left: 20%; right: 20%; bottom: 2px; height: 1px; background: linear-gradient(90deg, transparent, var(--ex-gold), transparent); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .dock-slot.main { border-color: var(--ex-line-2); color: var(--ex-gold); }
+
+/* ---------- Fichas, rejillas y avisos ---------- */
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] :is(.dk-row, .item-card, .move-card, .tile, .inv-row, .tr-tile, .wb-tile, .cx-card, .cx-zone, .cx-boss, .relic-row, .rest-opt, .loot-card, .party-mon, .exp-hist, .fav-item, .tr-boost, .wk-entry, .pf-feat-row) { border-radius: 3px; }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] :is(.dk-row, .item-card, .tile, .inv-row, .tr-tile, .wb-tile, .cx-card, .wk-entry, .tr-boost, .exp-hist, .fav-item) { border-color: var(--ex-line); background-color: rgba(0, 0, 0, .3); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] :is(.dk-row, .item-card, .tile, .tr-tile, .wb-tile, .cx-card, .cx-zone, .fav-item):hover:not(:disabled) { border-color: #a88a55; box-shadow: 0 0 0 1px #000, 0 0 16px -4px rgba(200, 150, 70, .4); transform: none; }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .toast { border-radius: 3px; border-color: var(--ex-line-2); background: rgba(10, 8, 6, .95); box-shadow: 0 0 0 1px #000, 0 16px 40px -12px #000; }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .nav-dot { background: #a3241a; border: 1px solid #000; }
+/* Tooltips: como la ficha de un objeto */
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .tooltip { border-radius: 2px; background: rgba(8, 6, 5, .96); color: var(--ex-text); border: 1px solid var(--ex-line-2); box-shadow: 0 0 0 1px #000, 0 10px 30px rgba(0, 0, 0, .8); font-weight: 500; }
+
+/* ---------- Pantallas concretas ---------- */
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .camp-scene.grim { border-radius: 4px; border-color: var(--ex-line-2); box-shadow: 0 0 0 1px #000, inset 0 0 120px rgba(0, 0, 0, .85), 0 20px 50px -14px #000; }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .camp-scene.grim .camp-plaque { border-radius: 2px; font-family: var(--font-title); letter-spacing: .1em; background: linear-gradient(180deg, #1f1a14, #0e0c09); color: var(--ex-gold-2); box-shadow: 0 0 0 1px #000, inset 0 0 0 1px var(--ex-line-2); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .camp-scene.grim .camp-spot.main .camp-plaque { background: linear-gradient(180deg, #6a2116, #2e0b06); box-shadow: 0 0 0 1px #000, inset 0 0 0 1px #b08a4e, 0 0 16px -2px rgba(200, 80, 40, .55); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .main-menu { --mm-line: var(--ex-line); --mm-line-2: var(--ex-line-2); --mm-card: var(--ex-panel); --mm-soft: rgba(0, 0, 0, .35); --mm-hover: rgba(200, 169, 106, .07); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .main-menu .save-slot { border-radius: 4px; background: var(--ex-corners), var(--ex-panel); box-shadow: 0 0 0 1px #000, 0 20px 40px -16px #000; }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .main-menu .save-slot.last { border-color: var(--ex-gold); box-shadow: 0 0 0 1px #000, 0 0 24px -6px rgba(200, 150, 70, .45); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .main-menu .save-main { border-radius: 3px; }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .main-menu .save-title h3 { color: var(--ex-gold-2); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .main-menu .save-portrait { border-color: var(--ex-gold); box-shadow: 0 0 0 1px #000, 0 0 18px -4px rgba(200, 150, 70, .5); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] :is(.cx-hero, .camp-hero) .cx-hero-icon, :root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .camp-hero-icon { border-radius: 3px; box-shadow: inset 0 0 0 1px var(--ex-line-2); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .pc-plate { border-radius: 3px; }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .pc-arrow { border-radius: 3px; }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .pc-grid { border-radius: 3px; border-color: var(--ex-line-2); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .tr-up-icon, :root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .wk-icon, :root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .pf-feat-icon, :root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .cx-zone-icon { border-radius: 3px; box-shadow: inset 0 0 0 1px var(--ex-line); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .cx-zone-bar, :root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .train-bar, :root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .pp-track, :root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .hbar-track { border-radius: 1px; box-shadow: 0 0 0 1px #000, 0 0 0 2px var(--ex-line); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] :is(.cx-zone-bar i, .train-bar > span, .pp-track i, .hbar-fill) { border-radius: 0; }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .tr-step { border-radius: 1px; }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .exp-node { border-radius: 3px; }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .logo-title { background: linear-gradient(180deg, #f6e7c1 0%, #d9b36a 45%, #8a6326 70%, #c9a45c 100%); -webkit-background-clip: text; background-clip: text; color: transparent; letter-spacing: .22em; filter: drop-shadow(0 2px 0 #000) drop-shadow(0 0 18px rgba(200, 150, 70, .35)); }
+:root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .logo-sub { color: var(--ex-muted); font-family: var(--font-title); letter-spacing: .08em; font-size: .9rem; }
+@media (max-width: 600px) { :root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .hud-ribbon::before, :root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .hud-ribbon::after { display: none; } :root[data-skin="exile"]:not([data-theme="light"])[data-skin][data-skin] .hud-ribbon { letter-spacing: .06em; font-size: .82rem; } }

@@ -189,9 +189,12 @@
       ui.ePhase.replaceChildren(...tags);
     }
     /** Estados alterados y orden de turno. */
+    /** Efectos temporales de pasivas «al entrar» (ATQ −15% · 2). */
+    const timedTags = (side) => B().timedOf(st, side).map((x) => h('span', { class: 'badge timed ' + (x.pct > 0 ? 'up' : 'down'), tip: t('battle.timedTip', { passive: DK.tr('passives', D.passives[x.src]), n: x.left }) },
+      DK.icon(x.pct > 0 ? 'arrowUp' : 'arrowDown', 11), `${D.stats[x.stat].short} ${x.pct > 0 ? '+' : '−'}${Math.round(Math.abs(x.pct) * 100)}%`, h('small', null, x.left)));
     function updateStatus() {
-      ui.aStatus.replaceChildren(V.statusTag(B().ally(st).status) || '');
-      ui.eStatus.replaceChildren(V.statusTag(st.enemy.status) || '');
+      ui.aStatus.replaceChildren(V.statusTag(B().ally(st).status) || '', ...timedTags('ally'));
+      ui.eStatus.replaceChildren(V.statusTag(st.enemy.status) || '', ...timedTags('enemy'));
       updatePhase();
       updateTimeline(ui.hoverMove || null);
     }
@@ -378,33 +381,43 @@
       const pr = B().priority(mid);
       const first = B().orderFor(st, mid).first;
       const knownWeak = m.power > 0 && B().weakKnown(st.enemy.species) && B().weakness(st.enemy.species) === m.kind;
+      // --- v4.40: botón por capas (nombre y orden · eficacia · daño · datos) ---
+      const hm = pv && m.power ? B().houseMult(B().moveHouse(a, m), D.species[st.enemy.species].house).mult : 1;
+      const fmtX = (x) => '×' + (+x.toFixed(2)).toLocaleString(DK.i18n.lang);
+      // Franja de eficacia: lo primero que se lee después del nombre
+      const effStrip = !m.power ? h('span', { class: 'bm-eff sup' }, DK.icon('sparkle', 12), h('span', null, m.effect ? V.effectText(m) : t('move.support')))
+        : !st.known ? h('span', { class: 'bm-eff unk', tip: t('battle.effUnknownTip') }, DK.icon('question', 12), h('span', null, t('battle.effUnknown')))
+          : h('span', { class: 'bm-eff ' + (eff || 'normal'), tip: t('battle.effTip', { x: fmtX(hm) }) },
+            DK.icon(eff === 'strong' ? 'arrowUp' : eff === 'weak' ? 'arrowDown' : 'minus', 12),
+            h('b', null, eff === 'strong' ? t('battle.effStrong') : eff === 'weak' ? t('battle.effWeak') : t('battle.effNormal1')),
+            h('span', { class: 'bm-x' }, fmtX(hm)),
+            knownWeak ? h('span', { class: 'bm-weak', tip: t('battle.weakTip') }, DK.icon('target', 11), t('battle.weakShort')) : null);
+      const orderEl = h('span', { class: 'bm-order ' + first + (pr ? (pr > 0 ? ' fast' : ' slow') : ''), tip: [first === 'ally' ? t('battle.goFirst') : first === 'enemy' ? t('battle.goSecond') : t('battle.orderTie'), pr ? t(pr > 0 ? 'battle.prioFastTip' : 'battle.prioSlowTip') : null].filter(Boolean).join(' · ') },
+        pr ? DK.icon(pr > 0 ? 'bolt' : 'clock', 11) : null, first === 'ally' ? '1º' : first === 'enemy' ? '2º' : '=');
       const tags = pv ? [
-        pv.ko ? h('span', { class: 'pv-tag ko ' + pv.ko, tip: pv.ko === 'sure' ? t('battle.koSureTip') : t('battle.koMaybeTip') }, DK.icon('skull', 11), pv.ko === 'sure' ? t('battle.koSure') : t('battle.koMaybe')) : null,
-        pv.stab ? h('span', { class: 'pv-tag stab', tip: t('battle.stabTip', { n: Math.round((DK.config.stab - 1) * 100) }) }, DK.icon(D.houses[m.house].icon, 11), t('battle.stabShort')) : null,
-        pv.brk ? h('span', { class: 'pv-tag brk', tip: t('battle.breakGainTip', { n: pv.brk }) }, DK.icon('bolt', 11), '+' + pv.brk) : null,
+        pv.stab ? h('span', { class: 'bm-chip stab', tip: t('battle.stabTip', { n: Math.round((DK.config.stab - 1) * 100) }) }, DK.icon(D.houses[m.house].icon, 11), t('battle.stabShort')) : null,
+        pv.brk ? h('span', { class: 'bm-chip brk', tip: t('battle.breakGainTip', { n: pv.brk }) }, DK.icon('bolt', 11), '+' + pv.brk) : null,
       ].filter(Boolean) : [];
       const b = h('button', {
-        class: 'bmove' + (can ? '' : ' disabled') + (m.power && eff ? ' eff-' + eff : '') + (knownWeak ? ' eff-weakspot' : '') + (pv && pv.ko === 'sure' ? ' is-ko' : ''), type: 'button', disabled: !can, style: { '--mc': color },
+        class: 'bmove v2' + (can ? '' : ' disabled') + (m.power && eff ? ' eff-' + eff : '') + (knownWeak ? ' eff-weakspot' : '') + (pv && pv.ko === 'sure' ? ' is-ko' : ''), type: 'button', disabled: !can, style: { '--mc': color },
         tip: can ? [m.desc || '', est ? breakdown('ally', mid, est) : null].filter(Boolean).join('\n') : t('battle.noMana'),
         onClick: go,
       },
-        h('div', { class: 'bmove-top' },
+        h('div', { class: 'bm-head' },
           h('span', { class: 'bmove-icon' }, DK.icon(m.kind === 'fisico' ? 'sword' : 'wand', 16)),
           h('b', { class: 'bmove-name' }, m.name),
-          m.power && eff ? V.effTag(eff) : null,
-          knownWeak ? h('span', { class: 'weak-tag', tip: t('battle.weakTip') }, DK.icon('target', 11), t('battle.weakShort')) : null,
-          pr ? h('span', { class: 'prio-tag ' + (pr > 0 ? 'fast' : 'slow'), tip: t(pr > 0 ? 'battle.prioFastTip' : 'battle.prioSlowTip') }, DK.icon(pr > 0 ? 'bolt' : 'clock', 11)) : null,
-          h('span', { class: 'order-tag ' + first, tip: first === 'ally' ? t('battle.goFirst') : first === 'enemy' ? t('battle.goSecond') : t('battle.orderTie') }, first === 'ally' ? '1º' : first === 'enemy' ? '2º' : '='),
+          orderEl,
           h('kbd', { class: 'hotkey' }, i + 1)),
-        h('div', { class: 'bmove-stats' },
-          h('span', null, DK.icon('sparkle', 12), cost ? `${cost} ${t('common.mpShort')}` : t('move.free')),
-          h('span', null, DK.icon('swords', 12), m.power ? t('move.power', { n: m.power }) : t('move.support')),
-          h('span', null, DK.icon('eye', 12), `${m.acc}%`)),
-        h('div', { class: 'bmove-dmg' },
-          est ? h('span', { class: 'pv-dmg' }, DK.icon('target', 12), h('b', null, `${est[0]}-${est[1]}`), h('span', { class: 'pv-pct' }, `${pv.pct[0] === pv.pct[1] ? pv.pct[1] : pv.pct[0] + '-' + pv.pct[1]}%`)) : h('span', { class: 'muted' }, m.effect ? V.effectText(m) : t('move.support')),
-          tags.length ? h('span', { class: 'pv-tags' }, tags) : null,
-          // En el móvil la fila de datos se oculta: el coste va aquí
-          h('span', { class: 'bmove-cost' }, DK.icon('sparkle', 11), cost ? `${cost}` : t('move.free'))));
+        effStrip,
+        est ? h('div', { class: 'bm-dmg' },
+          h('b', null, `${est[0]}-${est[1]}`),
+          h('span', { class: 'bm-pct' }, `${pv.pct[0] === pv.pct[1] ? pv.pct[1] : pv.pct[0] + '-' + pv.pct[1]}%`),
+          pv.ko ? h('span', { class: 'bm-ko ' + pv.ko, tip: pv.ko === 'sure' ? t('battle.koSureTip') : t('battle.koMaybeTip') }, DK.icon('skull', 11), pv.ko === 'sure' ? t('battle.koSure') : t('battle.koMaybe')) : null) : null,
+        h('div', { class: 'bm-foot' },
+          h('span', { class: 'bm-cost' + (cost ? '' : ' free') }, DK.icon('sparkle', 11), cost ? `${cost}` : t('move.free')),
+          m.power ? h('span', { class: 'bm-stat', tip: t('move.power', { n: m.power }) }, DK.icon('swords', 11), m.power) : null,
+          m.acc < 100 ? h('span', { class: 'bm-stat', tip: t('move.accTip') }, DK.icon('eye', 11), m.acc + '%') : null,
+          tags));
       const on = () => { ui.eHp.preview(est ? st.enemy.cur.hp : null, Math.max(0, st.enemy.cur.hp - (est ? est[1] : 0))); updateBreak(null, pv && pv.brk); ui.hoverMove = mid; updateTimeline(mid); };
       const off = () => { ui.eHp.preview(null); updateBreak(); ui.hoverMove = null; updateTimeline(null); };
       b.addEventListener('mouseenter', on);
@@ -690,7 +703,7 @@
       if (r.captured) log(t('battle.joined', { name: DK.daskai.name(st.enemy), team: DK.party.isActive(st.enemy.uid) ? t('battle.joinedTeam') : '' }), 'good', 'reward');
       if (r.temp) log(t('exp.tempNote', { name: DK.daskai.name(st.enemy) }), 'warn', 'reward');
       for (const id of r.drops) { await wait(200); log((r.toLoot && !(r.toBag || []).includes(id) ? t('battle.lootItem') : t('battle.gotItem')) + ' ' + D.items[id].name, 'drop', 'reward'); }
-      for (const id of r.runes || []) { await wait(200); log(t('rune.got', { name: V.runeName(id) }) + ' · ' + V.runeEffect(id), 'level', 'reward'); DK.ui.toast(t('rune.got', { name: V.runeName(id) }), { icon: 'rune', kind: 'good' }); }
+      for (const id of r.runes || []) { await wait(200); log(t('rune.got', { name: V.runeName(id) }) + ' · ' + V.runeTip(id).split(' · ').slice(1).join(' · '), 'level', 'reward'); DK.ui.toast(t('rune.got', { name: V.runeName(id) }), { icon: 'rune', kind: 'good' }); }
       (r.shared || []).forEach((x) => {
         log(t('battle.sharedExp', { name: x.name, n: x.exp }), 'muted', 'reward');
         if (x.to > x.from) { log(t('battle.levelUp', { name: x.name, n: x.to }), 'level', 'reward'); DK.ui.toast(t('battle.levelUp', { name: x.name, n: x.to }), { icon: 'star', kind: 'good' }); }
@@ -731,7 +744,7 @@
       banner.replaceChildren(h('div', { class: 'banner-card ' + outcome }, DK.icon(ic, 34), h('h2', null, title), h('p', null, sub),
         r ? h('div', { class: 'chips' }, h('span', { class: 'chip pos' }, DK.icon('star', 13), `+${r.exp} ${t('common.expShort')}`), h('span', { class: 'chip pos' }, DK.icon('coin', 13), `+${r.coins}`),
           r.drops.map((id) => h('span', { class: 'chip pos' }, DK.icon(D.items[id].icon, 13), D.items[id].name)),
-          (r.runes || []).map((id) => h('span', { class: 'chip pos rune-chip', tip: V.runeEffect(id) }, V.runeGem(id, 16), V.runeName(id))),
+          (r.runes || []).map((id) => h('span', { class: 'chip pos rune-chip ' + V.runeRarity(id), tip: V.runeTip(id) }, V.runeGem(id, 16), V.runeName(id))),
           r.relicOffer ? h('span', { class: 'chip pos' }, DK.icon('amulet', 13), t('relics.toChoose')) : null,
           r.emblems ? h('span', { class: 'chip pos emblem-chip' }, DK.icon('emblem', 13), t('emblem.plus', { n: r.emblems })) : null) : null,
         choice ? h('div', { class: 'exp-summary' }, h('b', null, DK.icon('crown', 14), ' ', t('exp.mapCleared', { n: choice.depth })),
@@ -821,6 +834,9 @@
         await wait(500);
         if (!st.known) log(t('battle.firstMeet'), 'muted');
         log(t('battle.go', { name: DK.daskai.name(B().ally(st)) }));
+        // Pasivas «al entrar» de los dos (al empezar)
+        (st.entryLog || []).forEach((x) => log(x.text, x.kind, 'dmg'));
+        st.entryLog = [];
         await wait(400);
         busy = false;
         if (!stopped) showMain();

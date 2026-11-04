@@ -73,6 +73,9 @@
       };
       // Pacto «Frenesí»: el rival empieza más rápido
       if (st.expedition && DK.curses.effect('enemySpd')) st.stages.enemy.spd = Math.min(3, DK.curses.effect('enemySpd'));
+      // Pasivas «al entrar» (mirada fiera, arranque…): efectos temporales de los dos
+      st.timed = { ally: [], enemy: [] }; st.entryLog = [];
+      this.applyEntry(st, 'ally', null); this.applyEntry(st, 'enemy', null);
       st.intent = this.enemyChoice(st);
       return st;
     },
@@ -145,10 +148,48 @@
 
     /** Multiplicador de una mejora/reducción de atributo (-3..+3). */
     stageMult(stage) { const s = C().stageStep; return stage >= 0 ? 1 + s * stage : 1 / (1 + s * -stage); },
-    /** Atributo en combate (con mejoras/reducciones). */
+    /** Atributo en combate (con mejoras/reducciones y efectos temporales de pasivas). */
     stat(st, side, k) {
-      const base = DK.daskai.stats(this.get(st, side))[k];
+      const base = DK.daskai.stats(this.get(st, side))[k] * this.timedMult(st, side, k);
       return st.stages[side][k] != null ? base * this.stageMult(st.stages[side][k]) : base;
+    },
+
+    /* ---------------- Pasivas «al entrar» (v4.40) ---------------- */
+    /** Multiplicador de los efectos temporales activos en un lado para un atributo. */
+    timedMult(st, side, k) { return ((st.timed && st.timed[side]) || []).reduce((m, x) => (x.stat === k ? m * (1 + x.pct) : m), 1); },
+    /** Efectos temporales activos de un lado: [{stat, pct, left, src}] */
+    timedOf(st, side) { return (st.timed && st.timed[side]) || []; },
+    /**
+     * Aplica la pasiva «al entrar» del daskai que está en `side` (al empezar o al cambiar).
+     * @param ev  lista de eventos (o null al empezar: el texto va a st.entryLog)
+     */
+    applyEntry(st, side, ev) {
+      const d = this.get(st, side), P = d && D.passives[d.passive], E = P && P.entry;
+      if (!E) return;
+      st.timed = st.timed || { ally: [], enemy: [] };
+      const tgt = E.target === 'self' ? side : other(side);
+      E.stats.forEach((k) => {
+        st.timed[tgt] = st.timed[tgt].filter((x) => !(x.stat === k && x.src === d.passive)); // no se acumula consigo misma
+        st.timed[tgt].push({ stat: k, pct: E.pct, left: E.turns, src: d.passive, owner: d.uid || side });
+      });
+      const stats = E.stats.map((k) => DK.tr('stats', D.stats[k]).toLowerCase()).join(' / ');
+      const text = t(E.pct > 0 ? 'battle.entryBuff' : 'battle.entryDebuff', { name: this.name(st, side), passive: DK.tr('passives', P), stat: stats, target: this.name(st, tgt), n: Math.round(Math.abs(E.pct) * 100), turns: E.turns });
+      if (ev) this.push(st, ev, { text, kind: E.pct > 0 === (side === 'ally') ? 'good' : 'warn', anim: E.pct > 0 ? 'buff' : 'debuff', side: tgt, cat: 'dmg' });
+      else (st.entryLog = st.entryLog || []).push({ text, kind: E.pct > 0 === (side === 'ally') ? 'good' : 'warn' });
+    },
+    /** Al empezar cada turno: cuenta atrás de los efectos temporales. */
+    tickTimed(st, ev) {
+      if (!st.timed) return;
+      ['ally', 'enemy'].forEach((side) => {
+        const keep = [];
+        st.timed[side].forEach((x) => {
+          if (x.ticked) x.left--;
+          x.ticked = true;
+          if (x.left > 0) keep.push(x);
+          else this.push(st, ev, { text: t('battle.entryEnd', { passive: DK.tr('passives', D.passives[x.src]), name: this.name(st, side) }), kind: 'muted', cat: 'dmg' });
+        });
+        st.timed[side] = keep;
+      });
     },
 
     /** Multiplicador por casas: atacante fuerte x1.5, defensor fuerte -25%. */
@@ -507,6 +548,7 @@
       const ev = [];
       if (st.outcome) return ev;
       st.turn++;
+      this.tickTimed(st, ev);
       // El rival hace lo que anunció (si aún puede); si no, elige otra cosa
       const enemyMove = st.intent && this.canUseMove(st.enemy, st.intent) ? st.intent : this.enemyChoice(st);
 
@@ -604,9 +646,12 @@
       const ev = [];
       const prev = this.ally(st);
       st.allyUid = uid; st.needSwitch = false; st.stages.ally = zeroStages();
+      // Las mejoras propias del que sale se van con él (lo que le hizo al rival se queda)
+      if (st.timed && prev) st.timed.ally = st.timed.ally.filter((x) => x.owner !== prev.uid);
       const stt = DK.store.state.stats; stt.usage[uid] = (stt.usage[uid] || 0) + 1;
       if (voluntary && prev) this.push(st, ev, { text: t('battle.comeBack', { name: DK.daskai.name(prev) }) });
       this.push(st, ev, { text: t('battle.go', { name: DK.daskai.name(this.ally(st)) }), anim: 'switch', side: 'ally' });
+      this.applyEntry(st, 'ally', ev);
       return ev;
     },
 

@@ -13,7 +13,8 @@
     theme: null,            // 'dark' | 'light' | null (según el sistema)
     lang: 'es',
     textSize: 'md',         // 'sm' | 'md' | 'lg' | 'xl'
-    uiStyle: 'clean',       // 'clean' (limpio, css/clean.css) | 'classic' (el de antes)
+    uiStyle: 'exile',       // 'exile' (Exilio: limpio + css/exile.css) | 'clean' (limpio, css/clean.css) | 'classic' (el de antes)
+    styleV: 2,              // v4.36: las partidas con el estilo limpio por defecto pasan a «Exilio» una vez
     highContrast: false,
     colorblind: false,
     reduceMotion: false,
@@ -36,7 +37,11 @@
   };
 
   function read() {
-    try { return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { return Object.assign({}, DEFAULTS); }
+    try {
+      const raw = JSON.parse(localStorage.getItem(KEY) || '{}');
+      if (!raw.styleV) { if (!raw.uiStyle || raw.uiStyle === 'clean') raw.uiStyle = 'exile'; raw.styleV = 2; }
+      return Object.assign({}, DEFAULTS, raw);
+    } catch (e) { return Object.assign({}, DEFAULTS); }
   }
 
   DK.settings = {
@@ -79,6 +84,7 @@
       if (meta && window.getComputedStyle) { const bg = getComputedStyle(el).getPropertyValue('--bg').trim(); if (bg) meta.setAttribute('content', bg); }
       el.dataset.textsize = this.data.textSize;
       el.dataset.style = this.data.uiStyle === 'classic' ? 'classic' : 'clean';
+      el.dataset.skin = this.data.uiStyle === 'exile' ? 'exile' : 'none';
       el.dataset.contrast = this.data.highContrast ? 'high' : 'normal';
       el.dataset.colorblind = this.data.colorblind ? 'on' : 'off';
       el.dataset.motion = this.reducedMotion() ? 'reduced' : 'full';

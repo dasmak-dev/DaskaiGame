@@ -129,13 +129,13 @@
             active.length > 1 && !params.compare ? h('button', { class: 'party-out', type: 'button', tip: t(inExp ? 'party.toReserve' : 'party.toBox'), 'aria-label': t(inExp ? 'party.toReserve' : 'party.toBox'),
               onClick: () => { DK.party.removeFromTeam(d.uid); DK.boxes.sync(); DK.audio.sfx('swap'); refresh(); } }, DK.icon('arrowDown', 16)) : null);
           ctx(inner, d);
-        } else inner = h('div', { class: 'party-empty' }, h('span', { class: 'party-ball' }), h('span', null, h('b', null, t('party.empty')), h('small', null, t(inExp ? 'party.emptyHintExp' : 'party.emptyHint'))));
+        } else inner = h('div', { class: 'party-empty' }, h('span', { class: 'party-ball' }), h('span', null, h('b', null, t('party.empty'))));
         partySlots.push(h('div', { class: 'party-slot drop-zone', dataset: { zone: 'slot', index: i } }, inner));
       }
       const party = h('section', { class: 'party-panel' },
         h('div', { class: 'party-head' }, h('span', { class: 'party-title' }, DK.icon('users', 20), t('party.title')), h('span', { class: 'party-count' }, `${active.length}/${DK.config.maxTeam}`),
           h('span', { class: 'grow' }),
-          btn({ icon: 'flask', label: t('heal.button'), size: 'sm', variant: 'ghost', onClick: async () => { if (await V.healDialog(active)) refresh(); } })),
+          btn({ icon: 'flask', label: t('heal.button'), iconOnly: true, size: 'sm', variant: 'ghost', onClick: async () => { if (await V.healDialog(active)) refresh(); } })),
         h('div', { class: 'party-list' }, partySlots),
         h('p', { class: 'party-hint muted small' }, DK.icon('grip', 13), ' ', t(inExp ? 'box.dragHintExp' : 'box.dragHint')));
 
@@ -195,8 +195,8 @@
 
       const pc = h('section', { class: 'pc-box' },
         h('div', { class: 'pc-toolbar' },
-          btn({ icon: 'search', label: t('team.searchBtn'), size: 'sm', variant: params.search || anyFilter ? 'primary' : 'ghost', hotkey: '/', onClick: toggleSearch }),
-          btn({ icon: 'scale', label: params.compare ? t('team.compareOn', { n: params.compare.length }) : t('team.compare'), size: 'sm', variant: params.compare ? 'primary' : 'ghost', onClick: () => { params.compare = params.compare ? null : []; refresh(); } }),
+          btn({ icon: 'search', label: t('team.searchBtn') + ' (/)', iconOnly: true, size: 'sm', variant: params.search || anyFilter ? 'primary' : 'ghost', hotkey: '/', onClick: toggleSearch }),
+          btn({ icon: 'scale', label: params.compare ? t('team.compareOn', { n: params.compare.length }) : t('team.compare'), iconOnly: true, size: 'sm', variant: params.compare ? 'primary' : 'ghost', onClick: () => { params.compare = params.compare ? null : []; refresh(); } }),
           h('span', { class: 'grow' }), sortSel),
         filters,
         h('div', { class: 'pc-head' },
@@ -209,8 +209,8 @@
           nBoxes < DK.boxes.MAX ? h('button', { class: 'pc-tab add', type: 'button', tip: t('box.add'), 'aria-label': t('box.add'), onClick: () => { DK.boxes.add(); DK.audio.sfx('select'); refresh(); } }, DK.icon('plus', 14)) : null),
         h('div', { class: 'pc-grid', style: boxBg(box.bg) }, cells),
         h('div', { class: 'pc-actions' },
-          btn({ icon: 'edit', label: t('box.rename'), size: 'sm', variant: 'ghost', onClick: rename }),
-          btn({ icon: 'image', label: t('box.bg'), size: 'sm', variant: 'ghost', onClick: () => pickBg(bi, refresh) }),
+          btn({ icon: 'edit', label: t('box.rename'), iconOnly: true, size: 'sm', variant: 'ghost', onClick: rename }),
+          btn({ icon: 'image', label: t('box.bg'), iconOnly: true, size: 'sm', variant: 'ghost', onClick: () => pickBg(bi, refresh) }),
           null));
 
       /* ---- Esencias y caídos ---- */

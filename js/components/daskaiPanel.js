@@ -175,9 +175,9 @@
     let navBar = null;
     if (onNav) {
       navBar = h('div', { class: 'panel-navbar' },
-        h('button', { class: 'panel-nav prev', type: 'button', 'aria-label': t('detail.prev'), onClick: () => onNav(-1) }, DK.icon('back', 16), h('span', null, t('detail.prev'))),
+        h('button', { class: 'panel-nav prev', type: 'button', 'aria-label': t('detail.prev'), tip: t('detail.prev'), onClick: () => onNav(-1) }, DK.icon('back', 16)),
         h('span', { class: 'muted small panel-nav-hint' }, t('detail.swipeHint')),
-        h('button', { class: 'panel-nav next', type: 'button', 'aria-label': t('detail.next'), onClick: () => onNav(1) }, h('span', null, t('detail.next')), DK.icon('next', 16)));
+        h('button', { class: 'panel-nav next', type: 'button', 'aria-label': t('detail.next'), tip: t('detail.next'), onClick: () => onNav(1) }, DK.icon('next', 16)));
       let sx = null, sy = 0;
       head.addEventListener('touchstart', (e) => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
       head.addEventListener('touchend', (e) => {

@@ -344,3 +344,64 @@
   .order-tag { padding: 1px 4px; }
   .prio-tag { width: 16px; height: 16px; }
 }
+
+/* =============================================================
+ * Botón de ataque v2 (v4.40): 4 capas que se leen de arriba abajo
+ *   1. nombre + orden (1º/2º, rayo/reloj si tiene prioridad) + tecla
+ *   2. franja de EFICACIA por casas (muy eficaz ×1,5 · poco eficaz · normal · ?)
+ *   3. daño previsto + % de su vida + si remata
+ *   4. coste, poder, precisión (si < 100) y extras (su casa, ruptura)
+ * ============================================================= */
+.bmove.v2 { gap: 6px; padding: 10px 12px 10px 15px; min-height: 0; justify-content: flex-start; }
+.bm-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.bm-order { display: inline-flex; align-items: center; gap: 2px; margin-left: auto; flex: none; padding: 1px 7px; border-radius: 999px; font-size: .7rem; font-weight: 800; }
+.bm-order.ally { color: #4ade80; background: rgba(74, 222, 128, .14); }
+.bm-order.enemy { color: #f87171; background: rgba(248, 113, 113, .14); }
+.bm-order.tie { color: var(--muted); background: var(--surface-3); }
+.bm-order.fast { box-shadow: inset 0 0 0 1px rgba(250, 204, 21, .6); }
+.bm-order.slow { box-shadow: inset 0 0 0 1px rgba(148, 163, 184, .5); }
+.bm-head .hotkey { flex: none; }
+.bm-eff { display: flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 8px; font-size: .78rem; min-width: 0; background: var(--surface-3); color: var(--muted); }
+.bm-eff > span:not(.bm-x):not(.bm-weak) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bm-eff b { font-weight: 800; }
+.bm-x { margin-left: auto; font-weight: 800; font-variant-numeric: tabular-nums; }
+.bm-eff.strong { color: #4ade80; background: linear-gradient(90deg, rgba(34, 197, 94, .28), rgba(34, 197, 94, .08)); box-shadow: inset 0 0 0 1px rgba(74, 222, 128, .35); }
+.bm-eff.weak { color: #fca5a5; background: linear-gradient(90deg, rgba(239, 68, 68, .24), rgba(239, 68, 68, .06)); box-shadow: inset 0 0 0 1px rgba(248, 113, 113, .3); }
+.bm-eff.normal { color: var(--text); }
+.bm-eff.unk { font-style: italic; }
+.bm-eff.sup { color: var(--text); background: color-mix(in srgb, var(--mc) 12%, var(--surface-3)); }
+.bm-weak { display: inline-flex; align-items: center; gap: 2px; padding: 0 6px; border-radius: 999px; background: rgba(245, 158, 11, .22); color: #fbbf24; font-weight: 800; font-size: .68rem; }
+.bm-dmg { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.bm-dmg > b { font-size: 1.08rem; font-variant-numeric: tabular-nums; }
+.bm-pct { color: var(--muted); font-size: .78rem; font-weight: 700; }
+.bm-ko { display: inline-flex; align-items: center; gap: 3px; margin-left: auto; padding: 1px 7px; border-radius: 999px; font-size: .7rem; font-weight: 800; }
+.bm-ko.sure { color: #fff; background: #b91c1c; }
+.bm-ko.maybe { color: #fca5a5; background: rgba(239, 68, 68, .18); }
+.bm-foot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: .74rem; color: var(--muted); }
+.bm-foot > span { display: inline-flex; align-items: center; gap: 3px; }
+.bm-cost { color: #93c5fd; font-weight: 700; } .bm-cost.free { color: var(--muted); font-weight: 600; }
+.bm-chip { padding: 0 6px; border-radius: 999px; background: var(--surface-3); color: var(--text); font-weight: 700; font-size: .68rem; }
+.bm-chip.brk { color: #fbbf24; }
+.bmove.v2.eff-strong { border-color: rgba(74, 222, 128, .45); }
+.bmove.v2.eff-weak { opacity: .9; }
+.bmove.v2.is-ko { box-shadow: 0 0 0 1px rgba(239, 68, 68, .5), 0 0 18px -6px rgba(239, 68, 68, .6); }
+:root[data-theme="light"] .bm-eff.strong { color: #15803d; } :root[data-theme="light"] .bm-eff.weak { color: #b91c1c; }
+:root[data-theme="light"] .bm-order.ally { color: #15803d; } :root[data-theme="light"] .bm-order.enemy { color: #b91c1c; }
+:root[data-theme="light"] .bm-cost { color: #1d4ed8; } :root[data-theme="light"] .bm-weak { color: #92400e; }
+@media (max-width: 700px) {
+  .bmove.v2 { padding: 8px 9px 8px 12px; gap: 4px; }
+  .bmove.v2 .bmove-name { font-size: .88rem; }
+  .bm-eff { padding: 2px 6px; font-size: .7rem; gap: 4px; }
+  .bm-eff > b { display: none; }             /* en el móvil: icono + ×1,5 */
+  .bm-eff.sup > span, .bm-eff.unk > span { font-size: .68rem; }
+  .bm-dmg > b { font-size: .95rem; }
+  .bm-foot { gap: 8px; font-size: .68rem; }
+  .bm-foot .bm-stat, .bm-chip.brk { display: none; }
+  .bm-ko { padding: 0 5px; font-size: .64rem; }
+}
+/* Efectos temporales de pasivas «al entrar» en el HUD (v4.40) */
+.badge.timed { gap: 3px; font-size: .68rem; font-weight: 800; padding: 1px 6px; }
+.badge.timed small { margin-left: 2px; padding: 0 4px; border-radius: 999px; background: rgba(0, 0, 0, .35); font-size: .62rem; }
+.badge.timed.up { color: #4ade80; background: rgba(74, 222, 128, .14); border: 1px solid rgba(74, 222, 128, .35); }
+.badge.timed.down { color: #f87171; background: rgba(248, 113, 113, .14); border: 1px solid rgba(248, 113, 113, .35); }
+:root[data-theme="light"] .badge.timed.up { color: #15803d; } :root[data-theme="light"] .badge.timed.down { color: #b91c1c; }

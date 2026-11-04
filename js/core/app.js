@@ -108,7 +108,12 @@
       const st = DK.store.state;
       if (!st || !lastEntry || !this.navVisible(lastEntry.def)) { resEl.replaceChildren(); return; }
       const exp = DK.expedition.active();
-      const pill = (icon, v, tip, cls) => h('span', { class: 'hud-pill ' + cls, tip }, DK.icon(icon, 16), h('b', null, Number(v).toLocaleString(DK.i18n.lang)));
+      // Si la cifra cambia desde la última vez, la píldora da un saltito (css/motion.css .bump)
+      const prev = this._resPrev || (this._resPrev = {});
+      const pill = (icon, v, tip, cls) => {
+        const bump = prev[cls] != null && prev[cls] !== v; prev[cls] = v;
+        return h('span', { class: 'hud-pill ' + cls + (bump ? ' bump' : ''), tip }, DK.icon(icon, 16), h('b', null, Number(v).toLocaleString(DK.i18n.lang)));
+      };
       // En expedición sólo se ve el botín (con lo que se paga en el mercader), no el monedero de casa
       resEl.replaceChildren(...[
         exp ? pill('gift', exp.loot.coins, DK.t('exp.lootCoinsTip'), 'coins loot') : pill('coin', DK.wallet.get(), DK.t('hub.coins'), 'coins'),

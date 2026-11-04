@@ -4,7 +4,7 @@
     "house": "luz",
     "base": {"hp":58,"mp":40,"atk":12,"matk":16,"def":12,"mdef":15,"spd":15},
     "exp": 50,
-    "passives": ["pozo_mana","equilibrio","mente_arcana"],
+    "passives": ["pozo_mana","equilibrio","mente_arcana","foco_arcano"],
     "starter": true,
     "desc": "Un zorrito que guarda la luz del amanecer en su cola. Curioso y leal.",
     "learn": [
@@ -20,7 +20,7 @@
     "house": "oscuridad",
     "base": {"hp":55,"mp":35,"atk":16,"matk":14,"def":11,"mdef":12,"spd":17},
     "exp": 50,
-    "passives": ["pies_ligeros","furia","instinto"],
+    "passives": ["pies_ligeros","furia","instinto","mirada_fiera"],
     "starter": true,
     "desc": "Felino de sombra que acecha en silencio. Rápido y astuto.",
     "learn": [
@@ -36,7 +36,7 @@
     "house": "fuego",
     "base": {"hp":56,"mp":36,"atk":17,"matk":15,"def":12,"mdef":11,"spd":14},
     "exp": 50,
-    "passives": ["furia","sangre_caliente","instinto"],
+    "passives": ["furia","sangre_caliente","instinto","adrenalina"],
     "starter": true,
     "desc": "Salamandra temperamental cuya cola arde con más fuerza cuanto más se enfada.",
     "learn": [
@@ -52,7 +52,7 @@
     "house": "agua",
     "base": {"hp":62,"mp":38,"atk":13,"matk":15,"def":13,"mdef":16,"spd":12},
     "exp": 50,
-    "passives": ["vitalidad","espiritu_ferreo","regeneracion"],
+    "passives": ["vitalidad","espiritu_ferreo","regeneracion","guardia_alta"],
     "starter": true,
     "desc": "Nutria juguetona que nada entre corrientes. Muy resistente.",
     "learn": [
@@ -68,7 +68,7 @@
     "house": "tierra",
     "base": {"hp":68,"mp":28,"atk":15,"matk":11,"def":17,"mdef":13,"spd":9},
     "exp": 50,
-    "passives": ["caparazon","vitalidad","furia"],
+    "passives": ["caparazon","vitalidad","furia","rompecorazas"],
     "starter": true,
     "desc": "Pequeño topo acorazado. Lento, pero casi imposible de derribar.",
     "learn": [
@@ -85,7 +85,7 @@
     "base": {"hp":50,"mp":25,"atk":11,"matk":10,"def":13,"mdef":11,"spd":9},
     "exp": 36,
     "drops": [["hilo",0.45],["gota",0.25],["pocion",0.15],["piedra_runica",0.05]],
-    "passives": ["vitalidad","caparazon"],
+    "passives": ["vitalidad","caparazon","pegajoso"],
     "desc": "Un brote con patas que duerme al sol.",
     "learn": [
       [1,"placaje"], [3,"lodo"], [6,"raiz_drenante"], [10,"coraza"], [15,"golpe_roca"],
@@ -100,14 +100,26 @@
     "base": {"hp":46,"mp":28,"atk":13,"matk":12,"def":10,"mdef":9,"spd":13},
     "exp": 38,
     "drops": [["brasa",0.45],["fragmento_garra",0.3],["balsamo",0.12],["polvo_brillante",0.05]],
-    "passives": ["instinto","sangre_caliente"],
+    "passives": ["instinto","sangre_caliente","adrenalina"],
     "desc": "Pequeña chispa inquieta que salta de hierba en hierba.",
     "learn": [
       [1,"aranazo"], [3,"chispa"], [7,"colmillo_ardiente"], [12,"rugido"], [16,"puno_igneo"],
       [24,"lanzallamas"], [36,"llamarada"]
     ],
     "sprite": {"c1":"#fb923c","c2":"#ffedd5","rx":25,"ry":22,"ears":"flame","tail":"flame","eyes":"big","body":"ghost"},
-    "evolves": {"to":"magmon","level":26}
+    "evolves": {"to":"llamarin","level":18}
+  },
+  "llamarin": {
+    "name": "Llamarín",
+    "from": "chispon",
+    "base": {"hp":58,"mp":40,"atk":14,"matk":19,"def":12,"mdef":14,"spd":19},
+    "exp": 64,
+    "drops": [["brasa",0.5],["polvo_brillante",0.15],["superpocion",0.05]],
+    "passives": ["sangre_caliente","pies_ligeros","foco_arcano"],
+    "desc": "La chispa creció y aprendió a flotar. Baila sobre las brasas sin quemarse.",
+    "learnExtra": [[20,"concentracion"],[28,"agilidad"],[34,"llamarada"]],
+    "sprite": {"c1":"#f97316","c2":"#fde68a","rx":24,"ry":28,"ears":"flame","tail":"flame","eyes":"glow","eyeColor":"#fff7ed","body":"ghost"},
+    "evolves": {"to":"fuegofatuo","level":42}
   },
   "gotin": {
     "name": "Gotín",
@@ -115,7 +127,7 @@
     "base": {"hp":52,"mp":30,"atk":9,"matk":12,"def":11,"mdef":13,"spd":10},
     "exp": 36,
     "drops": [["gota",0.5],["coral",0.2],["eter",0.12],["perla_marina",0.02]],
-    "passives": ["regeneracion","espiritu_ferreo"],
+    "passives": ["regeneracion","espiritu_ferreo","guardia_alta"],
     "desc": "Gota viviente que rebota feliz por los charcos.",
     "learn": [
       [1,"placaje"], [2,"burbuja"], [6,"coraza"], [10,"aguas_curativas"], [14,"acua_cola"],
@@ -130,7 +142,7 @@
     "base": {"hp":44,"mp":26,"atk":11,"matk":11,"def":9,"mdef":10,"spd":16},
     "exp": 37,
     "drops": [["pluma",0.5],["polvo_brillante",0.1],["pocion",0.15],["pluma_veloz",0.02]],
-    "passives": ["pies_ligeros","equilibrio"],
+    "passives": ["pies_ligeros","equilibrio","arranque"],
     "desc": "Pajarito dorado que anuncia el amanecer.",
     "learn": [
       [1,"picotazo"], [3,"destello"], [7,"agilidad"], [11,"ala_cortante"], [15,"rayo_luz"],
@@ -139,13 +151,28 @@
     "sprite": {"c1":"#fde047","c2":"#fffbeb","rx":23,"ry":22,"ears":"crest","tail":"none","eyes":"big","wings":true,"legs":"tall","extra":["beak"]},
     "evolves": {"to":"gaviolux","level":14}
   },
+  "buhito": {
+    "name": "Buhíto",
+    "house": "luz",
+    "base": {"hp":52,"mp":38,"atk":8,"matk":15,"def":11,"mdef":14,"spd":12},
+    "exp": 40,
+    "drops": [["polvo_brillante",0.4],["hilo",0.3],["eter",0.12]],
+    "passives": ["pozo_mana","mente_arcana","foco_arcano"],
+    "desc": "Polluelo de búho que no pega ojo de día. Por la noche ilumina el prado con sus plumas.",
+    "learn": [
+      [1,"picotazo"], [1,"destello"], [5,"concentracion"], [9,"rayo_luz"], [14,"curacion"],
+      [20,"velo_aurora"], [28,"juicio"]
+    ],
+    "sprite": {"c1":"#fde68a","c2":"#fffbeb","rx":24,"ry":24,"ears":"crest","tail":"none","eyes":"big","eyeColor":"#78350f","mark":"star","wings":true,"legs":"tall","extra":["beak"]},
+    "evolves": {"to":"sacerdon","level":36}
+  },
   "musguin": {
     "name": "Musguín",
     "house": "tierra",
     "base": {"hp":58,"mp":24,"atk":12,"matk":10,"def":15,"mdef":12,"spd":7},
     "exp": 42,
     "drops": [["hilo",0.5],["piedra_runica",0.1],["antidoto",0.15],["escama_dura",0.02]],
-    "passives": ["caparazon","vitalidad"],
+    "passives": ["caparazon","vitalidad","rompecorazas"],
     "desc": "Cubierto de musgo, se confunde con las rocas del bosque.",
     "learn": [
       [1,"placaje"], [5,"lodo"], [8,"coraza"], [12,"golpe_roca"], [16,"raiz_drenante"],
@@ -160,7 +187,7 @@
     "base": {"hp":48,"mp":30,"atk":12,"matk":14,"def":10,"mdef":11,"spd":15},
     "exp": 44,
     "drops": [["esencia_sombria",0.3],["pelaje",0.4],["antidoto",0.15],["velo_mistico",0.02]],
-    "passives": ["pies_ligeros","mente_arcana"],
+    "passives": ["pies_ligeros","mente_arcana","niebla_arcana"],
     "desc": "Vive en la sombra de los árboles más viejos.",
     "learn": [
       [1,"aranazo"], [4,"sombra_vil"], [8,"colmillo_venenoso"], [12,"intimidar"], [16,"drenaje_vital"],
@@ -175,13 +202,25 @@
     "base": {"hp":54,"mp":30,"atk":10,"matk":14,"def":12,"mdef":13,"spd":11},
     "exp": 43,
     "drops": [["hilo",0.45],["gota",0.3],["antidoto",0.2],["amuleto_arcano",0.02]],
-    "passives": ["mente_arcana","regeneracion"],
+    "passives": ["mente_arcana","regeneracion","guardia_alta"],
     "desc": "Su cuerpo de hojas suelta un polen adormecedor.",
     "learn": [
       [1,"placaje"], [4,"polen_toxico"], [7,"lodo"], [11,"raiz_drenante"], [15,"concentracion"],
       [22,"golpe_roca"], [30,"terremoto"]
     ],
-    "sprite": {"c1":"#22c55e","c2":"#dcfce7","rx":26,"ry":28,"ears":"leaf","tail":"leaf","eyes":"big","body":"egg","extra":["arms"]}
+    "sprite": {"c1":"#22c55e","c2":"#dcfce7","rx":26,"ry":28,"ears":"leaf","tail":"leaf","eyes":"big","body":"egg","extra":["arms"]},
+    "evolves": {"to":"arbolon","level":30}
+  },
+  "arbolon": {
+    "name": "Arbolón",
+    "from": "hojaral",
+    "base": {"hp":84,"mp":36,"atk":17,"matk":16,"def":21,"mdef":17,"spd":9},
+    "exp": 80,
+    "drops": [["hilo",0.5],["piedra_runica",0.2],["corazon_roca",0.02]],
+    "passives": ["regeneracion","caparazon","guardia_alta"],
+    "desc": "El brote se convirtió en árbol. Los pájaros anidan en sus ramas sin miedo.",
+    "learnExtra": [[32,"muralla"],[38,"avalancha"]],
+    "sprite": {"c1":"#15803d","c2":"#a16207","rx":33,"ry":31,"ears":"leaf","tail":"leaf","eyes":"sleepy","body":"block","extra":["arms"]}
   },
   "lucibicho": {
     "name": "Lucibicho",
@@ -189,14 +228,52 @@
     "base": {"hp":46,"mp":34,"atk":9,"matk":15,"def":10,"mdef":13,"spd":14},
     "exp": 45,
     "drops": [["polvo_brillante",0.25],["pluma",0.35],["eter",0.15]],
-    "passives": ["pozo_mana","mente_arcana"],
+    "passives": ["pozo_mana","mente_arcana","foco_arcano"],
     "desc": "Insecto luminoso que ilumina los senderos nocturnos.",
     "learn": [
       [1,"picotazo"], [3,"destello"], [8,"concentracion"], [12,"curacion"], [16,"rayo_luz"],
       [26,"juicio"], [40,"supernova"]
     ],
     "sprite": {"c1":"#facc15","c2":"#fef9c3","rx":22,"ry":20,"ears":"antenna","tail":"orb","eyes":"big","wings":true,"legs":"none"},
-    "evolves": {"to":"gemolito","level":20}
+    "evolves": {"to":"polillux","level":20}
+  },
+  "cuarcito": {
+    "name": "Cuarcito",
+    "house": "luz",
+    "base": {"hp":50,"mp":32,"atk":9,"matk":13,"def":15,"mdef":15,"spd":8},
+    "exp": 44,
+    "drops": [["polvo_brillante",0.45],["piedra_runica",0.15]],
+    "passives": ["espiritu_ferreo","equilibrio","foco_arcano"],
+    "desc": "Un guijarro de cuarzo que despertó al recibir un rayo de sol en la cueva.",
+    "learn": [[1,"placaje"],[1,"destello"],[6,"coraza"],[12,"rayo_luz"],[16,"curacion"]],
+    "sprite": {"c1":"#e0e7ff","c2":"#ffffff","rx":22,"ry":22,"ears":"spikes","tail":"none","eyes":"cyclops","eyeColor":"#6366f1","mark":"gem","body":"block","legs":"none"},
+    "evolves": {"to":"gemolito","level":18}
+  },
+  "cachorrel": {
+    "name": "Cachorrel",
+    "house": "luz",
+    "base": {"hp":54,"mp":30,"atk":15,"matk":12,"def":12,"mdef":11,"spd":16},
+    "exp": 46,
+    "drops": [["polvo_brillante",0.4],["fragmento_garra",0.3],["cristal_vinculo",0.03]],
+    "passives": ["equilibrio","furia","mirada_fiera"],
+    "desc": "Cachorro de león de melena todavía corta. Ruge muy fuerte para lo pequeño que es.",
+    "learn": [
+      [1,"aranazo"], [3,"destello"], [7,"rugido"], [11,"golpe_aureo"], [16,"mordisco"],
+      [22,"rayo_luz"], [30,"golpe_feroz"], [38,"juicio"]
+    ],
+    "sprite": {"c1":"#facc15","c2":"#fef9c3","rx":28,"ry":24,"ears":"cat","tail":"orb","eyes":"big","eyeColor":"#7c2d12","legs":"quad","extra":["whiskers"]},
+    "evolves": {"to":"aurelion","level":40}
+  },
+  "polillux": {
+    "name": "Polillux",
+    "from": "lucibicho",
+    "base": {"hp":64,"mp":46,"atk":11,"matk":21,"def":14,"mdef":19,"spd":20},
+    "exp": 70,
+    "drops": [["polvo_brillante",0.5],["hilo",0.3],["velo_mistico",0.03]],
+    "passives": ["pozo_mana","pies_ligeros","foco_arcano"],
+    "desc": "Polilla de alas de luz. Su polvo dorado ciega a los que la persiguen.",
+    "learnExtra": [[24,"velo_aurora"],[32,"juicio"],[46,"supernova"]],
+    "sprite": {"c1":"#fef08a","c2":"#a5f3fc","rx":26,"ry":24,"ears":"antenna","tail":"none","eyes":"glow","eyeColor":"#ffffff","mark":"spots","wings":true,"body":"ghost"}
   },
   "coralin": {
     "name": "Coralín",
@@ -204,7 +281,7 @@
     "base": {"hp":60,"mp":32,"atk":11,"matk":14,"def":15,"mdef":15,"spd":8},
     "exp": 50,
     "drops": [["coral",0.5],["gota",0.35],["perla_marina",0.03],["superpocion",0.05]],
-    "passives": ["espiritu_ferreo","caparazon"],
+    "passives": ["espiritu_ferreo","caparazon","guardia_alta"],
     "desc": "Arrecife andante que protege a los pequeños peces.",
     "learn": [
       [1,"burbuja"], [5,"coraza"], [10,"acua_cola"], [14,"aguas_curativas"], [18,"hidrochorro"],
@@ -218,13 +295,25 @@
     "base": {"hp":64,"mp":20,"atk":17,"matk":8,"def":18,"mdef":10,"spd":8},
     "exp": 52,
     "drops": [["escama",0.45],["fragmento_garra",0.35],["piedra_runica",0.1],["escama_dura",0.03]],
-    "passives": ["caparazon","furia"],
+    "passives": ["caparazon","furia","mirada_fiera"],
     "desc": "Sus pinzas pueden partir rocas.",
     "learn": [
       [1,"tenaza"], [6,"coraza"], [8,"embestida"], [10,"golpe_roca"], [14,"rugido"],
       [22,"golpe_feroz"], [32,"avalancha"]
     ],
-    "sprite": {"c1":"#dc2626","c2":"#fecaca","rx":36,"ry":20,"ears":"antenna","tail":"none","eyes":"big","legs":"quad","extra":["claws"]}
+    "sprite": {"c1":"#dc2626","c2":"#fecaca","rx":36,"ry":20,"ears":"antenna","tail":"none","eyes":"big","legs":"quad","extra":["claws"]},
+    "evolves": {"to":"cangrejarca","level":32}
+  },
+  "cangrejarca": {
+    "name": "Cangrejarca",
+    "from": "cangrejon",
+    "base": {"hp":84,"mp":26,"atk":24,"matk":10,"def":27,"mdef":14,"spd":9},
+    "exp": 88,
+    "drops": [["escama_dura",0.1],["fragmento_garra",0.45],["piedra_runica",0.2]],
+    "passives": ["caparazon","furia","rompecorazas"],
+    "desc": "Rey de los cangrejos. Su caparazón está cubierto de conchas de sus rivales.",
+    "learnExtra": [[34,"muralla"],[42,"terremoto"]],
+    "sprite": {"c1":"#991b1b","c2":"#fde68a","rx":38,"ry":24,"ears":"antenna","tail":"none","eyes":"sharp","eyeColor":"#0f172a","mark":"spots","legs":"quad","extra":["claws","crown"]}
   },
   "salpicon": {
     "name": "Salpicón",
@@ -232,14 +321,26 @@
     "base": {"hp":52,"mp":30,"atk":14,"matk":13,"def":11,"mdef":11,"spd":17},
     "exp": 50,
     "drops": [["gota",0.45],["escama",0.3],["eter",0.15],["pluma_veloz",0.03]],
-    "passives": ["pies_ligeros","instinto"],
+    "passives": ["pies_ligeros","instinto","arranque"],
     "desc": "Salta entre las olas a toda velocidad.",
     "learn": [
       [1,"placaje"], [4,"burbuja"], [9,"agilidad"], [12,"acua_cola"], [16,"mordisco"],
       [20,"hidrochorro"], [30,"golpe_feroz"], [40,"maremoto"]
     ],
     "sprite": {"c1":"#0284c7","c2":"#bae6fd","rx":28,"ry":22,"ears":"fins","tail":"fin","eyes":"sharp","eyeColor":"#0f172a","body":"long","legs":"none"},
-    "evolves": {"to":"leviatan","level":46}
+    "evolves": {"to":"serpentola","level":26}
+  },
+  "serpentola": {
+    "name": "Serpéntola",
+    "from": "salpicon",
+    "base": {"hp":72,"mp":36,"atk":19,"matk":16,"def":15,"mdef":15,"spd":19},
+    "exp": 78,
+    "drops": [["escama",0.5],["coral",0.25],["escama_dura",0.03]],
+    "passives": ["pies_ligeros","furia","arranque"],
+    "desc": "Ya no salta las olas: las corta. Su cuerpo se alarga cada luna llena.",
+    "learnExtra": [[28,"golpe_feroz"],[34,"maremoto"]],
+    "sprite": {"c1":"#0369a1","c2":"#7dd3fc","rx":33,"ry":22,"ears":"crest","tail":"fin","eyes":"sharp","eyeColor":"#fde047","mark":"stripes","body":"long","legs":"none","extra":["fangs"]},
+    "evolves": {"to":"leviatan","level":48}
   },
   "gaviolux": {
     "name": "Gaviolux",
@@ -247,7 +348,7 @@
     "base": {"hp":50,"mp":30,"atk":15,"matk":12,"def":11,"mdef":11,"spd":18},
     "exp": 52,
     "drops": [["pluma",0.5],["polvo_brillante",0.2],["pocion",0.2],["pluma_veloz",0.04]],
-    "passives": ["pies_ligeros","furia"],
+    "passives": ["pies_ligeros","furia","arranque"],
     "desc": "Ave costera que planea sobre los rayos del sol.",
     "learn": [
       [1,"picotazo"], [5,"destello"], [9,"ala_cortante"], [13,"agilidad"], [18,"golpe_aureo"],
@@ -261,7 +362,7 @@
     "base": {"hp":54,"mp":32,"atk":15,"matk":14,"def":11,"mdef":12,"spd":19},
     "exp": 60,
     "drops": [["esencia_sombria",0.4],["pelaje",0.3],["antidoto",0.2],["colmillo_umbrio",0.02]],
-    "passives": ["pies_ligeros","instinto"],
+    "passives": ["pies_ligeros","instinto","mirada_fiera"],
     "desc": "Cuelga del techo de las cuevas y caza a ciegas.",
     "learn": [
       [1,"mordisco"], [8,"sombra_vil"], [14,"colmillo_venenoso"], [18,"drenaje_vital"], [22,"garra_umbria"],
@@ -276,6 +377,7 @@
     "exp": 64,
     "drops": [["piedra_runica",0.3],["escama",0.3],["obsidiana",0.08],["corazon_roca",0.03]],
     "desc": "Gigante de piedra que duerme durante siglos.",
+    "passives": ["caparazon","vitalidad","rompecorazas"],
     "learn": [
       [1,"placaje"], [8,"golpe_roca"], [14,"coraza"], [18,"embestida"], [22,"terremoto"],
       [30,"golpe_feroz"], [40,"avalancha"]
@@ -285,17 +387,18 @@
   },
   "gemolito": {
     "name": "Gemolito",
-    "from": "lucibicho",
+    "from": "cuarcito",
     "base": {"hp":58,"mp":40,"atk":10,"matk":18,"def":16,"mdef":18,"spd":9},
     "exp": 64,
     "drops": [["polvo_brillante",0.4],["piedra_runica",0.2],["nucleo_arcano",0.03],["velo_mistico",0.03]],
-    "passives": ["espiritu_ferreo","pozo_mana"],
+    "passives": ["espiritu_ferreo","pozo_mana","foco_arcano"],
     "desc": "Cristal vivo que refleja la poca luz de la caverna.",
     "learn": [
       [1,"destello"], [8,"coraza"], [14,"rayo_luz"], [18,"curacion"], [24,"concentracion"],
       [30,"juicio"], [44,"supernova"]
     ],
-    "sprite": {"c1":"#67e8f9","c2":"#ecfeff","rx":26,"ry":28,"ears":"spikes","tail":"none","eyes":"cyclops","mark":"gem","body":"block","legs":"none"}
+    "sprite": {"c1":"#67e8f9","c2":"#ecfeff","rx":26,"ry":28,"ears":"spikes","tail":"none","eyes":"cyclops","mark":"gem","body":"block","legs":"none"},
+    "evolves": {"to":"topazio","level":32}
   },
   "lavagusano": {
     "name": "Lavagusano",
@@ -303,21 +406,34 @@
     "base": {"hp":62,"mp":28,"atk":16,"matk":15,"def":14,"mdef":10,"spd":10},
     "exp": 62,
     "drops": [["brasa",0.5],["obsidiana",0.06],["balsamo",0.2],["anillo_brasas",0.03]],
-    "passives": ["sangre_caliente","vitalidad"],
+    "passives": ["sangre_caliente","vitalidad","rompecorazas"],
     "desc": "Excava túneles fundiendo la roca a su paso.",
     "learn": [
       [1,"placaje"], [8,"chispa"], [12,"colmillo_ardiente"], [17,"puno_igneo"], [22,"lanzallamas"],
       [32,"llamarada"]
     ],
-    "sprite": {"c1":"#b91c1c","c2":"#fdba74","rx":38,"ry":18,"ears":"none","tail":"spike","eyes":"glow","eyeColor":"#fde047","mark":"stripes","body":"long","legs":"none"}
+    "sprite": {"c1":"#b91c1c","c2":"#fdba74","rx":38,"ry":18,"ears":"none","tail":"spike","eyes":"glow","eyeColor":"#fde047","mark":"stripes","body":"long","legs":"none"},
+    "evolves": {"to":"magmon","level":30}
+  },
+  "velita": {
+    "name": "Velita",
+    "house": "fuego",
+    "base": {"hp":50,"mp":40,"atk":9,"matk":17,"def":11,"mdef":14,"spd":12},
+    "exp": 48,
+    "drops": [["brasa",0.45],["polvo_brillante",0.2],["balsamo",0.12]],
+    "passives": ["pozo_mana","mente_arcana","foco_arcano"],
+    "desc": "Vela que quedó encendida en una mina abandonada. Guía a los mineros perdidos hacia la salida.",
+    "learn": [[1,"chispa"],[5,"concentracion"],[10,"lanzallamas"],[16,"curacion"],[24,"llamarada"]],
+    "sprite": {"c1":"#fef3c7","c2":"#f97316","rx":18,"ry":28,"ears":"flame","tail":"none","eyes":"sleepy","body":"block","legs":"none"},
+    "evolves": {"to":"llamasanta","level":36}
   },
   "magmon": {
     "name": "Magmón",
-    "from": "chispon",
+    "from": "lavagusano",
     "base": {"hp":70,"mp":34,"atk":18,"matk":18,"def":16,"mdef":14,"spd":10},
     "exp": 75,
     "drops": [["brasa",0.55],["obsidiana",0.2],["superpocion",0.08],["anillo_brasas",0.04]],
-    "passives": ["sangre_caliente","furia"],
+    "passives": ["sangre_caliente","furia","rompecorazas"],
     "desc": "Su cuerpo es roca fundida en constante ebullición.",
     "learn": [
       [1,"chispa"], [10,"puno_igneo"], [20,"lanzallamas"], [26,"rugido"], [30,"llamarada"],
@@ -331,7 +447,7 @@
     "base": {"hp":60,"mp":38,"atk":14,"matk":19,"def":13,"mdef":15,"spd":16},
     "exp": 76,
     "drops": [["esencia_sombria",0.4],["brasa",0.3],["supereter",0.06],["velo_mistico",0.04]],
-    "passives": ["mente_arcana","pozo_mana"],
+    "passives": ["mente_arcana","pozo_mana","niebla_arcana"],
     "desc": "Espíritu nacido de la ceniza de las erupciones.",
     "learn": [
       [1,"sombra_vil"], [10,"intimidar"], [18,"drenaje_vital"], [24,"pulso_umbrio"], [32,"concentracion"],
@@ -346,7 +462,7 @@
     "base": {"hp":76,"mp":26,"atk":22,"matk":12,"def":18,"mdef":11,"spd":13},
     "exp": 80,
     "drops": [["fragmento_garra",0.5],["brasa",0.35],["garra_afilada",0.05],["nucleo_arcano",0.03]],
-    "passives": ["furia","instinto"],
+    "passives": ["furia","instinto","mirada_fiera"],
     "desc": "Reptil feroz que domina las laderas del volcán.",
     "learn": [
       [1,"aranazo"], [10,"colmillo_ardiente"], [18,"puno_igneo"], [24,"golpe_feroz"], [30,"rugido"],
@@ -361,7 +477,7 @@
     "base": {"hp":80,"mp":24,"atk":19,"matk":12,"def":24,"mdef":15,"spd":7},
     "exp": 80,
     "drops": [["obsidiana",0.4],["piedra_runica",0.3],["coraza_obsidiana",0.02],["superpocion",0.06]],
-    "passives": ["caparazon","espiritu_ferreo"],
+    "passives": ["caparazon","espiritu_ferreo","rompecorazas"],
     "desc": "Coloso de cristal volcánico, frío al tacto.",
     "learn": [[1,"golpe_roca"],[12,"coraza"],[20,"embestida"],[26,"terremoto"],[34,"avalancha"]],
     "sprite": {"c1":"#1e293b","c2":"#64748b","rx":35,"ry":29,"ears":"spikes","tail":"none","eyes":"cyclops","mark":"gem","body":"block","extra":["arms","horn"]},
@@ -369,11 +485,12 @@
   },
   "aurelion": {
     "name": "Áurelion",
+    "from": "cachorrel",
     "house": "luz",
     "base": {"hp":74,"mp":40,"atk":20,"matk":20,"def":17,"mdef":17,"spd":17},
     "exp": 90,
     "drops": [["polvo_brillante",0.45],["nucleo_arcano",0.06],["orbe_solar",0.02],["cristal_vinculo",0.08]],
-    "passives": ["equilibrio","furia"],
+    "passives": ["equilibrio","furia","mirada_fiera"],
     "desc": "León dorado que custodia las puertas del templo.",
     "learn": [
       [1,"golpe_aureo"], [12,"rayo_luz"], [20,"rugido"], [30,"juicio"], [38,"golpe_feroz"],
@@ -387,13 +504,14 @@
     "base": {"hp":86,"mp":36,"atk":18,"matk":16,"def":24,"mdef":22,"spd":9},
     "exp": 92,
     "drops": [["piedra_runica",0.4],["polvo_brillante",0.3],["escama_dura",0.05],["amuleto_vida",0.02]],
-    "passives": ["caparazon","vitalidad"],
+    "passives": ["caparazon","vitalidad","guardia_alta"],
     "desc": "Estatua animada por la luz del sol.",
     "learn": [[1,"golpe_aureo"],[10,"coraza"],[20,"curacion"],[30,"juicio"],[40,"impacto_final"]],
     "sprite": {"c1":"#d4a017","c2":"#fde68a","rx":32,"ry":32,"ears":"halo","tail":"none","eyes":"cyclops","mark":"gem","body":"block","extra":["arms"]}
   },
   "esfinxa": {
     "name": "Esfinxa",
+    "from": "escarabito",
     "house": "tierra",
     "base": {"hp":72,"mp":44,"atk":15,"matk":22,"def":16,"mdef":20,"spd":15},
     "exp": 90,
@@ -406,13 +524,26 @@
     ],
     "sprite": {"c1":"#ca8a04","c2":"#fef9c3","rx":31,"ry":27,"ears":"long","tail":"curl","eyes":"sharp","eyeColor":"#0ea5e9","mark":"gem","wings":true,"legs":"quad","extra":["mane"]}
   },
+  "escarabito": {
+    "name": "Escarabito",
+    "house": "tierra",
+    "base": {"hp":64,"mp":38,"atk":15,"matk":17,"def":17,"mdef":16,"spd":13},
+    "exp": 70,
+    "drops": [["piedra_runica",0.35],["hilo",0.3],["supereter",0.05]],
+    "passives": ["mente_arcana","caparazon","rompecorazas"],
+    "desc": "Escarabajo sagrado que empuja una bola de arena dorada. Dicen que dentro duerme un acertijo.",
+    "learn": [[1,"lodo"],[34,"coraza"],[36,"raiz_drenante"],[40,"concentracion"]],
+    "sprite": {"c1":"#a16207","c2":"#fde047","rx":28,"ry":22,"ears":"antenna","tail":"none","eyes":"sharp","eyeColor":"#0ea5e9","mark":"gem","legs":"quad","extra":["shell"]},
+    "evolves": {"to":"esfinxa","level":44}
+  },
   "llamasanta": {
     "name": "Llamasanta",
+    "from": "velita",
     "house": "fuego",
     "base": {"hp":66,"mp":46,"atk":14,"matk":24,"def":14,"mdef":19,"spd":16},
     "exp": 92,
     "drops": [["brasa",0.4],["polvo_brillante",0.3],["panacea",0.08],["orbe_solar",0.02]],
-    "passives": ["pozo_mana","mente_arcana"],
+    "passives": ["pozo_mana","mente_arcana","foco_arcano"],
     "desc": "Llama eterna que arde en el altar del templo.",
     "learn": [
       [1,"chispa"], [12,"lanzallamas"], [20,"concentracion"], [30,"curacion"], [36,"llamarada"],
@@ -422,14 +553,27 @@
   },
   "abisalto": {
     "name": "Abisalto",
+    "from": "dentolin",
     "house": "agua",
     "base": {"hp":84,"mp":40,"atk":22,"matk":18,"def":20,"mdef":18,"spd":14},
     "exp": 105,
     "drops": [["coral",0.4],["gota",0.4],["perla_marina",0.06],["hiperpocion",0.04]],
-    "passives": ["furia","vitalidad"],
+    "passives": ["furia","vitalidad","adrenalina"],
     "desc": "Depredador de las profundidades sin luz.",
     "learn": [[1,"acua_cola"],[16,"hidrochorro"],[28,"golpe_feroz"],[40,"maremoto"],[54,"impacto_final"]],
     "sprite": {"c1":"#1e3a8a","c2":"#60a5fa","rx":36,"ry":24,"ears":"fins","tail":"fin","eyes":"glow","eyeColor":"#67e8f9","mark":"spots","body":"long","legs":"none","extra":["fangs"]}
+  },
+  "dentolin": {
+    "name": "Dentolín",
+    "house": "agua",
+    "base": {"hp":74,"mp":38,"atk":21,"matk":16,"def":16,"mdef":15,"spd":15},
+    "exp": 88,
+    "drops": [["coral",0.4],["perla_marina",0.05],["hiperpocion",0.03]],
+    "passives": ["furia","instinto","adrenalina"],
+    "desc": "Pez abisal con una lucecita en la frente. Muerde todo lo que se acerca a ella.",
+    "learn": [[1,"mordisco"],[1,"burbuja"],[46,"acua_cola"],[50,"golpe_feroz"],[54,"hidrochorro"]],
+    "sprite": {"c1":"#1e3a8a","c2":"#93c5fd","rx":28,"ry":22,"ears":"antenna","tail":"fin","eyes":"glow","eyeColor":"#fde047","body":"egg","legs":"none","extra":["fangs"]},
+    "evolves": {"to":"abisalto","level":54}
   },
   "nocturnis": {
     "name": "Nocturnis",
@@ -448,7 +592,7 @@
     "base": {"hp":68,"mp":52,"atk":12,"matk":27,"def":14,"mdef":24,"spd":18},
     "exp": 110,
     "drops": [["esencia_sombria",0.5],["polvo_brillante",0.3],["velo_mistico",0.06],["lagrima_estelar",0.01]],
-    "passives": ["mente_arcana","pozo_mana"],
+    "passives": ["mente_arcana","pozo_mana","niebla_arcana"],
     "desc": "Un eco de algo que una vez estuvo vivo.",
     "learn": [
       [1,"sombra_vil"], [14,"intimidar"], [24,"pulso_umbrio"], [34,"drenaje_vital"], [44,"concentracion"],
@@ -459,7 +603,7 @@
   },
   "leviatan": {
     "name": "Leviatán",
-    "from": "salpicon",
+    "from": "serpentola",
     "base": {"hp":96,"mp":40,"atk":24,"matk":20,"def":22,"mdef":20,"spd":12},
     "exp": 118,
     "drops": [["escama",0.5],["coral",0.3],["amuleto_vida",0.03],["hiperpocion",0.06]],
@@ -485,7 +629,7 @@
     "base": {"hp":96,"mp":44,"atk":28,"matk":24,"def":22,"mdef":18,"spd":20},
     "exp": 140,
     "drops": [["brasa",0.5],["obsidiana",0.3],["lagrima_estelar",0.03],["botas_viento",0.03]],
-    "passives": ["furia","sangre_caliente"],
+    "passives": ["furia","sangre_caliente","mirada_fiera"],
     "desc": "Dragón que anida en la cima del mundo.",
     "learn": [[1,"puno_igneo"],[30,"llamarada"],[50,"golpe_feroz"],[66,"infierno"],[72,"impacto_final"]],
     "sprite": {"c1":"#991b1b","c2":"#fca5a5","rx":36,"ry":30,"ears":"horns","tail":"flame","eyes":"sharp","eyeColor":"#fde047","wings":true,"mark":"stripes","body":"long","legs":"quad","extra":["fangs","horn"]}
@@ -514,6 +658,7 @@
   },
   "tempestis": {
     "name": "Tempestis",
+    "from": "nubarron",
     "house": "agua",
     "base": {"hp":92,"mp":52,"atk":22,"matk":28,"def":20,"mdef":24,"spd":20},
     "exp": 138,
@@ -553,6 +698,7 @@
     "from": "umbrix",
     "base": {"hp":68,"mp":44,"atk":21,"matk":18,"def":14,"mdef":15,"spd":22},
     "desc": "Se funde con cualquier sombra y ataca sin hacer ruido.",
+    "passives": ["pies_ligeros","furia","instinto","mirada_fiera"],
     "sprite": {"c1":"#5b3cc4","c2":"#c4b5fd","rx":31,"ry":27,"ears":"cat","tail":"curl","eyes":"sharp","eyeColor":"#facc15","mark":"moon","legs":"quad","extra":["whiskers","fangs"]},
     "evolves": {"to":"noctyrion","level":34}
   },
@@ -577,6 +723,7 @@
     "from": "pyrex",
     "base": {"hp":70,"mp":44,"atk":22,"matk":19,"def":15,"mdef":14,"spd":18},
     "desc": "Su cuerpo desprende tanto calor que derrite la roca a su paso.",
+    "passives": ["furia","sangre_caliente","instinto","adrenalina"],
     "sprite": {"c1":"#ea580c","c2":"#fed7aa","rx":33,"ry":27,"ears":"crest","tail":"flame","eyes":"sharp","eyeColor":"#7c2d12","mark":"stripes","body":"long","legs":"quad","extra":["fangs"]},
     "evolves": {"to":"infernyx","level":34}
   },
@@ -650,7 +797,7 @@
     "base": {"hp":46,"mp":28,"atk":12,"matk":11,"def":10,"mdef":10,"spd":16},
     "exp": 35,
     "drops": [["pluma",0.4],["polvo_brillante",0.15],["pocion",0.15]],
-    "passives": ["pies_ligeros","instinto"],
+    "passives": ["pies_ligeros","instinto","arranque"],
     "desc": "Ratoncito eléctrico que nunca para quieto. Siempre ataca primero.",
     "learn": [
       [1,"placaje"], [1,"destello"], [4,"agilidad"], [8,"golpe_aureo"], [13,"velo_aurora"],
@@ -665,13 +812,52 @@
     "base": {"hp":54,"mp":30,"atk":10,"matk":12,"def":12,"mdef":12,"spd":10},
     "exp": 36,
     "drops": [["gota",0.45],["hilo",0.25],["pocion",0.15]],
-    "passives": ["vitalidad","regeneracion"],
+    "passives": ["vitalidad","regeneracion","pegajoso"],
     "desc": "Ranita de charco. Aguanta mucho y se cura cuando puede.",
     "learn": [
       [1,"placaje"], [1,"burbuja"], [5,"aguas_curativas"], [9,"acua_cola"], [14,"vapor"],
       [20,"hidrochorro"], [30,"maremoto"]
     ],
-    "sprite": {"c1":"#4ade80","c2":"#dcfce7","rx":28,"ry":22,"ears":"none","tail":"none","eyes":"big","mark":"spots","legs":"quad"}
+    "sprite": {"c1":"#4ade80","c2":"#dcfce7","rx":28,"ry":22,"ears":"none","tail":"none","eyes":"big","mark":"spots","legs":"quad"},
+    "evolves": {"to":"sapolodo","level":20}
+  },
+  "sapolodo": {
+    "name": "Sapolodo",
+    "from": "charquito",
+    "base": {"hp":80,"mp":38,"atk":14,"matk":17,"def":17,"mdef":17,"spd":12},
+    "exp": 66,
+    "drops": [["gota",0.5],["coral",0.2],["superpocion",0.06]],
+    "passives": ["vitalidad","regeneracion","pegajoso"],
+    "desc": "Sapo gordo y tranquilo. Pasa el día en el barro y lo usa para curarse.",
+    "learnExtra": [[22,"lodo"],[28,"coraza"]],
+    "sprite": {"c1":"#15803d","c2":"#bbf7d0","rx":33,"ry":25,"ears":"none","tail":"none","eyes":"sleepy","mark":"spots","legs":"quad"}
+  },
+  "nubecita": {
+    "name": "Nubecita",
+    "house": "agua",
+    "base": {"hp":50,"mp":36,"atk":8,"matk":14,"def":10,"mdef":14,"spd":14},
+    "exp": 40,
+    "drops": [["gota",0.5],["eter",0.15],["pocion",0.12]],
+    "passives": ["regeneracion","pies_ligeros","niebla_arcana"],
+    "desc": "Nube diminuta que llora cuando se asusta. Sus lágrimas hacen crecer la hierba.",
+    "learn": [
+      [1,"burbuja"], [4,"agilidad"], [8,"aguas_curativas"], [12,"vapor"], [17,"hidrochorro"],
+      [23,"maremoto"]
+    ],
+    "sprite": {"c1":"#e0f2fe","c2":"#ffffff","rx":28,"ry":20,"ears":"none","tail":"curl","eyes":"sleepy","body":"ghost"},
+    "evolves": {"to":"nubarron","level":24}
+  },
+  "nubarron": {
+    "name": "Nubarrón",
+    "from": "nubecita",
+    "base": {"hp":70,"mp":46,"atk":13,"matk":21,"def":15,"mdef":19,"spd":17},
+    "exp": 72,
+    "drops": [["gota",0.5],["perla_marina",0.04],["supereter",0.06]],
+    "passives": ["regeneracion","espiritu_ferreo","niebla_arcana"],
+    "desc": "Ya no llora: truena. Se enfada si alguien tapa el sol que necesita para crecer.",
+    "learnExtra": [[26,"diluvio"],[30,"intimidar"]],
+    "sprite": {"c1":"#94a3b8","c2":"#e0f2fe","rx":31,"ry":24,"ears":"antenna","tail":"curl","eyes":"sharp","eyeColor":"#fef08a","body":"ghost"},
+    "evolves": {"to":"tempestis","level":56}
   },
   "ratonix": {
     "name": "Ratonix",
@@ -679,6 +865,7 @@
     "base": {"hp":64,"mp":38,"atk":18,"matk":16,"def":13,"mdef":14,"spd":24},
     "drops": [["pluma",0.4],["polvo_brillante",0.3],["pluma_veloz",0.04]],
     "desc": "Sus chispas doradas se ven a kilómetros. Rapidísimo.",
+    "passives": ["pies_ligeros","instinto","arranque"],
     "learnExtra": [[34,"juicio"],[48,"impacto_final"]],
     "sprite": {"c1":"#facc15","c2":"#fef9c3","rx":28,"ry":26,"ears":"long","tail":"orb","eyes":"sharp","eyeColor":"#b45309","mark":"stripes","extra":["whiskers","fangs"]}
   },
@@ -688,7 +875,7 @@
     "base": {"hp":54,"mp":36,"atk":10,"matk":15,"def":12,"mdef":15,"spd":10},
     "exp": 42,
     "drops": [["esencia_sombria",0.35],["hilo",0.3],["antidoto",0.2]],
-    "passives": ["mente_arcana","regeneracion"],
+    "passives": ["mente_arcana","regeneracion","niebla_arcana"],
     "desc": "Seta parlanchina que suelta esporas venenosas al reírse.",
     "learn": [
       [1,"sombra_vil"], [3,"esporas"], [7,"intimidar"], [11,"drenaje_vital"], [16,"telarana"],
@@ -703,7 +890,7 @@
     "base": {"hp":52,"mp":30,"atk":15,"matk":12,"def":11,"mdef":10,"spd":16},
     "exp": 42,
     "drops": [["brasa",0.4],["pelaje",0.3],["balsamo",0.15]],
-    "passives": ["furia","sangre_caliente"],
+    "passives": ["furia","sangre_caliente","arranque"],
     "desc": "Ardilla de cola ardiente. Esconde brasas en lugar de nueces.",
     "learn": [
       [1,"aranazo"], [1,"chispa"], [5,"mordisco"], [9,"colmillo_ardiente"], [14,"agilidad"],
@@ -719,6 +906,7 @@
     "exp": 66,
     "drops": [["esencia_sombria",0.5],["nucleo_arcano",0.06],["velo_mistico",0.03]],
     "desc": "Rey de los hongos del bosque. Donde pisa, crece la niebla.",
+    "passives": ["mente_arcana","regeneracion","niebla_arcana"],
     "learnExtra": [[40,"curacion"],[52,"eclipse"]],
     "sprite": {"c1":"#6b21a8","c2":"#e9d5ff","rx":32,"ry":30,"ears":"leaf","tail":"none","eyes":"glow","eyeColor":"#a3e635","mark":"spots","extra":["cap","arms"]}
   },
@@ -729,6 +917,7 @@
     "exp": 64,
     "drops": [["brasa",0.5],["fragmento_garra",0.3],["anillo_brasas",0.03]],
     "desc": "Salta de rama en rama dejando un rastro de fuego.",
+    "passives": ["furia","sangre_caliente","arranque","adrenalina"],
     "learnExtra": [[34,"puno_igneo"],[44,"llamarada"]],
     "sprite": {"c1":"#dc2626","c2":"#fed7aa","rx":29,"ry":26,"ears":"flame","tail":"flame","eyes":"sharp","eyeColor":"#fde047","mark":"stripes","legs":"quad","extra":["fangs"]}
   },
@@ -738,7 +927,7 @@
     "base": {"hp":56,"mp":46,"atk":9,"matk":18,"def":10,"mdef":17,"spd":13},
     "exp": 48,
     "drops": [["gota",0.5],["perla_marina",0.05],["eter",0.15]],
-    "passives": ["pozo_mana","mente_arcana"],
+    "passives": ["pozo_mana","mente_arcana","pegajoso"],
     "desc": "Medusa luminosa. Frágil, pero su magia escuece.",
     "learn": [
       [1,"burbuja"], [6,"vapor"], [10,"concentracion"], [14,"hidrochorro"], [20,"aguas_curativas"],
@@ -746,13 +935,55 @@
     ],
     "sprite": {"c1":"#a78bfa","c2":"#e0f2fe","rx":25,"ry":28,"ears":"antenna","tail":"none","eyes":"glow","eyeColor":"#22d3ee","body":"ghost"}
   },
+  "tintillo": {
+    "name": "Tintillo",
+    "house": "oscuridad",
+    "base": {"hp":56,"mp":34,"atk":15,"matk":14,"def":12,"mdef":12,"spd":17},
+    "exp": 50,
+    "drops": [["esencia_sombria",0.4],["gota",0.3],["perla_marina",0.02]],
+    "passives": ["instinto","pies_ligeros","niebla_arcana"],
+    "desc": "Calamar pequeñito que suelta tinta cuando se pone nervioso. Es decir, siempre.",
+    "learn": [
+      [1,"placaje"], [3,"sombra_vil"], [8,"burbuja"], [12,"colmillo_venenoso"], [17,"garra_umbria"],
+      [24,"drenaje_vital"], [34,"pulso_umbrio"]
+    ],
+    "sprite": {"c1":"#4338ca","c2":"#c7d2fe","rx":24,"ry":26,"ears":"antenna","tail":"curl","eyes":"big","eyeColor":"#f9a8d4","body":"ghost"},
+    "evolves": {"to":"kraknoir","level":44}
+  },
+  "copito": {
+    "name": "Copito",
+    "house": "agua",
+    "base": {"hp":52,"mp":36,"atk":10,"matk":14,"def":11,"mdef":13,"spd":16},
+    "exp": 44,
+    "drops": [["gota",0.45],["pluma_veloz",0.04],["eter",0.12]],
+    "passives": ["pozo_mana","pies_ligeros","arranque"],
+    "desc": "Polluelo de plumón blanco que llega con las mareas frías. Le encanta resbalar por la arena.",
+    "learn": [
+      [1,"picotazo"], [3,"burbuja"], [8,"agilidad"], [12,"acua_cola"], [18,"aguas_curativas"],
+      [24,"hidrochorro"]
+    ],
+    "sprite": {"c1":"#f1f5f9","c2":"#7dd3fc","rx":24,"ry":24,"ears":"crest","tail":"none","eyes":"big","wings":true,"legs":"tall","extra":["beak"]},
+    "evolves": {"to":"nevalis","level":28}
+  },
+  "nevalis": {
+    "name": "Nevalis",
+    "from": "copito",
+    "base": {"hp":72,"mp":46,"atk":14,"matk":21,"def":15,"mdef":19,"spd":22},
+    "exp": 80,
+    "drops": [["gota",0.5],["perla_marina",0.05],["supereter",0.05]],
+    "passives": ["pozo_mana","equilibrio","arranque"],
+    "desc": "Ave de escarcha que vuela hacia el norte buscando la aurora con la que soñaba de cría.",
+    "learnExtra": [[30,"velo_aurora"],[36,"maremoto"]],
+    "sprite": {"c1":"#bae6fd","c2":"#f0f9ff","rx":27,"ry":26,"ears":"crest","tail":"fin","eyes":"sharp","eyeColor":"#0c4a6e","mark":"star","wings":true,"legs":"tall","extra":["beak"]},
+    "evolves": {"to":"auroris","level":58}
+  },
   "tortuarena": {
     "name": "Tortuarena",
     "house": "tierra",
     "base": {"hp":74,"mp":24,"atk":13,"matk":9,"def":21,"mdef":15,"spd":6},
     "exp": 48,
     "drops": [["escama",0.45],["coral",0.25],["escama_dura",0.03]],
-    "passives": ["caparazon","espiritu_ferreo"],
+    "passives": ["caparazon","espiritu_ferreo","guardia_alta"],
     "desc": "Tortuga de playa. Se esconde en su concha cuando la cosa se pone fea.",
     "learn": [
       [1,"placaje"], [5,"muralla"], [9,"golpe_roca"], [14,"lodo"], [20,"embestida"],
@@ -768,16 +999,18 @@
     "exp": 80,
     "drops": [["piedra_runica",0.4],["escama_dura",0.06],["corazon_roca",0.04]],
     "desc": "Lleva una pequeña montaña a la espalda. Casi indestructible.",
+    "passives": ["caparazon","espiritu_ferreo","guardia_alta"],
     "learnExtra": [[44,"avalancha"],[56,"impacto_final"]],
     "sprite": {"c1":"#854d0e","c2":"#fde68a","rx":38,"ry":27,"ears":"horns","tail":"spike","eyes":"sharp","eyeColor":"#fbbf24","mark":"gem","legs":"quad","extra":["shell","horn"]}
   },
   "topazio": {
     "name": "Topazio",
+    "from": "gemolito",
     "house": "luz",
-    "base": {"hp":62,"mp":42,"atk":12,"matk":19,"def":16,"mdef":19,"spd":12},
+    "base": {"hp":76,"mp":50,"atk":14,"matk":24,"def":19,"mdef":24,"spd":15},
     "exp": 56,
     "drops": [["polvo_brillante",0.45],["piedra_runica",0.2],["orbe_solar",0.02]],
-    "passives": ["pozo_mana","equilibrio"],
+    "passives": ["pozo_mana","equilibrio","foco_arcano"],
     "desc": "Cristal vivo que guarda la luz de la superficie.",
     "learn": [
       [1,"destello"], [16,"velo_aurora"], [19,"rayo_luz"], [24,"curacion"], [30,"concentracion"],
@@ -791,13 +1024,25 @@
     "base": {"hp":60,"mp":32,"atk":19,"matk":12,"def":14,"mdef":12,"spd":19},
     "exp": 56,
     "drops": [["hilo",0.5],["esencia_sombria",0.3],["colmillo_umbrio",0.02]],
-    "passives": ["instinto","pies_ligeros"],
+    "passives": ["instinto","pies_ligeros","pegajoso"],
     "desc": "Araña de las grutas. Teje redes para frenar a sus presas.",
     "learn": [
       [1,"mordisco"], [16,"telarana"], [18,"colmillo_venenoso"], [22,"garra_umbria"], [28,"agilidad"],
       [36,"golpe_feroz"]
     ],
-    "sprite": {"c1":"#1e1b4b","c2":"#c7d2fe","rx":28,"ry":22,"ears":"antenna","tail":"spike","eyes":"sharp","eyeColor":"#ef4444","mark":"spots","legs":"quad","extra":["fangs"]}
+    "sprite": {"c1":"#1e1b4b","c2":"#c7d2fe","rx":28,"ry":22,"ears":"antenna","tail":"spike","eyes":"sharp","eyeColor":"#ef4444","mark":"spots","legs":"quad","extra":["fangs"]},
+    "evolves": {"to":"tejenoche","level":32}
+  },
+  "tejenoche": {
+    "name": "Tejenoche",
+    "from": "aranuria",
+    "base": {"hp":78,"mp":38,"atk":26,"matk":15,"def":18,"mdef":15,"spd":24},
+    "exp": 92,
+    "drops": [["hilo",0.6],["esencia_sombria",0.35],["colmillo_umbrio",0.04]],
+    "passives": ["instinto","furia","pegajoso"],
+    "desc": "Teje redes tan grandes que cubren cuevas enteras. Nadie sale de ellas sin su permiso.",
+    "learnExtra": [[34,"pulso_umbrio"],[42,"eclipse"]],
+    "sprite": {"c1":"#0f0a2e","c2":"#a78bfa","rx":33,"ry":24,"ears":"antenna","tail":"spike","eyes":"glow","eyeColor":"#ef4444","mark":"spots","legs":"quad","extra":["fangs","crown"]}
   },
   "salamandrox": {
     "name": "Salamandrox",
@@ -805,7 +1050,7 @@
     "base": {"hp":70,"mp":36,"atk":21,"matk":18,"def":14,"mdef":13,"spd":20},
     "exp": 66,
     "drops": [["brasa",0.5],["obsidiana",0.25],["anillo_brasas",0.03]],
-    "passives": ["furia","instinto"],
+    "passives": ["furia","instinto","adrenalina"],
     "desc": "Salamandra veloz que nada en lava como si fuera agua.",
     "learn": [
       [1,"colmillo_ardiente"], [24,"mordisco_brasa"], [28,"agilidad"], [32,"lanzallamas"], [40,"golpe_feroz"],
@@ -813,13 +1058,29 @@
     ],
     "sprite": {"c1":"#ef4444","c2":"#fecaca","rx":31,"ry":22,"ears":"crest","tail":"flame","eyes":"sharp","eyeColor":"#fde047","mark":"stripes","body":"long","legs":"quad"}
   },
+  "draguijarro": {
+    "name": "Draguijarro",
+    "house": "tierra",
+    "base": {"hp":70,"mp":26,"atk":21,"matk":12,"def":20,"mdef":13,"spd":13},
+    "exp": 72,
+    "drops": [["piedra_runica",0.4],["obsidiana",0.15],["corazon_roca",0.02]],
+    "passives": ["caparazon","furia","mirada_fiera"],
+    "desc": "Cría de dragón de roca. Se esconde entre las piedras del volcán hasta que le crecen las alas.",
+    "learn": [
+      [1,"golpe_roca"], [1,"mordisco"], [26,"embestida"], [30,"rugido"], [36,"avalancha"],
+      [44,"terremoto"], [52,"golpe_feroz"]
+    ],
+    "sprite": {"c1":"#78716c","c2":"#fcd34d","rx":30,"ry":24,"ears":"horns","tail":"spike","eyes":"big","eyeColor":"#ea580c","legs":"quad","extra":["horn"]},
+    "evolves": {"to":"petrodraco","level":56}
+  },
   "geyseron": {
     "name": "Géyserón",
+    "from": "vaporin",
     "house": "agua",
     "base": {"hp":78,"mp":42,"atk":14,"matk":20,"def":17,"mdef":19,"spd":12},
     "exp": 66,
     "drops": [["gota",0.5],["obsidiana",0.2],["perla_marina",0.05]],
-    "passives": ["vitalidad","espiritu_ferreo"],
+    "passives": ["vitalidad","espiritu_ferreo","guardia_alta"],
     "desc": "Vive en los géiseres del volcán. El fuego no le asusta.",
     "learn": [
       [1,"burbuja"], [24,"vapor"], [28,"aguas_curativas"], [32,"hidrochorro"], [40,"coraza"],
@@ -827,13 +1088,26 @@
     ],
     "sprite": {"c1":"#0ea5e9","c2":"#f0f9ff","rx":32,"ry":28,"ears":"fins","tail":"fin","eyes":"big","mark":"spots","body":"egg","extra":["arms"]}
   },
+  "vaporin": {
+    "name": "Vaporín",
+    "house": "agua",
+    "base": {"hp":58,"mp":38,"atk":10,"matk":17,"def":13,"mdef":15,"spd":13},
+    "exp": 52,
+    "drops": [["gota",0.5],["obsidiana",0.08],["eter",0.15]],
+    "passives": ["vitalidad","pies_ligeros","guardia_alta"],
+    "desc": "Bocanada de vapor que se escapó de un charco hirviendo. Silba cuando está contento.",
+    "learn": [[1,"burbuja"],[6,"vapor"],[12,"agilidad"],[18,"aguas_curativas"],[24,"hidrochorro"]],
+    "sprite": {"c1":"#cbd5e1","c2":"#f8fafc","rx":24,"ry":22,"ears":"none","tail":"curl","eyes":"big","body":"ghost"},
+    "evolves": {"to":"geyseron","level":30}
+  },
   "sacerdon": {
     "name": "Sacerdón",
+    "from": "buhito",
     "house": "luz",
     "base": {"hp":78,"mp":56,"atk":14,"matk":23,"def":17,"mdef":23,"spd":16},
     "exp": 78,
     "drops": [["polvo_brillante",0.5],["nucleo_arcano",0.08],["orbe_solar",0.03]],
-    "passives": ["pozo_mana","mente_arcana"],
+    "passives": ["pozo_mana","mente_arcana","foco_arcano"],
     "desc": "Búho guardián del templo. Cura a sus aliados con cánticos.",
     "learn": [
       [1,"rayo_luz"], [34,"curacion"], [38,"velo_aurora"], [42,"juicio"], [52,"concentracion"],
@@ -847,7 +1121,7 @@
     "base": {"hp":96,"mp":26,"atk":23,"matk":10,"def":27,"mdef":18,"spd":7},
     "exp": 80,
     "drops": [["piedra_runica",0.5],["obsidiana",0.3],["coraza_obsidiana",0.03]],
-    "passives": ["caparazon","espiritu_ferreo"],
+    "passives": ["caparazon","espiritu_ferreo","guardia_alta"],
     "desc": "Golem de piedra dorada que protege las puertas del templo.",
     "learn": [
       [1,"golpe_roca"], [34,"muralla"], [38,"embestida"], [44,"avalancha"], [52,"rugido"],
@@ -857,11 +1131,12 @@
   },
   "kraknoir": {
     "name": "Kraknoir",
+    "from": "tintillo",
     "house": "oscuridad",
     "base": {"hp":88,"mp":44,"atk":25,"matk":20,"def":19,"mdef":18,"spd":18},
     "exp": 96,
     "drops": [["esencia_sombria",0.5],["perla_marina",0.1],["colmillo_umbrio",0.04]],
-    "passives": ["furia","instinto"],
+    "passives": ["furia","instinto","niebla_arcana"],
     "desc": "Calamar de las profundidades. Envuelve a sus presas en tinta negra.",
     "learn": [
       [1,"garra_umbria"], [46,"telarana"], [50,"drenaje_vital"], [54,"golpe_feroz"], [60,"pulso_umbrio"],
@@ -871,11 +1146,12 @@
   },
   "fuegofatuo": {
     "name": "Fuego Fatuo",
+    "from": "llamarin",
     "house": "fuego",
     "base": {"hp":74,"mp":54,"atk":13,"matk":27,"def":14,"mdef":21,"spd":23},
     "exp": 96,
     "drops": [["brasa",0.5],["nucleo_arcano",0.1],["lagrima_estelar",0.03]],
-    "passives": ["mente_arcana","pies_ligeros"],
+    "passives": ["mente_arcana","pies_ligeros","foco_arcano"],
     "desc": "Llama errante que guía a los perdidos hacia el abismo.",
     "learn": [
       [1,"lanzallamas"], [46,"vapor"], [50,"concentracion"], [54,"llamarada"], [62,"agilidad"],
@@ -885,6 +1161,7 @@
   },
   "auroris": {
     "name": "Auroris",
+    "from": "nevalis",
     "house": "agua",
     "base": {"hp":92,"mp":58,"atk":18,"matk":29,"def":19,"mdef":27,"spd":24},
     "exp": 125,
@@ -899,11 +1176,12 @@
   },
   "petrodraco": {
     "name": "Petrodraco",
+    "from": "draguijarro",
     "house": "tierra",
     "base": {"hp":104,"mp":34,"atk":29,"matk":18,"def":27,"mdef":20,"spd":18},
     "exp": 130,
     "drops": [["piedra_runica",0.5],["corazon_roca",0.05],["corona_celeste",0.005]],
-    "passives": ["furia","caparazon"],
+    "passives": ["furia","caparazon","mirada_fiera"],
     "desc": "Dragón de roca que duerme bajo la cumbre desde hace siglos.",
     "learn": [
       [1,"avalancha"], [62,"muralla"], [66,"terremoto"], [72,"rugido"], [80,"golpe_feroz"],

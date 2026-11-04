@@ -172,7 +172,7 @@
             h('span', null, DK.icon('eye', 11), ' ', t('codex.zoneSeen', { n: seen, max: list.length })),
             h('span', null, DK.icon('swords', 11), ' ', fought),
             boss ? h('span', { class: 'good-text' }, DK.icon('crown', 11), ' ', t('codex.zoneBoss')) : null,
-            full && late ? h('span', { class: 'cx-zone-nm' }, DK.icon('moon', 11), ' ', t('codex.zoneNightmare')) : null) : null));
+            full && late ? h('span', { class: 'cx-zone-nm' }, DK.icon('demon', 11), ' ', t('codex.zoneNightmare')) : null) : null));
     };
     return h('div', { class: 'stack' },
       h('p', { class: 'muted small' }, late ? t('codex.zonesHintLate') : t('codex.zonesHint')),

@@ -74,7 +74,7 @@ module.exports = {
       const picks = await p.locator('.rune-pick').count();
       await p.click('.rune-pick:has-text("' + (await p.evaluate(() => DK.t('rune.medium.name'))) + '")'); await sleep(300);
       const r1 = await p.evaluate(() => ({ full: document.querySelectorAll('.rune-socket.full').length, size: DK.expedition.nextStart().size, emblems: DK.store.state.emblems, rumbo: DK.store.state.camp.rumbo_captura, modal: !!document.querySelector('.rune-modal') }));
-      check(picks === 8, 'el selector debería enseñar las 8 runas: ' + picks);
+      check(picks === 3, 'el selector debería enseñar las 3 runas que tienes (agrupadas por tier): ' + picks);
       check(r1.full === 1 && r1.size === 'medium' && !r1.modal, 'la runa no se engasta: ' + JSON.stringify(r1));
       check(r1.emblems === 5 && r1.rumbo === undefined, 'el Rumbo antiguo debería devolver sus emblemas: ' + r1.emblems);
       // Bonificaciones repetibles hasta llenar los 4 huecos

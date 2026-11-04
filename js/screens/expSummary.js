@@ -122,6 +122,8 @@
           h('p', { class: 'muted' }, t('sum.outText.' + s.outcome, { n: Math.round(((s.mult || DK.config.expeditionBonus) - 1) * 100) })),
           h('div', { class: 'chips' },
             h('span', { class: 'chip pos' }, DK.icon('compass', 13), t('sum.depth', { n: depth, maps: zonesDone.length })),
+            // Desafío semanal: puntos, récord y premio
+            s.weekly ? h('span', { class: 'chip gold wk-chip', tip: s.weekly.reward ? t('weekly.gotReward', { e: s.weekly.reward.emblems }) : t('weekly.title') }, DK.icon('trophy', 13), t('weekly.result', { n: s.weekly.score.toLocaleString(DK.i18n.lang) }), s.weekly.isBest ? ' · ' + t('weekly.newBest') : '') : null,
             s.emblems ? h('span', { class: 'chip pos' }, DK.icon('emblem', 13), t('emblem.plus', { n: s.emblems })) : null,
             (s.runes || []).length ? h('span', { class: 'chip pos rune-chip', tip: s.runes.map((id) => V.runeName(id)).join(', ') }, DK.icon('rune', 13), `+${s.runes.length} ${t('rune.short')}`) : null,
             (s.secrets || []).length ? h('span', { class: 'chip pos' }, DK.icon('cave', 13), tn('sum.secrets', s.secrets.length)) : null,

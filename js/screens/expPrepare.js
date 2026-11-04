@@ -112,9 +112,9 @@
         chosen.length ? h('div', { class: 'pk-list' }, chosen.map((id) => row(id, 'pack')))
           : h('div', { class: 'pk-empty' }, DK.icon('bag', 24), h('b', null, t('pack.empty')), h('span', { class: 'muted small' }, t('pack.dropHint2'))),
         h('div', { class: 'pk-actions' },
-          Object.keys(last).length ? btn({ icon: 'repeat', label: t('pack.repeat'), size: 'sm', variant: 'ghost', onClick: () => { Object.keys(pack).forEach((k) => delete pack[k]); Object.assign(pack, last); refresh(); } }) : null,
-          btn({ icon: 'sparkles', label: t('pack.suggest'), size: 'sm', variant: 'ghost', onClick: () => { Object.keys(pack).forEach((k) => delete pack[k]); Object.assign(pack, E().suggestPack()); refresh(); } }),
-          chosen.length ? btn({ icon: 'x', label: t('pack.clear'), size: 'sm', variant: 'ghost', onClick: () => { Object.keys(pack).forEach((k) => delete pack[k]); refresh(); } }) : null));
+          Object.keys(last).length ? btn({ icon: 'repeat', label: t('pack.repeat'), iconOnly: true, size: 'sm', variant: 'ghost', onClick: () => { Object.keys(pack).forEach((k) => delete pack[k]); Object.assign(pack, last); refresh(); } }) : null,
+          btn({ icon: 'sparkles', label: t('pack.suggest'), iconOnly: true, size: 'sm', variant: 'ghost', onClick: () => { Object.keys(pack).forEach((k) => delete pack[k]); Object.assign(pack, E().suggestPack()); refresh(); } }),
+          chosen.length ? btn({ icon: 'x', label: t('pack.clear'), iconOnly: true, size: 'sm', variant: 'ghost', onClick: () => { Object.keys(pack).forEach((k) => delete pack[k]); refresh(); } }) : null));
 
       /* ---------- Bolsa (lista con filtro) ---------- */
       const all = Object.keys(home).filter((id) => home[id] > 0 && E().canPack(id)).sort(order);
@@ -133,7 +133,7 @@
       const needs = Object.entries(DK.crafting.goalNeeds());
       const goalsPanel = DK.crafting.goals().length ? h('div', { class: 'panel stack-s brief-goals' },
         h('div', { class: 'panel-head' }, DK.icon('star', 18), h('h3', null, t('craft.goals')),
-          h('span', { class: 'grow' }), btn({ icon: 'anvil', label: t('nav.craft'), size: 'sm', variant: 'ghost', onClick: () => DK.router.go('craft') })),
+          h('span', { class: 'grow' }), btn({ icon: 'anvil', label: t('nav.craft'), iconOnly: true, size: 'sm', variant: 'ghost', onClick: () => DK.router.go('craft') })),
         needs.length ? h('div', { class: 'pk-list' }, needs.map(([id, n]) => h('div', { class: 'pk-row r-' + D.items[id].rarity },
           h('span', { class: 'pk-icon' }, V.itemIcon(D.items[id], 20)),
           h('span', { class: 'pk-main' }, h('b', null, D.items[id].name), h('span', { class: 'muted small' }, V.craftSourceText ? V.craftSourceText(id) : '')),

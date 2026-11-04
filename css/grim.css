@@ -778,3 +778,97 @@ body.in-exp { background: #0b0807 !important; }
 :root[data-theme="light"] .cx-zone-icon { color: #3b2a1a; }
 :root[data-theme="light"] .cx-zone-nm { color: #6d28d9; }
 :root[data-theme="light"] .pf-feat-row.late .pf-feat-icon { color: #5b21b6; }
+
+/* §20 Cada atributo con su color (icono, valor y filo de la barra) — v4.36 */
+.st2-row { --sc: var(--primary-2); }
+.st2-row.k-hp { --sc: #4ade80; } .st2-row.k-mp { --sc: #60a5fa; } .st2-row.k-atk { --sc: #f87171; } .st2-row.k-matk { --sc: #c084fc; }
+.st2-row.k-def { --sc: #fbbf24; } .st2-row.k-mdef { --sc: #22d3ee; } .st2-row.k-spd { --sc: #f472b6; } .st2-row.k-regen { --sc: #34d399; }
+.st2-name .icon { color: var(--sc); }
+.st2-val { color: color-mix(in srgb, var(--sc) 70%, var(--text)); }
+.st2-sum .stat-bar { box-shadow: inset 2px 0 0 var(--sc); }
+:root[data-theme="light"] .st2-row.k-hp { --sc: #15803d; } :root[data-theme="light"] .st2-row.k-mp { --sc: #1d4ed8; } :root[data-theme="light"] .st2-row.k-atk { --sc: #b91c1c; } :root[data-theme="light"] .st2-row.k-matk { --sc: #7e22ce; }
+:root[data-theme="light"] .st2-row.k-def { --sc: #a16207; } :root[data-theme="light"] .st2-row.k-mdef { --sc: #0e7490; } :root[data-theme="light"] .st2-row.k-spd { --sc: #be185d; } :root[data-theme="light"] .st2-row.k-regen { --sc: #047857; }
+
+/* §21 Equipo completo al reclutar: comparar al nuevo con cada miembro (v4.37) */
+.rj { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--border); }
+.rj-body { display: grid; grid-template-columns: minmax(220px, 280px) 1fr; gap: 12px; align-items: start; }
+.rj-new { position: sticky; top: calc(var(--hud-h, 64px) + 24px); display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 12px; border: 1px solid color-mix(in srgb, #4ade80 45%, var(--border)); background: linear-gradient(180deg, color-mix(in srgb, #4ade80 10%, var(--surface)), var(--surface)); }
+.rj-tag { align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; background: color-mix(in srgb, #4ade80 22%, transparent); color: #86efac; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.rj-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.rj-head b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rj-art { flex: none; display: grid; place-items: center; border-radius: 10px; padding: 2px; background: radial-gradient(circle at 50% 60%, color-mix(in srgb, var(--c) 35%, transparent), transparent 70%); }
+.rj-team { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.rj-mate { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); }
+.rj-mate.weaker { border-color: color-mix(in srgb, #4ade80 30%, var(--border)); }
+.rj-hp { height: 5px; border-radius: 3px; background: var(--surface-3); overflow: hidden; }
+.rj-hp i { display: block; height: 100%; background: linear-gradient(90deg, #16a34a, #4ade80); }
+.rj-stats { display: grid; grid-template-columns: 1fr; gap: 2px; }
+.rj-stat { --sc: var(--muted); display: grid; grid-template-columns: 16px 1fr auto 48px; align-items: center; gap: 6px; padding: 3px 6px; border-radius: 6px; font-size: .84rem; }
+.rj-stat:nth-child(odd) { background: rgba(255, 255, 255, .025); }
+.rj-stat .icon { color: var(--sc); }
+.rj-stat.k-hp { --sc: #4ade80; } .rj-stat.k-mp { --sc: #60a5fa; } .rj-stat.k-atk { --sc: #f87171; } .rj-stat.k-matk { --sc: #c084fc; } .rj-stat.k-def { --sc: #fbbf24; } .rj-stat.k-mdef { --sc: #22d3ee; } .rj-stat.k-spd { --sc: #f472b6; }
+.rj-k { color: var(--muted); font-size: .74rem; font-weight: 700; letter-spacing: .04em; }
+.rj-stat b { text-align: right; font-variant-numeric: tabular-nums; }
+.rj-diff { text-align: right; font-size: .74rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.rj-diff.up { color: #4ade80; } .rj-diff.down { color: #f87171; } .rj-diff.eq { color: var(--muted); }
+.rj-total { display: flex; justify-content: space-between; padding: 6px 8px; border-top: 1px solid var(--border); font-size: .84rem; color: var(--muted); }
+.rj-total b { color: var(--text); }
+.rj-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-top: auto; }
+@media (max-width: 760px) {
+  .rj-body { grid-template-columns: 1fr; }
+  /* El nuevo queda fijo arriba y compacto: 7 atributos en una rejilla de 4 */
+  .rj-new { position: sticky; top: calc(var(--hud-h, 56px) + 10px); z-index: 3; gap: 6px; padding: 8px 10px; box-shadow: 0 10px 24px -10px rgba(0, 0, 0, .8); }
+  .rj-new .rj-tag, .rj-new .chips, .rj-new .rj-total { display: none; }
+  .rj-new .rj-art svg { width: 48px !important; height: 48px !important; }
+  .rj-new .rj-stats { grid-template-columns: repeat(4, 1fr); gap: 3px; }
+  .rj-new .rj-stat { grid-template-columns: 14px auto; justify-content: center; padding: 3px 4px; background: rgba(255, 255, 255, .03); }
+  .rj-new .rj-k { display: none; }
+  .rj-mate .rj-stats { grid-template-columns: repeat(2, 1fr); column-gap: 6px; }
+  .rj-mate .rj-stat { grid-template-columns: 14px 1fr auto 38px; padding: 3px 4px; }
+  .rj-mate .rj-stat:nth-child(odd) { background: none; }
+  .rj-mate .rj-k { display: none; }
+}
+:root[data-theme="light"] .rj-tag { color: #15803d; }
+:root[data-theme="light"] .rj-diff.up { color: #15803d; } :root[data-theme="light"] .rj-diff.down { color: #b91c1c; }
+
+/* §22 Rareza de las runas: normal, mágica (azul) y rara (amarillo) — v4.37 */
+.rr-n { --rr: var(--muted); } .rr-m { --rr: #8f8fff; } .rr-r { --rr: #ffd84a; }
+:root[data-theme="light"] .rr-m { --rr: #4338ca; } :root[data-theme="light"] .rr-r { --rr: #a16207; }
+.rune-pick.rr-m { border-color: color-mix(in srgb, #8f8fff 45%, var(--border)); }
+.rune-pick.rr-r { border-color: color-mix(in srgb, #ffd84a 50%, var(--border)); box-shadow: 0 0 18px -8px rgba(255, 216, 74, .5); }
+.rune-pick.rr-m .rune-pick-text > b, .rune-pick.rr-r .rune-pick-text > b, .loot-card.rr-m > b, .loot-card.rr-r > b, .rune-chip.rr-m, .rune-chip.rr-r { color: var(--rr); }
+.rune-pick-meta { display: inline-flex; align-items: center; gap: 4px; font-size: .7rem; color: var(--rr); text-transform: uppercase; letter-spacing: .05em; font-weight: 700; }
+.rr-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--rr); box-shadow: 0 0 6px var(--rr); }
+.rune-aff { color: #a5b4fc; }
+.rr-r .rune-aff { color: #fde68a; }
+:root[data-theme="light"] .rune-aff { color: #4338ca; } :root[data-theme="light"] .rr-r .rune-aff { color: #92400e; }
+.rune-pick-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.rune-tier-group .bt-label { display: flex; align-items: center; gap: 4px; }
+.rune-tier-group.t3 .bt-label { color: #fde68a; } .rune-tier-group.t2 .bt-label { color: #c4b5fd; }
+.forge-rar { display: flex; gap: 6px; flex-wrap: wrap; } .forge-rar span { color: var(--rr); font-weight: 700; }
+.bt-prep-host { min-width: 0; }
+/* Botones sólo con icono (DK.ui.btn({ iconOnly })) — v4.38 */
+.btn.btn-icon-only { padding: 0; width: 36px; min-width: 36px; justify-content: center; gap: 0; }
+.btn.btn-sm.btn-icon-only { width: 32px; min-width: 32px; height: 32px; min-height: 32px; }
+:root[data-style][data-style][data-style] .btn.btn-icon-only { padding: 0; }
+.panel-nav { min-width: 36px; justify-content: center; }
+
+/* §23 Desafío semanal (zones.js weeklyCard) — v4.40 */
+.bt-side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.wk-card { display: flex; flex-direction: column; gap: 10px; border-top: 3px solid var(--gold); background: linear-gradient(160deg, color-mix(in srgb, var(--gold) 10%, var(--surface)), var(--surface) 60%); }
+.wk-head { display: flex; align-items: center; gap: 12px; }
+.wk-head h3 { margin: 0; font-size: 1.05rem; }
+.wk-badge { width: 40px; height: 40px; flex: none; display: grid; place-items: center; border-radius: 10px; color: #1a1206; background: linear-gradient(180deg, #fde68a, #d4a12a); box-shadow: 0 4px 14px -4px rgba(212, 161, 42, .6); }
+.wk-best { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.1; }
+.wk-best small { color: var(--muted); font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; }
+.wk-best b { font-size: 1.2rem; color: var(--gold); font-variant-numeric: tabular-nums; }
+.wk-foot { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.wk-board { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.wk-board li { display: grid; grid-template-columns: 28px 80px 1fr auto auto; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 8px; background: var(--surface-2); }
+.wk-board li.top { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 60%, transparent); }
+.wk-board li.top .wk-pos { background: var(--gold); color: #1a1206; }
+.wk-pos { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; background: var(--surface-3); font-weight: 800; font-size: .78rem; }
+.wk-board b { font-variant-numeric: tabular-nums; }
+@media (max-width: 600px) { .wk-board li { grid-template-columns: 24px 1fr auto; } .wk-board li > span:nth-child(3), .wk-board li > span:last-child { display: none; } }
+:root[data-theme="light"] .wk-best b { color: #92400e; }
+.wk-chip { color: var(--gold); border-color: color-mix(in srgb, var(--gold) 50%, var(--border)); }

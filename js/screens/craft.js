@@ -236,17 +236,20 @@
   /* ---------------- Forja rúnica: fundir 3 runas en una del tier siguiente ---------------- */
   function runeForge(refresh) {
     const R = DK.runes;
-    const bases = R.defs().filter((r) => !r.late || DK.endgame.late() || R.tiersOf(r.id).some((id) => R.count(id)));
+    const bases = R.defs().filter((r) => !r.late || DK.endgame.late() || R.tiersOf(r.id).some((id) => R.countKey(id)));
     return h('div', { class: 'stack' },
       h('p', { class: 'muted small' }, DK.icon('info', 13), ' ', t('forge.help', { a: R.fuseCost(R.withTier('oro', 1)), b: R.fuseCost(R.withTier('oro', 2)) })),
       h('div', { class: 'forge-grid' }, bases.map((r) => h('div', { class: 'forge-card' },
         h('div', { class: 'forge-head' }, V.runeGem(r.id, 44), h('div', null, h('b', null, V.runeName(r.id)), h('small', { class: 'muted' }, V.runeEffect(r.id)))),
         h('div', { class: 'forge-tiers' }, R.tiersOf(r.id).map((id, i) => {
-          const n = R.count(id), next = i < 2 ? R.tiersOf(r.id)[i + 1] : null;
+          const n = R.countKey(id), next = i < 2 ? R.tiersOf(r.id)[i + 1] : null;
+          // Desglose por rareza (normal · mágica · rara)
+          const byR = { n: 0, m: 0, r: 0 }; R.idsOfKey(id).forEach((x) => { byR[R.parse(x).rarity] += R.count(x); });
           return h('div', { class: 'forge-tier' + (n ? '' : ' none') },
-            V.runeGem(id, 30, { dim: !n }), h('span', null, h('b', null, '×' + n), h('small', null, V.runeEffect(id))),
+            V.runeGem(id, 30, { dim: !n }), h('span', null, h('b', null, '×' + n), h('small', null, V.runeEffect(id)),
+              n ? h('small', { class: 'forge-rar' }, ['n', 'm', 'r'].filter((k) => byR[k]).map((k) => h('span', { class: 'rr-' + k }, byR[k] + ' ' + t('rune.rar.' + k)))) : null),
             next ? btn({ icon: 'merge', label: t('forge.fuse', { cost: R.fuseCost(id) }), size: 'sm', variant: R.canFuse(id) ? 'primary' : 'ghost', disabled: !R.canFuse(id),
-              tip: n < 3 ? t('forge.need', { n: 3 - n }) : DK.wallet.get() < R.fuseCost(id) ? t('forge.noCoins') : t('forge.tip', { name: V.runeName(next) }),
+              tip: R.freeKey(id) < 3 ? t('forge.need', { n: 3 - R.freeKey(id) }) : DK.wallet.get() < R.fuseCost(id) ? t('forge.noCoins') : t('forge.tip', { name: V.runeName(next) }),
               onClick: () => { const got = R.fuse(id); if (got) { DK.audio.sfx('craft'); DK.ui.toast(t('forge.done', { name: V.runeName(got) }), { icon: 'rune', kind: 'good' }); refresh(); } } }) : null);
         }))))));
   }

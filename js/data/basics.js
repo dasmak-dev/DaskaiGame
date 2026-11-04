@@ -68,6 +68,15 @@
     sangre_caliente: { name: 'Sangre caliente', mods: { atk: 0.08, matk: 0.08, def: -0.08, mdef: -0.08 }, desc: '+8% ataques, -8% defensas.' },
     regeneracion: { name: 'Regeneración', mods: { atk: -0.05 }, regen: 2, desc: '+2% de regeneración, -5% ataque físico.' },
     equilibrio: { name: 'Equilibrio', mods: { hp: 0.03, mp: 0.03, atk: 0.03, matk: 0.03, def: 0.03, mdef: 0.03, spd: 0.03 }, desc: '+3% a todos los atributos.' },
+    // --- Al entrar en combate (v4.40): efecto temporal durante `turns` turnos (systems/battle.js applyEntry) ---
+    mirada_fiera: { name: 'Mirada fiera', entry: { target: 'enemy', stats: ['atk'], pct: -0.15, turns: 3 }, desc: 'Al entrar: el rival -15% ataque físico durante 3 turnos.' },
+    niebla_arcana: { name: 'Niebla arcana', entry: { target: 'enemy', stats: ['matk'], pct: -0.15, turns: 3 }, desc: 'Al entrar: el rival -15% ataque mágico durante 3 turnos.' },
+    rompecorazas: { name: 'Rompecorazas', entry: { target: 'enemy', stats: ['def'], pct: -0.15, turns: 3 }, desc: 'Al entrar: el rival -15% defensa física durante 3 turnos.' },
+    pegajoso: { name: 'Pegajoso', entry: { target: 'enemy', stats: ['spd'], pct: -0.2, turns: 3 }, desc: 'Al entrar: el rival -20% velocidad durante 3 turnos.' },
+    arranque: { name: 'Arranque', entry: { target: 'self', stats: ['spd'], pct: 0.25, turns: 3 }, desc: 'Al entrar: +25% velocidad durante 3 turnos.' },
+    adrenalina: { name: 'Adrenalina', entry: { target: 'self', stats: ['atk'], pct: 0.2, turns: 3 }, desc: 'Al entrar: +20% ataque físico durante 3 turnos.' },
+    foco_arcano: { name: 'Foco arcano', entry: { target: 'self', stats: ['matk'], pct: 0.2, turns: 3 }, desc: 'Al entrar: +20% ataque mágico durante 3 turnos.' },
+    guardia_alta: { name: 'Guardia alta', entry: { target: 'self', stats: ['def', 'mdef'], pct: 0.2, turns: 2 }, desc: 'Al entrar: +20% defensas durante 2 turnos.' },
   };
 
   /* Estados alterados */

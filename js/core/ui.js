@@ -72,7 +72,9 @@
    * @param {string} [o.tip]     texto de ayuda al pasar el ratón
    * @param {boolean} [o.silent] no reproducir sonido al pulsar
    */
-  function btn({ icon, label, desc, onClick, variant = '', size = '', disabled = false, title, cls = '', type = 'button', hotkey, tip, silent } = {}) {
+  function btn({ icon, label, desc, onClick, variant = '', size = '', disabled = false, title, cls = '', type = 'button', hotkey, tip, silent, iconOnly = false } = {}) {
+    // iconOnly: sólo el icono; el texto pasa al tooltip y a la etiqueta accesible
+    if (iconOnly && icon) { tip = tip || label; title = title || label; label = null; desc = null; hotkey = null; cls = (cls ? cls + ' ' : '') + 'btn-icon-only'; }
     const b = h('button', {
       class: ['btn', variant && 'btn-' + variant, size && 'btn-' + size, cls].filter(Boolean).join(' '),
       type, disabled: !!disabled, 'aria-label': title || label, tip: tip || null,

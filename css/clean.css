@@ -132,3 +132,115 @@
 :root[data-style="clean"][data-style] .bt-prep-grid > .bt-block { border-radius: 10px; }
 :root[data-style="clean"][data-style] .party-mon { border-width: 1px; border-radius: 12px; box-shadow: none; }
 :root[data-style="clean"][data-style] .wb-side { background: var(--cl-card); box-shadow: var(--cl-shadow); border-color: var(--cl-line); }
+
+/* =============================================================
+ * 20. Estilo limpio v2 (v4.35) — más moderno: botones finos, líneas
+ *     suaves, esquinas amplias, sombras en capas y tipografía sin
+ *     versalitas. Sólo afecta a data-style="clean".
+ * ============================================================= */
+:root[data-style="clean"] {
+  --font-pixel: 'Alegreya Sans', system-ui, sans-serif;
+  --cl-line: rgba(231, 194, 122, .1); --cl-line-2: rgba(231, 194, 122, .22);
+  --cl-card: linear-gradient(180deg, rgba(30, 23, 19, .92), rgba(18, 13, 11, .94));
+  --cl-shadow: 0 1px 0 rgba(255, 236, 210, .04) inset, 0 1px 2px rgba(0, 0, 0, .3), 0 10px 30px -8px rgba(0, 0, 0, .45);
+  --cl-shadow-hi: 0 1px 0 rgba(255, 236, 210, .06) inset, 0 2px 4px rgba(0, 0, 0, .3), 0 18px 40px -10px rgba(0, 0, 0, .55);
+  --cl-r: 14px; --cl-r-s: 10px; --cl-ease: cubic-bezier(.2, .8, .2, 1);
+  --cl-focus: 0 0 0 3px rgba(231, 194, 122, .28);
+}
+:root[data-style="clean"][data-theme="light"] {
+  --cl-line: rgba(90, 60, 20, .1); --cl-line-2: rgba(90, 60, 20, .22);
+  --cl-shadow: 0 1px 2px rgba(90, 60, 20, .08), 0 10px 28px -10px rgba(90, 60, 20, .22);
+  --cl-shadow-hi: 0 2px 4px rgba(90, 60, 20, .1), 0 18px 36px -12px rgba(90, 60, 20, .3);
+  --cl-focus: 0 0 0 3px rgba(185, 28, 28, .18);
+}
+/* Tarjetas: esquinas amplias, borde casi invisible, sombra en capas */
+:root[data-style="clean"][data-style][data-style] :is(.card, .panel) { border-radius: var(--cl-r); border-color: var(--cl-line); box-shadow: var(--cl-shadow); }
+:root[data-style="clean"][data-style][data-style] :is(.card, .panel) :is(.card, .panel) { border-radius: var(--cl-r-s); }
+:root[data-style="clean"][data-style][data-style] .panel-head h3, :root[data-style="clean"][data-style][data-style] .card > h3 { font-size: 1.02rem; letter-spacing: .03em; }
+:root[data-style="clean"][data-style][data-style] :is(.modal, .drawer) { border-radius: 18px; border-color: var(--cl-line-2); box-shadow: 0 30px 80px -20px rgba(0, 0, 0, .7); }
+:root[data-style="clean"] :is(.modal-backdrop, .drawer-backdrop, .overlay) { backdrop-filter: blur(4px); }
+
+/* Botones: finos, texto normal, iconos pequeños, elevación suave al pasar */
+:root[data-style="clean"][data-style][data-style] .btn { min-height: 36px; padding: 7px 14px; gap: 8px; border-width: 1px; border-radius: 10px; font-weight: 600; letter-spacing: .01em; box-shadow: none; transition: background .18s, border-color .18s, box-shadow .2s var(--cl-ease), transform .18s var(--cl-ease), color .18s; }
+:root[data-style="clean"][data-style][data-style] .btn .btn-label { font-family: var(--font); font-weight: 650; letter-spacing: .01em; }
+:root[data-style="clean"][data-style][data-style] .btn .icon svg { width: 17px; height: 17px; }
+:root[data-style="clean"][data-style][data-style] .btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 16px -6px rgba(0, 0, 0, .5); }
+:root[data-style="clean"][data-style][data-style] .btn:active:not(:disabled) { transform: translateY(0) scale(.97); box-shadow: none; transition-duration: .06s; }
+:root[data-style="clean"][data-style][data-style] .btn:focus-visible { outline: none; box-shadow: var(--cl-focus); }
+:root[data-style="clean"][data-style][data-style] .btn-sm { min-height: 30px; padding: 4px 10px; border-radius: 8px; font-size: .82rem; }
+:root[data-style="clean"][data-style][data-style] .btn-sm .icon svg { width: 15px; height: 15px; }
+:root[data-style="clean"][data-style][data-style] .btn-lg { min-height: 0; padding: 10px 14px; border-radius: 12px; gap: 12px; }
+:root[data-style="clean"][data-style][data-style] .btn-lg .icon { width: 34px; height: 34px; border-radius: 9px; }
+:root[data-style="clean"][data-style][data-style] .btn-lg .icon svg { width: 19px; height: 19px; }
+:root[data-style="clean"][data-style][data-style] .btn-primary { background: linear-gradient(180deg, #c0392b, #96231a); border-color: rgba(255, 180, 150, .18); color: #fff6ec; box-shadow: 0 1px 0 rgba(255, 220, 200, .22) inset, 0 6px 18px -6px rgba(192, 57, 43, .6); }
+:root[data-style="clean"][data-style][data-style] .btn-primary:hover:not(:disabled) { background: linear-gradient(180deg, #d04434, #a52a1f); box-shadow: 0 1px 0 rgba(255, 220, 200, .25) inset, 0 10px 24px -8px rgba(208, 68, 52, .7); }
+:root[data-style="clean"][data-style][data-style] .btn-tone { background: rgba(255, 240, 220, .045); border-color: var(--cl-line-2); }
+:root[data-style="clean"][data-style][data-style] .btn-ghost:hover:not(:disabled) { box-shadow: none; }
+:root[data-style="clean"][data-style][data-style] .btn:disabled { opacity: .4; }
+:root[data-style="clean"][data-style][data-style] .icon-btn { border-radius: 10px; transition: background .18s, transform .18s var(--cl-ease); }
+:root[data-style="clean"][data-style][data-style] .icon-btn:active:not(:disabled) { transform: scale(.92); }
+
+/* Pestañas grandes (Inventario, Códice…): control segmentado */
+:root[data-style="clean"][data-style][data-style] .inv-tabs { gap: 4px; padding: 4px; border-radius: 14px; background: rgba(255, 240, 220, .035); border: 1px solid var(--cl-line); }
+:root[data-style="clean"][data-style][data-style][data-theme="light"] .inv-tabs { background: rgba(90, 60, 20, .05); }
+:root[data-style="clean"][data-style][data-style] .inv-tabs > button { height: 38px; border: 0; border-radius: 10px; background: transparent; box-shadow: none; font-family: var(--font); font-weight: 650; font-size: .9rem; transition: background .18s, color .18s, box-shadow .2s; }
+:root[data-style="clean"][data-style][data-style] .inv-tabs > button:hover { background: rgba(255, 240, 220, .05); }
+:root[data-style="clean"][data-style][data-style] .inv-tabs > button.on { color: var(--text); background: var(--cl-card); box-shadow: 0 1px 0 rgba(255, 236, 210, .06) inset, 0 4px 14px -4px rgba(0, 0, 0, .55), 0 0 0 1px var(--cl-line-2); }
+:root[data-style="clean"][data-style][data-style][data-theme="light"] .inv-tabs > button.on { background: #fffdf8; box-shadow: 0 2px 8px -2px rgba(90, 60, 20, .25), 0 0 0 1px var(--cl-line-2); }
+:root[data-style="clean"][data-style][data-style] .inv-tabs > button b { border-radius: 999px; font-size: .72rem; padding: 1px 7px; background: rgba(255, 240, 220, .07); }
+:root[data-style="clean"][data-style][data-style] .inv-tabs > button.on b { background: color-mix(in srgb, var(--gold) 22%, transparent); color: var(--gold); }
+/* Selector segmentado de DK.ui.segmented */
+/* (sólo el selector: .seg también son los tramos de las barras de atributos) */
+:root[data-style="clean"][data-style][data-style] .seg[role="radiogroup"] { padding: 3px; gap: 3px; border-radius: 12px; background: rgba(255, 240, 220, .035); border: 1px solid var(--cl-line); }
+:root[data-style="clean"][data-style][data-style] .seg[role="radiogroup"] .btn { min-height: 30px; border: 0; border-radius: 9px; font-family: var(--font); }
+:root[data-style="clean"][data-style][data-style] .seg[role="radiogroup"] .btn-primary { background: var(--cl-card); color: var(--text); box-shadow: 0 4px 12px -4px rgba(0, 0, 0, .5), 0 0 0 1px var(--cl-line-2); }
+:root[data-style="clean"][data-style][data-style][data-theme="light"] .seg[role="radiogroup"] .btn-primary { background: #fffdf8; box-shadow: 0 2px 8px -2px rgba(90, 60, 20, .25), 0 0 0 1px var(--cl-line-2); }
+
+/* Chips e insignias: píldoras discretas */
+:root[data-style="clean"][data-style][data-style] .chip { border-radius: 999px; padding-inline: 9px; font-family: var(--font); font-weight: 600; border-color: var(--cl-line); background: rgba(255, 240, 220, .04); }
+:root[data-style="clean"][data-style][data-style] .badge { border-radius: 999px; font-family: var(--font); font-weight: 700; }
+:root[data-style="clean"][data-style][data-style] .warning { border-radius: 12px; border-color: var(--cl-line); background: rgba(255, 240, 220, .035); }
+
+/* Barras: finas y redondeadas, sin relieve */
+:root[data-style="clean"][data-style][data-style] .bar-track { height: 7px; border: 0; border-radius: 99px; box-shadow: none; background: rgba(255, 240, 220, .08); }
+:root[data-style="clean"][data-style][data-style][data-theme="light"] .bar-track { background: rgba(90, 60, 20, .1); }
+:root[data-style="clean"][data-style][data-style] .bar-fill { border-radius: 99px; box-shadow: none; }
+:root[data-style="clean"][data-style][data-style] .bar-exp .bar-track { height: 5px; }
+:root[data-style="clean"] :is(.bar-hp, .bar-mp) .bar-track::after { display: none; }
+
+/* Campos con anillo de foco */
+:root[data-style="clean"][data-style][data-style] :is(.input, .select, select, textarea, .inv-search input) { border-radius: 10px; border-color: var(--cl-line-2); background-color: rgba(255, 240, 220, .03); transition: border-color .18s, box-shadow .18s; }
+:root[data-style="clean"][data-style][data-style] :is(.input, .select, select, textarea, .inv-search input):focus { outline: none; border-color: color-mix(in srgb, var(--gold) 55%, transparent); box-shadow: var(--cl-focus); }
+
+/* Cabecera: título sin cinta, recursos en píldoras finas */
+:root[data-style="clean"][data-style][data-style] .hud-ribbon { clip-path: none; background: none; filter: none; text-shadow: none; padding: 4px 6px; color: var(--text); font-family: var(--font-title); font-size: 1.05rem; letter-spacing: .05em; }
+:root[data-style="clean"][data-style][data-style] .hud-ribbon .icon { color: var(--gold); }
+:root[data-style="clean"][data-style][data-style] .hud-ribbon .icon svg { width: 18px; height: 18px; }
+:root[data-style="clean"][data-style][data-style] .hud-pill { border-radius: 999px; padding: 4px 12px 4px 8px; border-color: var(--cl-line); background: rgba(255, 240, 220, .04); box-shadow: none; }
+:root[data-style="clean"][data-style][data-style] .game-hud { box-shadow: 0 1px 0 var(--cl-line), 0 10px 30px -12px rgba(0, 0, 0, .5); border-bottom-color: transparent; }
+
+/* Barra de accesos: flotante, iconos con etiqueta pequeña */
+:root[data-style="clean"][data-style][data-style] .dock-bar { border-radius: 18px; border-color: var(--cl-line); box-shadow: 0 1px 0 rgba(255, 236, 210, .05) inset, 0 20px 50px -14px rgba(0, 0, 0, .7); }
+:root[data-style="clean"][data-style][data-style] .dock-slot { border-radius: 12px; transition: background .18s, color .18s; }
+:root[data-style="clean"][data-style][data-style] .dock-slot.active { background: color-mix(in srgb, var(--gold) 12%, transparent); border-color: transparent; color: var(--gold); }
+:root[data-style="clean"][data-style][data-style] .dock-slot.active::after { content: ''; position: absolute; left: 30%; right: 30%; bottom: 3px; height: 2px; border-radius: 2px; background: var(--gold); }
+:root[data-style="clean"][data-style][data-style] .dock-slot { position: relative; font-family: var(--font); }
+
+/* Fichas de listas y rejillas: bordes finos, esquinas amplias, elevación al pasar */
+:root[data-style="clean"][data-style][data-style] :is(.dk-row, .item-card, .move-card, .tile, .inv-row, .tr-tile, .wb-tile, .cx-card, .cx-zone, .cx-boss, .relic-row, .rest-opt, .loot-card, .party-mon, .exp-hist, .fav-item, .tr-boost, .wk-entry) { border-width: 1px; border-radius: 12px; box-shadow: none; transition: transform .18s var(--cl-ease), box-shadow .2s var(--cl-ease), border-color .18s, background .18s; }
+:root[data-style="clean"][data-style][data-style] :is(.dk-row, .item-card, .tile, .tr-tile, .wb-tile, .cx-card, .cx-zone, .fav-item):hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 12px 26px -12px rgba(0, 0, 0, .65); }
+:root[data-style="clean"][data-style][data-style] :is(.exp-node, .pc-tab, .st-pick, .tb-wrap, .tb-all, .curtain-icon) { border-width: 1px; box-shadow: none; }
+:root[data-style="clean"][data-style][data-style] .toast { border-radius: 14px; border-color: var(--cl-line-2); background: rgba(24, 18, 15, .9); backdrop-filter: blur(10px); box-shadow: 0 16px 40px -12px rgba(0, 0, 0, .7); }
+:root[data-style="clean"][data-style][data-style][data-theme="light"] .toast { background: rgba(255, 252, 245, .92); }
+/* Barras de desplazamiento finas */
+:root[data-style="clean"] * { scrollbar-width: thin; scrollbar-color: rgba(231, 194, 122, .25) transparent; }
+/* Cajas del equipo: cabecera fina en lugar de flechas y placa en relieve */
+:root[data-style="clean"][data-style][data-style] .pc-arrow { border: 1px solid var(--cl-line-2); border-radius: 10px; background: rgba(255, 240, 220, .04); color: var(--text); box-shadow: none; }
+:root[data-style="clean"][data-style][data-style] .pc-arrow:hover { background: rgba(255, 240, 220, .08); }
+:root[data-style="clean"][data-style][data-style] .pc-plate { border: 1px solid color-mix(in srgb, var(--b1) 50%, transparent); border-radius: 12px; background: linear-gradient(180deg, color-mix(in srgb, var(--b1) 30%, transparent), color-mix(in srgb, var(--b2) 18%, transparent)); box-shadow: none; text-shadow: none; color: var(--text); }
+:root[data-style="clean"][data-style][data-style] .pc-plate b { font-family: var(--font-title); font-size: 1.1rem; letter-spacing: .04em; }
+:root[data-style="clean"][data-style][data-style] .pc-tab { border-width: 1px; border-radius: 8px; box-shadow: none; }
+:root[data-style="clean"][data-style][data-style] .pc-grid { border-radius: 14px; border-width: 1px; }
+:root[data-style="clean"][data-style][data-style] .pc-slot { border-radius: 10px; }
+/* Barra de dibujo del mapa: botones compactos para que quepa en una línea en el móvil */
+:root[data-style="clean"][data-style][data-style] .draw-bar .btn { min-height: 32px; padding: 4px 9px; }

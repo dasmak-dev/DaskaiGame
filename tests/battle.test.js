@@ -4,6 +4,29 @@ const { play, sleep, check } = require('./helpers');
 module.exports = {
   name: 'Combate',
   cases: [{
+    name: 'Pasivas al entrar: bajan al rival o suben al propio durante unos turnos y se acaban',
+    run: (browser, view) => play(browser, view, async (p) => {
+      const r = await p.evaluate(() => {
+        const B = DK.battle, a = DK.party.active()[0];
+        a.passive = 'mirada_fiera';
+        const st = B.start('pradera', a.uid, {});
+        st.enemy.passive = 'equilibrio';
+        st.timed.enemy = st.timed.enemy.filter((x) => x.src === 'mirada_fiera'); st.timed.ally = [];
+        const base = DK.daskai.stats(st.enemy).atk * B.stageMult(st.stages.enemy.atk || 0), now = B.stat(st, 'enemy', 'atk');
+        const tags = B.timedOf(st, 'enemy').length, log = (st.entryLog || []).length;
+        const lefts = [];
+        for (let i = 0; i < 4; i++) { st.enemy.cur.hp = 9999; a.cur.hp = 9999; B.turn(st, { type: 'guard' }); lefts.push(B.timedOf(st, 'enemy').length ? B.timedOf(st, 'enemy')[0].left : 0); }
+        // Arranque: +25% velocidad propia; al cambiar se va con él
+        a.passive = 'arranque';
+        const st2 = B.start('pradera', a.uid, {}); st2.enemy.passive = 'equilibrio';
+        st2.timed.ally = st2.timed.ally.filter((x) => x.src === 'arranque'); const spd = B.timedMult(st2, 'ally', 'spd');
+        return { ratio: now / base, tags, log, lefts, spd };
+      });
+      check(Math.abs(r.ratio - 0.85) < 0.02 && r.tags === 1 && r.log >= 1, 'mirada fiera no baja el ataque del rival: ' + JSON.stringify(r));
+      check(r.lefts.join(',') === '3,2,1,0', 'el efecto debería durar 3 turnos: ' + r.lefts.join(','));
+      check(Math.abs(r.spd - 1.25) < 0.02, 'arranque no sube la velocidad: ' + r.spd);
+    }),
+  }, {
     name: 'La eficacia usa la casa del ataque y la misma casa da bonus',
     run: (browser, view) => play(browser, view, async (p) => {
       const r = await p.evaluate(() => {

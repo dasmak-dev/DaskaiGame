@@ -48,6 +48,7 @@
     { id: 'missions', group: 'progress', icon: 'target', when: () => true },
     { id: 'pass', group: 'progress', icon: 'award', when: () => true, stat: () => DK.t('wiki.s.level', { n: DK.pass.level() }) },
     { id: 'codex', group: 'progress', icon: 'book', when: () => true },
+    { id: 'weekly', group: 'progress', icon: 'trophy', when: () => DK.weekly.unlocked(), stat: () => DK.t('wiki.s.best', { n: DK.weekly.best().toLocaleString(DK.i18n.lang) }) },
     // --- Jefes ---
     { id: 'bosses', group: 'bosses', icon: 'crown', when: () => (st().expeditions || 0) > 0 || bossesDone() > 0,
       stat: () => `${bossesDone()}/${Object.keys(D.zones).length}` },
@@ -55,7 +56,7 @@
     // --- Final del juego ---
     { id: 'corruption', group: 'endgame', icon: 'skull', when: () => DK.corruption.visible(),
       stat: () => DK.t('wiki.s.level', { n: `${DK.corruption.max()}/${DK.corruption.levels().length}` }), vars: () => ({ n: DK.corruption.levels().length }) },
-    { id: 'nightmare', group: 'endgame', icon: 'moon', when: () => Object.keys(D.zones).some((z) => DK.nightmare.available(z)),
+    { id: 'nightmare', group: 'endgame', icon: 'demon', when: () => Object.keys(D.zones).some((z) => DK.nightmare.available(z)),
       stat: () => DK.t('wiki.s.zones', { n: Object.keys(D.zones).filter((z) => DK.nightmare.available(z)).length }) },
     { id: 'abyss', group: 'endgame', icon: 'cave', when: () => DK.abyss.unlocked(),
       stat: () => DK.t('wiki.s.floor', { n: DK.abyss.best() }), vars: () => ({ n: D.endgame.abyss.every }) },

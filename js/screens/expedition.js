@@ -26,7 +26,8 @@
   /** Etiquetas del final del juego de la expedición en curso: corrupción, pesadilla, piso del abismo. */
   V.endgameChips = (e) => [
     e.corruption ? h('span', { class: 'chip neg cor-chip', tip: t('corruption.levelN', { n: e.corruption }) }, DK.icon('skull', 13), t('corruption.short', { n: ['I', 'II', 'III', 'IV', 'V'][e.corruption - 1] })) : null,
-    e.nightmare && e.zone === e.nightmare ? h('span', { class: 'chip neg' }, DK.icon('flame', 13), t('nightmare.title')) : null,
+    e.nightmare && e.zone === e.nightmare ? h('span', { class: 'chip neg' }, DK.icon('demon', 13), t('nightmare.title')) : null,
+    e.weekly ? h('span', { class: 'chip pos', tip: t('weekly.scoring') }, DK.icon('trophy', 13), t('weekly.title')) : null,
     e.kind === 'abismo' ? h('span', { class: 'chip abyss-chip', tip: t('abyss.best', { n: DK.abyss.best() }) }, DK.icon('moon', 13), t('abyss.floor', { n: e.depth || 1 })) : null,
   ];
   /** Etiqueta del modificador de un mapa (niebla, tormenta…) o null. */
@@ -453,7 +454,7 @@
             h('span', { class: 'loot-dest ' + (bag ? 'bag' : 'loot'), tip: bag ? t('exp.toBagTip') : t('exp.toLoot') }, DK.icon(bag ? 'bag' : 'gift', 11), bag ? t('exp.destBag') : t('exp.destLoot')));
         }),
         e.result.relic ? (() => { const r = D.relics[e.result.relic]; return h('div', { class: 'loot-card relic r-' + r.rarity, style: delay() }, h('span', { class: 'loot-icon' }, DK.icon(r.icon, 36)), h('b', null, r.name), V.rarity(r.rarity), h('small', { class: 'muted' }, relicText(r)), h('span', { class: 'loot-dest relic' }, DK.icon('amulet', 11), t('exp.destRelic'))); })() : null,
-        ...(e.result.runes || []).map((id) => { return h('div', { class: 'loot-card rune', style: delay(), tip: t('rune.help') }, h('span', { class: 'loot-icon' }, V.runeGem(id, 52)), h('b', null, V.runeName(id)), h('small', { class: 'muted' }, V.runeEffect(id)), h('span', { class: 'loot-dest rune' }, DK.icon('rune', 11), t('rune.dest'))); }),
+        ...(e.result.runes || []).map((id) => { return h('div', { class: 'loot-card rune ' + V.runeRarity(id), style: delay(), tip: t('rune.help') }, h('span', { class: 'loot-icon' }, V.runeGem(id, 52)), h('b', null, V.runeName(id)), h('small', { class: 'muted' }, V.runeEffect(id)), ...V.runeAffixes(id).map((x) => h('small', { class: 'rune-aff' }, x)), h('span', { class: 'loot-dest rune' }, DK.icon('rune', 11), t('rune.dest'))); }),
         e.result.recipe ? (() => { const it = D.items[D.recipes.find((r) => r.id === e.result.recipe).result]; return h('div', { class: 'loot-card recipe', style: delay() }, h('span', { class: 'loot-icon' }, DK.icon('scroll', 34)), h('b', null, t('exp.newRecipe', { item: it.name })), h('small', { class: 'muted' }, t('exp.recipeShort')), h('span', { class: 'loot-dest relic' }, DK.icon('anvil', 11), t('nav.craft'))); })() : null,
       ];
       return h('div', { class: 'card stack chest-panel' }, head('treasure', t('exp.node.treasure'), t('exp.chestOpened')),
@@ -706,6 +707,52 @@
       btn({ icon: 'next', label: t('exp.shrineSkip'), variant: 'ghost', onClick: () => { E().completeNode(); refresh(); } }));
   }
 
+  /**
+   * Equipo completo al reclutar: el nuevo a la izquierda con TODOS sus
+   * atributos y, al lado, cada miembro del equipo con los suyos y la
+   * diferencia (▲ el nuevo tiene más · ▼ menos). «Sustituir» lo mete en ese
+   * hueco; si no, se queda en reserva (sigue siendo tuyo al acabar).
+   */
+  function joinCompare(d, team, refresh) {
+    const ns = DK.daskai.stats(d), keys = D.statKeys;
+    const total = (st) => keys.reduce((a, k) => a + (st[k] || 0), 0);
+    const head = (x, extra) => h('div', { class: 'rj-head' },
+      h('span', { class: 'rj-art', style: { '--c': D.houseColor(DK.daskai.species(x).house) } }, V.dSprite(x, { size: extra ? 72 : 46 })),
+      h('div', { class: 'grow stack-xs' },
+        h('div', { class: 'row gap-s wrap' }, h('b', null, DK.daskai.name(x)), V.level(x.level), V.shinyTag(x)),
+        h('div', { class: 'row gap-s wrap' }, V.houseBadge(DK.daskai.species(x).house), V.roleBadge(x), extra ? V.tempTag(x) : null)));
+    const statRows = (st, ref) => h('div', { class: 'rj-stats' }, keys.map((k) => {
+      const diff = ref ? ns[k] - st[k] : 0;
+      return h('div', { class: 'rj-stat k-' + k, tip: DK.tr('stats', D.stats[k]) },
+        DK.icon(D.stats[k].icon, 13), h('span', { class: 'rj-k' }, D.stats[k].short || k), h('b', null, st[k]),
+        ref ? h('span', { class: 'rj-diff ' + (diff > 0 ? 'up' : diff < 0 ? 'down' : 'eq') }, diff > 0 ? '▲' + diff : diff < 0 ? '▼' + -diff : '=') : null);
+    }));
+    const nTot = total(ns);
+    const newCard = h('div', { class: 'rj-new' },
+      h('span', { class: 'rj-tag' }, DK.icon('paw', 12), t('exp.joinNew')),
+      head(d, true),
+      h('div', { class: 'chips' },
+        h('span', { class: 'chip', tip: DK.tr('natures', D.natures[d.nature], 'desc') }, DK.icon('leaf', 12), DK.tr('natures', D.natures[d.nature])),
+        h('span', { class: 'chip', tip: DK.tr('passives', D.passives[d.passive], 'desc') }, DK.icon('sparkle', 12), DK.tr('passives', D.passives[d.passive]))),
+      statRows(ns),
+      h('div', { class: 'rj-total' }, t('exp.joinTotal'), h('b', null, nTot)));
+    const mates = team.map((x, i) => {
+      const st = DK.daskai.stats(x), tTot = total(st), hp = DK.daskai.hpPct(x);
+      const better = keys.filter((k) => ns[k] > st[k]).length;
+      return h('div', { class: 'rj-mate' + (nTot > tTot ? ' weaker' : '') },
+        head(x),
+        h('div', { class: 'rj-hp', tip: `${x.hp}/${st.hp}` }, h('i', { style: { width: Math.round(hp * 100) + '%' } })),
+        statRows(st, true),
+        h('div', { class: 'rj-foot' },
+          h('span', { class: 'small ' + (better >= 4 ? 'good-text' : 'muted') }, t('exp.joinBetter', { n: better, max: keys.length })),
+          btn({ icon: 'swap', label: t('detail.replaceHere'), size: 'sm', variant: nTot > tTot ? 'primary' : 'tone', onClick: () => { DK.party.placeAt(d.uid, i); DK.audio.sfx('select'); refresh(); } })));
+    });
+    return h('div', { class: 'rj' },
+      h('p', { class: 'small' }, DK.icon('swap', 14), ' ', t('exp.teamFull', { name: DK.daskai.name(d) })),
+      h('div', { class: 'rj-body' }, newCard, h('div', { class: 'rj-team' }, mates)),
+      h('p', { class: 'muted small' }, DK.icon('info', 12), ' ', t('exp.joinHelp')));
+  }
+
   /** Nodo de reclutamiento: eliges uno de los daskai (se une como temporal). */
   function recruitPanel(e, refresh) {
     const headEl = head('recruit', t('exp.node.recruit'), t('exp.recruitText'));
@@ -717,9 +764,7 @@
       return h('div', { class: 'card stack-s' }, headEl,
         h('div', { class: 'warning good' }, DK.icon('paw', 18), h('span', null, t(e.result.key, e.result.vars))),
         h('p', { class: 'muted small' }, t('exp.tempRule')),
-        full ? h('div', { class: 'inline-panel' }, h('p', { class: 'small' }, DK.icon('swap', 14), ' ', t('exp.teamFull', { name: DK.daskai.name(d) })),
-          h('div', { class: 'list' }, team.map((x, i) => V.daskaiRow(x, { compact: true,
-            actions: btn({ icon: 'swap', label: t('detail.replaceHere'), size: 'sm', variant: 'tone', onClick: () => { DK.party.placeAt(d.uid, i); refresh(); } }) })))) : null,
+        full ? joinCompare(d, team, refresh) : null,
         cont(refresh));
     }
     const cands = e.candidates || [];

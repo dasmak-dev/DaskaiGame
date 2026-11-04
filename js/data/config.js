@@ -136,6 +136,21 @@
           maldito: { group: 'bonus', loot: 0.3, noRest: true, icon: 'skull', weight: 6, late: true },
         },
         tierMult: [1, 2, 4],     // bonificaciones × esto en los tiers I, II y III
+        // Pisos del mapa según la runa de tamaño y su tier (I, II, III). Sin runa: el tamaño normal (sizes).
+        tierFloors: { small: [8, 14, 18], medium: [14, 20, 26], xl: [20, 28, 36] },
+        // Rareza al caer: normal (sin modificadores), mágica (1) o rara (2). + DK.endgame.runeTier()/2
+        rarity: { magic: 0.3, rare: 0.08 },
+        // Modificadores que puede traer una runa mágica o rara (valor al azar entre min y max × tierScale)
+        affixes: {
+          elitePct: { min: 8, max: 15 },   // % de combates normales del mapa que pasan a ser élites (minijefes)
+          treasures: { min: 1, max: 1 },   // tesoros extra en el mapa
+          recruits: { min: 1, max: 1 },    // reclutas extra en el mapa
+          caves: { min: 1, max: 1 },       // cuevas extra
+          coins: { min: 8, max: 18 },      // +% monedas
+          exp: { min: 8, max: 18 },        // +% experiencia
+          shiny: { min: 1, max: 2 },       // +% variocolor en los reclutas
+        },
+        tierScale: [1, 1.5, 2],
         fuseCost: [500, 2000],   // monedas por fundir 3 → 1 (a tier II, a tier III)
         slots: 4,   // huecos para engastar runas antes de partir (como mucho 1 de tamaño y 1 de tipo)
       },

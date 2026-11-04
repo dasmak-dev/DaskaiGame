@@ -6,7 +6,7 @@
  * sube el número de CACHE para que los jugadores reciban la versión
  * nueva. (Sólo funciona servido por http/https, no con file://).
  * ============================================================= */
-const CACHE = 'daskai-v4.34.0';
+const CACHE = 'daskai-v4.40.0';
 const FILES = [
     './',
     './css/base.css',
@@ -19,6 +19,8 @@ const FILES = [
     './css/game.css',
     './css/grim.css',
     './css/clean.css',
+    './css/exile.css',
+    './css/motion.css',
     './icons/icon-192.png',
     './icons/icon-512.png',
     './icons/icon.svg',
@@ -36,6 +38,7 @@ const FILES = [
     './js/components/avatar.js',
     './js/components/shareCard.js',
     './js/components/camp.js',
+    './js/components/campArt.js',
     './js/components/scenes.js',
     './js/core/app.js',
     './js/core/dk.js',
@@ -47,6 +50,7 @@ const FILES = [
     './js/core/settings.js',
     './js/core/store.js',
     './js/core/ui.js',
+    './js/core/fx.js',
     './js/data/achievements.js',
     './js/data/basics.js',
     './js/data/talents.js',
@@ -100,6 +104,7 @@ const FILES = [
     './js/systems/runes.js',
     './js/systems/pass.js',
     './js/systems/endgame.js',
+    './js/systems/weekly.js',
     './js/systems/training.js',
     './js/systems/curses.js',
     './js/systems/inventory.js',

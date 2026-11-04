@@ -806,8 +806,8 @@ body { min-height: 100vh; min-height: 100dvh; padding-left: env(safe-area-inset-
  * §15 Batalla en una sola pantalla: preparar la expedición (prepCard)
  * ============================================================= */
 .bt-main { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(280px, 1fr); gap: 16px; align-items: start; }
-.bt-main > .bz-card { grid-template-columns: minmax(0, 1fr); border-left-width: 2px; border-top: 4px solid var(--z1); }
-.bt-main > .bz-card .bz-art { min-height: 140px; }
+.bt-main > .bz-card, .bt-side > .bz-card { grid-template-columns: minmax(0, 1fr); border-left-width: 2px; border-top: 4px solid var(--z1); }
+.bt-main > .bz-card .bz-art, .bt-side > .bz-card .bz-art { min-height: 140px; }
 .bz-records summary { cursor: pointer; font-weight: 700; font-size: .85rem; color: var(--muted); list-style: none; display: inline-flex; align-items: center; gap: 4px; }
 .bz-records summary::-webkit-details-marker { display: none; }
 .bz-records[open] summary { margin-bottom: 8px; color: var(--text); }

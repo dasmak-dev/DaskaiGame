@@ -48,8 +48,8 @@
       const bar = h('div', { class: 'inv-bar' }, tabs,
         h('div', { class: 'inv-bar-row' }, search,
           exp ? null : V.coins(DK.wallet.get()),
-          exp ? null : btn({ icon: 'anvil', label: t('nav.craft'), size: 'sm', variant: 'ghost', onClick: () => DK.router.reset('craft') }),
-          btn({ icon: 'heart', label: t('heal.button'), size: 'sm', variant: 'ghost', onClick: async () => { if (await V.healDialog(DK.party.active())) refresh(); } })));
+          exp ? null : btn({ icon: 'anvil', label: t('nav.craft'), iconOnly: true, size: 'sm', variant: 'ghost', onClick: () => DK.router.reset('craft') }),
+          btn({ icon: 'heart', label: t('heal.button'), iconOnly: true, size: 'sm', variant: 'ghost', onClick: async () => { if (await V.healDialog(DK.party.active())) refresh(); } })));
 
       /* ---- Lista ---- */
       const all = DK.bag.list(params.cat === 'all' ? null : params.cat).filter(({ item }) => !q || item.name.toLowerCase().includes(q));

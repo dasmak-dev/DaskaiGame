@@ -323,6 +323,18 @@
   }
 
   /**
+   * Dibujo animado (components/campArt.js): fotogramas apilados que
+   * css/motion.css alterna (.camp-anim.n3 …). Conserva el tamaño del dibujo
+   * antiguo (`base`). null si no hay versión animada.
+   */
+  function animArt(name, scale, delay = 0) {
+    const a = DK.pix.animated && DK.pix.animated(name); if (!a) return null;
+    const k = (scale * a.base) / a.frames[0].w;
+    return h('span', { class: `camp-anim a-${name} n${a.frames.length}`, style: delay ? { '--d': delay + 's' } : null },
+      ...a.frames.map((cv, i) => { const el = pixSvg(cv, k, 'fr fr' + i); el.style.setProperty('--i', i); return el; }));
+  }
+
+  /**
    * Escena del campamento.
    * @param {Object} o  team: daskai junto a la hoguera · onSpot(spot) al pulsar un lugar
    * @returns {HTMLElement}
@@ -336,9 +348,7 @@
       const locked = sp.unlock && !DK.unlocks.has(sp.unlock);
       const it = nav[sp.nav];
       const badge = !locked && it && it.badge ? it.badge() : '';
-      const art = sp.fire ? h('span', { class: 'camp-fire' }, pixSvg(SPRITES.fire(0), scale, 'f0'), pixSvg(SPRITES.fire(1), scale, 'f1'))
-        : sp.sprite === 'portal' ? h('span', { class: 'camp-fire camp-portal' }, pixSvg(SPRITES.portal(0), scale, 'f0'), pixSvg(SPRITES.portal(1), scale, 'f1'))
-        : pixSvg(SPRITES[sp.sprite](), scale);
+      const art = animArt(sp.sprite, scale) || pixSvg(SPRITES[sp.sprite](), scale);
       const label = typeof sp.label === 'function' ? sp.label() : sp.label;
       return h('button', {
         class: `camp-spot s-${sp.id}` + (locked ? ' locked' : '') + (sp.main ? ' main' : ''), type: 'button',
@@ -362,7 +372,7 @@
     const embers = h('div', { class: 'camp-embers', 'aria-hidden': 'true', style: { left: fx + '%', top: fy + '%' } }, Array.from({ length: 16 }, (_, i) => h('i', { style: { '--dx': ((i * 37) % 60 - 30) + 'px', left: ((i * 13) % 40 - 20) + 'px', animationDelay: (i * 0.35) + 's', animationDuration: (2.6 + (i % 5) * 0.5) + 's' } })));
     const fog = h('div', { class: 'camp-fog', 'aria-hidden': 'true' }, h('i'), h('i'));
     const torches = (narrow ? [[6, 62], [94, 60]] : [[28, 66], [74, 62], [4, 80], [97, 78]]).map(([x, y], i) =>
-      h('span', { class: 'camp-torch', 'aria-hidden': 'true', style: { left: x + '%', top: y + '%', animationDelay: (i * 0.2) + 's' } }, pixSvg(SPRITES.torch(0), scale * 0.8, 'f0'), pixSvg(SPRITES.torch(1), scale * 0.8, 'f1')));
+      h('span', { class: 'camp-torch', 'aria-hidden': 'true', style: { left: x + '%', top: y + '%' } }, animArt('torch', scale * 0.8, i * 0.13) || pixSvg(SPRITES.torch(0), scale * 0.8)));
     return h('section', { class: 'camp-scene grim tod-' + tod, 'aria-label': t('scene.title') },
       backdrop(tod), fog, ...torches, embers,
       h('div', { class: 'camp-greet' }, h('span', { class: 'camp-greet-text' }, t('scene.greet.' + tod))),

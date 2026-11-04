@@ -57,7 +57,6 @@
 
       const teamCard = h('div', { class: 'card' },
         h('div', { class: 'panel-head' }, DK.icon('users', 18), h('h3', null, t('home.yourTeam')),
-          btn({ icon: 'flask', label: t('heal.button'), size: 'sm', variant: 'ghost', tip: t('heal.tip'), onClick: async () => { if (await V.healDialog(team)) refresh(); } }),
           btn({ icon: 'edit', label: t('home.manage'), size: 'sm', variant: 'ghost', onClick: () => DK.router.reset('team') })),
         h('div', { class: 'home-team' }, team.map((d) => {
           const row = V.daskaiRow(d, { compact: true, onClick: () => DK.router.reset('team', { uid: d.uid }) });
