@@ -3,14 +3,15 @@
  *
  * Nunca está vacío: desde el principio se ven TODAS las especies, objetos
  * y jefes; lo que aún no conoces sale como silueta o «???».
- *   Pestañas: Daskai · Objetos · Jefes (con su % completado).
+ *   Pestañas: Daskai · Zonas (% de cada zona) · Objetos · Jefes · Guía
+ *   (wiki con lo desbloqueado: data/wiki.js).
  *   Filtros (Daskai): casa, zona y estado (vistos / vencidos / vinculados).
  *   Ficha de especie: dónde aparece, evolución, ataques por nivel, punto
  *   débil, lo que suelta y tu mejor ejemplar. Lo que no sabes se revela
  *   poco a poco (verla, luchar contra ella, vincularla).
  * Datos: DK.codex.species(id), DK.codex.itemKnown(id), DK.codex.totals().
  *
- * params: { tab, house, zone, state, q, sel }
+ * params: { tab, house, zone, state, q, sel, wsel (entrada de la guía abierta) }
  * ============================================================= */
 (function () {
   const { h, btn } = DK.ui;
@@ -97,7 +98,7 @@
       DK.ui.select({ label: t('codex.house'), value: params.house || 'all', onChange: (v) => { params.house = v; DK.router.refresh(); },
         options: [{ value: 'all', label: t('codex.allHouses') }, ...Object.keys(D.houses).map((k) => ({ value: k, label: DK.tr('houses', D.houses[k]) }))] }),
       DK.ui.select({ label: t('codex.zone'), value: params.zone || 'all', onChange: (v) => { params.zone = v; DK.router.refresh(); },
-        options: [{ value: 'all', label: t('codex.allZones') }, ...Object.keys(D.zones).map((k) => ({ value: k, label: DK.world.isUnlocked(k) ? D.zones[k].name : '???' }))] }),
+        options: [{ value: 'all', label: t('codex.allZones') }, ...Object.keys(D.zones).filter((k) => !D.zones[k].secretZone || DK.world.isUnlocked(k)).map((k) => ({ value: k, label: DK.world.isUnlocked(k) ? D.zones[k].name : '???' }))] }),
       DK.ui.select({ label: t('codex.stateL'), value: params.state || 'all', onChange: (v) => { params.state = v; DK.router.refresh(); },
         options: ['all', 'seen', 'fought', 'captured', 'unknown'].map((k) => ({ value: k, label: t('codex.filter.' + k) })) }));
     const grid = list.length ? h('div', { class: 'cx-grid' }, list.map((s) => {
@@ -145,9 +146,59 @@
     };
     return h('div', { class: 'stack' },
       h('h4', { class: 'inv-group-head' }, DK.icon('crown', 14), t('codex.zoneBosses')),
-      h('div', { class: 'cx-boss-grid' }, Object.keys(D.zones).map((zid) => card(zid, D.zones[zid].boss, false))),
+      h('div', { class: 'cx-boss-grid' }, Object.keys(D.zones).filter((zid) => !D.zones[zid].secretZone || DK.world.isUnlocked(zid)).map((zid) => card(zid, D.zones[zid].boss, false))),
       h('h4', { class: 'inv-group-head' }, DK.icon('cave', 14), t('codex.secretBosses')),
       h('div', { class: 'cx-boss-grid' }, Object.keys(D.secretBosses || {}).map((zid) => card(zid, D.secretBosses[zid], true))));
+  }
+
+  /* ---------------- Pestaña Zonas (% del códice por zona) ---------------- */
+  /** % medio del códice de zonas (todas las zonas visibles cuentan). */
+  const zoneIds = () => Object.keys(D.zones).filter((zid) => !D.zones[zid].secretZone || DK.world.isUnlocked(zid));
+  const zonesPct = () => { const z = zoneIds(); return z.reduce((a, id) => a + C().completion(id), 0) / Math.max(1, z.length); };
+  function zonesTab(params) {
+    const late = DK.endgame.late();
+    const card = (zid) => {
+      const z = D.zones[zid], open = DK.world.isUnlocked(zid), pct = C().completion(zid);
+      const list = z.enemies.map((e) => e.species), rec = C().zone(zid), seen = list.filter((sid) => rec && rec.enemies[sid]).length;
+      const fought = list.filter((sid) => ['fought', 'captured'].includes(C().species(sid).status)).length;
+      const boss = DK.world.boss(zid).defeated > 0, full = pct >= 1;
+      return h('button', { class: 'cx-zone' + (open ? '' : ' off') + (full ? ' full' : ''), type: 'button', disabled: !open, style: { '--z1': z.colors[0], '--z2': z.colors[1] },
+        tip: open ? t('codex.zoneTip') : t('codex.zoneLocked'), onClick: () => { params.tab = 'species'; params.zone = zid; params.sel = null; DK.router.refresh(); } },
+        h('span', { class: 'cx-zone-icon' }, DK.icon(open ? (z.icon || 'map') : 'lock', 20)),
+        h('span', { class: 'cx-zone-main' },
+          h('span', { class: 'row between gap-s' }, h('b', null, open ? z.name : '???'), h('b', { class: 'cx-zone-pct' }, Math.round(pct * 100) + '%')),
+          h('span', { class: 'cx-zone-bar' }, h('i', { style: { width: Math.round(pct * 100) + '%' } })),
+          open ? h('span', { class: 'cx-zone-meta' },
+            h('span', null, DK.icon('eye', 11), ' ', t('codex.zoneSeen', { n: seen, max: list.length })),
+            h('span', null, DK.icon('swords', 11), ' ', fought),
+            boss ? h('span', { class: 'good-text' }, DK.icon('crown', 11), ' ', t('codex.zoneBoss')) : null,
+            full && late ? h('span', { class: 'cx-zone-nm' }, DK.icon('moon', 11), ' ', t('codex.zoneNightmare')) : null) : null));
+    };
+    return h('div', { class: 'stack' },
+      h('p', { class: 'muted small' }, late ? t('codex.zonesHintLate') : t('codex.zonesHint')),
+      h('div', { class: 'cx-zone-grid' }, zoneIds().map(card)));
+  }
+
+  /* ---------------- Pestaña Guía (wiki de lo desbloqueado) ---------------- */
+  function wikiTab(params) {
+    const q = (params.q || '').trim().toLowerCase();
+    const groups = D.wikiGroups.map((g) => {
+      const all = D.wiki.filter((e) => e.group === g), known = all.filter((e) => DK.wiki.known(e));
+      const shown = known.filter((e) => !q || (DK.wiki.title(e) + ' ' + DK.wiki.body(e)).toLowerCase().includes(q));
+      if (q && !shown.length) return null;
+      const locked = all.length - known.length;
+      return h('section', { class: 'wk-group' },
+        h('h4', { class: 'inv-group-head' }, DK.icon(all[0].icon, 14), t(['wiki', 'g', g].join('.')), h('span', { class: 'muted' }, `${known.length}/${all.length}`)),
+        h('div', { class: 'wk-list' },
+          shown.map((e) => h('details', { class: 'wk-entry', open: params.wsel === e.id || !!q, 'data-id': e.id },
+            h('summary', null, h('span', { class: 'wk-icon' }, DK.icon(e.icon, 16)), h('b', null, DK.wiki.title(e)),
+              e.stat ? h('span', { class: 'wk-stat' }, e.stat()) : null, DK.icon('next', 14)),
+            h('div', { class: 'wk-body' }, DK.wiki.body(e).split('\n').map((para) => h('p', null, para))))),
+          !q && locked ? h('div', { class: 'wk-entry locked' }, h('span', { class: 'wk-icon' }, DK.icon('lock', 14)), h('span', { class: 'muted' }, t('wiki.lockedN', { n: locked }))) : null));
+    }).filter(Boolean);
+    if (params.wsel) { const id = params.wsel; setTimeout(() => { const el = document.querySelector(`.wk-entry[data-id="${id}"]`); if (el) el.scrollIntoView({ block: 'center' }); }, 60); params.wsel = null; }
+    return h('div', { class: 'stack' }, h('p', { class: 'muted small' }, t('wiki.intro')),
+      groups.length ? groups : DK.ui.empty('book', t('wiki.empty'), ''));
   }
 
   DK.screens.register('codex', {
@@ -166,11 +217,11 @@
         DK.ui.drawer({ title: t('codex.title'), icon: 'book', size: 'wide', content: holder }).promise.then(() => { params.sel = null; });
       };
       const pct = (a, b) => Math.round((a / Math.max(1, b)) * 100) + '%';
-      const tabs = h('div', { class: 'inv-tabs cx-tabs' }, [['species', 'paw', t('codex.tabSpecies'), pct(tot.species, tot.speciesTotal)], ['items', 'gift', t('codex.tabItems'), pct(tot.items, tot.itemsTotal)], ['bosses', 'crown', t('codex.tabBosses'), `${tot.bosses}/${tot.bossesTotal}`]]
-        .map(([id, icon, label, n]) => h('button', { class: 'inv-tab' + (params.tab === id ? ' on' : ''), type: 'button', onClick: () => { params.tab = id; params.sel = null; refresh(); } }, DK.icon(icon, 18), h('span', null, label), h('b', null, n))));
-      const search = params.tab !== 'bosses' ? h('input', { class: 'input inv-search', type: 'search', placeholder: t('codex.search'), value: params.q || '',
+      const tabs = h('div', { class: 'inv-tabs cx-tabs' }, [['species', 'paw', t('codex.tabSpecies'), pct(tot.species, tot.speciesTotal)], ['zones', 'map', t('codex.tabZones'), Math.round(zonesPct() * 100) + '%'], ['items', 'gift', t('codex.tabItems'), pct(tot.items, tot.itemsTotal)], ['bosses', 'crown', t('codex.tabBosses'), `${tot.bosses}/${tot.bossesTotal}`], ['wiki', 'book', t('wiki.tab'), `${DK.wiki.unlocked().length}/${D.wiki.length}`]]
+        .map(([id, icon, label, n]) => h('button', { class: 'inv-tab' + (params.tab === id ? ' on' : ''), type: 'button', onClick: () => { params.tab = id; params.sel = null; params.q = ''; refresh(); } }, DK.icon(icon, 18), h('span', null, label), h('b', null, n))));
+      const search = ['species', 'items', 'wiki'].includes(params.tab) ? h('input', { class: 'input inv-search', type: 'search', placeholder: params.tab === 'wiki' ? t('wiki.search') : t('codex.search'), value: params.q || '',
         onInput: (e) => { params.q = e.target.value; clearTimeout(params._qt); params._qt = setTimeout(() => { refresh(); const i = document.querySelector('.inv-search'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }, 220); } }) : null;
-      const body = params.tab === 'species' ? speciesTab(params, open) : params.tab === 'items' ? itemsTab(params) : bossesTab();
+      const body = params.tab === 'species' ? speciesTab(params, open) : params.tab === 'items' ? itemsTab(params) : params.tab === 'zones' ? zonesTab(params) : params.tab === 'wiki' ? wikiTab(params) : bossesTab();
       const side = params.tab === 'species' && params.sel && !narrow ? h('aside', { class: 'card inv-side cx-side' },
         h('div', { class: 'row between' }, h('span', { class: 'muted small' }, DK.icon('book', 13), ' ', t('codex.sheet')), btn({ icon: 'x', size: 'sm', variant: 'ghost', onClick: () => { params.sel = null; refresh(); } })),
         speciesSheet(params.sel, open)) : null;

@@ -83,7 +83,7 @@
       h('div', { class: 'pass-head' },
         h('div', { class: 'pass-badge' }, h('small', null, t('pass.level')), h('b', null, pr.level)),
         h('div', { class: 'pass-info' },
-          h('h3', null, t('pass.title')),
+          h('h3', null, t('pass.title'), h('span', { class: 'pass-season', tip: t('pass.seasonTip') }, t('pass.season', { n: DK.pass.season(), d: DK.pass.daysLeft() }))),
           h('div', { class: 'pass-bar' }, h('i', { style: { width: Math.round((pr.into / pr.need) * 100) + '%' } })),
           h('span', { class: 'muted small' }, t('pass.toNext', { a: pr.into, b: pr.need, n: pr.level + 1 }), ' · ', t('pass.howTo', { d: P.daily, w: P.weekly, a: P.achievement }))),
         pending.length ? btn({ icon: 'gift', label: t('pass.claimAll', { n: pending.length }), variant: 'primary', cls: 'pass-claim', onClick: () => { const got = DK.pass.claimAll(); if (got.length) { DK.audio.sfx('achievement'); DK.ui.toast(t('pass.claimedN', { n: got.length }), { icon: 'gift', kind: 'good' }); } refresh(); } }) : null),

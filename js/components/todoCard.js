@@ -20,7 +20,7 @@
 
   const SOURCES = [
     // Entrenamientos que ya no ganan más (o llegaron al tope)
-    () => { const n = DK.training.readyCount(); return n ? { id: 'train', icon: 'dumbbell', kind: 'good', text: tn('todo.trainReady', n), cta: t('train.collect'), run: go('training') } : null; },
+    () => { const n = DK.training.readyCount(); return n ? { id: 'train', icon: 'dumbbell', kind: 'good', text: tn('todo.trainReady', n), cta: t('train.goCollect'), run: go('training') } : null; },
     // Talentos por elegir
     () => {
       const ds = DK.party.all().filter((d) => !d.temp && DK.daskai.talentsPending(d).length);

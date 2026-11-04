@@ -54,16 +54,33 @@ module.exports = {
   }, {
     name: 'Entrenamiento: elegir daskai en cuadrícula y mejoras caras con monedas',
     run: (browser, view) => play(browser, view, async (p) => {
-      await p.evaluate(() => { DK.store.state.bosses = { pradera: { defeated: 1 } }; ['brotin', 'gotin', 'plumin'].forEach((s) => DK.party.add(DK.daskai.create(s, 4))); DK.wallet.add(3000, { silent: true }); DK.router.reset('training', { pick: true }); });
+      await p.evaluate(() => { DK.store.state.bosses = { pradera: { defeated: 1 } }; ['brotin', 'gotin', 'plumin'].forEach((s) => DK.party.add(DK.daskai.create(s, 4))); DK.wallet.add(3500, { silent: true }); DK.store.state.emblems = 3; DK.router.reset('training', { pick: true }); });
       await sleep(500);
-      const r = await p.evaluate(() => ({ tiles: document.querySelectorAll('.tr-tile').length, steps: document.querySelectorAll('.tr-step').length, cost: DK.training.nextLevel().cost, slots: DK.training.slotCount() }));
+      const r = await p.evaluate(() => ({ tiles: document.querySelectorAll('.tr-tile').length, steps: document.querySelectorAll('.tr-step').length, cost: DK.training.nextLevel().cost, em: DK.training.nextLevel().emblems, slots: DK.training.slotCount() }));
       check(r.tiles >= 4 && r.steps === 4, 'faltan fichas o mejoras: ' + JSON.stringify(r));
-      check(r.cost >= 2000, 'las mejoras deberían costar muchas monedas');
+      check(r.cost >= 2000 && r.em > 0, 'las mejoras deberían costar muchas monedas y emblemas');
       await p.click('.tr-up .btn'); await sleep(300);
+      check(await p.evaluate(() => DK.store.state.emblems === 0 && DK.training.slotMax() === 4), 'la mejora no gasta los emblemas o hay más de 4 huecos');
       const after = await p.evaluate(() => ({ lv: DK.training.level(), slots: DK.training.slotCount(), statMax: DK.training.statMax() }));
       check(after.lv === 1 && after.slots === r.slots + 1, 'la mejora no se aplica: ' + JSON.stringify(after));
       await p.click('.tr-tile >> nth=0'); await sleep(300);
-      check(await p.$('.train-stats, .train-plans, .panel-head'), 'pulsar una ficha no abre la configuración');
+      check((await p.$$('.tr-boost')).length === 3 && (await p.$$('.tr-plan-row')).length === 5, 'falta el acelerador o la previsión');
+      // Sólo experiencia: no se paga al entrar (×1), se cobra al sacarlo y crece con el tiempo
+      const m = await p.evaluate(() => {
+        const T = DK.training, d = DK.party.all().filter((x) => !x.temp).sort((a, b) => a.level - b.level)[0];
+        const w0 = DK.wallet.get(); const ok = T.start(d.uid, 1); const w1 = DK.wallet.get();
+        const s = T.get(d.uid); const lv0 = d.level;
+        const at = (min) => T.progress(s, s.start + min * 60000);
+        const a = at(60), b = at(240);
+        const r1 = a.exp / 60, r4 = (b.exp - at(180).exp) / 60;      // exp por minuto al principio y a las 3-4 h
+        const fast = T.simulate(d, 60, 3);
+        const lowPct = T.pct(5), highPct = T.pct(60);
+        s.start -= 600 * 60000; DK.wallet.add(100000, { silent: true });
+        const fee = T.progress(s).fee, w2 = DK.wallet.get();
+        const res = T.collect(d.uid, true);
+        return { ok, free: w0 === w1, grows: r4 > r1, feeUp: b.fee > a.fee, boost: fast.gained > a.exp * 2.5, lvlDep: lowPct > highPct, paid: w2 - DK.wallet.get() === fee && fee > 0, up: d.level > lv0, out: !T.isTraining(d.uid), exp: res.exp > 0 };
+      });
+      check(Object.values(m).every(Boolean), 'el entrenamiento no cumple las reglas: ' + JSON.stringify(m));
     }),
   }, {
     name: 'Las flechas de crecimiento reflejan lo que de verdad sube',

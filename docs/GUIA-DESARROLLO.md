@@ -220,7 +220,7 @@ Los ajustes del jugador (velocidad, automático...) están en `core/settings.js`
   lastExpedition, expHistory: [resumen],   // resúmenes de expediciones
   graveyard: [caído], essences: [esencia], gameOver,
   camp: { mejora: nivel }, favorites,
-  training: { slots: [{ uid, kind: 'exp'|'stat', stat, start, cost, startLevel }] },  // campo de entrenamiento
+  training: { slots: [{ uid, start, boost, paid, v: 2 }], level },  // campo de entrenamiento (sólo experiencia)
   missions, achievements, stats: { battles, wins, history, defeatedHouses, bestDepth, ... },
 }
 ```
@@ -256,9 +256,11 @@ Atributo final = `(base + crecimiento + equipo + herencia + tónicos + entrenami
 Se desbloquea al derrotar al primer jefe (`DK.unlocks.has('training')`): hasta entonces no sale en el menú, el botón del Inicio está bloqueado y la pantalla explica cómo abrirlo.
 
 
-Huecos `config.training.slots` + mejora «Instructor». Al entrar se paga `cost(nivel, tipo)` y el daskai sale del equipo (`DK.party.canJoin` lo bloquea). Gana en tiempo real con rendimiento decreciente (`effHours`: 100% hasta `fullHours`, `halfRate` hasta `halfHours`, luego nada): experiencia (hasta el nivel máximo) o puntos de un atributo (`statHours` por punto, máximo `statMax`). `progress(slot)` calcula sin aplicar y `collect(uid)` aplica y devuelve el daskai.
+**Desde la v4.32 sólo da experiencia.** Huecos `config.training.slots` (2) + mejora «Instructor» (4 como mucho). El daskai sale del equipo (`DK.party.canJoin` lo bloquea) y cada minuto gana `pct(nivel actual)` × `expCurve(nivel)` de experiencia × aceleración por tiempo (`ramp(min)` = 1 + `ramp.perHour` × horas, hasta `ramp.max`) × acelerador (`slot.boost`, de `boosts`, pagado al dejarlo con `boostCost(nivel, m)`) × (1 + Instructor `rate`). **No se paga al entrar** (salvo el acelerador): al sacarlo se cobra `fee(nivel)` monedas por minuto × la misma aceleración, − Instructor `discount`. A las `maxHours` deja de ganar y de cobrar.
 
-**Nivel recomendado** (`levelCap()` = nivel más alto − `levelMargin` + Instructor): no bloquea. Por encima, entrenar experiencia tiene una penalización `overMult(d)` = 1 + `overStep` × niveles de más (máx. `overMax`) y el jugador elige el plan: `'coins'` (paga ×mult, ritmo normal) o `'time'` (precio normal, las horas se estiran ×mult). Se guarda en el hueco (`slot.plan`, `slot.mult`) y `progress()` trabaja con horas «normales» (`norm = horas / stretch(slot)`).
+- `simulate(d, minutos, boost)` integra minuto a minuto (el % cambia al subir de nivel) → `{ level, exp, gained, levels, fee, capped }`. La pantalla lo usa para la previsión a 1/4/8/24 h.
+- `progress(slot)` = simulación hasta ahora + `rate` (fracción de nivel/min actual) y `ramp`. `collect(uid, pay)`: `pay=true` cobra y aplica; `pay=false` lo saca gratis **sin** la experiencia (para no quedarte atascado sin monedas).
+- Huecos antiguos (sin `v: 2`, de atributos o con pago adelantado): se devuelve lo pagado y empiezan de cero. Los puntos de atributo ya entrenados (`d.trained`) se conservan (`trainedTotal`, `statMax`).
 
 ### Expediciones
 
@@ -355,6 +357,47 @@ Se carga la última y sólo sobrescribe: paleta (piedra oscura, bronce, oro `--g
 - **Expedición:** al entrar en el mapa, el equipo, la mochila o un combate durante una expedición, `#zone-backdrop` (creado en `screens/expedition.js` con `screen:enter`) pinta detrás de todo la escena de la zona actual, oscurecida; `body.in-exp`.
 - **Combate:** la arena usa la escena de la zona (`components/scenes.js`, ahora con árboles muertos, ruinas, tumbas, cristales o tentáculos según la zona) y los **jefes tienen su propio fondo**: `DK.scenes.bossScene(zona, secreto)` → `boss_<escena>` (menhires bajo luna roja, bosque muerto, naufragio con tormenta, bosque de cristales, forja de lava, santuario con estatua, fauces del abismo, ruinas entre rayos) y `boss_secret` (cripta) para los jefes ocultos.
 
+### Cambios de la v4.34 — Códice con zonas y guía; funciones en el perfil
+
+- **Códice → Zonas** (`zonesTab` en screens/codex.js): una tarjeta por zona con su % (`DK.codex.completion`), especies descubiertas/combatidas, jefe vencido y «Pesadilla» al 100% (si ya se ve el final del juego). Pulsar abre Daskai filtrado por esa zona. La pestaña muestra el % medio.
+- **Códice → Guía** (`wikiTab`): wiki de lo desbloqueado. Entradas en `js/data/wiki.js` (`DK.data.wiki`, grupos `DK.data.wikiGroups`): `{ id, group, icon, when(), vars(), stat() }`; textos en lang `wiki.e.<id>.{t, b}` (`b` con `\n` = párrafos). Lo no desbloqueado sale como «N por descubrir». Helpers `DK.wiki.known/unlocked/title/body`. `params.wsel` abre y centra una entrada.
+- **Perfil → Funciones desbloqueadas** (`featuresCard` en screens/profile.js): las entradas de la guía desbloqueadas con `stat()` (runas, emblemas, entrenamiento, crafteo, Senda, jefes, corrupción, pesadilla, abismo, ascensión, formas, grabados…). Aparecen solas al desbloquearse; pulsar abre la guía. CSS §19 en grim.css.
+- Para añadir una entrada: añádela en `data/wiki.js` y escribe `wiki.e.<id>.t` y `.b` en es/en.
+
+### Cambios de la v4.33 — Entrenamiento más lento y mejoras compactas
+
+- Ritmo mucho más lento: `pct(lv)` = 0,008 / (1 + nivel/10) por minuto, `ramp` +12,5%/h hasta ×2, acelerador sólo ×2/×3 (`boostCost` = (m−1)·(60 + 12·nivel)). Sin acelerador, en 24 h un Nv 3 llega a ~14 y un Nv 30 a ~35; con todo al máximo, Nv 3 → ~35.
+- Máximo 4 huecos: 2 de base + 2 del Instructor (niveles 1 y 3).
+- Las mejoras del campo cuestan **emblemas de jefe + monedas** (3+3.000, 6+10.000, 10+25.000, 15+60.000). `DK.training.cannotBuy()` → `'max' | 'emblems' | 'coins' | null`.
+- Panel de mejoras compacto (`.tr-up-head`, 4 segmentos `.tr-step`, precio y botón en una línea, «Siguiente: …» debajo; el detalle de cada nivel en el tooltip).
+
+### Cambios de la v4.32 — Entrenamiento simplificado (`systems/training.js`, `screens/training.js`)
+
+- Sólo experiencia: fuera el entrenamiento de atributos, el nivel recomendado y los planes «pagar más / más tiempo».
+- Ritmo por nivel actual (`config.training.pct`), más rápido cuanto más tiempo (`ramp`, hasta ×3 a las 8 h), tope `maxHours` (24 h).
+- Se cobra **al sacarlo** (`fee` por minuto × aceleración); acelerador ×2/×3/×5 pagado al dejarlo. Sin monedas: «Sacar sin experiencia».
+- Instructor: huecos, +% ritmo y −% cobro (`discount`). CSS `.tr-boost`, `.tr-plan`, `.tr-bill`, `.tr-fee` en grim.css. Test en `tests/shop.test.js`.
+
+### Cambios de la v4.31 — Final del juego (`data/endgame.js`, `systems/endgame.js`)
+
+- **Runas con tier I-III** (`systems/runes.js`): el id lleva el tier (`oro`, `oro:2`, `oro:3`; `DK.runes.parse/withTier/get/roman/mult`). Bonificaciones × `runes.tierMult` [1, 2, 4]; tamaño/tipo de tier II-III dan +(tier−1) emblemas por jefe (`emblemBonus`); XL III añade 2 cuevas (`mapExtra`). Caen de tier mayor según profundidad, Corrupción y jefes ocultos (`DK.endgame.runeTier()`). **Forja rúnica** en Crafteo → Runas: 3 iguales → 1 del tier siguiente (`fuse`, 500/2000 monedas). Runas nuevas de final de juego (`late: true`, se ven con la Corrupción): **campeones** (`elites`: +1 mini jefe por tier) y **botín maldito** (`loot`: +30% monedas por tier y un objeto más en cofres, `noRest`: sin hogueras). `generate(..., extra)` recibe `minElites`, `noRest`, `noShortcuts`, `caves` (`DK.expedition.mapExtra`).
+- **Corrupción 1-5** (`DK.corruption`, `state.corruption.max`): oculta hasta vencer al jefe de la 3ª zona (entonces se abre el nivel 1); el nivel n+1 se abre al vencer a un jefe de mapa con el n activo (`onBoss` en `bossCleared`). Cada nivel: rivales +3/6/9/12/15 Nv. y +10-50% atributos; reglas acumuladas: II hogueras a medias, III jefes +30% vida, IV mercaderes al doble, V sin atajos; premios: +1-5 emblemas por jefe, +15-80% monedas, +1-5% variocolor, más runas de tier alto. Se elige en Batalla (`.bt-endgame`), se guarda en `nextExpedition.corruption` → `e.corruption`.
+- **El Abismo** (`DK.abyss`, `state.abyss`): tipo especial `abismo` (`kinds.abismo.special`, tamaño `abyss`: 4 pisos + hoguera + jefe). Se abre con 5 jefes de zona vencidos. Cada mapa es un piso: +4 Nv. y +4% por piso; récord y premio cada 5 pisos (emblemas, 2 runas de tier creciente, monedas y fragmento abisal cada 10).
+- **Versión pesadilla** (`DK.nightmare`): zona con el códice al 100% → rivales +8 Nv. y +20%, cofres de objetos raros+, +40% monedas, +1 emblema por jefe (sólo en esa zona).
+- **Ascensión** (`DK.ascension`, `d.stars`): al nivel máximo vuelve al 1 con una estrella (+6% a todo, máx. 5); conserva ataques, talentos, tónicos y bonus de evolución (`growth` = `evoBonus`).
+- **Formas alternativas** (`d.variant`): el objeto `fragmento_abisal` despierta la forma abisal de una forma final (+8% a todo, sprite `.variant-abisal`, insignia). Cae de jefes ocultos (50%), del Devorador (100%), de jefes con Corrupción III+ (25%) y del Abismo.
+- **Reliquias grabadas** (`DK.engrave`, `vault.engraved`): las épicas desbloqueadas se graban por 8 emblemas y salen siempre al empezar; 1 hueco (+1 con Corrupción III abierta).
+- **Variocolores:** marco por casa (`shiny_<casa>` en `components/avatar.js`) y **rastreo** (`DK.tracking`, `state.tracking`): cada derrota de una especie +0,1% de variocolor para ella (máx. +3%), en salvajes y reclutas.
+- **Temporadas de la Senda** (`seasons` en `data/endgame.js`: desde el 2026-11-02, 42 días): al cambiar de temporada se reinician puntos y niveles; los marcos y títulos cobrados se quedan en `state.cosmetics`; cada temporada tiene su terna de marcos (`senda{n}_bronce/plata/oro`) y títulos (`senda{n}_15/30`).
+- **Zona secreta final «Corazón del Vacío»** (`zones.json → vacio`, `secretZone: true`, `drops`): no se ve hasta vencer a todos los jefes ocultos (`DK.endgame.checkFinalZone`). Jefe «El Devorador del Vacío», materiales `fragmento_vacio` y `corazon_vacio`, y el mejor equipo: `filo_vacio`, `egida_vacio`, `corona_vacio`.
+- Rivales: `DK.daskai.mult` aplica `DK.endgame.enemyStat` y `bossHp`; tus daskai, estrellas y forma. `levelBonus` suma `DK.endgame.levels()`.
+- Prueba: `tests/endgame.test.js`.
+
+### Cambios de la v4.30
+
+- **Mochila al caer derrotado** (`difficulties.keepPack`, `DK.rules.keepPack()`, `DK.expedition.packOnDefeat()`): en Normal y Difícil vuelve a la bolsa de casa lo que metiste en la mochila al salir (`e.packed`) y no has gastado: `min(lo que queda, lo que metiste)` por objeto (se gasta primero lo encontrado). En Pesadilla se pierde todo. Lo encontrado por el camino (objetos de más en la mochila y los objetos del botín) se pierde siempre, también al caer ante el jefe (que sigue salvando el 25% de las monedas y da la recompensa de consuelo). Batalla enseña la regla en la preparación (chip «Si pierdes, tu mochila vuelve» / «…pierdes la mochila»); el resumen enseña lo que vuelve y lo que se pierde.
+- Prueba: `tests/defeat.test.js`.
+
 ### Cambios de la v4.29
 
 - **Senda del aventurero** (`data/pass.js`, `systems/pass.js` → `DK.pass`, `state.pass = { xp, claimed, extra }`): misión diaria cobrada +25, semanal +80, logro +40 (oculto +80) puntos (`DK.data.pass.points`). Nivel n pide `xpFor(n) = 100 + (n-1)·10`. 30 niveles con premio (monedas, objetos, runas, emblemas, marcos `senda_bronce/plata/oro` en los niveles 10/20/30 y títulos `senda15`/`senda30`); después, cada 400 puntos un cofre repetible (500 monedas + runa). Se cobran en Progreso (nodo a nodo o «Cobrar N»); la medalla de Progreso suma los niveles sin cobrar. Las partidas antiguas reciben en `store.migrate()` los puntos de los logros que ya tenían. Marcos en `components/avatar.js` (FRAMES) y títulos `pass:<id>` en `DK.avatars.titles()`.
@@ -431,8 +474,8 @@ Se carga la última y sólo sobrescribe: paleta (piedra oscura, bronce, oro `--g
 
 ### Campo de entrenamiento
 
-- **Elegir daskai** (`picker` en screens/training.js): cuadrícula de fichas con retrato, nivel, coste, si está en el equipo y la penalización por encima del nivel recomendado; filtros Todos · Equipo · Cajas; los que no pueden entrar, aparte y plegados, con el motivo.
-- **Mejoras del campo** (antes la Mejora «Instructor» de emblemas): ahora se compran con **monedas** en el propio campo (`DK.training.buyLevel()`, `level()` en `state.training.level`; las partidas antiguas conservan el nivel que tenían). Niveles en `config.training.instructor`: huecos, +% de ritmo, +niveles de tope y +puntos de atributo entrenables (`statMax()`), por 2.500 / 8.000 / 20.000 / 50.000 monedas.
+- **Elegir daskai** (`picker` en screens/training.js): cuadrícula de fichas con retrato, nivel, % de nivel por minuto y si está en el equipo; al elegir, acelerador (`.tr-boost` ×1/×2/×3/×5) y previsión (`.tr-plan`); filtros Todos · Equipo · Cajas; los que no pueden entrar, aparte y plegados, con el motivo.
+- **Mejoras del campo** (antes la Mejora «Instructor» de emblemas): ahora se compran con **monedas** en el propio campo (`DK.training.buyLevel()`, `level()` en `state.training.level`; las partidas antiguas conservan el nivel que tenían). Niveles en `config.training.instructor`: huecos, +% de ritmo y descuento en el cobro al sacarlo; cuestan emblemas de jefe + monedas (`emblems`, `cost`).
 
 ### Crecimiento por nivel
 

@@ -145,7 +145,7 @@ if (!errors.length) {
   };
   for (const [id, z] of Object.entries(ZN)) {
     const w = id;
-    known('zones', w, z, ['name', 'desc', 'icon', 'levels', 'colors', 'scene', 'unlock', 'enemies', 'boss', 'secretBoss']);
+    known('zones', w, z, ['name', 'desc', 'icon', 'levels', 'colors', 'scene', 'unlock', 'enemies', 'boss', 'secretBoss', 'secretZone', 'drops']);
     if (typeof z.name !== 'string') err('zones', w, 'falta "name"');
     if (!Array.isArray(z.levels) || z.levels.length !== 2 || z.levels[0] > z.levels[1]) err('zones', w, '"levels" debe ser [mínimo, máximo]');
     if (z.unlock && !ZN[z.unlock]) err('zones', w, `"unlock": la zona «${z.unlock}» no existe`);

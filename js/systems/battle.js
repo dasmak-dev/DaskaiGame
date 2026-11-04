@@ -53,7 +53,8 @@
         enemy = DK.daskai.create(pick.species, lv(zone.levels[1] + C().eliteLevelBonus), { wild: true, elite: true });
       } else {
         const pick = U.weighted(zone.enemies);
-        enemy = DK.daskai.create(pick.species, lv(U.rand(zone.levels[0], zone.levels[1])), { wild: true });
+        // Variocolor: la probabilidad base + el rastreo de esa especie (DK.tracking) y la corrupción
+        enemy = DK.daskai.create(pick.species, lv(U.rand(zone.levels[0], zone.levels[1])), { wild: true, shiny: U.chance(DK.config.shinyChance + (DK.endgame ? DK.endgame.shiny(pick.species) : 0)) });
       }
       DK.daskai.fullHeal(enemy);
       const known = DK.codex.fought(zoneId, enemy.species) > 0; // ¿hemos peleado antes contra él?
@@ -657,6 +658,10 @@
           if (!out.drops.includes(rare)) { out.drops.push(rare); DK.codex.recordDrop(st.zoneId, e.species, rare); }
           if (U.chance(C().expItemChance)) out.drops.push(DK.expedition.expItem());
         }
+        // Zona con drops propios (Corazón del Vacío)
+        if (st.expedition && zone.drops) zone.drops.forEach(([id, p]) => { if (D.items[id] && U.chance(p)) out.drops.push(id); });
+        // Fragmento abisal (forma alternativa): jefes ocultos, el Devorador y jefes con Corrupción III+
+        if (st.expedition && DK.endgame && U.chance(DK.endgame.abisalChance(st))) out.drops.push('fragmento_abisal');
         // Mini jefe: a veces suelta un tónico
         if (st.elite && st.expedition && U.chance(C().expedition.tonicDrops.elite)) out.drops.push(DK.expedition.tonic());
       }

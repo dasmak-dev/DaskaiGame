@@ -35,7 +35,16 @@
   V.level = (l) => h('span', { class: 'lvl' }, t('common.lvl') + ' ', h('b', null, l));
   /** Etiqueta de daskai temporal (recluta de una expedición en curso). */
   V.tempTag = (d) => (d && d.temp ? h('span', { class: 'badge temp', tip: t('exp.tempTip') }, DK.icon('flag', 13), t('exp.temp')) : null);
-  V.shinyTag = (d) => (d && d.shiny ? h('span', { class: 'badge shiny', tip: t('tips.shiny') }, DK.icon('sparkles', 13), t('common.shiny')) : null);
+  V.shinyTag = (d) => {
+    if (!d) return null;
+    const out = [
+      d.shiny ? h('span', { class: 'badge shiny', tip: t('tips.shiny') }, DK.icon('sparkles', 13), t('common.shiny')) : null,
+      // Final del juego: forma alternativa y estrellas de ascensión
+      d.variant ? h('span', { class: 'badge variant v-' + d.variant, tip: t('variant.tip') }, DK.icon('crystal', 12), t('variant.' + d.variant)) : null,
+      d.stars ? h('span', { class: 'badge stars', tip: t('ascend.starsTip', { n: d.stars, pct: Math.round(d.stars * DK.data.endgame.ascension.statPerStar * 100) }) }, '★'.repeat(d.stars)) : null,
+    ].filter(Boolean);
+    return out.length ? (out.length === 1 ? out[0] : out) : null;
+  };
 
   V.statusTag = (s) => {
     if (!s) return null;

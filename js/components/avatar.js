@@ -34,26 +34,40 @@
     })),
     { id: 'shiny', css: 'conic-gradient(from 0deg, #f472b6, #facc15, #34d399, #60a5fa, #a78bfa, #f472b6)', req: () => DK.party.all().some((d) => d.shiny), reqText: () => t('profile.frameShiny') },
     { id: 'gold', css: 'linear-gradient(135deg, #fde68a, #f59e0b, #b45309, #fde68a)', req: () => DK.achievements.unlockedCount() >= 10, reqText: () => t('profile.frameGold', { n: 10 }) },
-    // Marcos de la Senda del aventurero (DK.pass)
-    { id: 'senda_bronce', css: 'linear-gradient(135deg, #e0b07a, #8a5a2b, #f0c99a, #8a5a2b)', req: () => DK.pass.has('frame', 'senda_bronce'), reqText: () => t('pass.frameReq', { n: 10 }) },
-    { id: 'senda_plata', css: 'linear-gradient(135deg, #f8fafc, #94a3b8, #e2e8f0, #64748b)', req: () => DK.pass.has('frame', 'senda_plata'), reqText: () => t('pass.frameReq', { n: 20 }) },
-    { id: 'senda_oro', css: 'conic-gradient(from 0deg, #fde68a, #b45309, #fff7d6, #d97706, #fde68a)', req: () => DK.pass.has('frame', 'senda_oro'), reqText: () => t('pass.frameReq', { n: 30 }) },
     { id: 'legend', css: 'conic-gradient(from 90deg, #6d5dfc, #22d3ee, #6d5dfc, #f472b6, #6d5dfc)', req: () => DK.achievements.unlockedCount() >= D.achievements.length, reqText: () => t('profile.frameLegend') },
   ];
+
+  /* Marcos de la Senda (una terna por temporada) y variocolores por casa */
+  const METAL = { bronce: ['#e0b07a', '#8a5a2b'], plata: ['#f8fafc', '#64748b'], oro: ['#fde68a', '#b45309'] };
+  const SEASON_TINT = ['#38bdf8', '#a855f7', '#22c55e', '#f43f5e', '#eab308', '#14b8a6'];
+  const seasonFrames = () => {
+    const out = [], n = DK.pass ? DK.pass.season() : 1;
+    for (let s = 1; s <= n; s++) Object.entries(METAL).forEach(([m, [a, b]], i) => {
+      const id = s > 1 ? `senda${s}_${m}` : `senda_${m}`, tint = SEASON_TINT[(s - 2 + SEASON_TINT.length) % SEASON_TINT.length];
+      out.push({ id, season: s, metal: m, css: s > 1 ? `conic-gradient(from ${i * 40}deg, ${a}, ${tint}, ${b}, ${tint}, ${a})` : (m === 'oro' ? `conic-gradient(from 0deg, ${a}, ${b}, #fff7d6, #d97706, ${a})` : `linear-gradient(135deg, ${a}, ${b}, ${a}, ${b})`),
+        req: () => DK.pass.has('frame', id), reqText: () => t('pass.frameReqSeason', { n: [10, 20, 30][i], s }) });
+    });
+    return out;
+  };
+  const shinyFrames = () => Object.values(D.houses).map((hs) => ({
+    id: 'shiny_' + hs.id, shinyHouse: hs.id, css: `conic-gradient(from 0deg, ${hs.color}, #fde68a, ${hs.color}, #f9a8d4, ${hs.color})`,
+    req: () => DK.party.all().some((d) => d.shiny && D.species[d.species].house === hs.id), reqText: () => t('profile.frameShinyHouse', { house: DK.tr('houses', hs) }),
+  }));
+  const allFrames = () => FRAMES.slice(0, -1).concat(shinyFrames(), seasonFrames(), FRAMES.slice(-1));
 
   DK.avatars = {
     icons, colors,
     /** Lista de marcos con `unlocked` calculado. */
-    frames() { return FRAMES.map((f) => ({ ...f, unlocked: f.req() })); },
-    frame(id) { return FRAMES.find((f) => f.id === id) || FRAMES[0]; },
+    frames() { return allFrames().map((f) => ({ ...f, unlocked: f.req() })); },
+    frame(id) { return allFrames().find((f) => f.id === id) || FRAMES[0]; },
     /** Títulos: el de por defecto + el nombre de cada logro conseguido. */
     titles() {
-      const pass = D.pass.levels.filter((r, i) => r.title && DK.pass.claimed(i + 1)).map((r) => ({ id: 'pass:' + r.title, label: t('pass.titles.' + r.title) }));
+      const pass = DK.pass.titles().map((id) => ({ id: 'pass:' + id, label: DK.pass.titleName(id) }));
       return [{ id: null, label: t('hub.adventurer') }].concat(pass,
         D.achievements.filter((a) => st().achievements[a.id]).map((a) => ({ id: a.id, label: DK.achievements.name(a) })));
     },
     titleText(p) {
-      if (p.title && p.title.startsWith('pass:') && DK.pass.has('title', p.title.slice(5))) return t('pass.titles.' + p.title.slice(5));
+      if (p.title && p.title.startsWith('pass:') && DK.pass.titles().includes(p.title.slice(5))) return DK.pass.titleName(p.title.slice(5));
       const a = p.title && st().achievements[p.title] && D.achievements.find((x) => x.id === p.title); return a ? DK.achievements.name(a) : t('hub.adventurer');
     },
     /** Especies que el jugador conoce (las suyas y las vistas en el códice). */

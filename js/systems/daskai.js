@@ -220,6 +220,13 @@
       if (d.elite) m *= k === 'hp' ? C.eliteHpMult : C.eliteStatMult;
       // Dificultad: los rivales son más (o menos) fuertes
       if ((d.wild || d.boss) && DK.rules) m *= DK.rules.enemyMult();
+      // Final del juego: corrupción, pesadilla y abismo hacen más fuertes a los rivales
+      if ((d.wild || d.boss) && DK.endgame) { m *= 1 + DK.endgame.enemyStat(d); if (k === 'hp') m *= DK.endgame.bossHp(d); }
+      // Tus daskai: estrellas de ascensión y forma alternativa
+      if (!d.wild && !d.boss) {
+        if (d.stars && DK.data.endgame) m *= 1 + d.stars * DK.data.endgame.ascension.statPerStar;
+        if (d.variant && DK.data.endgame && DK.data.endgame.variants[d.variant]) m *= 1 + DK.data.endgame.variants[d.variant].stat;
+      }
       // Reliquias de expedición (sólo tus daskai)
       if (!d.wild && !d.boss && DK.relics && DK.expedition.active()) m *= 1 + DK.relics.statPct(k) + (k === 'hp' ? DK.camp.value('vigor') : 0);
       return m;
@@ -258,7 +265,7 @@
   function statKey(d) {
     const st = DK.store.state, e = st && st.expedition;
     const eq = d.equip || [];
-    return rev + '|' + d.level + '|' + d.species + '|' + d.passive + '|' + eq[0] + '|' + eq[1] + '|' + (e ? 'x' + (e.relics || []).length : '-') + '|' + (st ? st.difficulty : '');
+    return rev + '|' + d.level + '|' + d.species + '|' + d.passive + '|' + eq[0] + '|' + eq[1] + '|' + (e ? 'x' + (e.relics || []).length + '|' + (e.corruption || 0) + (e.zone || '') + (e.depth || 1) : '-') + '|' + (st ? st.difficulty : '') + '|' + (d.stars || 0) + (d.variant || '');
   }
   api.touch = () => { rev++; };
 

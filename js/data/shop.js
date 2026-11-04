@@ -25,6 +25,7 @@
     // Piezas
     pelaje: 12, fragmento_garra: 12, escama: 12, pluma: 12, hilo: 12, gota: 12, brasa: 12, coral: 12,
     polvo_brillante: 45, esencia_sombria: 45, piedra_runica: 45, obsidiana: 60, nucleo_arcano: 220, lagrima_estelar: 700,
+    fragmento_vacio: 900, corazon_vacio: 5000, filo_vacio: 8000, egida_vacio: 8000, corona_vacio: 15000,
   };
 
   /** Lo que vende la tienda (el resto sólo se puede vender). */

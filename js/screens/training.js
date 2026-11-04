@@ -1,13 +1,14 @@
 /* =============================================================
  * screens/training.js — Campo de entrenamiento (DK.training).
  *
- * Huecos con daskai entrenando en tiempo real. Cada hueco muestra el
- * tiempo, la barra de rendimiento (100% → 50% → tope) y lo ganado; al
- * pulsar «Recoger» se aplica y vuelve al equipo si hay sitio.
- * Para meter a uno: hueco libre → eliges daskai → experiencia o un atributo.
+ * Huecos con daskai ganando experiencia en tiempo real. Cada hueco muestra
+ * el nivel en vivo, el ritmo, la aceleración por tiempo y lo que se cobra
+ * al sacarlo («Sacar» paga y aplica; la X lo saca gratis sin experiencia).
+ * Para meter a uno: hueco libre → eliges daskai → acelerador (×1 gratis,
+ * ×2, ×3, ×5 de pago) con la previsión de niveles y cobro a 1/4/8/24 h.
  * No se puede abrir durante una expedición (DK.router.guard).
  *
- * params: { pick: true (eligiendo daskai), uid, kind, stat }
+ * params: { pick: true (eligiendo daskai), uid, boost, who }
  * ============================================================= */
 (function () {
   const { h, btn } = DK.ui;
@@ -22,41 +23,51 @@
   });
 
   const hours = (x) => DK.util.duration(Math.round(x * 3600));
+  const num = (n) => Math.round(n).toLocaleString(DK.i18n.lang);
+  const pctTxt = (f) => (+(f * 100).toFixed(f >= 0.1 ? 0 : 1)).toLocaleString(DK.i18n.lang) + '%';
   const fmtMult = (m) => '×' + (+m.toFixed(2)).toLocaleString(DK.i18n.lang);
 
-  /** Hueco ocupado: progreso en vivo y botón de recoger. */
+  /** Hueco ocupado: nivel en vivo, ritmo, cobro y botón de sacarlo. */
   function busySlot(slot, refresh) {
     const p = T().progress(slot), d = p.d;
     if (!d) return null;
-    const T0 = DK.config.training;
-    const what = slot.kind === 'exp'
-      ? t('train.gotExp', { n: (p.exp || 0).toLocaleString(DK.i18n.lang) })
-      : t('train.gotStat', { n: p.gain || 0, stat: DK.tr('stats', D.stats[slot.stat]) });
-    const k = p.stretch || 1;
-    const phase = p.done ? t('train.phaseDone') : p.norm < T0.fullHours ? t('train.phaseFull') : t('train.phaseHalf');
+    const C = DK.config.training, curve = DK.config.expCurve(p.level);
+    const fill = p.capped ? 1 : Math.min(1, p.levelExp / curve);
+    const afford = DK.wallet.get() >= p.fee;
+    const finish = (r) => {
+      if (!r) { DK.audio.sfx('error'); DK.ui.toast(t('train.noMoney'), { icon: 'coin', kind: 'bad' }); return null; }
+      DK.app.renderNav(); refresh(); return r;
+    };
     const collect = async () => {
-      const r = T().collect(slot.uid);
+      const r = finish(T().collect(slot.uid, true)); if (!r) return;
       DK.audio.sfx('levelup');
-      DK.ui.toast(r.kind === 'exp' ? t('train.collectedExp', { name: DK.daskai.name(d), n: r.exp }) : t('train.collectedStat', { name: DK.daskai.name(d), n: r.gain, stat: DK.tr('stats', D.stats[r.stat]) }), { icon: 'dumbbell', kind: 'good' });
+      DK.ui.toast(t('train.collectedExp', { name: DK.daskai.name(d), n: num(r.exp), c: num(r.fee) }), { icon: 'dumbbell', kind: 'good' });
       if (r.levelInfo) await V.afterLevel(d, r.levelInfo);
-      DK.app.renderNav(); refresh();
+    };
+    const free = async () => {
+      if (!(await DK.ui.confirm(t('train.freeOut'), t('train.freeOutText', { name: DK.daskai.name(d), n: num(p.exp) }), { danger: true, okLabel: t('train.freeOut') }))) return;
+      if (finish(T().collect(slot.uid, false))) DK.ui.toast(t('train.freedOut', { name: DK.daskai.name(d) }), { icon: 'dumbbell' });
     };
     return h('div', { class: 'card train-slot busy' + (p.done || p.capped ? ' ready' : '') },
       h('div', { class: 'train-slot-head' },
         h('div', { class: 'train-sprite' }, V.dSprite(d, { size: 72, cls: 'idle' })),
-        h('div', { class: 'grow' },
-          h('div', { class: 'row gap-s wrap' }, h('b', null, DK.daskai.name(d)), V.level(d.level)),
-          h('span', { class: 'chip' }, DK.icon(slot.kind === 'exp' ? 'star' : D.stats[slot.stat].icon, 13),
-            slot.kind === 'exp' ? t('train.kindExp') : t('train.kindStatOf', { stat: DK.tr('stats', D.stats[slot.stat]) })),
-          slot.plan === 'time' ? h('span', { class: 'chip warn', tip: t('train.slowTip') }, DK.icon('clock', 13), t('train.slowTag', { m: fmtMult(slot.mult) })) : null)),
-      h('div', { class: 'train-progress', tip: t('train.curveTip', { a: +(T0.fullHours * k).toFixed(1), b: +(T0.halfHours * k).toFixed(1) }) },
-        h('div', { class: 'train-bar' }, h('span', { style: { width: Math.round(p.pct * 100) + '%' } }),
-          h('i', { class: 'mark', style: { left: (T0.fullHours / T().maxEff()) * 100 + '%' } })),
-        h('div', { class: 'row between small' }, h('span', null, DK.icon('clock', 12), ' ', hours(p.hours)), h('span', { class: 'muted' }, phase))),
-      h('p', { class: 'train-got' }, DK.icon('sparkles', 14), ' ', h('b', null, what),
-        p.capped ? h('span', { class: 'badge warn' }, slot.kind === 'exp' ? t('train.capLevel', { n: DK.config.maxLevel }) : t('train.capStat')) : null,
-        slot.kind === 'stat' && !p.capped && !p.done ? h('span', { class: 'muted small' }, ' · ', t('train.nextPoint', { time: hours(p.nextIn / (1 + T().instr().rate)) })) : null),
-      btn({ icon: 'check', label: t('train.collect'), variant: p.done || p.capped ? 'primary' : 'tone', onClick: collect }));
+        h('div', { class: 'grow stack-xs' },
+          h('div', { class: 'row gap-s wrap' }, h('b', null, DK.daskai.name(d)),
+            h('span', { class: 'tr-lv' }, `${t('common.lvl')} ${d.level}`, p.levels > 0 ? h('b', null, ' → ', p.level) : null)),
+          h('div', { class: 'chips' },
+            h('span', { class: 'chip', tip: t('train.rateTip') }, DK.icon('bolt', 12), t('train.rateNow', { p: pctTxt(p.rate) })),
+            h('span', { class: 'chip' + (p.ramp > 1.01 ? ' pos' : ''), tip: t('train.rampTip', { p: Math.round(C.ramp.perHour * 100), m: fmtMult(C.ramp.max) }) }, DK.icon('arrowUp', 12), fmtMult(p.ramp)),
+            p.boost > 1 ? h('span', { class: 'chip pos', tip: t('train.boostTip') }, DK.icon('sparkles', 12), t('train.boostTag', { m: p.boost })) : null))),
+      h('div', { class: 'train-progress' },
+        h('div', { class: 'train-bar' }, h('span', { style: { width: Math.round(fill * 100) + '%' } })),
+        h('div', { class: 'row between small' }, h('span', null, DK.icon('clock', 12), ' ', hours(p.hours), h('span', { class: 'muted' }, ' / ', C.maxHours, ' h')),
+          h('span', { class: 'muted' }, p.capped ? t('train.capLevel', { n: DK.config.maxLevel }) : p.done ? t('train.phaseDone') : t('train.toNext', { p: Math.round(fill * 100) })))),
+      h('div', { class: 'tr-bill' },
+        h('span', null, DK.icon('star', 13), ' ', h('b', null, t('train.gotExp', { n: num(p.exp) })), p.levels > 0 ? h('span', { class: 'badge good' }, t('train.levelsUp', { n: p.levels })) : null),
+        h('span', { class: 'tr-fee' + (afford ? '' : ' bad'), tip: t('train.feeTip') }, t('train.fee'), ' ', DK.icon('coin', 13), ' ', num(p.fee))),
+      h('div', { class: 'row gap-s' },
+        btn({ icon: 'check', label: t('train.collect', { n: num(p.fee) }), variant: p.done || p.capped ? 'primary' : 'tone', disabled: !afford, tip: afford ? null : t('train.up.noMoney', { n: num(p.fee - DK.wallet.get()) }), onClick: collect, cls: 'grow' }),
+        btn({ icon: 'x', label: afford ? null : t('train.freeOut'), size: afford ? 'sm' : null, variant: 'ghost', tip: t('train.freeOutTip'), onClick: free })));
   }
 
   /** Hueco libre: botón para meter a alguien. */
@@ -65,115 +76,97 @@
 
   const lockedSlot = () => h('div', { class: 'card train-slot locked', tip: t('train.lockedTip') }, DK.icon('lock', 22), h('span', { class: 'muted small' }, t('train.locked')));
 
-  /** Por encima del nivel recomendado: pagar más o tardar más. */
-  function planChooser(d, mult, plan, params, refresh) {
-    const C = DK.config.training;
-    const opt = (id, icon, cost, desc) => h('button', { class: 'train-plan' + (plan === id ? ' on' : ''), type: 'button', role: 'radio', 'aria-checked': String(plan === id), onClick: () => { params.plan = id; refresh(); } },
-      h('span', { class: 'tp-icon' }, DK.icon(icon, 18)),
-      h('span', { class: 'tp-body' }, h('b', null, t('train.plan.' + id)), h('span', { class: 'muted small' }, desc)),
-      V.coins(cost));
-    return h('div', { class: 'stack-s' },
-      h('p', { class: 'small train-over' }, DK.icon('arrowUp', 14), ' ', t('train.overNote', { name: DK.daskai.name(d), n: T().levelCap(), m: fmtMult(mult) })),
-      h('div', { class: 'train-plans', role: 'radiogroup' },
-        opt('coins', 'coin', T().cost(d, 'exp', 'coins'), t('train.planDesc.coins', { a: C.fullHours, b: C.halfHours })),
-        opt('time', 'clock', T().cost(d, 'exp', 'time'), t('train.planDesc.time', { a: +(C.fullHours * mult).toFixed(1), b: +(C.halfHours * mult).toFixed(1) }))));
-  }
-
   /**
-   * Elegir daskai: cuadrícula de retratos con lo que hace falta saber.
-   *  - Arriba los que pueden entrar (los que no, aparte y apagados, con el motivo).
-   *  - Filtros: todos · equipo · cajas. Cada ficha: nivel, coste, si está en el
-   *    equipo y si está por encima del nivel recomendado (×coste o ×horas).
+   * Elegir daskai: cuadrícula de retratos (arriba los que pueden, aparte los
+   * que no, con el motivo). Luego: acelerador y previsión de niveles y cobro.
    */
   function picker(params, refresh) {
     const d = params.uid && DK.party.get(params.uid);
-    params.kind = params.kind || 'exp';
-    params.stat = params.stat || 'atk';
     params.who = params.who || 'all';
     const back = btn({ icon: 'back', label: t('common.back'), size: 'sm', variant: 'ghost', onClick: () => { params.pick = false; params.uid = null; refresh(); } });
     if (!d) {
       const all = DK.party.all().filter((x) => !x.temp && !T().isTraining(x.uid)).sort((a, b) => b.level - a.level);
       const shown = all.filter((x) => params.who === 'all' || (params.who === 'team') === DK.party.isActive(x.uid));
-      // Motivo propio del daskai (no los generales, como no tener monedas)
-      const reason = (x) => { const a = T().cannot(x, 'exp', 'time'), b2 = T().cannot(x, 'stat'); return a && b2 ? a : null; };
+      const reason = (x) => T().cannot(x, 1);
       const ok = shown.filter((x) => !reason(x)), no = shown.filter((x) => reason(x));
       const tile = (x, why) => {
-        const sp = DK.daskai.species(x), m = T().overMult(x);
-        return h('button', { class: 'tr-tile' + (why ? ' off' : '') + (m > 1 ? ' over' : ''), type: 'button', disabled: !!why, style: { '--c': D.houseColor(sp.house) },
-          tip: why || `${DK.daskai.name(x)} · ${t('common.lvl')} ${x.level}`, onClick: () => { params.uid = x.uid; DK.audio.sfx('select'); refresh(); } },
+        const sp = DK.daskai.species(x);
+        return h('button', { class: 'tr-tile' + (why ? ' off' : ''), type: 'button', disabled: !!why, style: { '--c': D.houseColor(sp.house) },
+          tip: why || `${DK.daskai.name(x)} · ${t('common.lvl')} ${x.level}`, onClick: () => { params.uid = x.uid; params.boost = 1; DK.audio.sfx('select'); refresh(); } },
           DK.party.isActive(x.uid) ? h('span', { class: 'tr-tag team', tip: t('team.inTeam') }, DK.icon('users', 11)) : null,
-          m > 1 ? h('span', { class: 'tr-tag over', tip: t('train.overTip', { n: T().levelCap() }) }, fmtMult(m)) : null,
           V.dSprite(x, { size: 56 }),
           h('b', null, DK.daskai.name(x)),
           h('small', null, `${t('common.lvl')} ${x.level}`),
-          why ? h('span', { class: 'tr-why' }, why) : h('span', { class: 'tr-cost' }, DK.icon('coin', 11), ' ', T().cost(x, 'exp', 'time').toLocaleString(DK.i18n.lang)));
+          why ? h('span', { class: 'tr-why' }, why) : h('span', { class: 'tr-cost', tip: t('train.rateTip') }, DK.icon('bolt', 11), ' ', t('train.perMin', { p: pctTxt(T().pct(x.level) * (1 + T().instr().rate)) })));
       };
       const filt = DK.ui.segmented({ value: params.who, onChange: (v) => { params.who = v; refresh(); },
         options: [{ value: 'all', label: t('train.whoAll', { n: all.length }) }, { value: 'team', label: t('train.whoTeam'), icon: 'users' }, { value: 'box', label: t('train.whoBox'), icon: 'grid' }] });
       return h('div', { class: 'panel stack-s tr-picker' },
         h('div', { class: 'panel-head' }, DK.icon('users', 18), h('h3', null, t('train.pickTitle')), h('span', { class: 'grow' }), back),
-        h('p', { class: 'muted small' }, t('train.pickHint', { n: T().levelCap() })),
+        h('p', { class: 'muted small' }, t('train.pickHint')),
         filt,
         ok.length ? h('div', { class: 'tr-grid' }, ok.map((x) => tile(x))) : DK.ui.empty('users', t('train.nobody'), ''),
         no.length ? h('details', { class: 'tr-no' }, h('summary', null, DK.icon('lock', 13), ' ', t('train.cantList', { n: no.length })), h('div', { class: 'tr-grid' }, no.map((x) => tile(x, reason(x))))) : null);
     }
-    const kind = params.kind, stat = params.stat;
-    const mult = T().overMult(d, kind);
-    const plan = mult > 1 ? (params.plan || 'coins') : 'coins';
-    const why = T().cannot(d, kind, plan);
-    const cost = T().cost(d, kind, plan);
     const C = DK.config.training;
-    const k = plan === 'time' ? mult : 1;
+    const boost = C.boosts.includes(params.boost) ? params.boost : 1;
+    const why = T().cannot(d, boost), cost = T().boostCost(d, boost);
     const go = () => {
-      if (!T().start(d.uid, kind, stat, plan)) { DK.audio.sfx('error'); DK.ui.toast(T().cannot(d, kind, plan) || t('train.cant'), { icon: 'alert', kind: 'bad' }); return; }
+      if (!T().start(d.uid, boost)) { DK.audio.sfx('error'); DK.ui.toast(T().cannot(d, boost) || t('train.cant'), { icon: 'alert', kind: 'bad' }); return; }
       DK.audio.sfx('select'); DK.ui.toast(t('train.started', { name: DK.daskai.name(d) }), { icon: 'dumbbell', kind: 'good' });
       params.pick = false; params.uid = null; DK.app.renderNav(); refresh();
     };
-    const statKeys = D.statKeys;
-    return h('div', { class: 'panel stack' },
-      h('div', { class: 'panel-head' }, DK.icon('dumbbell', 18), h('h3', null, t('train.setup', { name: DK.daskai.name(d) })), back),
+    const boostBtn = (m) => {
+      const c = T().boostCost(d, m), on = m === boost, poor = c > DK.wallet.get();
+      return h('button', { class: 'tr-boost' + (on ? ' on' : '') + (poor ? ' poor' : ''), type: 'button', role: 'radio', 'aria-checked': String(on), disabled: poor, onClick: () => { params.boost = m; DK.audio.sfx('select'); refresh(); } },
+        h('b', null, '×' + m), c ? h('span', null, DK.icon('coin', 11), ' ', num(c)) : h('span', null, t('train.boostFree')));
+    };
+    const plan = [1, 4, 8, C.maxHours].map((hh) => ({ hh, s: T().simulate(d, hh * 60, boost) }));
+    return h('div', { class: 'panel stack tr-setup' },
+      h('div', { class: 'panel-head' }, DK.icon('dumbbell', 18), h('h3', null, t('train.setup', { name: DK.daskai.name(d) })), h('span', { class: 'grow' }), back),
       V.daskaiRow(d, { compact: true }),
-      h('div', { class: 'stack-s' }, h('b', null, t('train.kind')),
-        DK.ui.segmented({ options: [{ value: 'exp', label: t('train.kindExp'), icon: 'star' }, { value: 'stat', label: t('train.kindStat'), icon: 'chart' }], value: kind, onChange: (v) => { params.kind = v; refresh(); } }),
-        h('p', { class: 'muted small' }, kind === 'exp'
-          ? t('train.expHelp', { n: Math.round(C.expPerHour(d.level) / k).toLocaleString(DK.i18n.lang) })
-          : t('train.statHelp', { h: C.statHours, max: T().statMax(), have: Math.round(T().trainedTotal(d)) }))),
-      kind === 'exp' && mult > 1 ? planChooser(d, mult, plan, params, refresh) : null,
-      kind === 'stat' ? h('div', { class: 'train-stats', role: 'radiogroup' }, statKeys.map((s) => h('button', { class: 'train-stat' + (stat === s ? ' on' : ''), type: 'button', role: 'radio', 'aria-checked': String(stat === s), onClick: () => { params.stat = s; refresh(); } },
-        h('span', { class: 'ts-icon' }, DK.icon(D.stats[s].icon, 18)),
-        h('span', { class: 'ts-name' }, DK.tr('stats', D.stats[s])),
-        h('span', { class: 'ts-foot' }, h('b', null, t('train.perPoint', { n: C.statPer[s] })), V.growthBadge(d, s)),
-        stat === s ? h('span', { class: 'ts-check' }, DK.icon('check', 12)) : null))) : null,
-      h('div', { class: 'warning' }, DK.icon('info', 16), h('span', null, t('train.rules', { a: +(C.fullHours * k).toFixed(1), b: +(C.halfHours * k).toFixed(1) }))),
+      h('p', { class: 'muted small' }, t('train.expHelp', { p: pctTxt(T().pct(d.level) * (1 + T().instr().rate)), r: Math.round(C.ramp.perHour * 100), m: fmtMult(C.ramp.max) })),
+      h('div', { class: 'stack-s' }, h('b', null, DK.icon('sparkles', 14), ' ', t('train.boost')),
+        h('div', { class: 'tr-boosts', role: 'radiogroup' }, C.boosts.map(boostBtn)),
+        h('p', { class: 'muted small' }, t('train.boostHelp'))),
+      h('div', { class: 'tr-plan' },
+        h('div', { class: 'tr-plan-row head' }, h('span', null, t('train.planTime')), h('span', null, t('train.planLevel')), h('span', null, t('train.planFee'))),
+        plan.map(({ hh, s }) => h('div', { class: 'tr-plan-row' },
+          h('span', null, DK.icon('clock', 12), ' ', hh, ' h'),
+          h('span', null, `${t('common.lvl')} ${s.level}`, s.levels ? h('b', { class: 'good-text' }, ` +${s.levels}`) : null),
+          h('span', { class: 'tr-fee' }, DK.icon('coin', 12), ' ', num(s.fee))))),
+      h('div', { class: 'warning' }, DK.icon('info', 16), h('span', null, t('train.rules', { h: C.maxHours }))),
       DK.party.isActive(d.uid) ? h('p', { class: 'small warn-text' }, DK.icon('alert', 13), ' ', t('train.leavesTeam')) : null,
-      h('div', { class: 'row gap-s wrap between' }, V.coins(cost),
-        btn({ icon: 'dumbbell', label: t('train.start', { n: cost }), variant: 'primary', disabled: !!why, tip: why, onClick: go })),
+      h('div', { class: 'row gap-s wrap between' }, cost ? V.coins(cost) : h('span', { class: 'muted small' }, t('train.payLater')),
+        btn({ icon: 'dumbbell', label: cost ? t('train.startPaid', { n: num(cost) }) : t('train.start'), variant: 'primary', disabled: !!why, tip: why, onClick: go })),
       why ? h('p', { class: 'small bad-text' }, why) : null);
   }
 
-  /** Mejoras del campo (Instructor): niveles muy buenos que se pagan con muchas monedas. */
+  /**
+   * Mejoras del campo (Instructor), compacto: una barra de 4 niveles, lo que da
+   * el siguiente y su precio (emblemas de jefe + monedas). El detalle de cada
+   * nivel va en el tooltip de su casilla.
+   */
   function upgradePanel(refresh) {
-    const I = DK.config.training.instructor, lv = T().level(), next = T().nextLevel();
-    const fx = (x) => [t('train.up.slots', { n: x.slots }), t('train.up.rate', { n: Math.round(x.rate * 100) }), t('train.up.cap', { n: x.cap }), t('train.up.stat', { n: x.statMax })];
+    const I = DK.config.training.instructor, lv = T().level(), next = T().nextLevel(), why = T().cannotBuy();
+    const fx = (x) => [t('train.up.slots', { n: DK.config.training.slots + x.slots }), t('train.up.rate', { n: Math.round(x.rate * 100) }), t('train.up.discount', { n: Math.round(x.discount * 100) })];
+    const lack = () => why === 'emblems' ? t('train.up.noEmblems', { n: next.emblems - DK.camp.emblems() }) : t('train.up.noMoney', { n: num(next.cost - DK.wallet.get()) });
     const buy = () => {
-      if (!T().buyLevel()) { DK.audio.sfx('error'); DK.ui.toast(t('train.up.noMoney', { n: (next.cost - DK.wallet.get()).toLocaleString(DK.i18n.lang) }), { icon: 'coin', kind: 'bad' }); return; }
+      if (!T().buyLevel()) { DK.audio.sfx('error'); DK.ui.toast(lack(), { icon: 'alert', kind: 'bad' }); return; }
       DK.audio.sfx('levelup'); DK.ui.toast(t('train.up.bought', { n: T().level() }), { icon: 'dumbbell', kind: 'good' }); DK.app.renderNav(); refresh();
     };
-    return h('section', { class: 'card stack-s tr-up' },
-      h('div', { class: 'panel-head' }, DK.icon('crown', 18), h('h3', null, t('train.up.title')), h('span', { class: 'chip' }, t('train.up.level', { n: lv, max: I.length - 1 }))),
-      h('p', { class: 'muted small' }, t('train.up.text')),
-      h('div', { class: 'tr-up-steps' }, I.slice(1).map((x, i) => {
-        const n = i + 1, own = n <= lv, isNext = n === lv + 1;
-        return h('div', { class: 'tr-step' + (own ? ' own' : '') + (isNext ? ' next' : '') },
-          h('span', { class: 'tr-step-n' }, own ? DK.icon('check', 14) : String(n)),
-          h('ul', null, fx(x).map((txt) => h('li', null, txt))),
-          own ? h('span', { class: 'badge good' }, t('train.up.owned'))
-            : h('span', { class: 'tr-step-cost' }, DK.icon('coin', 13), ' ', x.cost.toLocaleString(DK.i18n.lang)));
-      })),
-      next ? h('div', { class: 'row between wrap gap-s' }, h('span', { class: 'small' }, t('train.up.have', { n: DK.wallet.get().toLocaleString(DK.i18n.lang) })),
-        btn({ icon: 'crown', label: t('train.up.buy', { n: lv + 1, c: next.cost.toLocaleString(DK.i18n.lang) }), variant: DK.wallet.get() >= next.cost ? 'primary' : 'tone', disabled: DK.wallet.get() < next.cost,
-          tip: DK.wallet.get() < next.cost ? t('train.up.noMoney', { n: (next.cost - DK.wallet.get()).toLocaleString(DK.i18n.lang) }) : null, onClick: buy }))
-        : h('div', { class: 'warning good' }, DK.icon('crown', 16), h('span', null, t('train.up.maxed'))));
+    return h('section', { class: 'card tr-up' },
+      h('div', { class: 'tr-up-head' },
+        h('span', { class: 'tr-up-icon' }, DK.icon('crown', 18)),
+        h('div', { class: 'grow' },
+          h('b', null, t('train.up.title')),
+          h('div', { class: 'tr-up-steps' }, I.slice(1).map((x, i) => h('span', { class: 'tr-step' + (i < lv ? ' own' : '') + (i === lv ? ' next' : ''), tip: `${t('train.up.level', { n: i + 1, max: I.length - 1 })}: ${fx(x).join(' · ')}` })),
+            h('small', { class: 'muted' }, t('train.up.level', { n: lv, max: I.length - 1 })))),
+        next ? h('div', { class: 'tr-up-buy' },
+          h('span', { class: 'tr-up-price' }, h('span', { class: why === 'emblems' ? 'bad-text' : '' }, V.emblems(next.emblems)), h('span', { class: why === 'coins' ? 'tr-fee bad' : 'tr-fee' }, DK.icon('coin', 13), ' ', num(next.cost))),
+          btn({ icon: 'arrowUp', label: t('train.up.buy', { n: lv + 1 }), size: 'sm', variant: why ? 'tone' : 'primary', disabled: !!why, tip: why ? lack() : null, onClick: buy }))
+          : h('span', { class: 'badge good' }, DK.icon('crown', 12), ' ', t('train.up.maxed'))),
+      next ? h('p', { class: 'tr-up-next small' }, h('span', { class: 'muted' }, t('train.up.next')), ' ', fx(next).join(' · ')) : null);
   }
 
   DK.screens.register('training', {
@@ -193,15 +186,14 @@
       for (let i = n; i < T().slotMax(); i++) grid.push(lockedSlot());
       // Se repinta solo cada 30 s mientras estás en la pantalla
       clearInterval(params._timer);
-      if (slots.length) params._timer = setInterval(() => { if (!document.querySelector('.train-screen')) return clearInterval(params._timer); if (!params.pick) refresh(); }, 30000);
+      if (slots.length) params._timer = setInterval(() => { if (!document.querySelector('.train-screen')) return clearInterval(params._timer); if (!params.pick) refresh(); }, 20000);
       return h('div', { class: 'screen train-screen' },
         h('div', { class: 'card camp-hero' },
           h('span', { class: 'camp-hero-icon' }, DK.icon('dumbbell', 34)),
           h('div', { class: 'grow' }, h('h2', null, t('train.title')), h('p', { class: 'muted' }, t('train.text')),
             h('div', { class: 'chips' },
               h('span', { class: 'chip' }, DK.icon('users', 13), t('train.slots', { n: slots.length, max: n })),
-              h('span', { class: 'chip', tip: t('train.capTip', { m: DK.config.training.levelMargin, p: Math.round(DK.config.training.overStep * 100) }) }, DK.icon('star', 13), t('train.cap', { n: T().levelCap() })),
-              T().level() ? h('span', { class: 'chip pos' }, DK.icon('dumbbell', 13), t('train.instructor', { n: Math.round(T().instr().rate * 100) })) : null)),
+              T().level() ? h('span', { class: 'chip pos' }, DK.icon('dumbbell', 13), t('train.instructor', { n: Math.round(T().instr().rate * 100), d: Math.round(T().instr().discount * 100) })) : null)),
           h('div', { class: 'shop-wallet' }, V.coins(DK.wallet.get()))),
         params.pick ? picker(params, refresh) : null,
         h('div', { class: 'train-grid' }, grid),

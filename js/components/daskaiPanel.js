@@ -116,6 +116,12 @@
       main.push(btn({ icon: 'plus', label: t('detail.addTeam'), variant: 'primary', size: 'sm', onClick: () => { if (!full) { DK.party.addToTeam(d.uid); DK.audio.sfx('swap'); changed(); } else toggle('team'); } }));
     }
     if (DK.daskai.canEvolve(d)) main.push(btn({ icon: 'evolve', label: t('evo.button'), variant: 'primary', size: 'sm', onClick: async () => { if (await V.evolveDialog(d)) changed(); } }));
+    // Ascender (nivel máximo): vuelve al 1 con una estrella más
+    if (DK.ascension.can(d) && !DK.expedition.active()) main.push(btn({ icon: 'star', label: t('ascend.button', { n: DK.ascension.stars(d) + 1 }), variant: 'primary', size: 'sm', cls: 'ascend-btn', onClick: async () => {
+      const pct = Math.round(D.endgame.ascension.statPerStar * 100);
+      if (!(await DK.ui.confirm(t('ascend.q', { name: DK.daskai.name(d) }), t('ascend.text', { name: DK.daskai.name(d), n: DK.ascension.stars(d) + 1, pct, total: pct * (DK.ascension.stars(d) + 1) }), { okLabel: t('ascend.ok'), okIcon: 'star', icon: 'star' }))) return;
+      if (DK.ascension.ascend(d)) { DK.audio.sfx('levelup'); toast(t('ascend.done', { name: DK.daskai.name(d), n: d.stars }), { icon: 'star', kind: 'good' }); changed(); }
+    } }));
     const tool = (icon, label, onClick, { on = false, disabled = false, tip = null, danger = false, cls = '' } = {}) =>
       h('button', { class: 'icon-btn dp-tool' + (on ? ' on' : '') + (danger ? ' danger' : '') + (cls ? ' ' + cls : ''), type: 'button', tip: tip || label, 'aria-label': label, disabled, onClick }, DK.icon(icon, 17));
     const tools = [

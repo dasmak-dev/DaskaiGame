@@ -56,6 +56,7 @@
         if (inBattle) return t('bag.notInBattle');
         if (it.use.perm) return DK.daskai.tonicsUsed(d) >= DK.config.tonic.cap ? t('bag.tonicCap', { n: DK.config.tonic.cap }) : null;
         if (it.use.resetPerm) return DK.daskai.tonicsUsed(d) ? null : t('bag.noTonics');
+        if (it.use.variant) return d.variant ? t('variant.already') : !DK.variants.isFinal(d) ? t('variant.notFinal') : null;
         if (d.level >= DK.config.maxLevel) return t('bag.maxLevel');
         return null;
       }
@@ -93,6 +94,14 @@
       if (why) return { ok: false, msg: why };
       this.remove(itemId);
       const u = D.items[itemId].use || {};
+      if (u.variant) {
+        // Forma alternativa (DK.variants): más fuerte y con otro aspecto, para siempre
+        d.variant = u.variant; DK.daskai.touch();
+        DK.store.state.stats.itemsUsed++;
+        DK.emit('item:used', { id: itemId }); DK.emit('variant', { d });
+        DK.store.save();
+        return { ok: true, msg: t('variant.done', { name: DK.daskai.name(d), form: t('variant.' + u.variant) }), d };
+      }
       if (u.perm || u.resetPerm) {
         // Tónico (mejora permanente) o elixir de olvido (devuelve los tónicos)
         let msg;

@@ -624,5 +624,58 @@
     "icon": "starTear",
     "color": "#facc15",
     "desc": "Fragmento caído de una estrella."
+  },
+  "fragmento_abisal": {
+    "name": "Fragmento abisal",
+    "category": "mejora",
+    "rarity": "legendario",
+    "icon": "crystal",
+    "color": "#a855f7",
+    "use": {"variant":"abisal"},
+    "noShop": true,
+    "desc": "Despierta la forma abisal de un daskai en su última evolución: más fuerte y con otro aspecto."
+  },
+  "fragmento_vacio": {
+    "name": "Fragmento del vacío",
+    "category": "pieza",
+    "rarity": "epico",
+    "icon": "gem",
+    "color": "#7c3aed",
+    "desc": "Un trozo de nada que pesa como una montaña."
+  },
+  "corazon_vacio": {
+    "name": "Corazón del vacío",
+    "category": "pieza",
+    "rarity": "legendario",
+    "icon": "orb",
+    "color": "#c084fc",
+    "desc": "Late sin cuerpo. Sólo lo guarda el Devorador."
+  },
+  "filo_vacio": {
+    "name": "Filo del vacío",
+    "category": "equipo",
+    "rarity": "legendario",
+    "icon": "dagger",
+    "color": "#8b5cf6",
+    "stats": {"atk":16,"matk":16,"spd":-3},
+    "desc": "Corta lo que existe y lo que no."
+  },
+  "egida_vacio": {
+    "name": "Égida del vacío",
+    "category": "equipo",
+    "rarity": "legendario",
+    "icon": "armor",
+    "color": "#6d28d9",
+    "stats": {"hp":40,"def":14,"mdef":14},
+    "desc": "Nada la atraviesa."
+  },
+  "corona_vacio": {
+    "name": "Corona del vacío",
+    "category": "equipo",
+    "rarity": "legendario",
+    "icon": "crown",
+    "color": "#a855f7",
+    "stats": {"hp":14,"mp":14,"atk":14,"matk":14,"def":14,"mdef":14,"spd":14},
+    "desc": "La corona del Devorador. Mejora todo lo que eres."
   }
 }

@@ -1,7 +1,7 @@
 /* Todas las pantallas principales se abren sin errores ni scroll horizontal. */
 const { play, sleep, check, overflowX } = require('./helpers');
 
-const SCREENS = [['hub', {}], ['team', {}], ['inventory', {}], ['craft', {}], ['zones', {}], ['codex', {}], ['codex', { tab: 'items' }], ['codex', { tab: 'bosses' }],
+const SCREENS = [['hub', {}], ['team', {}], ['inventory', {}], ['craft', {}], ['zones', {}], ['codex', {}], ['codex', { tab: 'items' }], ['codex', { tab: 'bosses' }], ['codex', { tab: 'zones' }], ['codex', { tab: 'wiki' }],
   ['progress', {}], ['progress', { tab: 'ach' }], ['profile', {}], ['settings', {}], ['training', {}], ['expPrepare', {}]];
 
 module.exports = {

@@ -26,5 +26,25 @@ module.exports = {
       check(r.got, 'derrotar al jefe de la Pradera debería dar su logro oculto');
       check(r.name.includes('Pradera'), 'el nombre del logro por zona no lleva la zona');
     }),
+  }, {
+    name: 'Códice: % por zona y guía que sólo explica lo desbloqueado (y el perfil lo refleja)',
+    run: (browser, view) => play(browser, view, async (p) => {
+      const r = await p.evaluate(async () => {
+        const before = DK.wiki.unlocked().map((e) => e.id);
+        DK.router.reset('codex', { tab: 'zones' }); await new Promise((r) => setTimeout(r, 300));
+        const zones = document.querySelectorAll('.cx-zone').length, pct = !!document.querySelector('.cx-zone-pct');
+        DK.runes.add('oro', 1);
+        const after = DK.wiki.unlocked().map((e) => e.id);
+        DK.router.reset('codex', { tab: 'wiki' }); await new Promise((r) => setTimeout(r, 300));
+        const entries = document.querySelectorAll('.wk-entry[data-id]').length, locked = !!document.querySelector('.wk-entry.locked');
+        DK.router.reset('profile'); await new Promise((r) => setTimeout(r, 300));
+        const prof = [...document.querySelectorAll('.pf-feat-row')].map((b) => b.textContent).join('|');
+        return { zones, pct, hadRunes: before.includes('runes'), hasRunes: after.includes('runes'), entries, locked, known: after.length, prof };
+      });
+      check(r.zones >= 8 && r.pct, 'faltan las zonas con su %: ' + JSON.stringify(r));
+      check(!r.hadRunes && r.hasRunes, 'las runas deberían aparecer en la guía al conseguir la primera');
+      check(r.entries === r.known && r.locked, 'la guía debería enseñar sólo lo desbloqueado y el resto como «por descubrir»');
+      check(/Runas|Runes/.test(r.prof), 'el perfil no muestra las runas desbloqueadas: ' + r.prof);
+    }),
   }],
 };

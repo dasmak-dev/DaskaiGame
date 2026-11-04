@@ -92,8 +92,21 @@
         h('div', { class: 'row gap-s wrap' }, h('b', null, name), r ? V.rarity(r.rarity) : null),
         h('p', { class: 'small' }, r ? DK.views.relicText(r) : t('curse.' + id + '.desc')),
         c ? h('span', { class: 'curse-reward small' }, DK.icon('gift', 13), reward) : null),
-      own ? h('span', { class: 'badge good unlock-done' }, DK.icon('check', 13), t('camp.unlockedTag'))
+      own && r && DK.engrave.can(id) ? engraveCtl(id, refresh)
+      : own ? h('span', { class: 'badge good unlock-done' }, DK.icon('check', 13), t('camp.unlockedTag'))
         : btn({ icon: 'emblem', label: t('camp.unlock', { n: cost }), size: 'sm', variant: canPay ? 'primary' : 'tone', disabled: !canPay, tip: canPay ? null : t('camp.missing', { n: cost - DK.camp.emblems() }), onClick: buy }));
+  }
+
+  /** Grabar una reliquia épica: sale siempre al empezar la expedición (DK.engrave). */
+  function engraveCtl(id, refresh) {
+    const E = DK.engrave, cost = DK.data.endgame.engrave.cost;
+    if (E.has(id)) return h('div', { class: 'engrave-ctl' }, h('span', { class: 'badge engraved' }, DK.icon('amulet', 12), t('engrave.done')),
+      btn({ icon: 'x', label: t('engrave.remove'), size: 'sm', variant: 'ghost', onClick: () => { E.remove(id); DK.audio.sfx('click'); refresh(); } }));
+    const full = E.list().length >= E.slots(), pay = DK.camp.emblems() >= cost;
+    return h('div', { class: 'engrave-ctl' }, h('span', { class: 'badge good unlock-done' }, DK.icon('check', 13), t('camp.unlockedTag')),
+      btn({ icon: 'amulet', label: t('engrave.button', { n: cost }), size: 'sm', variant: pay && !full ? 'primary' : 'tone', disabled: !pay || full,
+        tip: full ? t('engrave.full', { n: E.slots() }) : pay ? t('engrave.tip') : t('camp.missing', { n: cost - DK.camp.emblems() }),
+        onClick: () => { if (E.engrave(id)) { DK.audio.sfx('levelup'); DK.ui.toast(t('engrave.engraved', { name: DK.data.relics[id].name }), { icon: 'amulet', kind: 'good' }); refresh(); } } }));
   }
 
   /** Pestaña del menú de Mejoras (se recuerda mientras dure la partida). */
@@ -113,7 +126,7 @@
     let body;
     if (shopTab === 'relics') {
       body = h('div', { class: 'stack' },
-        h('p', { class: 'muted small' }, t('camp.relicsText')),
+        h('p', { class: 'muted small' }, t('camp.relicsText'), ' ', t('engrave.help', { used: DK.engrave.list().length, n: DK.engrave.slots(), cost: DK.data.endgame.engrave.cost })),
         ['comun', 'raro', 'epico'].map((rar) => h('section', { class: 'stack-s' },
           h('h4', { class: 'camp-group' }, DK.tr('rarities', D.rarities[rar]), ' ', h('span', { class: 'muted small' }, DK.icon('emblem', 12), t('camp.costEach', { n: DK.config.expedition.unlockCost[rar] }))),
           h('div', { class: 'unlock-grid' }, relics.filter((r) => r.rarity === rar).map((r) => unlockCard('relic', r.id, refresh))))));

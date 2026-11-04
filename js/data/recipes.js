@@ -74,6 +74,10 @@
   def('botas_viento', 1, { pluma_veloz: 1, pluma: 4, nucleo_arcano: 1 });
   def('amuleto_vida', 1, { corazon_roca: 1, nucleo_arcano: 1, gota: 3 });
   def('corona_celeste', 1, { lagrima_estelar: 2, nucleo_arcano: 2, orbe_solar: 1 });
+  // Corazón del Vacío (zona secreta final): el mejor equipo del juego
+  def('filo_vacio', 1, { fragmento_vacio: 4, colmillo_umbrio: 1, lagrima_estelar: 1 });
+  def('egida_vacio', 1, { fragmento_vacio: 4, coraza_obsidiana: 1, lagrima_estelar: 1 });
+  def('corona_vacio', 1, { corazon_vacio: 1, fragmento_vacio: 6, corona_celeste: 1 });
   /** Recetas conocidas al empezar. */
   DK.data.starterRecipes = ['pocion', 'eter', 'antidoto', 'balsamo', 'baya_saber'];
 })();

@@ -690,7 +690,7 @@
       if (r.captured) log(t('battle.joined', { name: DK.daskai.name(st.enemy), team: DK.party.isActive(st.enemy.uid) ? t('battle.joinedTeam') : '' }), 'good', 'reward');
       if (r.temp) log(t('exp.tempNote', { name: DK.daskai.name(st.enemy) }), 'warn', 'reward');
       for (const id of r.drops) { await wait(200); log((r.toLoot && !(r.toBag || []).includes(id) ? t('battle.lootItem') : t('battle.gotItem')) + ' ' + D.items[id].name, 'drop', 'reward'); }
-      for (const id of r.runes || []) { await wait(200); log(t('rune.got', { name: t('rune.' + id + '.name') }) + ' · ' + V.runeEffect(id), 'level', 'reward'); DK.ui.toast(t('rune.got', { name: t('rune.' + id + '.name') }), { icon: 'rune', kind: 'good' }); }
+      for (const id of r.runes || []) { await wait(200); log(t('rune.got', { name: V.runeName(id) }) + ' · ' + V.runeEffect(id), 'level', 'reward'); DK.ui.toast(t('rune.got', { name: V.runeName(id) }), { icon: 'rune', kind: 'good' }); }
       (r.shared || []).forEach((x) => {
         log(t('battle.sharedExp', { name: x.name, n: x.exp }), 'muted', 'reward');
         if (x.to > x.from) { log(t('battle.levelUp', { name: x.name, n: x.to }), 'level', 'reward'); DK.ui.toast(t('battle.levelUp', { name: x.name, n: x.to }), { icon: 'star', kind: 'good' }); }
@@ -725,13 +725,13 @@
         won: ['trophy', st.boss ? t('battle.bossWin') : t('battle.win'), t('battle.winText')],
         captured: ['orb', t('battle.capturedTitle'), t('battle.capturedText', { name: DK.daskai.name(st.enemy) })],
         fled: ['flee', t('battle.fledTitle'), t('battle.fledText')],
-        lost: ['skull', t('battle.lostTitle'), lostLoot && lostLoot.boss ? t('battle.lostBoss', { n: Math.round(DK.config.expedition.bossDeathLoss * 100) }) : lostLoot ? t('battle.lostExp') : t('battle.lostText')],
+        lost: ['skull', t('battle.lostTitle'), lostLoot && lostLoot.boss ? t('battle.lostBoss', { n: Math.round(DK.config.expedition.bossDeathLoss * 100), pack: DK.rules.keepPack() ? t('pack.keepText') : t('pack.loseText') }) : lostLoot ? t('battle.lostExp', { pack: DK.rules.keepPack() ? t('pack.keepText') : t('pack.loseText') }) : t('battle.lostText')],
       };
       const [ic, title, sub] = titles[outcome];
       banner.replaceChildren(h('div', { class: 'banner-card ' + outcome }, DK.icon(ic, 34), h('h2', null, title), h('p', null, sub),
         r ? h('div', { class: 'chips' }, h('span', { class: 'chip pos' }, DK.icon('star', 13), `+${r.exp} ${t('common.expShort')}`), h('span', { class: 'chip pos' }, DK.icon('coin', 13), `+${r.coins}`),
           r.drops.map((id) => h('span', { class: 'chip pos' }, DK.icon(D.items[id].icon, 13), D.items[id].name)),
-          (r.runes || []).map((id) => h('span', { class: 'chip pos rune-chip', tip: V.runeEffect(id) }, V.runeGem(id, 16), t('rune.' + id + '.name'))),
+          (r.runes || []).map((id) => h('span', { class: 'chip pos rune-chip', tip: V.runeEffect(id) }, V.runeGem(id, 16), V.runeName(id))),
           r.relicOffer ? h('span', { class: 'chip pos' }, DK.icon('amulet', 13), t('relics.toChoose')) : null,
           r.emblems ? h('span', { class: 'chip pos emblem-chip' }, DK.icon('emblem', 13), t('emblem.plus', { n: r.emblems })) : null) : null,
         choice ? h('div', { class: 'exp-summary' }, h('b', null, DK.icon('crown', 14), ' ', t('exp.mapCleared', { n: choice.depth })),

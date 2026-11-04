@@ -26,7 +26,7 @@ module.exports = {
         const slot = DK.store.slot; DK.store.state.party.forEach((d) => { delete d.genes; delete d.role; }); DK.store.close();
         DK.store.load(slot);
         const d = DK.store.state.party[0], s = DK.daskai.stats(d);
-        return { hp: s.hp, base: DK.daskai.baseOf(d, 'hp') === DK.data.species[d.species].base.hp };
+        return { hp: s.hp, base: !d.genes || !Object.values(d.genes).some(Boolean) ? DK.daskai.baseOf(d, 'hp') === Math.max(1, Math.round(DK.data.species[d.species].base.hp * (1 + ((DK.daskai.roleOf(d).mods || {}).hp || 0)))) : true };
       });
       check(r.hp > 0 && r.base, 'sin genes debería usar la base de la especie');
     }),

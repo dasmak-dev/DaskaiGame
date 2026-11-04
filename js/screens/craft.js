@@ -233,6 +233,24 @@
       h('span', { class: 'wb-qty-big' + (n ? '' : ' zero') }, '×' + n));
   }
 
+  /* ---------------- Forja rúnica: fundir 3 runas en una del tier siguiente ---------------- */
+  function runeForge(refresh) {
+    const R = DK.runes;
+    const bases = R.defs().filter((r) => !r.late || DK.endgame.late() || R.tiersOf(r.id).some((id) => R.count(id)));
+    return h('div', { class: 'stack' },
+      h('p', { class: 'muted small' }, DK.icon('info', 13), ' ', t('forge.help', { a: R.fuseCost(R.withTier('oro', 1)), b: R.fuseCost(R.withTier('oro', 2)) })),
+      h('div', { class: 'forge-grid' }, bases.map((r) => h('div', { class: 'forge-card' },
+        h('div', { class: 'forge-head' }, V.runeGem(r.id, 44), h('div', null, h('b', null, V.runeName(r.id)), h('small', { class: 'muted' }, V.runeEffect(r.id)))),
+        h('div', { class: 'forge-tiers' }, R.tiersOf(r.id).map((id, i) => {
+          const n = R.count(id), next = i < 2 ? R.tiersOf(r.id)[i + 1] : null;
+          return h('div', { class: 'forge-tier' + (n ? '' : ' none') },
+            V.runeGem(id, 30, { dim: !n }), h('span', null, h('b', null, '×' + n), h('small', null, V.runeEffect(id))),
+            next ? btn({ icon: 'merge', label: t('forge.fuse', { cost: R.fuseCost(id) }), size: 'sm', variant: R.canFuse(id) ? 'primary' : 'ghost', disabled: !R.canFuse(id),
+              tip: n < 3 ? t('forge.need', { n: 3 - n }) : DK.wallet.get() < R.fuseCost(id) ? t('forge.noCoins') : t('forge.tip', { name: V.runeName(next) }),
+              onClick: () => { const got = R.fuse(id); if (got) { DK.audio.sfx('craft'); DK.ui.toast(t('forge.done', { name: V.runeName(got) }), { icon: 'rune', kind: 'good' }); refresh(); } } }) : null);
+        }))))));
+  }
+
   /* ---------------- Pantalla ---------------- */
   DK.screens.register('craft', {
     title: () => t('craft.title'), icon: 'anvil', section: 'craft', music: 'menu',
@@ -267,10 +285,12 @@
       const readyIn = (g) => D.recipes.filter((r) => groupOf(r) === g && status(r).key === 'ready').length;
       const tab = (id, icon, label, n, ready) => h('button', { class: 'wb-tabbtn' + (params.tab === id ? ' on' : ''), type: 'button', role: 'tab', 'aria-selected': String(params.tab === id),
         onClick: () => set({ tab: id, sub: 'all', sel: null, mat: null }) }, DK.icon(icon, 15), h('span', null, label), h('small', null, String(n)), ready ? h('i', { class: 'wb-ready', tip: t('craft.readyN', { n: ready }) }, ready) : null);
-      const tabs = h('div', { class: 'wb-tabs', role: 'tablist' },
+      const tabsEl = () => h('div', { class: 'wb-tabs', role: 'tablist' },
         tab('consum', 'potion', t('craft.tabConsum'), count('consum'), readyIn('consum')),
         tab('equip', 'gem', t('craft.tabEquip'), count('equip'), readyIn('equip')),
-        tab('materials', 'cube', t('craft.tabMaterials'), Object.values(D.items).filter((it) => it.category === 'pieza' && !D.isHidden(it.id)).length));
+        tab('materials', 'cube', t('craft.tabMaterials'), Object.values(D.items).filter((it) => it.category === 'pieza' && !D.isHidden(it.id)).length),
+        DK.runes.total() ? tab('runes', 'rune', t('craft.tabRunes'), DK.runes.total(), DK.runes.defs().filter((r) => DK.runes.canFuse(r.id) || DK.runes.canFuse(DK.runes.withTier(r.id, 2))).length) : null);
+      if (params.tab === 'runes') return h('div', { class: 'screen cr-screen wb runes-only' }, h('div', { class: 'wb-main' }, tabsEl(), runeForge(refresh)));
       const search = h('input', { class: 'input wb-search', type: 'search', placeholder: isMat ? t('craft.searchMat') : t('craft.search'), value: params.q || '',
         onInput: (e) => { params.q = e.target.value; clearTimeout(params._qt); params._qt = setTimeout(() => { refresh(); const i = document.querySelector('.wb-search'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }, 220); } });
       // Filtros de la pestaña: tipo, objetivos y «Sólo las que puedo»
@@ -309,7 +329,7 @@
       }
 
       return h('div', { class: 'screen cr-screen wb' },
-        h('div', { class: 'wb-main' }, tabs, filters, body),
+        h('div', { class: 'wb-main' }, tabsEl(), filters, body),
         detail ? h('aside', { class: 'wb-side' }, detail) : null);
     },
   });

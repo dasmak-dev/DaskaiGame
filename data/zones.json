@@ -84,10 +84,7 @@
     "scene": "cave",
     "unlock": "costa",
     "desc": "Túneles oscuros iluminados por cristales.",
-    "enemies": [
-      ["murcisombra",3], ["rocadon",2], ["gemolito",2], ["lavagusano",3], ["topazio",2],
-      ["aranuria",2], ["hongoscuro",1]
-    ],
+    "enemies": [["murcisombra",3],["rocadon",2],["gemolito",2],["lavagusano",3],["topazio",2],["aranuria",2],["hongoscuro",1]],
     "boss": {
       "species": "gemolito",
       "level": 27,
@@ -113,10 +110,7 @@
     "scene": "volcano",
     "unlock": "cavernas",
     "desc": "Ríos de lava y ceniza ardiente.",
-    "enemies": [
-      ["magmon",3], ["cenizon",2], ["ignisaurio",3], ["obsidiano",2], ["salamandrox",2],
-      ["geyseron",2], ["fogardilla",1]
-    ],
+    "enemies": [["magmon",3],["cenizon",2],["ignisaurio",3],["obsidiano",2],["salamandrox",2],["geyseron",2],["fogardilla",1]],
     "boss": {
       "species": "ignisaurio",
       "level": 37,
@@ -142,10 +136,7 @@
     "scene": "temple",
     "unlock": "volcan",
     "desc": "Ruinas sagradas bañadas en luz dorada.",
-    "enemies": [
-      ["aurelion",2], ["guardian_solar",3], ["esfinxa",2], ["llamasanta",3], ["sacerdon",2],
-      ["golemar",2], ["tortumonte",1]
-    ],
+    "enemies": [["aurelion",2],["guardian_solar",3],["esfinxa",2],["llamasanta",3],["sacerdon",2],["golemar",2],["tortumonte",1]],
     "boss": {
       "species": "aurelion",
       "level": 49,
@@ -213,6 +204,25 @@
       "coins": 2800,
       "drops": [["tonico_fuerza",1],["tonico_hierro",1],["lagrima_estelar",1]],
       "phases": [{"at":0.75,"type":"shield"},{"at":0.5,"type":"frenzy"},{"at":0.25,"type":"enrage"}]
+    }
+  },
+  "vacio": {
+    "name": "Corazón del Vacío",
+    "levels": [82,92],
+    "icon": "moon",
+    "colors": ["#4c1d95","#0b0414"],
+    "scene": "abyss",
+    "secretZone": true,
+    "desc": "Donde terminan los mapas. Sólo se abre a quien ha vencido a todos los jefes ocultos.",
+    "enemies": [["vacuo",3],["kraknoir",2],["draconyx",2],["titanor",2],["celestor",1],["tempestis",1]],
+    "drops": [["fragmento_vacio",0.35],["corazon_vacio",0.03]],
+    "boss": {
+      "species": "vacuo",
+      "level": 98,
+      "title": "El Devorador del Vacío",
+      "coins": 4000,
+      "drops": [["corazon_vacio",1],["fragmento_abisal",1],["fragmento_vacio",1]],
+      "phases": [{"at":0.8,"type":"shield"},{"at":0.6,"type":"enrage"},{"at":0.4,"type":"frenzy"},{"at":0.2,"type":"enrage"}]
     }
   }
 }

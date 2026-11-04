@@ -30,7 +30,7 @@
     return el;
   };
   /** Sprite de un daskai concreto (respeta variocolor). */
-  V.dSprite = (d, o = {}) => V.sprite(d.species, Object.assign({ shiny: !!d.shiny }, o));
+  V.dSprite = (d, o = {}) => V.sprite(d.species, Object.assign({ shiny: !!d.shiny }, o, d.variant ? { cls: ((o.cls || '') + ' variant-' + d.variant).trim() } : null));
 
   /**
    * Fila de daskai para listas.

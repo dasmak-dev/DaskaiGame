@@ -28,22 +28,22 @@
     // Campo de entrenamiento (systems/training.js): entrena en tiempo real mientras no juegas
     training: {
       slots: 2,                                   // huecos base (+ mejora «Instructor»)
-      cost: (lv, kind) => Math.round((30 + lv * 10) * (kind === 'stat' ? 1.6 : 1)), // monedas al entrar
-      expPerHour: (lv) => Math.round(DK.config.expCurve(lv) * 0.5), // ≈ medio nivel por hora
-      fullHours: 2, halfHours: 8, halfRate: 0.5,  // 100% las 2 primeras horas, 50% hasta las 8, luego nada
-      levelMargin: 3,                             // nivel recomendado = el más alto de tus daskai − este margen
-      overStep: 0.25, overMax: 4,                 // por cada nivel por encima del recomendado: +25% de monedas o de horas (máx. ×4)
-      statHours: 1.5,                             // horas efectivas por punto de atributo
-      statPer: { hp: 4, mp: 3, atk: 1, matk: 1, def: 1, mdef: 1, spd: 1 },
-      statMax: 12,                                // puntos entrenados como mucho por daskai
-      // Mejoras del campo (Instructor), se compran con MONEDAS en el propio campo (DK.training.buyLevel):
-      // huecos extra, +% de ritmo, +niveles de tope y +puntos de atributo entrenables. Muy buenas y muy caras.
+      // Sólo experiencia. Cada minuto gana un % del nivel actual (cuanto más nivel, menos %):
+      pct: (lv) => 0.008 / (1 + lv / 10),         // Nv 3 ≈ 0,6%/min · Nv 30 ≈ 0,2%/min · Nv 60 ≈ 0,1%/min (proceso lento)
+      ramp: { perHour: 0.125, max: 2 },           // cuanto más tiempo, más rápido: ×(1 + 0,125·horas), hasta ×2 (8 h)
+      fee: (lv) => 0.3 + lv * 0.04,               // monedas por minuto (× la misma aceleración) · se paga AL SACARLO
+      maxHours: 24,                               // a partir de aquí ya no gana ni cobra más
+      boosts: [1, 2, 3],                          // acelerar al dejarlo (se paga al dejarlo)
+      boostCost: (lv, m) => Math.round((m - 1) * (60 + lv * 12)),
+      statMax: 12,                                // (antiguo) puntos de atributo entrenados en versiones anteriores
+      // Mejoras del campo (Instructor), en el propio campo (DK.training.buyLevel): cuestan EMBLEMAS de jefe + monedas.
+      // Huecos extra (2 de base, 4 como mucho), +% de ritmo y descuento en lo que se cobra al sacarlo.
       instructor: [
-        { slots: 0, rate: 0, cap: 0, statMax: 0 },
-        { slots: 1, rate: 0.5, cap: 3, statMax: 4, cost: 2500 },
-        { slots: 1, rate: 1, cap: 6, statMax: 8, cost: 8000 },
-        { slots: 2, rate: 2, cap: 10, statMax: 14, cost: 20000 },
-        { slots: 3, rate: 3, cap: 15, statMax: 20, cost: 50000 },
+        { slots: 0, rate: 0, discount: 0 },
+        { slots: 1, rate: 0.1, discount: 0.05, emblems: 3, cost: 3000 },
+        { slots: 1, rate: 0.2, discount: 0.1, emblems: 6, cost: 10000 },
+        { slots: 2, rate: 0.35, discount: 0.15, emblems: 10, cost: 25000 },
+        { slots: 2, rate: 0.5, discount: 0.2, emblems: 15, cost: 60000 },
       ],
     },
 
@@ -92,6 +92,8 @@
         xl: { rows: 29, weight: 20, caves: 3, shortcuts: [3, 4], rests: 3, emblems: 3, icon: 'mountain' },
         // corto (sólo lo usan algunos tipos de expedición: weight 0 = nunca sale al azar)
         short: { rows: 6, weight: 0, caves: 0, shortcuts: [0, 0], rests: 0, emblems: 1, icon: 'flag' },
+        // piso del Abismo (DK.abyss): corto y sin atajos
+        abyss: { rows: 4, weight: 0, caves: 0, shortcuts: [0, 0], rests: 0, emblems: 1, icon: 'skull' },
       },
       /* Tipos de expedición: salen AL AZAR (chance = peso: DK.expedition.kindChances)
        * salvo que gastes una runa de tipo (DK.runes), y duran toda la expedición.
@@ -106,6 +108,8 @@
         captura: { icon: 'paw', chance: 16, sizes: ['short'], weights: { recruit: 6, fight: 1.3, elite: 0.3, event: 0.6, treasure: 0.6, shop: 0.7, shrine: 0.4, cave: 0 }, minRecruits: 6, multiRecruit: true, recruit: 1, shiny: 0.04, coins: -0.3 },
         combate: { icon: 'swords', chance: 16, weights: { fight: 2.4, elite: 2, event: 0.3, recruit: 0.4, treasure: 0.5, shop: 0.7, shrine: 0.6 }, minElites: 2, coins: 0.3, exp: 0.25 },
         tesoro: { icon: 'gift', chance: 12, weights: { treasure: 3, event: 1.6, shop: 1.6, cave: 2, fight: 0.6, elite: 0.6 }, coins: 0.2, levels: 1 },
+        // El Abismo (DK.abyss): no sale al azar; se elige en Batalla
+        abismo: { icon: 'moon', chance: 0, special: true, sizes: ['abyss'], weights: { elite: 2, fight: 1.4, event: 0.6, recruit: 0.4, treasure: 0.8, shop: 0.8, cave: 0 }, minElites: 1 },
         desafio: { icon: 'skull', chance: 6, sizes: ['short'], weights: { elite: 4, fight: 0.8, event: 0.3, recruit: 0.2, treasure: 0.5, shop: 0.8 }, minElites: 3, levels: 3, emblems: 1, coins: 0.2, needsBoss: true },
       },
       /* Runas de expedición (DK.runes): caen en cofres, élites y jefes y se guardan
@@ -127,7 +131,12 @@
           // De bonificación: se pueden repetir (+% que se suma por cada una engastada)
           oro: { group: 'bonus', coins: 0.25, icon: 'coin', weight: 14 },
           saber: { group: 'bonus', exp: 0.25, icon: 'star', weight: 14 },
+          // De final de juego (late: tras ver la Corrupción)
+          elite: { group: 'bonus', elites: 1, icon: 'crown', weight: 8, late: true },
+          maldito: { group: 'bonus', loot: 0.3, noRest: true, icon: 'skull', weight: 6, late: true },
         },
+        tierMult: [1, 2, 4],     // bonificaciones × esto en los tiers I, II y III
+        fuseCost: [500, 2000],   // monedas por fundir 3 → 1 (a tier II, a tier III)
         slots: 4,   // huecos para engastar runas antes de partir (como mucho 1 de tamaño y 1 de tipo)
       },
       weights: { fight: 36, event: 20, elite: 10, recruit: 9, shop: 7, treasure: 8, rest: 5, shrine: 4, cave: 4 },
@@ -147,7 +156,7 @@
       // Mochila: lo que te llevas al salir (screens/expPrepare.js)
       packCapacity: 10,    // unidades (más con la Mejora «Equipaje»)
       packCategories: ['batalla', 'mejora', 'equipo'],
-      bossDeathLoss: 0.75, // si caes contra el jefe de un mapa pierdes este % del botín y la mochila (no todo)
+      bossDeathLoss: 0.75, // si caes contra el jefe pierdes este % de las MONEDAS del botín (los objetos encontrados se pierden; la mochila, según difficulties.keepPack)
       // Tónicos (mejora permanente): probabilidad en cofres (sube con la profundidad), mini jefes y jefes
       tonicDrops: { chest: 0.04, chestPerDepth: 0.03, chestMax: 0.3, elite: 0.35, boss: 1, elixirBoss: 0.25 },
       consolation: { relic: ['raro', 'epico'], items: { superpocion: 2 } }, // y la próxima expedición empieza con esto

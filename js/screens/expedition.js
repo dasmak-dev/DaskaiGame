@@ -23,6 +23,12 @@
     return h('span', { class: 'chip size-chip s-' + size + (big ? ' big' : ''), tip: t('size.' + size + '.desc', { n: E().sizeFloors(size) }) },
       DK.icon(sz.icon, big ? 16 : 13), t('size.label', { name: t('size.' + size + '.name'), n: E().sizeFloors(size) }));
   };
+  /** Etiquetas del final del juego de la expedición en curso: corrupción, pesadilla, piso del abismo. */
+  V.endgameChips = (e) => [
+    e.corruption ? h('span', { class: 'chip neg cor-chip', tip: t('corruption.levelN', { n: e.corruption }) }, DK.icon('skull', 13), t('corruption.short', { n: ['I', 'II', 'III', 'IV', 'V'][e.corruption - 1] })) : null,
+    e.nightmare && e.zone === e.nightmare ? h('span', { class: 'chip neg' }, DK.icon('flame', 13), t('nightmare.title')) : null,
+    e.kind === 'abismo' ? h('span', { class: 'chip abyss-chip', tip: t('abyss.best', { n: DK.abyss.best() }) }, DK.icon('moon', 13), t('abyss.floor', { n: e.depth || 1 })) : null,
+  ];
   /** Etiqueta del modificador de un mapa (niebla, tormenta…) o null. */
   V.modChip = (mod, { big = false } = {}) => {
     if (!mod || !D.mapMods[mod]) return null;
@@ -302,7 +308,7 @@
     if (compact) return h('div', { class: 'exp-map-compact' }, h('div', { class: 'exp-scroll terrain', style: terrain }, map), legend());
     return h('div', { class: 'card exp-map-card' },
       h('div', { class: 'panel-head' }, DK.icon(zone.icon, 18), h('h3', null, zone.name),
-        V.kindChip(e.kind || (e.map && e.map.kind)), V.sizeChip(e.size || (e.map && e.map.size)), V.modChip(e.mod || (e.map && e.map.mod)),
+        V.kindChip(e.kind || (e.map && e.map.kind)), V.sizeChip(e.size || (e.map && e.map.size)), V.modChip(e.mod || (e.map && e.map.mod)), V.endgameChips(e),
         h('span', { class: 'chip', tip: t('exp.depthTip') }, DK.icon('compass', 13), t('exp.depth', { n: e.depth || 1 })),
         h('span', { class: 'chip' }, DK.icon('flag', 13), t('exp.floor', { step: Math.min(e.step, e.total), total: e.total })),
         readonly ? null : h('span', { class: 'grow' }),
@@ -447,7 +453,7 @@
             h('span', { class: 'loot-dest ' + (bag ? 'bag' : 'loot'), tip: bag ? t('exp.toBagTip') : t('exp.toLoot') }, DK.icon(bag ? 'bag' : 'gift', 11), bag ? t('exp.destBag') : t('exp.destLoot')));
         }),
         e.result.relic ? (() => { const r = D.relics[e.result.relic]; return h('div', { class: 'loot-card relic r-' + r.rarity, style: delay() }, h('span', { class: 'loot-icon' }, DK.icon(r.icon, 36)), h('b', null, r.name), V.rarity(r.rarity), h('small', { class: 'muted' }, relicText(r)), h('span', { class: 'loot-dest relic' }, DK.icon('amulet', 11), t('exp.destRelic'))); })() : null,
-        ...(e.result.runes || []).map((id) => { return h('div', { class: 'loot-card rune', style: delay(), tip: t('rune.help') }, h('span', { class: 'loot-icon' }, V.runeGem(id, 52)), h('b', null, t('rune.' + id + '.name')), h('small', { class: 'muted' }, V.runeEffect(id)), h('span', { class: 'loot-dest rune' }, DK.icon('rune', 11), t('rune.dest'))); }),
+        ...(e.result.runes || []).map((id) => { return h('div', { class: 'loot-card rune', style: delay(), tip: t('rune.help') }, h('span', { class: 'loot-icon' }, V.runeGem(id, 52)), h('b', null, V.runeName(id)), h('small', { class: 'muted' }, V.runeEffect(id)), h('span', { class: 'loot-dest rune' }, DK.icon('rune', 11), t('rune.dest'))); }),
         e.result.recipe ? (() => { const it = D.items[D.recipes.find((r) => r.id === e.result.recipe).result]; return h('div', { class: 'loot-card recipe', style: delay() }, h('span', { class: 'loot-icon' }, DK.icon('scroll', 34)), h('b', null, t('exp.newRecipe', { item: it.name })), h('small', { class: 'muted' }, t('exp.recipeShort')), h('span', { class: 'loot-dest relic' }, DK.icon('anvil', 11), t('nav.craft'))); })() : null,
       ];
       return h('div', { class: 'card stack chest-panel' }, head('treasure', t('exp.node.treasure'), t('exp.chestOpened')),
@@ -729,7 +735,8 @@
           h('div', { class: 'row gap-s wrap' }, V.houseBadge(sp.house), V.roleBadge(c)),
           h('div', { class: 'chips' },
             h('span', { class: 'chip', tip: DK.tr('natures', D.natures[c.nature], 'desc') }, DK.icon('leaf', 13), DK.tr('natures', D.natures[c.nature])),
-            h('span', { class: 'chip', tip: DK.tr('passives', D.passives[c.passive], 'desc') }, DK.icon('sparkle', 13), DK.tr('passives', D.passives[c.passive]))),
+            h('span', { class: 'chip', tip: DK.tr('passives', D.passives[c.passive], 'desc') }, DK.icon('sparkle', 13), DK.tr('passives', D.passives[c.passive])),
+            DK.tracking.count(c.species) ? h('span', { class: 'chip track-chip', tip: t('track.tip', { n: DK.tracking.count(c.species) }) }, DK.icon('target', 13), t('track.chip', { n: (DK.tracking.bonus(c.species) * 100).toFixed(1).replace('.0', '') })) : null),
           h('div', { class: 'recruit-stats' }, ['hp', 'atk', 'matk', 'spd'].map((k) => h('span', { tip: DK.tr('stats', D.stats[k]) }, DK.icon(D.stats[k].icon, 13), h('b', null, s[k])))),
           btn({ icon: 'plus', label: t('exp.recruitPick'), variant: 'primary', hotkey: String(i + 1), onClick: pick }));
       })),

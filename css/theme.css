@@ -171,28 +171,7 @@ body.is-dragging, body.is-dragging * { cursor: grabbing !important; user-select:
 .train-progress { display: flex; flex-direction: column; gap: 4px; }
 .train-bar { position: relative; height: 10px; border-radius: 6px; background: var(--surface-3); overflow: hidden; }
 .train-bar > span { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, var(--primary), #22c55e); border-radius: 6px; transition: width .4s; }
-.train-bar .mark { position: absolute; top: 0; bottom: 0; width: 2px; background: rgba(255, 255, 255, .45); }
-.train-got { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0; }
 .train-slot .btn { margin-top: auto; }
-.train-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; }
-.train-stat { position: relative; display: grid; grid-template-columns: 36px minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 10px; row-gap: 3px; align-items: center; padding: 10px 12px; min-height: 64px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font: inherit; text-align: left; cursor: pointer; transition: border-color .15s, background .15s; }
-.train-stat:hover { border-color: color-mix(in srgb, var(--primary) 50%, var(--border)); }
-.train-stat .ts-icon { grid-row: 1 / span 2; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 10px; background: var(--surface-3); color: var(--muted); }
-.train-stat .ts-name { font-size: .86rem; font-weight: 600; line-height: 1.15; overflow-wrap: anywhere; padding-right: 16px; }
-.train-stat .ts-foot { display: flex; align-items: center; gap: 6px; font-size: .74rem; color: var(--muted); min-width: 0; }
-.train-stat .ts-foot b { color: #4ade80; font-weight: 700; white-space: nowrap; }
-.train-stat .ts-foot .grow-rate { flex: none; }
-.train-stat .ts-check { position: absolute; top: 6px; right: 6px; width: 18px; height: 18px; display: grid; place-items: center; border-radius: 50%; background: var(--primary); color: #fff; }
-.train-stat.on { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 16%, var(--surface-2)); }
-.train-stat.on .ts-icon { background: color-mix(in srgb, var(--primary) 30%, var(--surface-3)); color: #fff; }
-.train-over { margin: 0; color: #fbbf24; display: flex; align-items: center; gap: 4px; }
-.train-plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px; }
-.train-plan { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font: inherit; text-align: left; cursor: pointer; }
-.train-plan .tp-icon { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border-radius: 10px; background: var(--surface-3); color: var(--muted); }
-.train-plan .tp-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.train-plan.on { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 16%, var(--surface-2)); }
-.train-plan.on .tp-icon { background: color-mix(in srgb, var(--primary) 30%, var(--surface-3)); color: #fff; }
-@media (max-width: 600px) { .train-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .train-stat { padding: 8px 10px; column-gap: 8px; grid-template-columns: 30px minmax(0, 1fr); } .train-stat .ts-icon { width: 30px; height: 30px; } }
 .warn-text { color: #fbbf24; }
 .bad-text { color: #f87171; }
 .train-slot.locked { min-height: 96px; }

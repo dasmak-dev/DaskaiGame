@@ -24,6 +24,8 @@
 
     /** ¿Mueren para siempre los daskai que caen en una expedición? */
     permadeath() { return this.def().permadeath; },
+    /** ¿Se conserva al perder lo que metiste en la mochila? (data/difficulties.js → keepPack) */
+    keepPack() { return this.def().keepPack !== false; },
     /** ¿Se puede abandonar una expedición? */
     canRetreat() { return this.def().retreat; },
     /** ¿Hay un descanso fijo antes del jefe? */

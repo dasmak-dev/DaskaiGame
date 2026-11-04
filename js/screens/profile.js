@@ -121,7 +121,8 @@
 
     const frames = h('div', { class: 'avatar-opts' }, DK.avatars.frames().map((f) => {
       const b = h('button', { class: 'avatar-opt' + (p.frame === f.id ? ' selected' : '') + (f.unlocked ? '' : ' locked'), type: 'button', disabled: !f.unlocked,
-        tip: f.unlocked ? t('profile.frame.' + (f.house ? 'house' : f.id), { house: f.house ? DK.tr('houses', D.houses[f.house]) : '' }) : f.reqText(),
+        tip: f.unlocked ? (f.shinyHouse ? t('profile.frameShinyName', { house: DK.tr('houses', D.houses[f.shinyHouse]) }) : f.season ? t('pass.frameName', { metal: t('pass.metal.' + f.metal), n: f.season })
+          : t('profile.frame.' + (f.house ? 'house' : f.id), { house: f.house ? DK.tr('houses', D.houses[f.house]) : '' })) : f.reqText(),
         onClick: () => { p.frame = f.id; DK.store.save(); DK.app.renderNav(); DK.audio.sfx('select'); refresh(); } },
         V.avatar(p, { size: 52, frame: f.id }), f.unlocked ? null : h('span', { class: 'avatar-lock' }, DK.icon('lock', 14)));
       return b;
@@ -252,6 +253,22 @@
         row('shop', t('pstats.coinsSpent'), num(s.coinsSpent)), row('anvil', t('pstats.crafts'), num(s.crafts))));
   }
 
+  /**
+   * Funciones desbloqueadas: entradas de la guía (data/wiki.js) que ya has
+   * abierto y tienen una cifra (runas, corrupción, abismo, entrenamiento…).
+   * Aparecen solas al desbloquearlas; pulsar abre su explicación en el Códice.
+   */
+  function featuresCard() {
+    const list = DK.wiki.unlocked().filter((e) => e.stat);
+    if (!list.length) return null;
+    return h('div', { class: 'card pf-feat' },
+      h('div', { class: 'panel-head' }, DK.icon('sparkles', 18), h('h3', null, t('wiki.unlockedTitle')), h('span', { class: 'muted small' }, `${DK.wiki.unlocked().length}/${D.wiki.length}`)),
+      h('p', { class: 'muted small' }, t('wiki.unlockedHint')),
+      h('div', { class: 'pf-feat-grid' }, list.map((e) => h('button', { class: 'pf-feat-row' + (e.group === 'endgame' ? ' late' : ''), type: 'button', tip: t('wiki.open'),
+        onClick: () => DK.router.reset('codex', { tab: 'wiki', wsel: e.id }) },
+        h('span', { class: 'pf-feat-icon' }, DK.icon(e.icon, 15)), h('span', { class: 'grow' }, DK.wiki.title(e)), h('b', null, e.stat())))));
+  }
+
   /** Los 3 daskai que más han luchado. */
   function favoritesCard(s) {
     const top = Object.entries(s.usage || {}).map(([uid, n]) => ({ d: DK.party.get(uid), n })).filter((x) => x.d).sort((a, b) => b.n - a.n).slice(0, 3);
@@ -313,7 +330,7 @@
         h('div', { class: 'ph-row' }, progressCard(), kpis(s)),
         h('div', { class: 'profile-grid' },
           h('div', { class: 'stack' }, historyCard(s), expeditionsCard()),
-          h('div', { class: 'stack' }, outcomesCard(s), housesCard(s), zonesCard(), favoritesCard(s), achievementsCard())),
+          h('div', { class: 'stack' }, featuresCard(), outcomesCard(s), housesCard(s), zonesCard(), favoritesCard(s), achievementsCard())),
         // Estadísticas detalladas a todo el ancho (3 columnas si caben)
         detailCards(s));
     },
