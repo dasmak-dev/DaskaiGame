@@ -157,6 +157,7 @@
       h('div', { class: 'detail-sprite' }, V.dSprite(d, { size: 130, cls: 'float' })),
       h('div', { class: 'detail-info' }, nameEl,
         h('p', { class: 'muted small' }, sp.desc),
+        V.lookStrip(d.species, DK.looks.of(d), { house: true }),
         V.vitals(d, { exp: true }),
         h('p', { class: 'small muted' }, d.level >= DK.config.maxLevel ? t('detail.maxLevel') : t('detail.toNext', { n: DK.daskai.expToNext(d) - d.exp, level: d.level + 1 }))));
 
@@ -244,7 +245,7 @@
     const sp = D.species[d.species];
     const evo = sp.evolve && D.species[sp.evolve.into];
     return h('div', null,
-      evo ? h('div', { class: 'card evo-info' }, V.sprite(evo.id, { size: 64, silhouette: d.level < sp.evolve.level, shiny: !!d.shiny }),
+      evo ? h('div', { class: 'card evo-info' }, V.sprite(evo.id, { look: DK.looks.of(d), size: 64, silhouette: d.level < sp.evolve.level, shiny: !!d.shiny }),
         h('div', { class: 'grow' }, h('b', null, d.level >= sp.evolve.level ? t('evo.readyLong', { into: evo.name }) : t('evo.at', { n: sp.evolve.level })),
           h('p', { class: 'muted small' }, t('evo.info'))),
         DK.daskai.canEvolve(d) ? btn({ icon: 'evolve', label: t('evo.button'), variant: 'primary', onClick: async () => { if (await V.evolveDialog(d)) changed(); } }) : null) : null,

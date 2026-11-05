@@ -739,6 +739,23 @@ DK.i18n.register('es', {
     inTraining: 'Está en el campo de entrenamiento', short: 'Entrena', goTo: 'Ver entrenamiento',
   },
   /* Guía del Códice (data/wiki.js, screens/codex.js) */
+  // Aspecto de los daskai (systems/looks.js, v4.47)
+  look: {
+    title: 'Aspecto', typical: 'Forma típica', variants: 'Variantes vistas', variantsN: '{n} vistas', noVariants: 'Aún no has visto ninguna variante.',
+    traitsTitle: 'Rasgos descubiertos', traitsTab: 'Rasgos', traitsIntro: 'Cada daskai nace con su propio aspecto. Aquí se apuntan los rasgos que has visto: los raros brillan.',
+    unknownTrait: 'Rasgo aún no visto', rare: 'Raro', house: 'Casa', handsFur: '{hands} · {fur}', mine: 'Tuyo', boss: 'Los jefes siempre tienen la forma típica',
+    cat: { size: 'Tamaño', body: 'Cuerpo', legs: 'Patas', eyes: 'Ojos', mouth: 'Boca', ears: 'Cabeza', mark: 'Marca', final: 'Adorno final', wings: 'Le saldrán alas' },
+    size: { xs: 'pequeñito', s: 'pequeño', m: 'normal', l: 'grande', xl: 'enorme' },
+    body: { round: 'redondo', chubby: 'rechoncho', egg: 'ovalado', bean: 'alubia', block: 'cuadrado', tall: 'espigado', blob: 'blandito', drop: 'gota', squat: 'achaparrado', ghost: 'fantasma', long: 'alargado' },
+    legs: { stubby: 'patitas → cuatro patas', digi: 'patitas → patas de salto', paws: 'zarpas → patas gruesas', bird: 'patas de ave', tent: 'tentáculos', hover: 'flota', late: 'patitas (cambian tarde)', pillar: 'patas de columna' },
+    eyes: { big: 'grandes', sharp: 'afilados', slit: 'de gato', sleepy: 'dormilones', happy: 'felices', glow: 'brillantes', dot: 'de punto', angry: 'ceño fruncido', star: 'pupilas de estrella', button: 'de botón', uneven: 'dispares', cyclops: 'un solo ojo', three: 'tres ojos', visor: 'visor' },
+    mouth: { w: 'boquita', smile: 'sonrisa', open: 'abierta', grin: 'dientes', tiny: 'pequeña', flat: 'seria', fangs: 'colmillos', tusks: 'defensas', buck: 'paletas', tongue: 'lengua fuera', beak: 'pico' },
+    ears: { cat: 'orejas de gato', bunny: 'orejas de conejo', bear: 'orejas de oso', droopy: 'orejas caídas', horns: 'cuernos', unicorn: 'cuerno único', antenna: 'antenas', crest: 'cresta', sprout: 'brote', fins: 'aletas', spikes: 'púas', tuft: 'tupé', none: 'lisa' },
+    mark: { star: 'estrella', moon: 'luna', heart: 'corazón', spots: 'manchas', stripes: 'rayas', zigzag: 'zigzag', gem: 'gema' },
+    final: { mane: 'melena', crown: 'corona', halo: 'halo', aura: 'aura', gemstone: 'gema frontal' },
+    hands: { paw: 'manitas de almohadilla', claw: 'garras de sombra', ember: 'garras de brasa', flipper: 'aletas', fist: 'puños de piedra' },
+    fur: { fluff: 'pelusa clara', smoke: 'humo', flame: 'llamas', scales: 'escamas', moss: 'musgo y piedras' },
+  },
   wiki: {
     tab: 'Guía', intro: 'Lo que has descubierto, explicado.',
     search: 'Buscar en la guía…', locked: 'Por descubrir', lockedN: '{n} por descubrir', empty: 'Nada coincide con la búsqueda', open: 'Ver en la guía',

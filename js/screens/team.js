@@ -229,7 +229,7 @@
             await V.afterLevel(r.d, r.levelInfo); refresh();
           };
           return h('div', { class: 'essence' },
-            V.sprite(es.species, { size: 36, cls: 'grave-sprite' }),
+            V.sprite(es.species, { look: es.look, size: 36, cls: 'grave-sprite' }),
             h('div', { class: 'grow' }, h('b', null, t('legacy.of', { name: es.name })),
               h('div', { class: 'muted small' }, `+${p.exp} ${t('common.expShort')} · +${p.points} ${DK.tr('stats', D.stats[p.stat])}`)),
             btn({ icon: 'sparkle', label: target ? t('legacy.inheritIn', { name: DK.daskai.name(target) }) : t('legacy.pick'), size: 'sm', variant: 'primary', disabled: !target, onClick: goInherit }));

@@ -66,7 +66,7 @@
   V.evolveDialog = async (d) => {
     if (!DK.daskai.canEvolve(d)) return false;
     const into = D.species[D.species[d.species].evolve.into];
-    const stage = h('div', { class: 'evo-stage' }, V.dSprite(d, { size: 150, cls: 'evo-from' }), V.sprite(into.id, { size: 150, shiny: !!d.shiny, cls: 'evo-to' }));
+    const stage = h('div', { class: 'evo-stage' }, V.dSprite(d, { size: 150, cls: 'evo-from' }), V.sprite(into.id, { look: DK.looks.of(d), size: 150, shiny: !!d.shiny, cls: 'evo-to' }));
     const text = h('p', { class: 'center' }, t('evo.question', { name: DK.daskai.name(d), into: into.name }));
     let evolved = false;
     const oldName = DK.daskai.name(d);

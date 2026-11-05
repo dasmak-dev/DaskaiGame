@@ -735,6 +735,23 @@ DK.i18n.register('en', {
     inTraining: 'At the training grounds', short: 'Training', goTo: 'View training',
   },
   /* Codex guide (data/wiki.js, screens/codex.js) */
+  // Daskai looks (systems/looks.js, v4.47)
+  look: {
+    title: 'Looks', typical: 'Typical form', variants: 'Variants seen', variantsN: '{n} seen', noVariants: 'You have not seen any variant yet.',
+    traitsTitle: 'Traits discovered', traitsTab: 'Traits', traitsIntro: 'Every daskai is born with its own look. The traits you have seen are logged here: rare ones shine.',
+    unknownTrait: 'Trait not seen yet', rare: 'Rare', house: 'House', handsFur: '{hands} · {fur}', mine: 'Yours', boss: 'Bosses always have the typical form',
+    cat: { size: 'Size', body: 'Body', legs: 'Legs', eyes: 'Eyes', mouth: 'Mouth', ears: 'Head', mark: 'Mark', final: 'Final ornament', wings: 'Will grow wings' },
+    size: { xs: 'tiny', s: 'small', m: 'normal', l: 'big', xl: 'huge' },
+    body: { round: 'round', chubby: 'chubby', egg: 'oval', bean: 'bean', block: 'square', tall: 'lanky', blob: 'squishy', drop: 'drop', squat: 'squat', ghost: 'ghost', long: 'long' },
+    legs: { stubby: 'stubby → four legs', digi: 'stubby → hopping legs', paws: 'paws → thick legs', bird: 'bird legs', tent: 'tentacles', hover: 'floats', late: 'stubby (late change)', pillar: 'pillar legs' },
+    eyes: { big: 'big', sharp: 'sharp', slit: 'cat eyes', sleepy: 'sleepy', happy: 'happy', glow: 'glowing', dot: 'dots', angry: 'frowning', star: 'star pupils', button: 'button', uneven: 'uneven', cyclops: 'one eye', three: 'three eyes', visor: 'visor' },
+    mouth: { w: 'little mouth', smile: 'smile', open: 'open', grin: 'teeth', tiny: 'tiny', flat: 'serious', fangs: 'fangs', tusks: 'tusks', buck: 'buck teeth', tongue: 'tongue out', beak: 'beak' },
+    ears: { cat: 'cat ears', bunny: 'bunny ears', bear: 'bear ears', droopy: 'droopy ears', horns: 'horns', unicorn: 'single horn', antenna: 'antennae', crest: 'crest', sprout: 'sprout', fins: 'fins', spikes: 'spikes', tuft: 'tuft', none: 'smooth' },
+    mark: { star: 'star', moon: 'moon', heart: 'heart', spots: 'spots', stripes: 'stripes', zigzag: 'zigzag', gem: 'gem' },
+    final: { mane: 'mane', crown: 'crown', halo: 'halo', aura: 'aura', gemstone: 'brow gem' },
+    hands: { paw: 'padded paws', claw: 'shadow claws', ember: 'ember claws', flipper: 'flippers', fist: 'stone fists' },
+    fur: { fluff: 'light fluff', smoke: 'smoke', flame: 'flames', scales: 'scales', moss: 'moss and pebbles' },
+  },
   wiki: {
     tab: 'Guide', intro: 'What you have discovered, explained.',
     search: 'Search the guide…', locked: 'Undiscovered', lockedN: '{n} undiscovered', empty: 'Nothing matches the search', open: 'Read in the guide',

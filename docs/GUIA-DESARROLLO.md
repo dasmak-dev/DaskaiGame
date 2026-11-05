@@ -357,6 +357,23 @@ Se carga la última y sólo sobrescribe: paleta (piedra oscura, bronce, oro `--g
 - **Expedición:** al entrar en el mapa, el equipo, la mochila o un combate durante una expedición, `#zone-backdrop` (creado en `screens/expedition.js` con `screen:enter`) pinta detrás de todo la escena de la zona actual, oscurecida; `body.in-exp`.
 - **Combate:** la arena usa la escena de la zona (`components/scenes.js`, ahora con árboles muertos, ruinas, tumbas, cristales o tentáculos según la zona) y los **jefes tienen su propio fondo**: `DK.scenes.bossScene(zona, secreto)` → `boss_<escena>` (menhires bajo luna roja, bosque muerto, naufragio con tormenta, bosque de cristales, forja de lava, santuario con estatua, fauces del abismo, ruinas entre rayos) y `boss_secret` (cripta) para los jefes ocultos.
 
+### Cambios de la v4.47 — Cada daskai tiene su propio aspecto
+
+- **Motor nuevo de dibujo** (`js/systems/looks.js`, `DK.looks`), que sustituye al de `systems/sprites.js` para todos los daskai (`sprites.js` sólo queda para especies con `sprite.img`).
+  - **Casa** (fija): tono de piel, manos y pelo. Luz: almohadillas + pelusa · Oscuridad: garras de sombra + humo · Fuego: garras de brasa + llamas · Agua: aletas + escamas · Tierra: puños de piedra + musgo.
+  - **Especie** (fija): la cola de su `sprite.tail`; las especies con `sprite.body: 'ghost'` siguen siendo fantasmas y las serpientes (`body: 'long'` + `legs: 'none'`) no tienen patas.
+  - **Individuo** (al azar, al nacer): tamaño 0,78–1,22×, 11 cuerpos, 8 caminos de patas, 14 ojos, 11 bocas, 13 orejas/cuernos, marcas, alas (y en qué etapa salen) y adorno final. Pesos ≤ 2 = rasgo raro (también los tamaños extremos).
+  - **Evolución**: conserva cara y piel; el cuerpo crece y madura (`BODY_PATH`), cambian las patas (`LEG_PATHS`), salen alas y la última forma luce su adorno. La etapa visual sale de la posición en la línea (`stageOf`).
+  - Se guarda sólo la semilla: `d.look = { s }` (`DK.daskai.create` → `DK.looks.rollLook`). Los jefes (`boss`) no la tienen: usan la **forma típica**, semilla fija por línea (`hash('typ:' + raíz)`). Partidas antiguas: semilla sacada del `uid` (`DK.looks.of(d)`). Las tumbas y el registro de combates guardan también el `look`.
+  - `V.sprite(sid, { look })` y `V.dSprite(d)` lo dibujan; todos los sitios que pintan un daskai concreto pasan su `look`. Pixel art propio (`DK.looks.pixel`, caché por especie+semilla, lienzo 96×64 con margen; CSS `.sprite.pixel img` a 150 % y −25 %).
+- **Rasgos como iconos** (`V.lookStrip(sid, look, { house })`, `.lk-strip` / `.lk-trait` en `css/grim.css`): cada rasgo es un recorte del propio dibujo (ojos, boca, cabeza, patas, marca, cuerpo, adorno, alas y tamaño, `DK.looks.icon`) y su nombre sale sólo al pasar el ratón (`tip`). Se ve en la ficha del daskai, en «Elige tu daskai» y en el Códice.
+- **Códice rediseñado** (`screens/codex.js`):
+  - La ficha enseña la **forma típica** (la de los jefes, icono de corona) y la galería **Variantes vistas** de esa línea (`DK.looks.seenOf`, hasta 18); al pulsar una se ve arriba con sus rasgos.
+  - Pestaña nueva **Rasgos**: la colección de todos los rasgos por categoría; los no vistos salen en silueta y los raros brillan.
+  - Se apunta con `DK.looks.see(d)` al ver un rival en combate, al reclutar y al entrar en tu equipo (`DK.party.add`). Estado: `state.looks = { seen: {raíz: [semillas]}, traits: {cat: {clave: n}} }` (la migración apunta tu equipo actual).
+- Iconos nuevos: `maximize`, `footprints`, `smile`, `dna`. Textos: `look.*` (es/en).
+- Tests nuevos en `tests/screens.test.js`: el aspecto se conserva al evolucionar, los jefes usan la forma típica, el Códice muestra variantes y la colección de rasgos, y los rasgos son sólo iconos con tooltip.
+
 ### Cambios de la v4.46 — Detalle sin parpadeo, pixel art completo e iniciales al azar
 
 - **Sin parpadeo al forjar / usar**: la entrada animada del panel de detalle (`invSideIn`) sólo se pone al abrir OTRO detalle: clase `.fresh` en `.wb-side` (`screens/craft.js`, `params._shown`) y en `.inv-side` (`screens/inventory.js`). El giro de los iconos de cabecera (`headIcon`) sólo se ve al entrar en la pantalla (`.screen.screen-enter`), no en cada repintado.

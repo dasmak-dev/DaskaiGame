@@ -94,6 +94,8 @@
         cur: { hp: 0, mp: 0 },
         moves: [], learned: [], equip: [null, null], status: null,
       };
+      const look = DK.looks ? DK.looks.rollLook(speciesId, o) : null; // aspecto propio (los jefes: el típico)
+      if (look) d.look = look;
       if (o.wild) d.wild = true;
       if (o.boss) d.boss = true;
       if (o.elite) d.elite = true;
@@ -470,6 +472,7 @@
     /** Añade un daskai a la colección (y al equipo si hay hueco). */
     add(d) {
       this.all().push(d);
+      if (DK.looks) DK.looks.see(d);
       if (this.st().team.length < DK.config.maxTeam) this.st().team.push(d.uid);
       DK.store.save();
     },
@@ -557,7 +560,7 @@
       (d.equip || []).forEach((id) => id && DK.bag.add(id));
       st.graveyard = st.graveyard || [];
       if (!d.temp && DK.legacy) DK.legacy.create(d); // deja su esencia para heredar
-      if (!d.temp) st.graveyard.unshift({ name: api.name(d), species: d.species, level: d.level, shiny: !!d.shiny, zone: zoneId, at: Date.now() });
+      if (!d.temp) st.graveyard.unshift({ name: api.name(d), species: d.species, level: d.level, shiny: !!d.shiny, look: d.look, zone: zoneId, at: Date.now() });
       st.party = this.all().filter((x) => x.uid !== uid);
       st.team = st.team.filter((x) => x !== uid);
       delete st.stats.usage[uid];

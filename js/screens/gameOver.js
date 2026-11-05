@@ -12,7 +12,7 @@
 
   /** Lista de daskai caídos (también la usa la pantalla de Equipo). */
   V.graveyard = (list, { limit } = {}) => h('div', { class: 'grave-list' }, (limit ? list.slice(0, limit) : list).map((g) =>
-    h('div', { class: 'grave' }, V.sprite(g.species, { size: 40, shiny: g.shiny, cls: 'grave-sprite' }),
+    h('div', { class: 'grave' }, V.sprite(g.species, { look: g.look, size: 40, shiny: g.shiny, cls: 'grave-sprite' }),
       h('div', { class: 'grow' }, h('b', null, g.name), h('div', { class: 'muted small' }, `${t('common.lvl')} ${g.level} · ${D.zones[g.zone] ? D.zones[g.zone].name : ''} · ${new Date(g.at).toLocaleDateString(DK.i18n.lang)}`)),
       DK.icon('skull', 16))));
 

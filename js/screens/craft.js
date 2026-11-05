@@ -98,7 +98,7 @@
           const opts = free != null ? [free] : [...Array(DK.config.maxEquip).keys()];
           const has = d.equip.includes(itemId);
           return h('div', { class: 'eq-choice' },
-            h('div', { class: 'row gap-s' }, V.sprite(d.species, { size: 40, shiny: d.shiny }),
+            h('div', { class: 'row gap-s' }, V.sprite(d.species, { look: DK.looks.of(d), size: 40, shiny: d.shiny }),
               h('div', { class: 'grow' }, h('b', null, DK.daskai.name(d)), h('div', { class: 'muted small' }, `${t('common.lvl')} ${d.level} · ${d.equip.filter(Boolean).length}/${DK.config.maxEquip}`))),
             has ? h('span', { class: 'badge good' }, DK.icon('check', 12), t('craft.equipped'))
               : h('div', { class: 'stack-s' }, opts.map((slot) => h('div', { class: 'eq-slot' },

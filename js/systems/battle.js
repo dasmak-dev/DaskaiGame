@@ -59,6 +59,7 @@
       DK.daskai.fullHeal(enemy);
       const known = DK.codex.fought(zoneId, enemy.species) > 0; // ¿hemos peleado antes contra él?
       DK.codex.seeEnemy(zoneId, enemy.species);
+      DK.looks.see(enemy);
       const stt = DK.store.state.stats;
       stt.usage[leaderUid] = (stt.usage[leaderUid] || 0) + 1;
       DK.store.save();
@@ -795,7 +796,7 @@
       const ally = this.ally(st);
       DK.emit('battle:end', {
         outcome: st.outcome, zone: st.zoneId, turns: st.turn, boss: st.boss, elite: !!st.elite,
-        enemy: { species: st.enemy.species, level: st.enemy.level, shiny: !!st.enemy.shiny },
+        enemy: { species: st.enemy.species, level: st.enemy.level, shiny: !!st.enemy.shiny, look: st.enemy.look || undefined },
         ally: ally ? { uid: ally.uid, species: ally.species, level: ally.level } : null,
       });
     },

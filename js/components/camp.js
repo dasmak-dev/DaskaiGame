@@ -374,7 +374,7 @@
       class: 'camp-mon', type: 'button', style: { left: fx + offs[i][0] + '%', top: fy + offs[i][1] + '%', animationDelay: (i * 0.4) + 's' },
       'aria-label': DK.daskai.name(d), tip: `${DK.daskai.name(d)} · ${t('common.lvl')} ${d.level}`,
       onClick: () => { DK.audio.sfx('select'); DK.router.reset('team', { uid: d.uid }); },
-    }, DK.views.sprite(d.species, { size: narrow ? 54 : 76, shiny: d.shiny, flip: offs[i][0] > 0 })));
+    }, DK.views.sprite(d.species, { look: DK.looks.of(d), size: narrow ? 54 : 76, shiny: d.shiny, flip: offs[i][0] > 0 })));
     // Ascuas que suben de la hoguera, niebla baja y antorchas
     const embers = h('div', { class: 'camp-embers', 'aria-hidden': 'true', style: { left: fx + '%', top: fy + '%' } }, Array.from({ length: 16 }, (_, i) => h('i', { style: { '--dx': ((i * 37) % 60 - 30) + 'px', left: ((i * 13) % 40 - 20) + 'px', animationDelay: (i * 0.35) + 's', animationDuration: (2.6 + (i % 5) * 0.5) + 's' } })));
     const fog = h('div', { class: 'camp-fog', 'aria-hidden': 'true' }, h('i'), h('i'));

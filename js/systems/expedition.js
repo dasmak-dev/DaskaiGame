@@ -895,7 +895,7 @@
         /** Un daskai de la zona se une a la expedición (temporal hasta el jefe o una hoguera). */
         recruit() {
           const d = self.makeCandidates(self.pendingNode() || { row: 1 })[0];
-          d.uid = U.uid(); DK.codex.seeEnemy(e.zone, d.species); self.addRecruit(d);
+          d.uid = U.uid(); DK.codex.seeEnemy(e.zone, d.species); DK.looks.see(d); self.addRecruit(d);
           return DK.daskai.name(d);
         },
         /** Convierte un combate de más adelante en una cueva. → true si había sitio */

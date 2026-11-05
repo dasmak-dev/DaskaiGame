@@ -3,15 +3,17 @@
  *
  * Nunca está vacío: desde el principio se ven TODAS las especies, objetos
  * y jefes; lo que aún no conoces sale como silueta o «???».
- *   Pestañas: Daskai · Zonas (% de cada zona) · Objetos · Jefes · Guía
+ *   Pestañas: Daskai · Rasgos (v4.47: aspectos descubiertos) · Zonas (% de cada zona) · Objetos · Jefes · Guía
  *   (wiki con lo desbloqueado: data/wiki.js).
  *   Filtros (Daskai): casa, zona y estado (vistos / vencidos / vinculados).
  *   Ficha de especie: dónde aparece, evolución, ataques por nivel, punto
  *   débil, lo que suelta y tu mejor ejemplar. Lo que no sabes se revela
  *   poco a poco (verla, luchar contra ella, vincularla).
  * Datos: DK.codex.species(id), DK.codex.itemKnown(id), DK.codex.totals().
+ *   v4.47: cada daskai tiene su aspecto (systems/looks.js). La ficha enseña la FORMA TÍPICA
+ *   (la de los jefes) y las VARIANTES que has visto de esa línea; al pulsar una se ve con sus rasgos.
  *
- * params: { tab, house, zone, state, q, sel, wsel (entrada de la guía abierta) }
+ * params: { tab, house, zone, state, q, sel, vsel (variante vista elegida), wsel (entrada de la guía abierta) }
  * ============================================================= */
 (function () {
   const { h, btn } = DK.ui;
@@ -26,7 +28,7 @@
   const STATUS_ORDER = { captured: 0, fought: 1, seen: 2, unknown: 3 };
 
   /* ---------------- Ficha de especie ---------------- */
-  function speciesSheet(sid, open) {
+  function speciesSheet(sid, open, params = {}) {
     const sp = D.species[sid], info = C().species(sid);
     const known = info.status !== 'unknown';
     const fought = info.fought > 0 || info.status === 'captured';
@@ -55,12 +57,27 @@
     });
     const weakKnown = DK.battle.weakKnown(sid);
     const weak = DK.battle.weakness(sid);
+    // Aspecto: forma típica o la variante vista que hayas elegido (v4.47)
+    const seen = DK.looks.seenOf(sid);
+    const vsel = seen.includes(params.vsel) ? params.vsel : null;
+    const look = vsel != null ? { s: vsel } : null;
+    const pickVariant = (s) => { params.vsel = params.vsel === s ? null : s; open(sid); };
+    const variants = h('section', { class: 'cx-block' },
+      h('h4', { class: 'row gap-s' }, DK.icon('dna', 15), t('look.variants'), h('span', { class: 'muted small' }, t('look.variantsN', { n: seen.length }))),
+      seen.length ? h('div', { class: 'cx-variants' },
+        h('button', { class: 'cx-var typ' + (vsel == null ? ' on' : ''), type: 'button', tip: t('look.typical') + ' · ' + t('look.boss'), 'aria-label': t('look.typical'), onClick: () => pickVariant(null) }, V.sprite(sid, { size: 50 })),
+        seen.map((s) => { const i = DK.looks.ind(sid, { s }); const rare = DK.looks.traits(i).some((x) => x.rare);
+          return h('button', { class: 'cx-var' + (vsel === s ? ' on' : '') + (rare ? ' rare' : ''), type: 'button', tip: '#' + (s >>> 0).toString(16).toUpperCase().slice(-4) + (rare ? ' · ' + t('look.rare') : ''), 'aria-label': t('look.variants'), onClick: () => pickVariant(s) }, V.sprite(sid, { size: 50, look: { s } })); }))
+        : h('p', { class: 'muted small' }, t('look.noVariants')));
     return h('div', { class: 'cx-sheet stack' },
       h('div', { class: 'cx-head', style: { '--c': D.houseColor(sp.house) } },
-        V.sprite(sid, { size: 120, cls: 'float' }),
+        h('div', { class: 'cx-head-art' }, V.sprite(sid, { size: 120, cls: 'float', look }),
+          h('span', { class: 'cx-typ', tip: vsel == null ? t('look.typical') + ' · ' + t('look.boss') : t('look.variants') }, DK.icon(vsel == null ? 'crown' : 'dna', 13))),
         h('div', { class: 'stack-s' }, h('h2', null, sp.name),
           h('div', { class: 'row gap-s wrap' }, V.houseBadge(sp.house, { known: fought }), h('span', { class: 'badge cx-st st-' + info.status }, t('codex.status.' + info.status))),
+          V.lookStrip(sid, look, { house: true }),
           h('p', { class: 'muted' }, sp.desc))),
+      variants,
       h('div', { class: 'cx-stats' },
         [['eye', t('codex.seenL'), info.seen], ['swords', t('codex.foughtL'), info.fought], ['trophy', t('codex.defeatedL'), info.defeated], ['orb', t('codex.capturedL'), info.captured + (info.owned.length && !info.captured ? info.owned.length : 0)]]
           .map(([ic, l, n]) => h('div', { class: 'cx-stat' }, DK.icon(ic, 16), h('b', null, String(n)), h('span', { class: 'muted small' }, l)))),
@@ -109,6 +126,22 @@
         h('span', { class: 'cx-card-st' }, DK.icon(info.status === 'captured' ? 'orb' : info.status === 'fought' ? 'swords' : info.status === 'seen' ? 'eye' : 'question', 12), t('codex.status.' + info.status)));
     })) : DK.ui.empty('book', t('craft.emptyTitle'), '');
     return h('div', { class: 'stack' }, filters, grid);
+  }
+
+  /* ---------------- Pestaña Rasgos (v4.47) ---------------- */
+  function looksTab() {
+    const col = DK.looks.collection();
+    return h('div', { class: 'stack' }, h('p', { class: 'muted small' }, t('look.traitsIntro')),
+      h('div', { class: 'cx-traits' }, col.list.map((c) => {
+        const got = c.keys.filter((k) => k.seen).length;
+        return h('section', { class: 'card cx-trait-cat' },
+          h('h4', { class: 'row gap-s' }, DK.icon(DK.looks.catIcon[c.cat], 15), h('span', { class: 'grow' }, t('look.cat.' + c.cat)), h('span', { class: 'muted small' }, `${got}/${c.keys.length}`)),
+          h('div', { class: 'lk-strip' }, c.keys.map((k) => {
+            const tip = k.seen ? DK.looks.label(c.cat, k.key) + (k.rare ? ' · ' + t('look.rare') : '') : t('look.unknownTrait') + (k.rare ? ' · ' + t('look.rare') : '');
+            const el = h('span', { class: 'lk-trait big c-' + c.cat + (k.seen ? '' : ' unseen') + (k.rare && k.seen ? ' rare' : ''), tip, 'aria-label': tip, role: 'img' });
+            el.innerHTML = DK.looks.icon(c.cat, k.key); return el;
+          })));
+      })));
   }
 
   /* ---------------- Pestaña Objetos ---------------- */
@@ -209,22 +242,23 @@
       const tot = C().totals();
       const narrow = DK.ui.isNarrow();
       const open = (sid) => {
+        if (sid !== params.sel) params.vsel = null;
         params.sel = sid;
         if (!narrow) { refresh(); return; }
         const holder = h('div');
-        const draw = (x) => holder.replaceChildren(speciesSheet(x, (y) => { params.sel = y; draw(y); }));
+        const draw = (x) => holder.replaceChildren(speciesSheet(x, (y) => { if (y !== params.sel) params.vsel = null; params.sel = y; draw(y); }, params));
         draw(sid);
         DK.ui.drawer({ title: t('codex.title'), icon: 'book', size: 'wide', content: holder }).promise.then(() => { params.sel = null; });
       };
       const pct = (a, b) => Math.round((a / Math.max(1, b)) * 100) + '%';
-      const tabs = h('div', { class: 'inv-tabs cx-tabs' }, [['species', 'paw', t('codex.tabSpecies'), pct(tot.species, tot.speciesTotal)], ['zones', 'map', t('codex.tabZones'), Math.round(zonesPct() * 100) + '%'], ['items', 'gift', t('codex.tabItems'), pct(tot.items, tot.itemsTotal)], ['bosses', 'crown', t('codex.tabBosses'), `${tot.bosses}/${tot.bossesTotal}`], ['wiki', 'book', t('wiki.tab'), `${DK.wiki.unlocked().length}/${D.wiki.length}`]]
+      const tabs = h('div', { class: 'inv-tabs cx-tabs' }, [['species', 'paw', t('codex.tabSpecies'), pct(tot.species, tot.speciesTotal)], ['looks', 'dna', t('look.traitsTab'), (() => { const c = DK.looks.collection(); return `${c.got}/${c.total}`; })()], ['zones', 'map', t('codex.tabZones'), Math.round(zonesPct() * 100) + '%'], ['items', 'gift', t('codex.tabItems'), pct(tot.items, tot.itemsTotal)], ['bosses', 'crown', t('codex.tabBosses'), `${tot.bosses}/${tot.bossesTotal}`], ['wiki', 'book', t('wiki.tab'), `${DK.wiki.unlocked().length}/${D.wiki.length}`]]
         .map(([id, icon, label, n]) => h('button', { class: 'inv-tab' + (params.tab === id ? ' on' : ''), type: 'button', onClick: () => { params.tab = id; params.sel = null; params.q = ''; refresh(); } }, DK.icon(icon, 18), h('span', null, label), h('b', null, n))));
       const search = ['species', 'items', 'wiki'].includes(params.tab) ? h('input', { class: 'input inv-search', type: 'search', placeholder: params.tab === 'wiki' ? t('wiki.search') : t('codex.search'), value: params.q || '',
         onInput: (e) => { params.q = e.target.value; clearTimeout(params._qt); params._qt = setTimeout(() => { refresh(); const i = document.querySelector('.inv-search'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }, 220); } }) : null;
-      const body = params.tab === 'species' ? speciesTab(params, open) : params.tab === 'items' ? itemsTab(params) : params.tab === 'zones' ? zonesTab(params) : params.tab === 'wiki' ? wikiTab(params) : bossesTab();
+      const body = params.tab === 'species' ? speciesTab(params, open) : params.tab === 'looks' ? looksTab() : params.tab === 'items' ? itemsTab(params) : params.tab === 'zones' ? zonesTab(params) : params.tab === 'wiki' ? wikiTab(params) : bossesTab();
       const side = params.tab === 'species' && params.sel && !narrow ? h('aside', { class: 'card inv-side cx-side' },
         h('div', { class: 'row between' }, h('span', { class: 'muted small' }, DK.icon('book', 13), ' ', t('codex.sheet')), btn({ icon: 'x', size: 'sm', variant: 'ghost', onClick: () => { params.sel = null; refresh(); } })),
-        speciesSheet(params.sel, open)) : null;
+        speciesSheet(params.sel, open, params)) : null;
       return h('div', { class: 'screen cx-screen' },
         h('div', { class: 'card cx-hero' },
           h('span', { class: 'cx-hero-icon' }, DK.icon('book', 28)),

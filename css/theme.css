@@ -59,7 +59,7 @@ h1, h2, h3 { font-weight: 600; }
 .arena .combatant { z-index: 2; }
 
 /* ---------- 3. Pixel art ---------- */
-.sprite.pixel img.sprite-px { width: 151.52%; max-width: none; margin-left: -25.76%; justify-self: start; height: 100%; object-fit: fill; image-rendering: pixelated; image-rendering: crisp-edges; -webkit-user-drag: none; user-select: none; }
+.sprite.pixel img.sprite-px { width: 150%; max-width: none; margin-left: -25%; justify-self: start; height: 100%; object-fit: fill; image-rendering: pixelated; image-rendering: crisp-edges; -webkit-user-drag: none; user-select: none; }
 .sprite.pixel.flip img.sprite-px { transform: scaleX(-1); }
 .sprite.pixel.silhouette img.sprite-px { filter: brightness(0); opacity: .35; }
 :root[data-theme="dark"] .sprite.pixel.silhouette img.sprite-px, :root:not([data-theme]) .sprite.pixel.silhouette img.sprite-px { filter: brightness(0) invert(1); opacity: .16; }

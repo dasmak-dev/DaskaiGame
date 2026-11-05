@@ -130,6 +130,8 @@
       const s = this.state;
       s.version = 2;
       s.bag = s.bag || {}; s.codex = s.codex || {}; s.zones = s.zones || {};
+      // v4.47: aspecto de cada daskai → el Códice apunta las variantes y rasgos de los tuyos
+      if (!s.looks && DK.looks) { s.looks = { seen: {}, traits: {} }; (s.party || []).forEach((d) => DK.looks.see(d)); }
       if (s.coins == null) s.coins = DK.config.startingCoins; // partidas de la v1 no tenían monedas
       s.bosses = s.bosses || {};
       s.favorites = s.favorites || [];

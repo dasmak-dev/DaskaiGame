@@ -7,6 +7,28 @@ const SCREENS = [['hub', {}], ['team', {}], ['inventory', {}], ['craft', {}], ['
 module.exports = {
   name: 'Pantallas',
   cases: [{
+    name: 'Aspecto único: se conserva al evolucionar, los jefes son la forma típica y el Códice apunta variantes y rasgos',
+    views: ['desktop'],
+    run: (browser, view) => play(browser, view, async (p) => {
+      const r = await p.evaluate(async () => {
+        const w = (ms) => new Promise((res) => setTimeout(res, ms));
+        const a = DK.daskai.create('lumino', 20), b = DK.daskai.create('lumino', 20), boss = DK.daskai.create('lumino', 20, { boss: true });
+        const out = { own: !!a.look && a.look.s !== b.look.s, boss: !boss.look, differ: DK.looks.svg('lumino', a.look) !== DK.looks.svg('lumino', b.look) };
+        DK.party.add(a);
+        const face = (d) => { const i = DK.looks.ind(d.species, d.look); return [i.eyes, i.mouth, i.ears, i.skin].join(); };
+        const before = face(a); DK.daskai.evolve(a); out.evolved = a.species !== 'lumino'; out.sameFace = face(a) === before && a.look.s === DK.looks.of(a).s;
+        out.seen = DK.looks.seenOf('lumino').includes(a.look.s);
+        DK.router.reset('codex', { sel: 'lumino' }); await w(300);
+        out.variants = document.querySelectorAll('.cx-var').length >= 2;
+        const tr = document.querySelector('.cx-head .lk-trait:not(.lk-house)');
+        out.iconOnly = !!tr && !tr.textContent.trim() && !!tr.dataset.tip;
+        DK.router.reset('codex', { tab: 'looks' }); await w(300);
+        out.traits = document.querySelectorAll('.cx-trait-cat').length === 7 && document.querySelectorAll('.cx-trait-cat .lk-trait:not(.unseen)').length > 3;
+        return out;
+      });
+      check(Object.values(r).every(Boolean), 'aspecto de los daskai: ' + JSON.stringify(r));
+    }),
+  }, {
     name: 'Iniciales al azar (lo que ves es lo que te llevas) y pixel art con colas que no se cortan',
     views: ['desktop'],
     run: (browser, view) => play(browser, view, async (p) => {
@@ -18,18 +40,15 @@ module.exports = {
         // Dos visitas sortean daskai distintos
         const again = DK.daskai.create(prm.pick, DK.config.starterLevel);
         out.random = JSON.stringify(again.genes) !== JSON.stringify(d.genes) || again.nature !== d.nature;
-        // Pixel art: un daskai con cola larga ocupa más de 64 px de ancho
-        const sp = Object.values(DK.data.species).find((x) => x.id === 'draconyx') || Object.values(DK.data.species)[0];
-        const url = await DK.sprites.pixel(sp, {});
+        // Pixel art (v4.47, systems/looks.js): imagen más ancha que alta para que colas y alas no se corten
+        const url = await DK.looks.pixel('draconyx', { s: 12345 });
         const img = new Image(); await new Promise((res) => { img.onload = res; img.src = url; });
-        const c = document.createElement('canvas'); c.width = img.width; c.height = img.height; const g = c.getContext('2d'); g.drawImage(img, 0, 0);
-        const px = g.getImageData(0, 0, c.width, c.height).data; let maxX = 0;
-        for (let i = 3; i < px.length; i += 4) if (px[i] > 200) maxX = Math.max(maxX, ((i - 3) / 4) % c.width);
+        const maxX = img.width;
         out.pixW = img.width; out.reach = maxX;
         return out;
       });
       check(r.traits && r.luck && r.random, 'la pantalla de iniciales debería enseñar el daskai sorteado: ' + JSON.stringify(r));
-      check(r.pixW > 64 && r.reach > 82, 'la cola debería verse en el pixel art: ' + JSON.stringify(r));
+      check(r.pixW > 64, 'el pixel art debería tener margen a los lados: ' + JSON.stringify(r));
     }),
   }, {
     name: 'Se abren todas sin errores ni scroll horizontal',

@@ -10,27 +10,44 @@
   const V = (DK.views = DK.views || {});
 
   /**
-   * Dibujo de una especie.
+   * Dibujo de una especie (v4.47: con el aspecto de un individuo, systems/looks.js).
    * @param {string} speciesId
-   * @param {Object} [o] {size, flip, silhouette, shiny, cls}
+   * @param {Object} [o] {size, flip, silhouette, shiny, cls, look}
+   *   look: aspecto del individuo (d.look); sin él se dibuja la «forma típica» de la especie.
    */
-  V.sprite = (speciesId, { size = 96, flip = false, silhouette = false, shiny = false, cls = '' } = {}) => {
+  V.sprite = (speciesId, { size = 96, flip = false, silhouette = false, shiny = false, cls = '', look = null } = {}) => {
     const sp = D.species[speciesId];
-    const pixel = DK.settings.get('pixelArt') !== false && !(sp.sprite && sp.sprite.img);
-    const el = h('div', { class: `sprite ${pixel ? 'pixel' : ''} ${silhouette ? 'silhouette' : ''} ${shiny ? 'is-shiny' : ''} ${flip ? 'flip' : ''} ${cls}`, style: { width: size + 'px', height: size + 'px' } });
+    const img = sp.sprite && sp.sprite.img;
+    const pixel = DK.settings.get('pixelArt') !== false && !img;
+    const el = h('div', { class: `sprite ${pixel ? 'pixel' : ''} ${silhouette ? 'silhouette' : ''} ${shiny ? 'is-shiny' : ''} ${flip ? 'flip' : ''} ${cls}`, style: { width: size + 'px', height: size + 'px' }, dataset: { sp: speciesId } });
     // Pixel art (ajuste «pixelArt»): se usa la versión en caché o se pinta el SVG
     // mientras se genera y luego se cambia por la imagen pixelada.
-    const toImg = (url) => { const img = document.createElement('img'); img.className = 'sprite-px'; img.alt = sp.name; img.draggable = false; img.src = url; el.replaceChildren(img); };
-    const cached = pixel && DK.sprites.pixelCached(sp, { shiny });
+    const toImg = (url) => { const im = document.createElement('img'); im.className = 'sprite-px'; im.alt = sp.name; im.draggable = false; im.src = url; el.replaceChildren(im); };
+    if (img) { el.innerHTML = DK.sprites.svg(sp, { flip, shiny }); return el; }
+    const cached = pixel && DK.looks.pixelCached(speciesId, look, { shiny });
     if (cached) toImg(cached);
     else {
-      el.innerHTML = DK.sprites.svg(sp, { flip, shiny });
-      if (pixel) DK.sprites.pixel(sp, { shiny }).then((url) => { if (url) toImg(url); });
+      el.innerHTML = DK.looks.svg(speciesId, look, { flip, shiny });
+      if (pixel) DK.looks.pixel(speciesId, look, { shiny }).then((url) => { if (url) toImg(url); });
     }
     return el;
   };
-  /** Sprite de un daskai concreto (respeta variocolor). */
-  V.dSprite = (d, o = {}) => V.sprite(d.species, Object.assign({ shiny: !!d.shiny }, o, d.variant ? { cls: ((o.cls || '') + ' variant-' + d.variant).trim() } : null));
+  /** Sprite de un daskai concreto (su aspecto, variocolor y forma alternativa). */
+  V.dSprite = (d, o = {}) => V.sprite(d.species, Object.assign({ shiny: !!d.shiny, look: DK.looks.of(d) }, o, d.variant ? { cls: ((o.cls || '') + ' variant-' + d.variant).trim() } : null));
+
+  /**
+   * Rasgos del aspecto como iconos (v4.47): sólo el dibujo del rasgo; el nombre sale al pasar el ratón.
+   * @param {string} sid   especie
+   * @param {Object|null} look  aspecto (d.look) · null = forma típica
+   * @param {Object} [o] { house: true (añade el icono de la casa: manos y pelo) }
+   */
+  V.lookStrip = (sid, look, { house = false } = {}) => {
+    const L = DK.looks, i = L.ind(sid, look), Hs = L.houses[i.house];
+    const one = (svg, tip, cls = '') => { const el = h('span', { class: 'lk-trait ' + cls, tip, 'aria-label': tip, role: 'img' }); el.innerHTML = svg; return el; };
+    const items = L.traits(i).map((tr) => one(L.icon(tr.cat, tr.key, { house: i.house, skin: Hs.skins[0] }), L.label(tr.cat, tr.key) + (tr.rare ? ' · ' + t('look.rare') : ''), (tr.rare ? 'rare ' : '') + 'c-' + tr.cat));
+    if (house) items.unshift(h('span', { class: 'lk-trait lk-house', style: { '--c': D.houseColor(i.house) }, tip: `${DK.tr('houses', D.houses[i.house])}: ${t('look.handsFur', { hands: t('look.hands.' + Hs.hands), fur: t('look.fur.' + Hs.fur) })}`, 'aria-label': DK.tr('houses', D.houses[i.house]) }, DK.icon(D.houses[i.house].icon, 15)));
+    return h('div', { class: 'lk-strip', role: 'list', 'aria-label': t('look.title') }, items);
+  };
 
   /**
    * Fila de daskai para listas.

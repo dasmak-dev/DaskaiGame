@@ -191,7 +191,7 @@
           const o = OUTCOMES[x.outcome] || OUTCOMES.fled;
           return h('div', { class: 'hist-row' },
             h('span', { class: 'hist-icon', style: { color: o.color } }, DK.icon(o.icon, 18)),
-            x.enemy ? V.sprite(x.enemy.species, { size: 36, shiny: x.enemy.shiny }) : null,
+            x.enemy ? V.sprite(x.enemy.species, { look: x.enemy.look, size: 36, shiny: x.enemy.shiny }) : null,
             h('div', { class: 'grow' },
               h('b', null, t('profile.out.' + x.outcome), ' · ', x.enemy ? `${D.species[x.enemy.species].name} ${t('common.lvl')} ${x.enemy.level}` : ''),
               h('div', { class: 'muted small' }, [D.zones[x.zone] && D.zones[x.zone].name, x.ally && t('profile.with', { name: D.species[x.ally.species].name }), x.turns && t('profile.turns', { n: x.turns })].filter(Boolean).join(' · '))),

@@ -271,7 +271,7 @@
     const heroId = e.pending || e.pos;
     const leader = !readonly && heroId && byId[heroId] ? fighter() : null;
     const hero = leader ? h('span', { class: 'exp-hero', style: { left: xOf(byId[heroId]) * 100 + '%', top: yOf(byId[heroId].row) + 'px' }, 'aria-hidden': 'true' },
-      V.sprite(leader.species, { size: compact ? 34 : 50, shiny: leader.shiny })) : null;
+      V.sprite(leader.species, { look: DK.looks.of(leader), size: compact ? 34 : 50, shiny: leader.shiny })) : null;
     // Número de piso a la izquierda y decorados (árboles, rocas, matas) en los márgenes
     const floors = compact ? [] : rows.map((r, i) => h('span', { class: 'exp-floor', style: { top: yOf(i) + 'px' }, 'aria-hidden': 'true' }, String(i + 1)));
     const decor = mapDecor(e, H, all.map((n) => [xOf(n) * 100, yOf(n.row)]), compact);
@@ -873,7 +873,7 @@
         tip: `${DK.daskai.name(d)} · ${t('common.lvl')} ${d.level} · ${t('common.hpShort')} ${d.cur.hp}/${s.hp}` + (dead ? ' · ' + t('common.fainted') : lead ? ' · ' + t('battle.nextFighter') : ' · ' + t('team.pickNext', { name: DK.daskai.name(d) })),
         onClick: pick, onKeydown: (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); pick(); } } },
         lead ? h('span', { class: 'tb-lead' }, DK.icon('swords', 11), h('span', null, t('team.fights'))) : null,
-        h('span', { class: 'tb-sprite' }, V.sprite(d.species, { size: 44, shiny: d.shiny }), dead ? h('span', { class: 'tb-ko' }, DK.icon('skull', 14)) : null),
+        h('span', { class: 'tb-sprite' }, V.sprite(d.species, { look: DK.looks.of(d), size: 44, shiny: d.shiny }), dead ? h('span', { class: 'tb-ko' }, DK.icon('skull', 14)) : null),
         h('span', { class: 'tb-body' },
           h('span', { class: 'tb-name' }, h('b', null, DK.daskai.name(d)), h('small', null, `${t('common.lvl')} ${d.level}`), d.status ? V.statusTag(d.status) : null),
           h('span', { class: 'tb-bar hp' + (hp < 25 ? ' crit' : hp < 50 ? ' mid' : '') }, h('span', { style: { width: hp + '%' } })),

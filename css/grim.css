@@ -941,3 +941,27 @@ details.inv-tgroup[open] > summary .icon:last-child { transform: rotate(90deg); 
 /* v4.45 · Crafteo: «Equipar» dentro del detalle (ya no salta una ventana al forjar) */
 .wb-equip { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid color-mix(in srgb, #22c55e 35%, transparent); border-radius: 8px; background: color-mix(in srgb, #22c55e 8%, transparent); color: #86efac; }
 .wb-equip .grow { color: var(--muted); }
+
+/* v4.47 · Aspecto de los daskai: rasgos como iconos (el nombre al pasar el ratón) */
+.lk-strip { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+.lk-trait { width: 30px; height: 30px; border-radius: 8px; display: inline-grid; place-items: center; background: color-mix(in srgb, var(--surface-2, #221a14) 85%, transparent); border: 1px solid var(--border); color: var(--muted); overflow: hidden; flex: none; cursor: help; }
+.lk-trait svg { width: 100%; height: 100%; display: block; }
+.lk-trait.c-size { color: var(--text, #ede3d1); }
+.lk-trait.c-size svg { width: 72%; height: 72%; }
+.lk-trait.rare { border-color: #8b6ad8; box-shadow: 0 0 0 1px rgba(139, 106, 216, .35), 0 0 10px -2px rgba(167, 139, 250, .55); }
+.lk-trait.lk-house { color: var(--c); border-color: color-mix(in srgb, var(--c) 55%, var(--border)); }
+.lk-trait.unseen svg { filter: brightness(0); opacity: .28; }
+:root[data-theme="light"] .lk-trait.unseen svg { opacity: .2; }
+/* Códice: forma típica, variantes vistas y colección de rasgos */
+.cx-head-art { position: relative; flex: none; }
+.cx-typ { position: absolute; right: 2px; bottom: 4px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2, #221a14); border: 1px solid var(--border); color: var(--gold, #d9b46a); cursor: help; }
+.cx-variants { display: grid; grid-template-columns: repeat(auto-fill, minmax(58px, 1fr)); gap: 6px; }
+.cx-var { display: grid; place-items: center; padding: 3px; border-radius: 10px; border: 1px solid var(--border); background: color-mix(in srgb, var(--c, #888) 6%, var(--surface-2, #221a14)); cursor: pointer; }
+.cx-var:hover { border-color: color-mix(in srgb, var(--c, #d9b46a) 60%, var(--border)); }
+.cx-var.on { border-color: var(--gold, #d9b46a); box-shadow: 0 0 0 1px var(--gold, #d9b46a) inset; }
+.cx-var.rare { box-shadow: 0 0 0 1px rgba(139, 106, 216, .5), 0 0 10px -3px rgba(167, 139, 250, .6); }
+.cx-var.typ { border-style: dashed; }
+.cx-traits { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 10px; }
+.cx-trait-cat { display: grid; gap: 8px; padding: 12px 14px; }
+.cx-trait-cat h4 { margin: 0; }
+.lk-trait.big { width: 40px; height: 40px; border-radius: 10px; }

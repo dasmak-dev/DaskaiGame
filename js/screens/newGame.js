@@ -84,11 +84,11 @@
     const picker = h('div', { class: 'st-picker', role: 'radiogroup', 'aria-label': t('newGame.pickTitle') }, starters.map((s, i) =>
       h('button', { class: 'st-pick' + (s.id === params.pick ? ' on' : ''), type: 'button', role: 'radio', 'aria-checked': String(s.id === params.pick), 'aria-label': s.name,
         tip: `${s.name} · ${DK.tr('houses', D.houses[s.house])}`, style: { '--c': D.houseColor(s.house) }, onClick: () => choose(s.id) },
-        V.sprite(s.id, { size: 52 }), h('span', { class: 'st-pick-house' }, DK.icon(D.houses[s.house].icon, 12)), h('kbd', { class: 'hotkey' }, String(i + 1)))));
+        V.sprite(s.id, { size: 52, look: params.rolls[s.id].look }), h('span', { class: 'st-pick-house' }, DK.icon(D.houses[s.house].icon, 12)), h('kbd', { class: 'hotkey' }, String(i + 1)))));
 
     const stage = h('div', { class: 'st-stage', style: { '--c': D.houseColor(sp.house) } },
       h('button', { class: 'st-arrow prev', type: 'button', 'aria-label': t('detail.prev'), onClick: () => step(-1) }, DK.icon('back', 22)),
-      h('div', { class: 'st-hero' }, h('span', { class: 'st-pedestal', 'aria-hidden': 'true' }), V.sprite(sp.id, { size: 168, cls: 'float' })),
+      h('div', { class: 'st-hero' }, h('span', { class: 'st-pedestal', 'aria-hidden': 'true' }), V.sprite(sp.id, { size: 168, cls: 'float', look: params.rolls[sp.id].look })),
       h('button', { class: 'st-arrow next', type: 'button', 'aria-label': t('detail.next'), onClick: () => step(1) }, DK.icon('next', 22)));
     // Deslizar en el móvil
     let x0 = null;
@@ -106,6 +106,7 @@
         h('span', { class: 'st-stat-bar' }, h('i', { style: { width: Math.round((ds[k] / best[k]) * 100) + '%' } })));
     }));
     const traits = h('div', { class: 'st-traits' }, V.natureInfo(dd), V.passiveInfo(dd), V.roleBadge(dd));
+    const lookRow = V.lookStrip(sp.id, dd.look, { house: true });
 
     const info = h('div', { class: 'st-info' },
       h('div', { class: 'st-title' }, h('h2', null, sp.name), V.houseBadge(sp.house)),
@@ -117,7 +118,8 @@
       // Línea evolutiva completa (los iniciales tienen tres evoluciones)
       line.length > 1 ? h('div', { class: 'st-line', 'aria-label': t('newGame.lineTitle') }, line.map((x, i) => [
         i ? h('span', { class: 'st-line-step' }, DK.icon('next', 14), h('small', null, `${t('common.lvl')} ${line[i - 1].evolve.level}`)) : null,
-        h('span', { class: 'st-line-mon' + (i ? '' : ' on'), tip: x.name }, V.sprite(x.id, { size: 44 }), h('small', null, x.name))])) : null,
+        h('span', { class: 'st-line-mon' + (i ? '' : ' on'), tip: x.name }, V.sprite(x.id, { size: 44, look: params.rolls[sp.id].look }), h('small', null, x.name))])) : null,
+      lookRow,
       traits,
       h('div', { class: 'st-stats-head' }, h('b', null, t('newGame.statsTitle')), h('span', { class: 'muted small' }, t('newGame.statsNote', { n: Math.round(DK.config.genes * 100) }))),
       stats);

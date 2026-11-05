@@ -591,7 +591,7 @@
       const fighterCard = (d, side) => {
         const s = side === 'ally' ? as : es, sp = side === 'ally' ? asp : esp;
         return h('div', { class: 'bs-fighter ' + side },
-          h('div', { class: 'bs-portrait' }, V.sprite(d.species, { size: 52, flip: side === 'ally', shiny: d.shiny })),
+          h('div', { class: 'bs-portrait' }, V.sprite(d.species, { look: DK.looks.of(d), size: 52, flip: side === 'ally', shiny: d.shiny })),
           h('div', { class: 'bs-who' },
             h('b', { class: 'bs-name' }, side === 'ally' ? DK.daskai.name(d) : st.boss ? (st.bossInfo || zone.boss).title : sp.name),
             h('div', { class: 'bs-tags' }, V.level(d.level), V.houseBadge(sp.house, { known: side === 'ally' || st.known }), V.statusTag(d.status)),
