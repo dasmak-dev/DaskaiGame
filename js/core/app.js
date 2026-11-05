@@ -51,7 +51,19 @@
 
       // Instalación como app (sólo navegadores compatibles y servido por http/https)
       window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installPrompt = e; DK.emit('app:installable'); });
-      if ('serviceWorker' in navigator && /^https?:/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(() => {});
+      // Service worker (caché sin conexión). v4.50: al llegar una versión nueva se recarga sola
+      // (antes había que recargar dos veces para ver los cambios y parecía que no se habían aplicado)
+      if ('serviceWorker' in navigator && /^https?:/.test(location.protocol)) {
+        const hadSW = !!navigator.serviceWorker.controller;
+        let reloading = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (!hadSW || reloading) return;
+          reloading = true;
+          if (DK.store.state) DK.store.flush && DK.store.flush();
+          location.reload();
+        });
+        navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((r) => r.update && r.update()).catch(() => {});
+      }
 
       DK.router.reset('mainMenu');
     },

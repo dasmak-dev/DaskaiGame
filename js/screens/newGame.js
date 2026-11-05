@@ -61,7 +61,7 @@
     // v4.46: cada inicial ya nace al entrar en esta pantalla (genes, naturaleza, pasiva y rasgo al azar),
     // así lo que ves es exactamente el daskai que te llevas
     params.rolls = params.rolls || {};
-    starters.forEach((s) => { if (!params.rolls[s.id]) params.rolls[s.id] = DK.daskai.create(s.id, DK.config.starterLevel); });
+    starters.forEach((s) => { if (!params.rolls[s.id]) params.rolls[s.id] = DK.daskai.create(s.id, DK.config.starterLevel, { starter: true }); });
     const statsOf = (id) => DK.daskai.stats(params.rolls[id]);
     const best = Object.fromEntries(D.statKeys.map((k) => [k, Math.max(...starters.map((s) => statsOf(s.id)[k]))]));
     const refresh = () => DK.router.refresh();
@@ -106,7 +106,6 @@
         h('span', { class: 'st-stat-bar' }, h('i', { style: { width: Math.round((ds[k] / best[k]) * 100) + '%' } })));
     }));
     const traits = h('div', { class: 'st-traits' }, V.natureInfo(dd), V.passiveInfo(dd), V.roleBadge(dd));
-    const lookRow = V.lookStrip(sp.id, dd.look, { house: true });
 
     const info = h('div', { class: 'st-info' },
       h('div', { class: 'st-title' }, h('h2', null, sp.name), V.houseBadge(sp.house)),
@@ -118,8 +117,14 @@
       // Línea evolutiva completa (los iniciales tienen tres evoluciones)
       line.length > 1 ? h('div', { class: 'st-line', 'aria-label': t('newGame.lineTitle') }, line.map((x, i) => [
         i ? h('span', { class: 'st-line-step' }, DK.icon('next', 14), h('small', null, `${t('common.lvl')} ${line[i - 1].evolve.level}`)) : null,
-        h('span', { class: 'st-line-mon' + (i ? '' : ' on'), tip: x.name }, V.sprite(x.id, { size: 44, look: params.rolls[sp.id].look }), h('small', null, x.name))])) : null,
-      lookRow,
+        // v4.49: las 2 últimas evoluciones son un secreto (sólo silueta); al pasar el ratón (o tocar) se ven en grande
+        (() => {
+          const secret = i > 0 && i >= line.length - 2, look = params.rolls[sp.id].look;
+          return h('span', { class: 'st-line-mon' + (i ? '' : ' on') + (secret ? ' secret' : ''), tabindex: '0', 'aria-label': secret ? t('newGame.secretEvo') : x.name },
+            V.sprite(x.id, { size: 44, look, silhouette: secret }), h('small', null, secret ? '???' : x.name),
+            h('span', { class: 'st-line-peek', 'aria-hidden': 'true' }, V.sprite(x.id, { size: 132, look, silhouette: secret }),
+              h('b', null, secret ? t('newGame.secretEvo') : x.name), h('small', null, i ? `${t('common.lvl')} ${line[i - 1].evolve.level}` : t('newGame.firstForm'))));
+        })()])) : null,
       traits,
       h('div', { class: 'st-stats-head' }, h('b', null, t('newGame.statsTitle')), h('span', { class: 'muted small' }, t('newGame.statsNote', { n: Math.round(DK.config.genes * 100) }))),
       stats);

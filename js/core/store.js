@@ -117,7 +117,7 @@
         zones: { [firstZone]: { unlocked: true, wins: 0 } },
       };
       this.migrate();
-      const d = made && made.species === starterId ? made : DK.daskai.create(starterId, DK.config.starterLevel);
+      const d = made && made.species === starterId ? made : DK.daskai.create(starterId, DK.config.starterLevel, { starter: true });
       DK.party.add(d);
       DK.settings.set('lastSlot', n);
       this.save(); this.flush();

@@ -21,6 +21,15 @@
     // Ritmo de crecimiento de cada atributo al subir de nivel (systems/daskai.js → growthWeight):
     //   especie (sus atributos fuertes crecen más) + pasivas (+/-) → multiplica los puntos por nivel
     growthBias: { species: 0.8, passive: 1.5, min: 0.45, max: 2 },
+    // Formas (v4.51): cada daskai sortea al nacer cuántas formas tendrá (1-4); el inicial siempre 4.
+    //   levels: niveles para pasar a la forma siguiente · power: fuerza base de cada forma respecto a la
+    //   primera de su línea (todas acaban igual; con menos formas empiezas más fuerte) · vis: etapa del dibujo.
+    forms: {
+      weights: { 1: 18, 2: 27, 3: 30, 4: 25 },
+      levels: { 1: [], 2: [30], 3: [22, 44], 4: [16, 34, 54] },
+      power: { 1: [1.7], 2: [1.32, 1.84], 3: [1.12, 1.48, 1.84], 4: [1, 1.26, 1.58, 1.84] },
+      vis: { 1: [2], 2: [1, 3], 3: [0, 2, 3], 4: [0, 1, 2, 3] },
+    },
     evolveBonus: { hp: 6, mp: 3, atk: 2, matk: 2, def: 2, mdef: 2, spd: 2 }, // puntos extra al evolucionar
     // Tónicos (mejora permanente de un atributo): cuánto da cada uno y cuántos admite cada daskai
     tonic: { per: { hp: 6, mp: 4, atk: 2, matk: 2, def: 2, mdef: 2, spd: 2 }, cap: 15 },

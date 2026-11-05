@@ -357,6 +357,42 @@ Se carga la última y sólo sobrescribe: paleta (piedra oscura, bronce, oro `--g
 - **Expedición:** al entrar en el mapa, el equipo, la mochila o un combate durante una expedición, `#zone-backdrop` (creado en `screens/expedition.js` con `screen:enter`) pinta detrás de todo la escena de la zona actual, oscurecida; `body.in-exp`.
 - **Combate:** la arena usa la escena de la zona (`components/scenes.js`, ahora con árboles muertos, ruinas, tumbas, cristales o tentáculos según la zona) y los **jefes tienen su propio fondo**: `DK.scenes.bossScene(zona, secreto)` → `boss_<escena>` (menhires bajo luna roja, bosque muerto, naufragio con tormenta, bosque de cristales, forja de lava, santuario con estatua, fauces del abismo, ruinas entre rayos) y `boss_secret` (cripta) para los jefes ocultos.
 
+### Cambios de la v4.51 — Formas: de 1 a 4 por daskai y crecimiento que se nota
+
+- **Crecimiento visible** (`systems/looks.js`): el encuadre de cada etapa crecía casi tanto como el cuerpo, así que las 4 formas se veían del mismo tamaño. Ahora `GROWTH = [0.68, 0.94, 1.17, 1.38]` y `VIEW_SIDE = [112, 118, 126, 136]`; además 3 de cada 4 nacen pequeños en su primera forma (`ind.baby`, con su propio azar: no cambia el resto del aspecto).
+- **Formas por daskai** (`config.forms`, `systems/daskai.js`):
+  - Al nacer cada daskai sortea cuántas formas tendrá (`d.forms`, pesos 1:18 · 2:27 · 3:30 · 4:25); el inicial siempre 4 (`create(…, { starter: true })`). Jefes y especies sin línea no tienen `d.forms` y siguen como antes; los daskai antiguos también (`formsOf` lo deduce de su línea).
+  - `d.form` = forma actual (al crearlo, según su nivel). Niveles para pasar de forma: 2 formas → 30 · 3 → 22, 44 · 4 → 16, 34, 54.
+  - **Fuerza**: `formMult(d)` = fuerza de la forma (`config.forms.power`, respecto a la primera de la línea) ÷ fuerza real de su especie. Todas acaban en 1,84; con 1 forma se queda en 1,7 desde el principio, con 2 empieza en 1,32, con 3 en 1,12 y con 4 en 1. Los salvajes lo notan a medias (raíz cuadrada) para no disparar la dificultad; al reclutarlos se ve entero.
+  - **Evolución**: `nextForm(d)` → `{ level, into, extra }`. Si su línea de especies tiene siguiente, cambia de especie; si no, es una forma de más con el mismo nombre y número (`d.extra`, `speciesName(d)` → «Hojaral II»). Con menos formas que su línea, se queda en la especie que tenga.
+  - **Dibujo**: la etapa sale de la forma (`visual(d)`, `config.forms.vis`); `DK.looks.of(d, forma)` devuelve `{ s, st, fin }` y el pixel art se guarda por etapa.
+- **Ficha** (pestaña Ataques): puntitos de formas (`.forms-pips`, «Forma 1 de 3») y avisos de «No evoluciona» (1 forma) o «Forma final».
+- Test nuevo de formas en `tests/screens.test.js`.
+
+### Cambios de la v4.50 — Cambios que no llegaban al juego y último desplegable
+
+- **Por qué no se veían las evoluciones secretas**: `js/screens/newGame.js` y los textos (`js/lang/es.js`, `en.js`) de la v4.49 no se llegaron a copiar a la carpeta del juego (se quedó la versión anterior). Se vuelven a copiar y se ha comparado el tamaño de todos los archivos con la copia de trabajo; también `data/zones.json`, que estaba desfasado (el juego usa `js/data/gen/data.js`, que sí estaba bien).
+- **Recarga automática con versión nueva** (`js/core/app.js`): el service worker sirve primero lo que tiene en caché, así que tras actualizar había que recargar dos veces. Ahora, al activarse una versión nueva (`controllerchange`), se guarda la partida y la página se recarga sola; además se registra con `updateViaCache: 'none'` y se pide `update()` al entrar.
+- **Perfil**: el título era el último `<select>` nativo; ahora es un desplegable propio en versión «en línea» (`.dd.dd-inline`, sin caja). Ya no queda ningún `<select>` en el juego.
+
+### Cambios de la v4.49 — Evoluciones secretas al elegir inicial
+
+- **«Elige tu daskai»** (`screens/newGame.js`): en la línea evolutiva, las 2 últimas evoluciones salen sólo en silueta y con «???» (`.st-line-mon.secret`).
+- Al pasar el ratón (o enfocar / tocar) cualquier forma de la línea aparece una vista grande (`.st-line-peek`, sprite de 132 px) con su nombre y nivel; en las secretas, la silueta grande y «Evolución secreta». La primera y la última se anclan al borde para no salirse en el móvil.
+- Textos: `newGame.secretEvo`, `newGame.firstForm`. El test de iniciales comprueba las dos siluetas.
+
+### Cambios de la v4.48 — Desplegables nuevos, rasgos sólo en el Códice y más aspectos
+
+- **Desplegables propios** (`DK.ui.select` en `js/core/ui.js`, CSS `.dd*` en `css/grim.css`): sustituyen al `<select>` nativo. Botón con el valor, icono opcional y flecha; lista flotante (`position: fixed`, se abre hacia arriba si no cabe) con iconos, marca en el elegido y resaltado al pasar. Teclado: ↑/↓, Inicio/Fin, Intro, Esc, Tab. Se cierra al hacer clic fuera o si la pantalla se repinta sin él. Opciones `{ value, label, icon?, color? }`; el elemento devuelto tiene `.value`. Ya llevan iconos los filtros del Códice (casa con su color, zona y estado) y la ordenación de las cajas. Estilo propio para Exilio.
+- **Rasgos sólo en el Códice**: fuera de la ficha del daskai y de «Elige tu daskai». Ajuste nuevo **«Rasgos en el Códice»** (`settings.showTraits`, **desactivado** por defecto): con él se ven la pestaña «Rasgos» y los rasgos en la ficha de especie. Las variantes vistas se ven siempre.
+- **Más aspectos** (`systems/looks.js`):
+  - Bocas: sonrisa pícara, nerviosa, hocico gatuno, dientes de sable (rara) y morritos.
+  - Cabezas: astas, cuernos de carnero, sombrero de seta (rara), flor y cresta punk.
+  - Adornos finales: orbes en órbita, runas flotantes, bufanda y corona de espinas.
+  - **Alas**: ahora son un rasgo muy raro (7 %) que sólo aparece en la ÚLTIMA evolución; su tipo depende de la casa (plumas, murciélago, aleta o cristal). En el Códice hay una categoría «Alas» (todas cuentan como raras). Se sigue gastando el mismo azar al sortear, así que los aspectos ya creados no cambian (salvo que pierden las alas si no les toca).
+- **Entrenamiento**: sin monedas para sacar con experiencia, «Sacar sin experiencia» va debajo a todo lo ancho (`.tr-actions.stacked`) en vez de aplastar el otro botón.
+- Tests: desplegables (abrir, teclado, cerrar al hacer clic fuera) y rasgos ocultos por defecto (`tests/screens.test.js`).
+
 ### Cambios de la v4.47 — Cada daskai tiene su propio aspecto
 
 - **Motor nuevo de dibujo** (`js/systems/looks.js`, `DK.looks`), que sustituye al de `systems/sprites.js` para todos los daskai (`sprites.js` sólo queda para especies con `sprite.img`).

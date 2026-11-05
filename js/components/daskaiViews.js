@@ -44,7 +44,7 @@
   V.lookStrip = (sid, look, { house = false } = {}) => {
     const L = DK.looks, i = L.ind(sid, look), Hs = L.houses[i.house];
     const one = (svg, tip, cls = '') => { const el = h('span', { class: 'lk-trait ' + cls, tip, 'aria-label': tip, role: 'img' }); el.innerHTML = svg; return el; };
-    const items = L.traits(i).map((tr) => one(L.icon(tr.cat, tr.key, { house: i.house, skin: Hs.skins[0] }), L.label(tr.cat, tr.key) + (tr.rare ? ' · ' + t('look.rare') : ''), (tr.rare ? 'rare ' : '') + 'c-' + tr.cat));
+    const items = L.traits(i, { final: L.stageOf(sid).final }).map((tr) => one(L.icon(tr.cat, tr.key, { house: i.house, skin: Hs.skins[0] }), L.label(tr.cat, tr.key) + (tr.rare ? ' · ' + t('look.rare') : ''), (tr.rare ? 'rare ' : '') + 'c-' + tr.cat));
     if (house) items.unshift(h('span', { class: 'lk-trait lk-house', style: { '--c': D.houseColor(i.house) }, tip: `${DK.tr('houses', D.houses[i.house])}: ${t('look.handsFur', { hands: t('look.hands.' + Hs.hands), fur: t('look.fur.' + Hs.fur) })}`, 'aria-label': DK.tr('houses', D.houses[i.house]) }, DK.icon(D.houses[i.house].icon, 15)));
     return h('div', { class: 'lk-strip', role: 'list', 'aria-label': t('look.title') }, items);
   };

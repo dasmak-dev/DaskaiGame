@@ -66,7 +66,7 @@
       h('h4', { class: 'row gap-s' }, DK.icon('dna', 15), t('look.variants'), h('span', { class: 'muted small' }, t('look.variantsN', { n: seen.length }))),
       seen.length ? h('div', { class: 'cx-variants' },
         h('button', { class: 'cx-var typ' + (vsel == null ? ' on' : ''), type: 'button', tip: t('look.typical') + ' · ' + t('look.boss'), 'aria-label': t('look.typical'), onClick: () => pickVariant(null) }, V.sprite(sid, { size: 50 })),
-        seen.map((s) => { const i = DK.looks.ind(sid, { s }); const rare = DK.looks.traits(i).some((x) => x.rare);
+        seen.map((s) => { const i = DK.looks.ind(sid, { s }); const rare = DK.looks.traits(i, { final: DK.looks.stageOf(sid).final }).some((x) => x.rare);
           return h('button', { class: 'cx-var' + (vsel === s ? ' on' : '') + (rare ? ' rare' : ''), type: 'button', tip: '#' + (s >>> 0).toString(16).toUpperCase().slice(-4) + (rare ? ' · ' + t('look.rare') : ''), 'aria-label': t('look.variants'), onClick: () => pickVariant(s) }, V.sprite(sid, { size: 50, look: { s } })); }))
         : h('p', { class: 'muted small' }, t('look.noVariants')));
     return h('div', { class: 'cx-sheet stack' },
@@ -75,7 +75,7 @@
           h('span', { class: 'cx-typ', tip: vsel == null ? t('look.typical') + ' · ' + t('look.boss') : t('look.variants') }, DK.icon(vsel == null ? 'crown' : 'dna', 13))),
         h('div', { class: 'stack-s' }, h('h2', null, sp.name),
           h('div', { class: 'row gap-s wrap' }, V.houseBadge(sp.house, { known: fought }), h('span', { class: 'badge cx-st st-' + info.status }, t('codex.status.' + info.status))),
-          V.lookStrip(sid, look, { house: true }),
+          DK.settings.get('showTraits') ? V.lookStrip(sid, look, { house: true }) : null,
           h('p', { class: 'muted' }, sp.desc))),
       variants,
       h('div', { class: 'cx-stats' },
@@ -113,11 +113,11 @@
     list.sort((a, b) => zoneIndex(a) - zoneIndex(b) || D.species[a].name.localeCompare(D.species[b].name));
     const filters = h('div', { class: 'cx-filters' },
       DK.ui.select({ label: t('codex.house'), value: params.house || 'all', onChange: (v) => { params.house = v; DK.router.refresh(); },
-        options: [{ value: 'all', label: t('codex.allHouses') }, ...Object.keys(D.houses).map((k) => ({ value: k, label: DK.tr('houses', D.houses[k]) }))] }),
+        options: [{ value: 'all', label: t('codex.allHouses'), icon: 'sparkles' }, ...Object.keys(D.houses).map((k) => ({ value: k, label: DK.tr('houses', D.houses[k]), icon: D.houses[k].icon, color: D.houseColor(k) }))] }),
       DK.ui.select({ label: t('codex.zone'), value: params.zone || 'all', onChange: (v) => { params.zone = v; DK.router.refresh(); },
-        options: [{ value: 'all', label: t('codex.allZones') }, ...Object.keys(D.zones).filter((k) => !D.zones[k].secretZone || DK.world.isUnlocked(k)).map((k) => ({ value: k, label: DK.world.isUnlocked(k) ? D.zones[k].name : '???' }))] }),
+        options: [{ value: 'all', label: t('codex.allZones'), icon: 'map' }, ...Object.keys(D.zones).filter((k) => !D.zones[k].secretZone || DK.world.isUnlocked(k)).map((k) => ({ value: k, label: DK.world.isUnlocked(k) ? D.zones[k].name : '???', icon: DK.world.isUnlocked(k) ? D.zones[k].icon : 'lock' }))] }),
       DK.ui.select({ label: t('codex.stateL'), value: params.state || 'all', onChange: (v) => { params.state = v; DK.router.refresh(); },
-        options: ['all', 'seen', 'fought', 'captured', 'unknown'].map((k) => ({ value: k, label: t('codex.filter.' + k) })) }));
+        options: ['all', 'seen', 'fought', 'captured', 'unknown'].map((k) => ({ value: k, label: t('codex.filter.' + k), icon: { all: 'book', seen: 'eye', fought: 'swords', captured: 'orb', unknown: 'question' }[k] })) }));
     const grid = list.length ? h('div', { class: 'cx-grid' }, list.map((s) => {
       const info = C().species(s), known = info.status !== 'unknown';
       return h('button', { class: `cx-card st-${info.status}` + (params.sel === s ? ' selected' : ''), type: 'button', style: { '--c': D.houseColor(D.species[s].house) }, onClick: () => open(s) },
@@ -238,7 +238,10 @@
     title: () => t('codex.title'), icon: 'book', section: 'codex', tutorial: 'codex', music: 'menu',
     render(params) {
       const refresh = () => DK.router.refresh();
+      // Rasgos: sólo si están activados en Ajustes (v4.48)
+      const traitsOn = !!DK.settings.get('showTraits');
       params.tab = params.tab || 'species';
+      if (params.tab === 'looks' && !traitsOn) params.tab = 'species';
       const tot = C().totals();
       const narrow = DK.ui.isNarrow();
       const open = (sid) => {
@@ -251,7 +254,7 @@
         DK.ui.drawer({ title: t('codex.title'), icon: 'book', size: 'wide', content: holder }).promise.then(() => { params.sel = null; });
       };
       const pct = (a, b) => Math.round((a / Math.max(1, b)) * 100) + '%';
-      const tabs = h('div', { class: 'inv-tabs cx-tabs' }, [['species', 'paw', t('codex.tabSpecies'), pct(tot.species, tot.speciesTotal)], ['looks', 'dna', t('look.traitsTab'), (() => { const c = DK.looks.collection(); return `${c.got}/${c.total}`; })()], ['zones', 'map', t('codex.tabZones'), Math.round(zonesPct() * 100) + '%'], ['items', 'gift', t('codex.tabItems'), pct(tot.items, tot.itemsTotal)], ['bosses', 'crown', t('codex.tabBosses'), `${tot.bosses}/${tot.bossesTotal}`], ['wiki', 'book', t('wiki.tab'), `${DK.wiki.unlocked().length}/${D.wiki.length}`]]
+      const tabs = h('div', { class: 'inv-tabs cx-tabs' }, [['species', 'paw', t('codex.tabSpecies'), pct(tot.species, tot.speciesTotal)], ...(traitsOn ? [['looks', 'dna', t('look.traitsTab'), (() => { const c = DK.looks.collection(); return `${c.got}/${c.total}`; })()]] : []), ['zones', 'map', t('codex.tabZones'), Math.round(zonesPct() * 100) + '%'], ['items', 'gift', t('codex.tabItems'), pct(tot.items, tot.itemsTotal)], ['bosses', 'crown', t('codex.tabBosses'), `${tot.bosses}/${tot.bossesTotal}`], ['wiki', 'book', t('wiki.tab'), `${DK.wiki.unlocked().length}/${D.wiki.length}`]]
         .map(([id, icon, label, n]) => h('button', { class: 'inv-tab' + (params.tab === id ? ' on' : ''), type: 'button', onClick: () => { params.tab = id; params.sel = null; params.q = ''; refresh(); } }, DK.icon(icon, 18), h('span', null, label), h('b', null, n))));
       const search = ['species', 'items', 'wiki'].includes(params.tab) ? h('input', { class: 'input inv-search', type: 'search', placeholder: params.tab === 'wiki' ? t('wiki.search') : t('codex.search'), value: params.q || '',
         onInput: (e) => { params.q = e.target.value; clearTimeout(params._qt); params._qt = setTimeout(() => { refresh(); const i = document.querySelector('.inv-search'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }, 220); } }) : null;

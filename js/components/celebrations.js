@@ -65,9 +65,10 @@
    */
   V.evolveDialog = async (d) => {
     if (!DK.daskai.canEvolve(d)) return false;
-    const into = D.species[D.species[d.species].evolve.into];
-    const stage = h('div', { class: 'evo-stage' }, V.dSprite(d, { size: 150, cls: 'evo-from' }), V.sprite(into.id, { look: DK.looks.of(d), size: 150, shiny: !!d.shiny, cls: 'evo-to' }));
-    const text = h('p', { class: 'center' }, t('evo.question', { name: DK.daskai.name(d), into: into.name }));
+    const nf = DK.daskai.nextForm(d), into = D.species[nf.into];
+    const intoName = DK.daskai.speciesName({ species: nf.into, extra: (d.extra || 0) + (nf.extra ? 1 : 0) });
+    const stage = h('div', { class: 'evo-stage' }, V.dSprite(d, { size: 150, cls: 'evo-from' }), V.sprite(into.id, { look: DK.looks.of(d, (d.form || 0) + 1), size: 150, shiny: !!d.shiny, cls: 'evo-to' }));
+    const text = h('p', { class: 'center' }, t('evo.question', { name: DK.daskai.name(d), into: intoName }));
     let evolved = false;
     const oldName = DK.daskai.name(d);
     await modal({

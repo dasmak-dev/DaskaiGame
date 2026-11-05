@@ -96,12 +96,15 @@
       };
       const look = DK.looks ? DK.looks.rollLook(speciesId, o) : null; // aspecto propio (los jefes: el típico)
       if (look) d.look = look;
+      // Formas (v4.51): cuántas tendrá (1-4, el inicial 4); los jefes y las especies sin línea siguen como antes
+      if (!o.boss && api.lineOf(speciesId).length > 1) d.forms = o.starter ? 4 : +U.weightedKey(DK.config.forms.weights, Math.random, '3');
       if (o.wild) d.wild = true;
       if (o.boss) d.boss = true;
       if (o.elite) d.elite = true;
       if (o.shiny || (o.shiny === undefined && o.wild && !o.boss && U.chance(DK.config.shinyChance))) d.shiny = true;
       for (let l = 2; l <= level; l++) applyGrowth(d);
       d.level = Math.min(level, DK.config.maxLevel);
+      if (d.forms) d.form = Math.min(d.forms - 1, DK.config.forms.levels[d.forms].filter((lv) => lv <= d.level).length);
       d.learned = movesUpTo(speciesId, d.level);
       d.moves = d.learned.slice(-DK.config.maxMoves);
       api.fullHeal(d);
@@ -133,7 +136,43 @@
     baseOf(d, k) {
       const b = D.species[d.species].base[k];
       const role = (api.roleOf(d).mods || {})[k] || 0;
-      return Math.max(1, Math.round(b * (1 + ((d.genes && d.genes[k]) || 0)) * (1 + role)));
+      return Math.max(1, Math.round(b * api.formMult(d) * (1 + ((d.genes && d.genes[k]) || 0)) * (1 + role)));
+    },
+
+    /* ---------- Formas (v4.51) ----------
+     * d.forms: cuántas formas tendrá (1-4) · d.form: en cuál está (0…) · d.extra: formas de más que su
+     * línea de especies (llevan el mismo nombre + número: «Hojaral II»).
+     * Los daskai antiguos y los jefes no tienen d.forms: siguen su línea de especies tal cual. */
+    /** Línea evolutiva de una especie (de la primera a la última). */
+    lineOf(sid) { let r = sid, i = 0; while (D.species[r].evolvedFrom && i++ < 8) r = D.species[r].evolvedFrom; const out = []; for (let c = r; c && out.length < 8; c = D.species[c].evolve && D.species[c].evolve.into) out.push(c); return out; },
+    /** { total, now } formas (las antiguas: según su línea). */
+    formsOf(d) {
+      if (d.forms) return { total: d.forms, now: d.form || 0 };
+      const line = api.lineOf(d.species);
+      return { total: Math.min(4, line.length), now: Math.min(3, Math.max(0, line.indexOf(d.species))) };
+    },
+    /** Multiplicador de la base por su forma: fuerza de la forma ÷ fuerza de su especie en la línea. */
+    formMult(d) {
+      if (!d.forms) return 1;
+      const tot = (sid) => Object.values(D.species[sid].base).reduce((a, b) => a + b, 0);
+      const root = api.lineOf(d.species)[0];
+      const want = DK.config.forms.power[d.forms][Math.min(d.form || 0, d.forms - 1)];
+      const m = want / (tot(d.species) / tot(root));
+      // Los rivales salvajes lo notan a medias (para no disparar la dificultad); al reclutarlos, entero
+      return d.wild && m > 1 ? Math.sqrt(m) : m;
+    },
+    /** Etapa del dibujo de una forma: { st, final }. */
+    visual(d, form) {
+      const f = api.formsOf(d), now = form == null ? f.now : form;
+      if (!d.forms) return null; // antiguos: la etapa sale de su especie
+      return { st: DK.config.forms.vis[f.total][Math.min(now, f.total - 1)], final: now >= f.total - 1 };
+    },
+    /** Lo que viene después: { level, into (especie), extra (forma de más con el mismo nombre) } o null. */
+    nextForm(d) {
+      if (!d.forms) { const e = D.species[d.species].evolve; return e && D.species[e.into] ? { level: e.level, into: e.into, extra: false } : null; }
+      if ((d.form || 0) >= d.forms - 1) return null;
+      const e = D.species[d.species].evolve, level = DK.config.forms.levels[d.forms][d.form || 0];
+      return e && D.species[e.into] ? { level, into: e.into, extra: false } : { level, into: d.species, extra: true };
     },
 
     /** Ritmo de crecimiento de un atributo (ver growthWeight) y su etiqueta para la interfaz. */
@@ -198,7 +237,9 @@
       return true;
     },
     /** Nombre visible (apodo o nombre de especie). */
-    name(d) { return d.nickname || D.species[d.species].name; },
+    name(d) { return d.nickname || api.speciesName(d); },
+    /** Nombre de su forma: la especie y, si tiene formas de más, su número («Hojaral II»). */
+    speciesName(d) { const ROM = ['', '', 'II', 'III', 'IV', 'V']; return D.species[d.species].name + (d.extra ? ' ' + ROM[d.extra + 1] : ''); },
     /** Cambia el apodo ('' lo elimina). */
     rename(d, nick) { d.nickname = nick ? nick.slice(0, 16) : undefined; DK.store.save(); },
 
@@ -267,7 +308,7 @@
   function statKey(d) {
     const st = DK.store.state, e = st && st.expedition;
     const eq = d.equip || [];
-    return rev + '|' + d.level + '|' + d.species + '|' + d.passive + '|' + eq[0] + '|' + eq[1] + '|' + (e ? 'x' + (e.relics || []).length + '|' + (e.corruption || 0) + (e.zone || '') + (e.depth || 1) : '-') + '|' + (st ? st.difficulty : '') + '|' + (d.stars || 0) + (d.variant || '');
+    return rev + '|' + d.level + '|' + d.species + '|' + d.passive + '|' + eq[0] + '|' + eq[1] + '|' + (e ? 'x' + (e.relics || []).length + '|' + (e.corruption || 0) + (e.zone || '') + (e.depth || 1) : '-') + '|' + (st ? st.difficulty : '') + '|' + (d.stars || 0) + (d.variant || '') + '|' + (d.form || 0) + '/' + (d.forms || 0);
   }
   api.touch = () => { rev++; };
 
@@ -400,9 +441,7 @@
     },
 
     /** ¿Puede evolucionar ahora? */
-    canEvolve(d) { const e = D.species[d.species].evolve; return !!(e && d.level >= e.level && D.species[e.into]); },
-    /** Especie a la que evolucionará (o null). */
-    nextForm(d) { const e = D.species[d.species].evolve; return e ? e : null; },
+    canEvolve(d) { const n = api.nextForm(d); return !!(n && d.level >= n.level); },
 
     /**
      * Evoluciona al daskai. Conserva nivel, ataques y proporción de vida.
@@ -413,7 +452,9 @@
       api.touch();
       const before = api.stats(d);
       const from = d.species, ratioHp = d.cur.hp / api.stats(d).hp, ratioMp = d.cur.mp / Math.max(1, api.stats(d).mp);
-      d.species = D.species[from].evolve.into;
+      const next = api.nextForm(d);
+      d.species = next.into;
+      if (d.forms) { d.form = (d.form || 0) + 1; if (next.extra) d.extra = (d.extra || 0) + 1; }
       const sp = D.species[d.species];
       if (!sp.passives.includes(d.passive) && sp.passives.length) d.passive = d.passive || sp.passives[0];
       // Además de la base de la nueva especie, evolucionar da puntos extra (más cuanto más nivel)
@@ -424,7 +465,7 @@
       const s = api.stats(d);
       d.cur.hp = Math.max(1, Math.round(s.hp * ratioHp));
       d.cur.mp = Math.round(s.mp * ratioMp);
-      const res = { from, to: d.species, learned: [], pending: [], before, after: s, bonus };
+      const res = { from, to: d.species, extra: !!next.extra, learned: [], pending: [], before, after: s, bonus };
       // ataques que la nueva forma ya debería conocer
       for (const [lv] of sp.learn) if (lv <= d.level) api.learnAt(d, lv, res);
       DK.store.state.stats.evolutions++;

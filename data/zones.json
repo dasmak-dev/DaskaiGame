@@ -6,7 +6,7 @@
     "colors": ["#86efac","#16a34a"],
     "scene": "meadow",
     "desc": "Campos abiertos donde los daskai jóvenes juegan al sol.",
-    "enemies": [["brotin",3],["chispon",3],["gotin",3],["plumin",2],["ratonchi",2],["charquito",2]],
+    "enemies": [["brotin",3],["chispon",3],["gotin",3],["plumin",2],["ratonchi",2],["charquito",2],["buhito",2],["nubecita",2]],
     "boss": {
       "species": "hojaral",
       "level": 8,
@@ -32,7 +32,7 @@
     "scene": "forest",
     "unlock": "pradera",
     "desc": "Un bosque denso donde los árboles parecen hablar.",
-    "enemies": [["musguin",3],["sombrilo",2],["hojaral",3],["lucibicho",2],["setabruja",2],["ardillama",2]],
+    "enemies": [["musguin",3],["sombrilo",2],["hojaral",3],["lucibicho",2],["setabruja",2],["ardillama",2],["cachorrel",2],["llamarin",1],["nubecita",1]],
     "boss": {
       "species": "sombrilo",
       "level": 13,
@@ -58,7 +58,7 @@
     "scene": "beach",
     "unlock": "bosque",
     "desc": "Playas y arrecifes golpeados por las olas.",
-    "enemies": [["coralin",3],["cangrejon",2],["salpicon",3],["gaviolux",2],["medusina",2],["tortuarena",2],["ratonix",1]],
+    "enemies": [["coralin",3],["cangrejon",2],["salpicon",3],["gaviolux",2],["medusina",2],["tortuarena",2],["ratonix",1],["tintillo",2],["copito",2],["serpentola",1],["sapolodo",1]],
     "boss": {
       "species": "cangrejon",
       "level": 19,
@@ -84,7 +84,7 @@
     "scene": "cave",
     "unlock": "costa",
     "desc": "Túneles oscuros iluminados por cristales.",
-    "enemies": [["murcisombra",3],["rocadon",2],["gemolito",2],["lavagusano",3],["topazio",2],["aranuria",2],["hongoscuro",1]],
+    "enemies": [["murcisombra",3],["rocadon",2],["gemolito",2],["lavagusano",3],["topazio",2],["aranuria",2],["hongoscuro",1],["cuarcito",3],["velita",2],["arbolon",1]],
     "boss": {
       "species": "gemolito",
       "level": 27,
@@ -110,7 +110,7 @@
     "scene": "volcano",
     "unlock": "cavernas",
     "desc": "Ríos de lava y ceniza ardiente.",
-    "enemies": [["magmon",3],["cenizon",2],["ignisaurio",3],["obsidiano",2],["salamandrox",2],["geyseron",2],["fogardilla",1]],
+    "enemies": [["magmon",3],["cenizon",2],["ignisaurio",3],["obsidiano",2],["salamandrox",2],["geyseron",2],["fogardilla",1],["vaporin",2],["draguijarro",2],["llamarin",1]],
     "boss": {
       "species": "ignisaurio",
       "level": 37,
@@ -136,7 +136,7 @@
     "scene": "temple",
     "unlock": "volcan",
     "desc": "Ruinas sagradas bañadas en luz dorada.",
-    "enemies": [["aurelion",2],["guardian_solar",3],["esfinxa",2],["llamasanta",3],["sacerdon",2],["golemar",2],["tortumonte",1]],
+    "enemies": [["aurelion",2],["guardian_solar",3],["esfinxa",2],["llamasanta",3],["sacerdon",2],["golemar",2],["tortumonte",1],["escarabito",2],["nevalis",1],["cangrejarca",1]],
     "boss": {
       "species": "aurelion",
       "level": 49,
@@ -162,7 +162,7 @@
     "scene": "abyss",
     "unlock": "templo",
     "desc": "Profundidades donde nunca ha llegado la luz.",
-    "enemies": [["abisalto",3],["nocturnis",2],["espectron",2],["leviatan",2],["kraknoir",2],["fuegofatuo",2]],
+    "enemies": [["abisalto",3],["nocturnis",2],["espectron",2],["leviatan",2],["kraknoir",2],["fuegofatuo",2],["dentolin",3],["tejenoche",2],["nubarron",1]],
     "boss": {
       "species": "leviatan",
       "level": 65,
@@ -188,7 +188,7 @@
     "scene": "sky",
     "unlock": "abismo",
     "desc": "La cima del mundo, morada de los daskai legendarios.",
-    "enemies": [["celestor",2],["draconyx",2],["titanor",2],["vacuo",2],["tempestis",2],["auroris",2],["petrodraco",2]],
+    "enemies": [["celestor",2],["draconyx",2],["titanor",2],["vacuo",2],["tempestis",2],["auroris",2],["petrodraco",2],["polillux",1],["tejenoche",1]],
     "boss": {
       "species": "draconyx",
       "level": 90,

@@ -65,9 +65,10 @@
       h('div', { class: 'tr-bill' },
         h('span', null, DK.icon('star', 13), ' ', h('b', null, t('train.gotExp', { n: num(p.exp) })), p.levels > 0 ? h('span', { class: 'badge good' }, t('train.levelsUp', { n: p.levels })) : null),
         h('span', { class: 'tr-fee' + (afford ? '' : ' bad'), tip: t('train.feeTip') }, t('train.fee'), ' ', DK.icon('coin', 13), ' ', num(p.fee))),
-      h('div', { class: 'row gap-s' },
+      // v4.48: sin monedas, «Sacar sin experiencia» va debajo a todo lo ancho (antes aplastaba al otro botón)
+      h('div', { class: 'tr-actions' + (afford ? '' : ' stacked') },
         btn({ icon: 'check', label: t('train.collect', { n: num(p.fee) }), variant: p.done || p.capped ? 'primary' : 'tone', disabled: !afford, tip: afford ? null : t('train.up.noMoney', { n: num(p.fee - DK.wallet.get()) }), onClick: collect, cls: 'grow' }),
-        btn({ icon: 'x', label: afford ? null : t('train.freeOut'), size: afford ? 'sm' : null, variant: 'ghost', tip: t('train.freeOutTip'), onClick: free })));
+        btn({ icon: 'x', label: afford ? null : t('train.freeOut'), size: afford ? 'sm' : null, variant: 'ghost', tip: t('train.freeOutTip'), onClick: free, cls: 'tr-free' })));
   }
 
   /** Hueco libre: botón para meter a alguien. */

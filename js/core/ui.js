@@ -471,12 +471,82 @@
     return wrap;
   }
 
-  /** Desplegable nativo. options: [{value, label}] */
-  function select({ options, value, onChange, label }) {
-    const s = h('select', { class: 'select', 'aria-label': label || '' }, options.map((o) => h('option', { value: o.value }, o.label)));
-    s.value = value;
-    s.addEventListener('change', () => onChange(s.value));
-    return s;
+  /**
+   * Desplegable propio (v4.48; antes <select> nativo, que se veía muy simple).
+   * options: [{ value, label, icon?, color? }] · Devuelve un elemento con .value.
+   * Botón con el valor y una flecha; al abrir, una lista flotante con iconos y una
+   * marca en el elegido. Teclado: ↑/↓ moverse, Intro elegir, Esc cerrar; clic fuera cierra.
+   */
+  let openDD = null;
+  // Al cambiar o repintar la pantalla se cierra la lista abierta (no quedan listas huérfanas)
+  DK.on && DK.on('screen:enter', () => { if (openDD) openDD.ifGone(); });
+  function select({ options, value, onChange, label, icon }) {
+    let cur = options.some((o) => String(o.value) === String(value)) ? value : (options[0] && options[0].value);
+    const wrap = h('div', { class: 'dd' });
+    const face = h('span', { class: 'dd-face' });
+    const button = h('button', { class: 'dd-btn select', type: 'button', 'aria-haspopup': 'listbox', 'aria-expanded': 'false', 'aria-label': label || '' },
+      face, h('span', { class: 'dd-chev', 'aria-hidden': 'true' }, DK.icon('chevronDown', 16)));
+    const optFace = (o) => [o.icon ? h('span', { class: 'dd-ic', style: o.color ? { color: o.color } : null }, DK.icon(o.icon, 15)) : null, h('span', { class: 'dd-label' }, o.label)];
+    const paint = () => { const o = options.find((x) => String(x.value) === String(cur)) || options[0]; face.replaceChildren(...(o ? optFace(o) : [])); };
+    paint();
+    wrap.append(button);
+    Object.defineProperty(wrap, 'value', { get: () => cur, set: (v) => { cur = v; paint(); } });
+
+    let list = null, idx = 0;
+    const close = (focus = true) => {
+      if (!list) return;
+      list.remove(); list = null; openDD = null;
+      wrap.classList.remove('open'); button.setAttribute('aria-expanded', 'false');
+      document.removeEventListener('pointerdown', outside, true);
+      window.removeEventListener('resize', onWin); window.removeEventListener('scroll', onWin, true);
+      if (focus) setTimeout(() => { if (button.isConnected) button.focus(); }, 0); // (diferido: que el Intro no vuelva a abrirlo)
+    };
+    const choose = (o) => { const changed = String(o.value) !== String(cur); cur = o.value; paint(); close(); if (changed) onChange(o.value); };
+    const outside = (e) => { if (list && !list.contains(e.target) && !wrap.contains(e.target)) close(false); };
+    // Al desplazar o cambiar el tamaño se recoloca (se cierra sólo si el botón ya no está en pantalla)
+    const onWin = (e) => { if (!list || (e && e.type === 'scroll' && list.contains(e.target))) return; if (!wrap.isConnected) close(false); else place(); };
+    const mark = () => [...list.children].forEach((el, i) => el.classList.toggle('active', i === idx));
+    const place = () => {
+      const r = button.getBoundingClientRect(), vh = window.innerHeight;
+      const below = vh - r.bottom - 8, above = r.top - 8, up = below < 220 && above > below;
+      list.style.minWidth = Math.round(r.width) + 'px';
+      list.style.left = Math.round(Math.min(r.left, window.innerWidth - Math.max(r.width, list.offsetWidth) - 8)) + 'px';
+      list.style.maxHeight = Math.round(Math.min(340, (up ? above : below))) + 'px';
+      if (up) { list.style.top = ''; list.style.bottom = Math.round(vh - r.top + 6) + 'px'; } else { list.style.bottom = ''; list.style.top = Math.round(r.bottom + 6) + 'px'; }
+      list.classList.toggle('up', up);
+    };
+    const open = () => {
+      if (openDD && openDD !== close) openDD(false);
+      idx = Math.max(0, options.findIndex((o) => String(o.value) === String(cur)));
+      list = h('div', { class: 'dd-list', role: 'listbox', 'aria-label': label || '', tabindex: '-1' }, options.map((o, i) =>
+        h('div', { class: 'dd-opt' + (String(o.value) === String(cur) ? ' sel' : ''), role: 'option', 'aria-selected': String(String(o.value) === String(cur)),
+          onPointerenter: () => { idx = i; mark(); }, onClick: () => choose(o) },
+          ...optFace(o), h('span', { class: 'dd-check', 'aria-hidden': 'true' }, String(o.value) === String(cur) ? DK.icon('check', 14) : null))));
+      list.addEventListener('keydown', key);
+      document.body.append(list);
+      place(); mark();
+      const a = list.children[idx]; if (a) a.scrollIntoView({ block: 'nearest' });
+      wrap.classList.add('open'); button.setAttribute('aria-expanded', 'true');
+      list.focus();
+      openDD = close; close.ifGone = () => { if (!wrap.isConnected) close(false); };
+      // Se abre con «click» (el pointerdown ya pasó): se puede escuchar ya el clic de fuera
+      document.addEventListener('pointerdown', outside, true); window.addEventListener('resize', onWin); window.addEventListener('scroll', onWin, true);
+    };
+    function key(e) {
+      if (['ArrowDown', 'ArrowUp', 'Enter', ' ', 'Escape', 'Home', 'End', 'Tab'].includes(e.key)) { e.stopPropagation(); if (e.key !== 'Tab') e.preventDefault(); }
+      if (e.key === 'ArrowDown') idx = Math.min(options.length - 1, idx + 1);
+      else if (e.key === 'ArrowUp') idx = Math.max(0, idx - 1);
+      else if (e.key === 'Home') idx = 0;
+      else if (e.key === 'End') idx = options.length - 1;
+      else if (e.key === 'Enter' || e.key === ' ') { choose(options[idx]); return; }
+      else if (e.key === 'Escape') { close(); return; }
+      else if (e.key === 'Tab') { close(false); return; }
+      else return;
+      mark(); const a = list.children[idx]; if (a) a.scrollIntoView({ block: 'nearest' });
+    }
+    button.addEventListener('click', () => (list ? close() : open()));
+    button.addEventListener('keydown', (e) => { if (['ArrowDown', 'ArrowUp'].includes(e.key) && !list) { e.preventDefault(); e.stopPropagation(); open(); } });
+    return wrap;
   }
 
   /* ---------------- Tooltips ----------------

@@ -65,9 +65,10 @@
     return h('div', { class: 'card profile-hero ph', style: { '--ph': color } },
       h('div', { class: 'ph-id' }, pic,
         h('div', { class: 'profile-id' },
-          h('label', { class: 'ph-title' }, DK.icon('award', 12),
-            h('select', { class: 'ph-title-select', 'aria-label': t('profile.title'), onChange: (e) => { p.title = e.target.value || null; save(); refresh(); } },
-              DK.avatars.titles().map((x) => h('option', { value: x.id || '', selected: (p.title || '') === (x.id || '') }, x.label)))),
+          // Título: desplegable propio (v4.50), en versión «en línea» (sin caja)
+          h('div', { class: 'ph-title' },
+            Object.assign(DK.ui.select({ label: t('profile.title'), value: p.title || '', onChange: (v) => { p.title = v || null; save(); refresh(); },
+              options: DK.avatars.titles().map((x) => ({ value: x.id || '', label: x.label, icon: 'award' })) }), { className: 'dd dd-inline ph-title-select' })),
           nameInput,
           h('div', { class: 'ph-meta' },
             h('span', null, DK.icon('clock', 12), DK.util.duration(s.playTime)),

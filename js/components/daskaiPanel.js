@@ -157,7 +157,6 @@
       h('div', { class: 'detail-sprite' }, V.dSprite(d, { size: 130, cls: 'float' })),
       h('div', { class: 'detail-info' }, nameEl,
         h('p', { class: 'muted small' }, sp.desc),
-        V.lookStrip(d.species, DK.looks.of(d), { house: true }),
         V.vitals(d, { exp: true }),
         h('p', { class: 'small muted' }, d.level >= DK.config.maxLevel ? t('detail.maxLevel') : t('detail.toNext', { n: DK.daskai.expToNext(d) - d.exp, level: d.level + 1 }))));
 
@@ -243,11 +242,15 @@
   /* ---------- Aprendizaje y evolución ---------- */
   function learnTab(d, changed) {
     const sp = D.species[d.species];
-    const evo = sp.evolve && D.species[sp.evolve.into];
+    // v4.51: la siguiente forma sale de las formas de ESTE daskai (1-4), no sólo de su especie
+    const nf = DK.daskai.nextForm(d), evo = nf && D.species[nf.into], fo = DK.daskai.formsOf(d);
+    const evoName = nf ? DK.daskai.speciesName({ species: nf.into, extra: (d.extra || 0) + (nf.extra ? 1 : 0) }) : '';
+    const pips = h('span', { class: 'forms-pips', tip: t('evo.formsTip', { n: fo.now + 1, total: fo.total }) }, Array.from({ length: fo.total }, (_, i) => h('i', { class: i <= fo.now ? 'on' : '' })));
     return h('div', null,
-      evo ? h('div', { class: 'card evo-info' }, V.sprite(evo.id, { look: DK.looks.of(d), size: 64, silhouette: d.level < sp.evolve.level, shiny: !!d.shiny }),
-        h('div', { class: 'grow' }, h('b', null, d.level >= sp.evolve.level ? t('evo.readyLong', { into: evo.name }) : t('evo.at', { n: sp.evolve.level })),
-          h('p', { class: 'muted small' }, t('evo.info'))),
+      !evo ? h('div', { class: 'card evo-info' }, pips, h('div', { class: 'grow' }, h('b', null, fo.total === 1 ? t('evo.single') : t('evo.lastForm')), h('p', { class: 'muted small' }, fo.total === 1 ? t('evo.singleInfo') : t('evo.lastInfo')))) : null,
+      evo ? h('div', { class: 'card evo-info' }, V.sprite(evo.id, { look: DK.looks.of(d, (d.form || 0) + 1), size: 64, silhouette: d.level < nf.level, shiny: !!d.shiny }),
+        h('div', { class: 'grow' }, h('b', null, d.level >= nf.level ? t('evo.readyLong', { into: evoName }) : t('evo.at', { n: nf.level })),
+          h('p', { class: 'muted small' }, pips, ' ', t('evo.formsTip', { n: fo.now + 1, total: fo.total }), ' · ', t('evo.info'))),
         DK.daskai.canEvolve(d) ? btn({ icon: 'evolve', label: t('evo.button'), variant: 'primary', onClick: async () => { if (await V.evolveDialog(d)) changed(); } }) : null) : null,
       h('div', { class: 'learn-list' }, sp.learn.map(([lv, mid]) => {
         const m = D.moves[mid];

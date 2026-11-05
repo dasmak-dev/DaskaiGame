@@ -7,7 +7,39 @@ const SCREENS = [['hub', {}], ['team', {}], ['inventory', {}], ['craft', {}], ['
 module.exports = {
   name: 'Pantallas',
   cases: [{
-    name: 'Aspecto único: se conserva al evolucionar, los jefes son la forma típica y el Códice apunta variantes y rasgos',
+    name: 'Formas: cada daskai sortea de 1 a 4 (el inicial 4); con menos formas nace más fuerte y las de más llevan número',
+    views: ['desktop'],
+    run: (browser, view) => play(browser, view, async (p) => {
+      const r = await p.evaluate(() => {
+        const D = DK.daskai, out = {};
+        out.starter = DK.party.all()[0].forms === 4;
+        const seen = new Set(); for (let i = 0; i < 200; i++) seen.add(D.create('pyrex', 5, { wild: true }).forms); out.range = seen.size === 4;
+        const mk = (f) => { const d = D.create('lumino', 5); d.forms = f; d.form = 0; d.genes = { hp: 0, mp: 0, atk: 0, matk: 0, def: 0, spd: 0, mdef: 0 }; d.role = 'equilibrado'; D.touch(); return d; };
+        out.stronger = D.baseOf(mk(1), 'atk') > D.baseOf(mk(2), 'atk') && D.baseOf(mk(2), 'atk') > D.baseOf(mk(4), 'atk');
+        const one = mk(1); one.level = 70; out.single = !D.canEvolve(one) && !D.nextForm(one);
+        const two = D.create('lumino', 40); two.forms = 2; two.form = 0; D.evolve(two); out.two = two.species === 'luminar' && two.form === 1 && !D.canEvolve(two);
+        const ex = D.create('brotin', 60); ex.species = 'arbolon'; ex.forms = 4; ex.form = 2; D.evolve(ex); out.extra = D.name(ex).endsWith(' II') && ex.species === 'arbolon';
+        return out;
+      });
+      check(Object.values(r).every(Boolean), 'formas: ' + JSON.stringify(r));
+    }),
+  }, {
+    name: 'Desplegables propios: se abren, se eligen con el teclado y cierran al hacer clic fuera',
+    views: ['desktop'],
+    run: (browser, view) => play(browser, view, async (p) => {
+      await p.evaluate(() => DK.router.reset('codex', {}));
+      await sleep(250);
+      await p.click('.cx-filters .dd-btn');
+      const opened = await p.evaluate(() => document.querySelectorAll('.dd-list .dd-opt').length);
+      await p.keyboard.press('ArrowDown'); await p.keyboard.press('Enter');
+      await sleep(250);
+      const house = await p.evaluate(() => DK.router.current().params.house);
+      await p.click('.cx-filters .dd-btn'); await p.mouse.click(5, 5); await sleep(150);
+      const closed = await p.evaluate(() => !document.querySelector('.dd-list'));
+      check(opened === 6 && house === 'luz' && closed, 'desplegable: ' + JSON.stringify({ opened, house, closed }));
+    }),
+  }, {
+    name: 'Aspecto único: se conserva al evolucionar, los jefes son la forma típica y el Códice apunta variantes y rasgos (ocultos por defecto)',
     views: ['desktop'],
     run: (browser, view) => play(browser, view, async (p) => {
       const r = await p.evaluate(async () => {
@@ -16,14 +48,18 @@ module.exports = {
         const out = { own: !!a.look && a.look.s !== b.look.s, boss: !boss.look, differ: DK.looks.svg('lumino', a.look) !== DK.looks.svg('lumino', b.look) };
         DK.party.add(a);
         const face = (d) => { const i = DK.looks.ind(d.species, d.look); return [i.eyes, i.mouth, i.ears, i.skin].join(); };
+        a.forms = 4; a.form = 0; DK.daskai.touch();
         const before = face(a); DK.daskai.evolve(a); out.evolved = a.species !== 'lumino'; out.sameFace = face(a) === before && a.look.s === DK.looks.of(a).s;
         out.seen = DK.looks.seenOf('lumino').includes(a.look.s);
+        DK.router.reset('codex', {}); await w(200);
+        out.hiddenByDefault = !document.querySelector('.cx-tabs').textContent.includes(DK.t('look.traitsTab')) && !document.querySelector('.lk-strip');
+        DK.settings.set('showTraits', true);
         DK.router.reset('codex', { sel: 'lumino' }); await w(300);
         out.variants = document.querySelectorAll('.cx-var').length >= 2;
         const tr = document.querySelector('.cx-head .lk-trait:not(.lk-house)');
         out.iconOnly = !!tr && !tr.textContent.trim() && !!tr.dataset.tip;
         DK.router.reset('codex', { tab: 'looks' }); await w(300);
-        out.traits = document.querySelectorAll('.cx-trait-cat').length === 7 && document.querySelectorAll('.cx-trait-cat .lk-trait:not(.unseen)').length > 3;
+        out.traits = document.querySelectorAll('.cx-trait-cat').length === 8 && document.querySelectorAll('.cx-trait-cat .lk-trait:not(.unseen)').length > 3;
         return out;
       });
       check(Object.values(r).every(Boolean), 'aspecto de los daskai: ' + JSON.stringify(r));
@@ -36,7 +72,8 @@ module.exports = {
         const w = (ms) => new Promise((res) => setTimeout(res, ms));
         DK.router.reset('newGame', { slot: 9, step: 'starter', name: 'Prueba' }); await w(250);
         const prm = DK.router.current().params, d = prm.rolls[prm.pick];
-        const out = { traits: !!document.querySelector('.st-traits .info-chip'), luck: document.querySelectorAll('.st-luck').length > 0 || Object.values(d.genes).every((g) => Math.abs(g) < 0.005) };
+        const secrets = [...document.querySelectorAll('.st-line-mon.secret')];
+        const out = { secret2: secrets.length === 2 && secrets.every((m) => m.querySelector(':scope > .sprite.silhouette') && m.querySelector(':scope > small').textContent === '???' && m.querySelector('.st-line-peek .sprite.silhouette')), traits: !!document.querySelector('.st-traits .info-chip'), luck: document.querySelectorAll('.st-luck').length > 0 || Object.values(d.genes).every((g) => Math.abs(g) < 0.005) };
         // Dos visitas sortean daskai distintos
         const again = DK.daskai.create(prm.pick, DK.config.starterLevel);
         out.random = JSON.stringify(again.genes) !== JSON.stringify(d.genes) || again.nature !== d.nature;
@@ -47,7 +84,7 @@ module.exports = {
         out.pixW = img.width; out.reach = maxX;
         return out;
       });
-      check(r.traits && r.luck && r.random, 'la pantalla de iniciales debería enseñar el daskai sorteado: ' + JSON.stringify(r));
+      check(r.secret2 && r.traits && r.luck && r.random, 'la pantalla de iniciales debería enseñar el daskai sorteado: ' + JSON.stringify(r));
       check(r.pixW > 64, 'el pixel art debería tener margen a los lados: ' + JSON.stringify(r));
     }),
   }, {

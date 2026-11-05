@@ -782,7 +782,7 @@ body { min-height: 100vh; min-height: 100dvh; padding-left: env(safe-area-inset-
 .st-line-mon.on small { color: var(--c); }
 .st-line-step { display: flex; flex-direction: column; align-items: center; color: var(--muted); }
 .st-line-step small { font-size: .62rem; white-space: nowrap; }
-@media (max-width: 760px) { .st-line { justify-content: center; gap: 2px; padding: 4px; } .st-line-mon { min-width: 46px; } .st-line-mon .sprite { width: 38px !important; height: 38px !important; } }
+@media (max-width: 760px) { .st-line { justify-content: center; gap: 2px; padding: 4px; } .st-line-mon { min-width: 46px; } .st-line-mon > .sprite { width: 38px !important; height: 38px !important; } }
 
 /* =============================================================
  * §14 Tipos de expedición (V.kindPicker / V.kindChip en screens/expPrepare.js)

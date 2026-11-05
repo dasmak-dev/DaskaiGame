@@ -164,7 +164,7 @@
       const nBoxes = DK.boxes.list().length;
       const rename = async () => { const v = await DK.ui.prompt(t('box.renameTitle'), { placeholder: DK.boxes.name(bi), maxlength: 24, icon: 'edit', value: box.name || '' }); if (v != null) { DK.boxes.rename(bi, v); refresh(); } };
       const sortSel = DK.ui.select({ label: t('box.sort'), value: '', onChange: (v) => { if (v) { DK.boxes.sort(bi, v); DK.audio.sfx('swap'); refresh(); } },
-        options: [{ value: '', label: t('box.sort') }, ...['level', 'house', 'species', 'name'].map((v) => ({ value: v, label: t('box.sortBy.' + v) }))] });
+        options: [{ value: '', label: t('box.sort') }, ...['level', 'house', 'species', 'name'].map((v) => ({ value: v, label: t('box.sortBy.' + v), icon: { level: 'star', house: 'sparkles', species: 'paw', name: 'edit' }[v] }))] });
 
       // Buscador y filtros (resaltan en las cajas)
       const toggleSearch = () => { params.search = !params.search; refresh(); if (params.search) setTimeout(() => { const s2 = document.querySelector('.team-filters input[type=search]'); if (s2) s2.focus(); }, 30); };

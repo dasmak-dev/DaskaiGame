@@ -22,6 +22,7 @@
     sfxVol: 0.7,
     muted: false,
     battleSpeed: 1,         // 1 | 2 | 4
+    showTraits: false,      // Códice: pestaña «Rasgos» y rasgos en la ficha (v4.48, oculto por defecto)
     bgFx: true,             // fondo animado de remolino (core/bgfx.js) fuera de la expedición
     pixelArt: true,         // daskai en pixel art (false = dibujo suave)
     autoBattle: false,      // los combates empiezan en modo automático
