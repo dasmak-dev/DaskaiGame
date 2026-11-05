@@ -7,6 +7,19 @@ const SCREENS = [['hub', {}], ['team', {}], ['inventory', {}], ['craft', {}], ['
 module.exports = {
   name: 'Pantallas',
   cases: [{
+    name: 'Elegir talento enseña los atributos ahora y con cada opción',
+    views: ['desktop'],
+    run: (browser, view) => play(browser, view, async (p) => {
+      const r = await p.evaluate(async () => {
+        const d = DK.party.all()[0]; DK.daskai.gainExp(d, 9000);
+        document.querySelectorAll('.modal-backdrop').forEach((m) => m.remove());
+        DK.views.talentDialog(d); await new Promise((res) => setTimeout(res, 300));
+        const rows = document.querySelectorAll('.tc-table tbody tr').length, ups = document.querySelectorAll('.tc-table .tc-v small.up').length;
+        return { rows, ups, n: DK.data.statKeys.length };
+      });
+      check(r.rows === r.n && r.ups >= 1, 'comparador de talentos: ' + JSON.stringify(r));
+    }),
+  }, {
     name: 'Formas: cada daskai sortea de 1 a 4 (el inicial 4); con menos formas nace más fuerte y las de más llevan número',
     views: ['desktop'],
     run: (browser, view) => play(browser, view, async (p) => {
@@ -59,7 +72,7 @@ module.exports = {
         const tr = document.querySelector('.cx-head .lk-trait:not(.lk-house)');
         out.iconOnly = !!tr && !tr.textContent.trim() && !!tr.dataset.tip;
         DK.router.reset('codex', { tab: 'looks' }); await w(300);
-        out.traits = document.querySelectorAll('.cx-trait-cat').length === 8 && document.querySelectorAll('.cx-trait-cat .lk-trait:not(.unseen)').length > 3;
+        out.traits = document.querySelectorAll('.cx-trait-cat').length === 9 && document.querySelectorAll('.cx-trait-cat .lk-trait:not(.unseen)').length > 3;
         return out;
       });
       check(Object.values(r).every(Boolean), 'aspecto de los daskai: ' + JSON.stringify(r));

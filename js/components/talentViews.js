@@ -63,6 +63,26 @@
       next <= DK.config.maxLevel ? h('p', { class: 'muted small' }, DK.icon('clock', 12), ' ', t('talent.next', { n: next })) : null);
   };
 
+  /**
+   * Atributos del daskai ahora y con cada talento (v4.52): para elegir sabiendo qué cambia.
+   * Columnas: Ahora · con A · con B (la mejora en verde y la mejor de las dos resaltada).
+   */
+  V.talentCompare = (d, tier, a, b) => {
+    const withT = (id) => { const c = JSON.parse(JSON.stringify(d)); c.talents = Object.assign({}, c.talents, { [tier]: id }); return DK.daskai.stats(c); };
+    const now = DK.daskai.stats(d), sa = withT(a), sb = withT(b);
+    const cell = (v, base, best) => { const dlt = v - base; return h('td', { class: 'tc-v' + (best && dlt > 0 ? ' best' : '') }, h('b', null, String(v)), dlt ? h('small', { class: dlt > 0 ? 'up' : 'down' }, (dlt > 0 ? '+' : '') + dlt) : null); };
+    const head = (id) => h('th', { tip: `${t(`talent.${id}.name`)} · ${V.talentText(id)}` }, DK.icon(D.talents[id].icon, 14), h('span', null, t(`talent.${id}.name`)));
+    return h('div', { class: 'tc-box' },
+      h('div', { class: 'tc-who' }, V.dSprite(d, { size: 64 }),
+        h('div', null, h('b', null, DK.daskai.name(d)), h('div', { class: 'muted small' }, `${t('common.lvl')} ${d.level} · `, DK.tr('natures', D.natures[d.nature])))),
+      h('table', { class: 'tc-table' },
+        h('thead', null, h('tr', null, h('th', null, t('detail.stats')), h('th', null, t('talent.now')), head(a), head(b))),
+        h('tbody', null, D.statKeys.map((k) => h('tr', null,
+          h('td', { class: 'tc-k' }, DK.icon(D.stats[k].icon, 14), DK.tr('stats', D.stats[k], 'short')),
+          h('td', { class: 'tc-v' }, h('b', null, String(now[k]))),
+          cell(sa[k], now[k], sa[k] - now[k] > sb[k] - now[k]), cell(sb[k], now[k], sb[k] - now[k] > sa[k] - now[k]))))));
+  };
+
   /** Ventana para elegir los talentos pendientes (tras subir de nivel). */
   V.talentDialog = async (d) => {
     while (DK.daskai.talentsPending(d).length) {
@@ -71,7 +91,8 @@
       const id = await DK.ui.modal({
         title: t('talent.title', { name: DK.daskai.name(d), level: tier }), icon: 'star', cls: 'talent-modal',
         content: (close) => h('div', { class: 'stack-s' }, h('p', { class: 'muted' }, t('talent.choose')),
-          h('div', { class: 'talent-pair big' }, [a, b].map((x) => card(x, { onPick: () => close(x) })))),
+          h('div', { class: 'talent-pair big' }, [a, b].map((x) => card(x, { onPick: () => close(x) }))),
+          V.talentCompare(d, tier, a, b)),
         actions: [{ label: t('talent.later'), icon: 'clock', variant: 'ghost', value: null }],
       }).promise;
       if (!id) return;

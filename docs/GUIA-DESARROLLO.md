@@ -357,6 +357,20 @@ Se carga la última y sólo sobrescribe: paleta (piedra oscura, bronce, oro `--g
 - **Expedición:** al entrar en el mapa, el equipo, la mochila o un combate durante una expedición, `#zone-backdrop` (creado en `screens/expedition.js` con `screen:enter`) pinta detrás de todo la escena de la zona actual, oscurecida; `body.in-exp`.
 - **Combate:** la arena usa la escena de la zona (`components/scenes.js`, ahora con árboles muertos, ruinas, tumbas, cristales o tentáculos según la zona) y los **jefes tienen su propio fondo**: `DK.scenes.bossScene(zona, secreto)` → `boss_<escena>` (menhires bajo luna roja, bosque muerto, naufragio con tormenta, bosque de cristales, forja de lava, santuario con estatua, fauces del abismo, ruinas entre rayos) y `boss_secret` (cripta) para los jefes ocultos.
 
+### Cambios de la v4.52 — Comparador de talentos y mucha más variedad de aspectos
+
+- **Elegir talento** (`components/talentViews.js`, `V.talentCompare`): la ventana muestra al daskai (dibujo, nivel, naturaleza) y una tabla con sus atributos **ahora**, **con el talento A** y **con el talento B** (lo que sube en verde, lo que baja en rojo y la mejor opción de cada atributo resaltada). Se calcula con una copia del daskai con el talento puesto. CSS `.tc-*`. Texto `talent.now`.
+- **Bug de aspectos** (`systems/looks.js`): en la v4.48 un comentario se tragó `cheeks` y `furAmt`, así que ningún daskai tenía coloretes ni el pelo/textura de su casa (humo, llamas, pelusa…). Por eso se parecían tanto. Arreglado.
+- **Rasgos nuevos** (se sortean con un azar aparte, `NEW_CHANCE` = 40 % de cambiar cada rasgo por uno nuevo, así los aspectos ya creados casi no cambian):
+  - Cuerpos: nube, pera y montículo (`BODIES2`, con su maduración en `BODY_PATH`).
+  - Ojos: mareados, enamorados, guiño, brillantes y enormes, párpado caído.
+  - Bocas: sorprendida, dientes de sierra, pompa (rara), bigote, sonrisa enorme.
+  - Cabezas: orejas de elfo, de ratón, alitas, tres cuernos, orejas de lince.
+  - Marcas: pecas, parche en el ojo, franja, remolino, lucero.
+  - **Pelo** (categoría nueva, `hairSvg`): flequillo, rizo, pinchos, coleta, patillas y perilla, con su propio color (`hairColor`).
+  - La colección del Códice suma la categoría «Pelo» y los nuevos rasgos (`ALL`, `CATS`). Textos `look.*`.
+- Tests: comparador de talentos y 9 categorías en la colección de rasgos.
+
 ### Cambios de la v4.51 — Formas: de 1 a 4 por daskai y crecimiento que se nota
 
 - **Crecimiento visible** (`systems/looks.js`): el encuadre de cada etapa crecía casi tanto como el cuerpo, así que las 4 formas se veían del mismo tamaño. Ahora `GROWTH = [0.68, 0.94, 1.17, 1.38]` y `VIEW_SIDE = [112, 118, 126, 136]`; además 3 de cada 4 nacen pequeños en su primera forma (`ind.baby`, con su propio azar: no cambia el resto del aspecto).
