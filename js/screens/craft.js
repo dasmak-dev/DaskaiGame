@@ -146,8 +146,10 @@
       DK.audio.sfx('craft');
       toast(t('craft.done', { item: it.name, n: r.qty * times }), { icon: it.icon, kind: 'good' });
       ctx.redraw();
+      // Equipo recién forjado: se ofrece equiparlo (también con el botón «Equipar» del detalle)
       if (it.category === 'equipo' && DK.party.active().length) { await V.equipChooser(it.id); ctx.redraw(); }
     };
+    const canEquip = it.category === 'equipo' && DK.bag.count(it.id) > 0 && DK.party.active().length > 0;
 
     // Qué hace
     const what = [];
@@ -185,6 +187,8 @@
       slots,
       missing.length && !plan.ok ? h('p', { class: 'wb-note' }, DK.icon('info', 13), t('craft.missingNote', { list: missing.join(', ') })) : null,
       plan.ok && !direct ? h('p', { class: 'wb-note chain' }, DK.icon('craftCog', 13), t('craft.chainInfo', { n: plan.steps.length - 1 })) : null,
+      canEquip ? h('div', { class: 'wb-equip' }, DK.icon('check', 13), h('span', { class: 'grow small' }, t('item.owned', { n: DK.bag.count(it.id) })),
+        btn({ icon: 'gem', label: t('inv.equip'), size: 'sm', variant: 'tone', cls: 'wb-equip-btn', onClick: async () => { await V.equipChooser(it.id); ctx.redraw(); } })) : null,
       h('div', { class: 'wb-foot' },
         h('div', { class: 'wb-qty' },
           h('button', { type: 'button', 'aria-label': '−', disabled: times <= 1, onClick: () => ctx.setTimes(times - 1) }, DK.icon('minus', 14)),
@@ -333,9 +337,11 @@
         if (params.mat && !narrow) detail = materialDetail(params.mat, { open: (o) => open(o) });
       }
 
+      const shownBefore = params._shown; params._shown = detail ? (params.sel || params.mat) : null;
       return h('div', { class: 'screen cr-screen wb' + (detail ? ' has-detail' : '') },
         h('div', { class: 'wb-main' }, tabsEl(), filters, body),
-        detail ? h('aside', { class: 'wb-side' },
+        // v4.46: la entrada animada sólo al abrir otro detalle (al forjar se repinta sin parpadear)
+        detail ? h('aside', { class: 'wb-side' + ((params.sel || params.mat) !== shownBefore ? ' fresh' : '') },
           h('button', { class: 'icon-btn wb-side-x', type: 'button', tip: t('common.close'), 'aria-label': t('common.close'), onClick: () => set({ sel: null, mat: null }) }, DK.icon('x', 16)),
           detail) : null);
     },

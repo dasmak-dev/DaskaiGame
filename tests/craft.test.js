@@ -4,6 +4,28 @@ const { play, sleep, check } = require('./helpers');
 module.exports = {
   name: 'Mesa de crafteo y estilos',
   cases: [{
+    name: 'Forjar o usar un objeto repinta el detalle sin volver a animarlo (no parpadea)',
+    views: ['desktop'],
+    run: (browser, view) => play(browser, view, async (p) => {
+      const r = await p.evaluate(async () => {
+        const w = (ms) => new Promise((res) => setTimeout(res, ms));
+        const rec = DK.data.recipes.find((x) => DK.data.items[x.result].category !== 'equipo');
+        Object.entries(rec.ingredients).forEach(([id, n]) => DK.bag.addHome({ [id]: n * 3 }));
+        DK.router.reset('craft', { tab: 'consum' }); await w(200);
+        [...document.querySelectorAll('.wb-tile')].find((x) => x.textContent.includes(DK.data.items[rec.result].name)).click(); await w(250);
+        const out = { openFresh: !!document.querySelector('.wb-side.fresh') };
+        document.querySelector('.wb-forge').click(); await w(300);
+        out.afterForge = !!document.querySelector('.wb-side') && !document.querySelector('.wb-side.fresh');
+        DK.bag.addHome({ pocion: 3 }); DK.party.active()[0].cur.hp = 2;
+        DK.router.reset('inventory', { item: 'pocion' }); await w(300);
+        out.invFresh = !!document.querySelector('.inv-side.fresh');
+        document.querySelector('.inv-target:not(.off) button').click(); await w(300);
+        out.afterUse = !!document.querySelector('.inv-side') && !document.querySelector('.inv-side.fresh');
+        return out;
+      });
+      check(r.openFresh && r.afterForge && r.invFresh && r.afterUse, 'el detalle sólo debería animarse al abrirlo: ' + JSON.stringify(r));
+    }),
+  }, {
     name: 'Fondo animado: sale en el campamento, no en la expedición y se apaga con su ajuste',
     views: ['desktop'],
     run: (browser, view) => play(browser, view, async (p) => {

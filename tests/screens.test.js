@@ -7,6 +7,31 @@ const SCREENS = [['hub', {}], ['team', {}], ['inventory', {}], ['craft', {}], ['
 module.exports = {
   name: 'Pantallas',
   cases: [{
+    name: 'Iniciales al azar (lo que ves es lo que te llevas) y pixel art con colas que no se cortan',
+    views: ['desktop'],
+    run: (browser, view) => play(browser, view, async (p) => {
+      const r = await p.evaluate(async () => {
+        const w = (ms) => new Promise((res) => setTimeout(res, ms));
+        DK.router.reset('newGame', { slot: 9, step: 'starter', name: 'Prueba' }); await w(250);
+        const prm = DK.router.current().params, d = prm.rolls[prm.pick];
+        const out = { traits: !!document.querySelector('.st-traits .info-chip'), luck: document.querySelectorAll('.st-luck').length > 0 || Object.values(d.genes).every((g) => Math.abs(g) < 0.005) };
+        // Dos visitas sortean daskai distintos
+        const again = DK.daskai.create(prm.pick, DK.config.starterLevel);
+        out.random = JSON.stringify(again.genes) !== JSON.stringify(d.genes) || again.nature !== d.nature;
+        // Pixel art: un daskai con cola larga ocupa más de 64 px de ancho
+        const sp = Object.values(DK.data.species).find((x) => x.id === 'draconyx') || Object.values(DK.data.species)[0];
+        const url = await DK.sprites.pixel(sp, {});
+        const img = new Image(); await new Promise((res) => { img.onload = res; img.src = url; });
+        const c = document.createElement('canvas'); c.width = img.width; c.height = img.height; const g = c.getContext('2d'); g.drawImage(img, 0, 0);
+        const px = g.getImageData(0, 0, c.width, c.height).data; let maxX = 0;
+        for (let i = 3; i < px.length; i += 4) if (px[i] > 200) maxX = Math.max(maxX, ((i - 3) / 4) % c.width);
+        out.pixW = img.width; out.reach = maxX;
+        return out;
+      });
+      check(r.traits && r.luck && r.random, 'la pantalla de iniciales debería enseñar el daskai sorteado: ' + JSON.stringify(r));
+      check(r.pixW > 64 && r.reach > 82, 'la cola debería verse en el pixel art: ' + JSON.stringify(r));
+    }),
+  }, {
     name: 'Se abren todas sin errores ni scroll horizontal',
     views: ['desktop', 'mobile'],
     run: (browser, view) => play(browser, view, async (p) => {

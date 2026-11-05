@@ -59,7 +59,7 @@ h1, h2, h3 { font-weight: 600; }
 .arena .combatant { z-index: 2; }
 
 /* ---------- 3. Pixel art ---------- */
-.sprite.pixel img.sprite-px { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; image-rendering: crisp-edges; -webkit-user-drag: none; user-select: none; }
+.sprite.pixel img.sprite-px { width: 151.52%; max-width: none; margin-left: -25.76%; justify-self: start; height: 100%; object-fit: fill; image-rendering: pixelated; image-rendering: crisp-edges; -webkit-user-drag: none; user-select: none; }
 .sprite.pixel.flip img.sprite-px { transform: scaleX(-1); }
 .sprite.pixel.silhouette img.sprite-px { filter: brightness(0); opacity: .35; }
 :root[data-theme="dark"] .sprite.pixel.silhouette img.sprite-px, :root:not([data-theme]) .sprite.pixel.silhouette img.sprite-px { filter: brightness(0) invert(1); opacity: .16; }
@@ -740,3 +740,6 @@ button.sum-goals { display: flex; align-items: center; gap: 14px; width: 100%; t
 .ach.secret .ach-icon { color: var(--muted); }
 .ach.hidden-got { border-color: color-mix(in srgb, #a855f7 50%, var(--border)); }
 .ach-hidden-tag { margin-left: 6px; background: color-mix(in srgb, #a855f7 22%, var(--surface-3)); color: #d8b4fe; }
+
+/* v4.45 · Con una hoja o ventana abierta los avisos no bloquean los clics (se ven, pero se puede pulsar lo de debajo) */
+body:has(.drawer-wrap.is-modal, .modal-backdrop) .toast { pointer-events: none; opacity: .92; }

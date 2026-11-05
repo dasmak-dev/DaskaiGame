@@ -58,11 +58,16 @@
   function renderStarter(params) {
     const starters = Object.values(D.species).filter((s) => s.starter);
     params.pick = params.pick || starters[0].id;
-    const best = Object.fromEntries(D.statKeys.map((k) => [k, Math.max(...starters.map((s) => s.base[k]))]));
+    // v4.46: cada inicial ya nace al entrar en esta pantalla (genes, naturaleza, pasiva y rasgo al azar),
+    // así lo que ves es exactamente el daskai que te llevas
+    params.rolls = params.rolls || {};
+    starters.forEach((s) => { if (!params.rolls[s.id]) params.rolls[s.id] = DK.daskai.create(s.id, DK.config.starterLevel); });
+    const statsOf = (id) => DK.daskai.stats(params.rolls[id]);
+    const best = Object.fromEntries(D.statKeys.map((k) => [k, Math.max(...starters.map((s) => statsOf(s.id)[k]))]));
     const refresh = () => DK.router.refresh();
 
     const start = () => {
-      const d = DK.store.newGame(params.slot, params.name, params.pick, params.difficulty);
+      const d = DK.store.newGame(params.slot, params.name, params.pick, params.difficulty, params.rolls[params.pick]);
       DK.audio.sfx('levelup');
       DK.router.reset('hub');
       DK.ui.toast(t('newGame.welcome', { name: DK.daskai.name(d), player: params.name }), { icon: 'sparkles', kind: 'good' });
@@ -90,11 +95,17 @@
     stage.addEventListener('touchstart', (e) => { x0 = e.touches[0].clientX; }, { passive: true });
     stage.addEventListener('touchend', (e) => { if (x0 == null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) > 45) step(dx < 0 ? 1 : -1); });
 
-    const stats = h('div', { class: 'st-stats' }, D.statKeys.map((k) =>
-      h('div', { class: 'st-stat' + (sp.base[k] === best[k] ? ' top' : ''), tip: DK.tr('stats', D.stats[k], 'desc') || DK.tr('stats', D.stats[k]) },
+    // Atributos de ESTE daskai: se resaltan los que ha sacado por encima de lo normal de su especie (genes + rasgo)
+    const dd = params.rolls[sp.id], ds = statsOf(sp.id);
+    const luck = (k) => (DK.daskai.baseOf(dd, k) - sp.base[k]) / Math.max(1, sp.base[k]);
+    const stats = h('div', { class: 'st-stats' }, D.statKeys.map((k) => {
+      const l = luck(k), pct = Math.round(l * 100);
+      return h('div', { class: 'st-stat' + (pct >= 4 ? ' top' : pct <= -4 ? ' low' : ''), tip: DK.tr('stats', D.stats[k], 'desc') || DK.tr('stats', D.stats[k]) },
         h('span', { class: 'st-stat-name' }, DK.icon(D.stats[k].icon, 14), DK.tr('stats', D.stats[k], 'short')),
-        h('b', null, sp.base[k]),
-        h('span', { class: 'st-stat-bar' }, h('i', { style: { width: Math.round((sp.base[k] / best[k]) * 100) + '%' } })))));
+        h('b', null, ds[k], pct ? h('small', { class: 'st-luck ' + (pct > 0 ? 'up' : 'down') }, (pct > 0 ? '+' : '') + pct + '%') : null),
+        h('span', { class: 'st-stat-bar' }, h('i', { style: { width: Math.round((ds[k] / best[k]) * 100) + '%' } })));
+    }));
+    const traits = h('div', { class: 'st-traits' }, V.natureInfo(dd), V.passiveInfo(dd), V.roleBadge(dd));
 
     const info = h('div', { class: 'st-info' },
       h('div', { class: 'st-title' }, h('h2', null, sp.name), V.houseBadge(sp.house)),
@@ -107,6 +118,7 @@
       line.length > 1 ? h('div', { class: 'st-line', 'aria-label': t('newGame.lineTitle') }, line.map((x, i) => [
         i ? h('span', { class: 'st-line-step' }, DK.icon('next', 14), h('small', null, `${t('common.lvl')} ${line[i - 1].evolve.level}`)) : null,
         h('span', { class: 'st-line-mon' + (i ? '' : ' on'), tip: x.name }, V.sprite(x.id, { size: 44 }), h('small', null, x.name))])) : null,
+      traits,
       h('div', { class: 'st-stats-head' }, h('b', null, t('newGame.statsTitle')), h('span', { class: 'muted small' }, t('newGame.statsNote', { n: Math.round(DK.config.genes * 100) }))),
       stats);
 

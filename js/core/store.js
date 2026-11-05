@@ -101,8 +101,9 @@
      * @param {string} name     nombre del aventurero
      * @param {string} starterId especie inicial
      * @param {string} [difficulty] id de data/difficulties.js
+     * @param {Object} [made] el inicial ya creado (pantalla de elegir: el que has visto)
      */
-    newGame(n, name, starterId, difficulty) {
+    newGame(n, name, starterId, difficulty, made) {
       const firstZone = Object.values(DK.data.zones)[0].id;
       this.slot = n;
       this.state = {
@@ -116,7 +117,7 @@
         zones: { [firstZone]: { unlocked: true, wins: 0 } },
       };
       this.migrate();
-      const d = DK.daskai.create(starterId, DK.config.starterLevel);
+      const d = made && made.species === starterId ? made : DK.daskai.create(starterId, DK.config.starterLevel);
       DK.party.add(d);
       DK.settings.set('lastSlot', n);
       this.save(); this.flush();

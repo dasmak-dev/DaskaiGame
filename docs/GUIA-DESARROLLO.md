@@ -357,6 +357,26 @@ Se carga la última y sólo sobrescribe: paleta (piedra oscura, bronce, oro `--g
 - **Expedición:** al entrar en el mapa, el equipo, la mochila o un combate durante una expedición, `#zone-backdrop` (creado en `screens/expedition.js` con `screen:enter`) pinta detrás de todo la escena de la zona actual, oscurecida; `body.in-exp`.
 - **Combate:** la arena usa la escena de la zona (`components/scenes.js`, ahora con árboles muertos, ruinas, tumbas, cristales o tentáculos según la zona) y los **jefes tienen su propio fondo**: `DK.scenes.bossScene(zona, secreto)` → `boss_<escena>` (menhires bajo luna roja, bosque muerto, naufragio con tormenta, bosque de cristales, forja de lava, santuario con estatua, fauces del abismo, ruinas entre rayos) y `boss_secret` (cripta) para los jefes ocultos.
 
+### Cambios de la v4.46 — Detalle sin parpadeo, pixel art completo e iniciales al azar
+
+- **Sin parpadeo al forjar / usar**: la entrada animada del panel de detalle (`invSideIn`) sólo se pone al abrir OTRO detalle: clase `.fresh` en `.wb-side` (`screens/craft.js`, `params._shown`) y en `.inv-side` (`screens/inventory.js`). El giro de los iconos de cabecera (`headIcon`) sólo se ve al entrar en la pantalla (`.screen.screen-enter`), no en cada repintado.
+- **Se deshace lo de la v4.45 que no se pedía**: al usar objetos de experiencia en la Bolsa vuelve a salir la ventana de subida de nivel (y la de evolución); al forjar equipo vuelve a ofrecerse equiparlo. Se mantiene el botón «Equipar» del detalle de Crafteo y la opción `quiet` de `V.afterLevel` (sin uso por ahora).
+- **Pixel art completo** (`systems/sprites.js`): colas, alas y llamas que salen del viewBox (`4 -6 112 116`) se cortaban en la versión pixelada (el SVG se ve con `overflow: visible`, la imagen no). Ahora se dibuja con `PAD` = 31,5 unidades a cada lado (lienzo 100×66, misma densidad) y `css/theme.css` ensancha la imagen (`width: 151.52%`, `margin-left: -25.76%`) para que el cuerpo quede donde estaba. 23 especies afectadas (dragones, serpientes, salamandras…).
+- **Iniciales al azar** (`screens/newGame.js`): al entrar en «Elige tu daskai» se crea ya cada inicial (`params.rolls`, con genes, naturaleza, pasiva y rasgo al azar) y la ficha enseña ESE daskai: naturaleza, pasiva, rasgo y sus atributos reales con el % sobre lo normal de su especie (`.st-luck`, resaltado `.top` / `.low`). `DK.store.newGame(…, made)` usa ese mismo daskai.
+- Tests nuevos: detalle sin `.fresh` tras forjar/usar (`tests/craft.test.js`); iniciales sorteados y cola en el pixel art (`tests/screens.test.js`).
+
+### Cambios de la v4.45 — Campamento retocado y detalle de Crafteo/Bolsa sin ventanas que lo tapen
+
+- **Portal fluido** (`components/campArt.js`): el portal tiene ahora 12 fotogramas que dan media vuelta a las bandas del vórtice (giro continuo) y una capa fija `over()` con el arco de piedra. `DK.pix.animated(name)` devuelve `over` y `animArt` (`components/camp.js`) la pinta encima como `.fr-top`. CSS: `.camp-anim.n12` y `@keyframes cf12` en `css/motion.css`; `.a-portal { --dur: 1.1s }`.
+- **Tienda grande y cuadrada**: paredes rectas, tejado a dos aguas con faldón festoneado, solapas recogidas, farolillo y banderín (lienzo 52×42, `base: 38`).
+- **Posiciones del campamento** (`SPOTS` en `components/camp.js`): en PC la tienda sube (`x 19, y 61`), el tablón se aparta (`x 40`) y el Códice baja (`y 93`), así ya no se tapan. Nuevas posiciones opcionales `xm`/`ym` para pantallas medianas (< 1100 px, escala 4): yunque y muñeco. Antorchas recolocadas.
+- **Sol y luna en el móvil**: `backdrop(tod, narrow)` usa `NARROW_BODY` para ponerlos en la franja del fondo que se ve en pantallas estrechas (arriba a la izquierda, sobre el tablón). `campScene({ tod })` acepta forzar el momento del día (pruebas).
+- **Inicio**: el botón «Gestionar» de Tu equipo es sólo el icono del lápiz (`iconOnly`).
+- **Crafteo**: al forjar equipo ya no se abre la ventana «¿Equipar ahora?». Si tienes el objeto, el detalle muestra la franja `.wb-equip` con el botón «Equipar» (`.wb-equip-btn`), que abre `V.equipChooser` cuando tú quieras.
+- **Bolsa**: usar un objeto de experiencia ya no abre la ventana de subida de nivel ni la de evolución: `V.afterLevel(d, info, { quiet: true })` sólo avisa con un toast; aprender un movimiento sí se pregunta (es una elección).
+- **Avisos**: con una hoja o ventana abierta, los toasts no capturan los clics (`css/theme.css`), para que no tapen el botón Cerrar de la hoja en el móvil.
+- Test nuevo en `tests/craft.test.js`: forjar equipo y usar un objeto de experiencia no abren ventanas.
+
 ### Cambios de la v4.44 — Icono de Crafteo «engranaje con gema» y fondo animado
 
 - **Icono `craftCog`** (`js/core/icons.js`): engranaje grueso de 10 dientes con una gema en el centro, para que no se confunda con «Ajustes». Sustituye a `craftGem` (v4.43) en todos los sitios de Crafteo; se quitan `craftGem` y `craftGear`.

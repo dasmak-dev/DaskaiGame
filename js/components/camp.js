@@ -207,15 +207,15 @@
 
   /* ---------------- Lugares del campamento ----------------
    * x, y: posición (en %) del pie del dibujo dentro de la escena.
-   * xs, ys: posición en pantallas estrechas (móvil). */
+   * xs, ys: posición en pantallas estrechas (móvil); xm, ym: en las medianas (< 1100 px), si hace falta. */
   const SPOTS = [
     { id: 'path', sprite: 'portal', screen: 'zones', nav: 'battle', x: 66, y: 55, xs: 73, ys: 45, label: () => t('scene.path'), main: true },
-    { id: 'board', sprite: 'board', screen: 'progress', nav: 'progress', x: 37, y: 57, xs: 31, ys: 43, label: () => t('scene.board') },
-    { id: 'tent', sprite: 'tent', screen: 'inventory', nav: 'inventory', x: 17, y: 70, xs: 17, ys: 66, label: () => t('scene.tent') },
-    { id: 'anvil', sprite: 'anvil', screen: 'craft', nav: 'craft', x: 82, y: 72, xs: 83, ys: 65, label: () => t('scene.anvil') },
+    { id: 'board', sprite: 'board', screen: 'progress', nav: 'progress', x: 40, y: 56, xs: 33, ys: 42, label: () => t('scene.board') },
+    { id: 'tent', sprite: 'tent', screen: 'inventory', nav: 'inventory', x: 19, y: 61, xs: 20, ys: 69, label: () => t('scene.tent') },
+    { id: 'anvil', sprite: 'anvil', screen: 'craft', nav: 'craft', x: 82, y: 72, xm: 76, ym: 78, xs: 83, ys: 65, label: () => t('scene.anvil') },
     { id: 'fire', sprite: 'fire', screen: 'team', nav: 'team', x: 50, y: 82, xs: 50, ys: 84, label: () => t('scene.fire'), fire: true },
-    { id: 'lectern', sprite: 'lectern', screen: 'codex', nav: 'codex', x: 9, y: 88, xs: 14, ys: 91, label: () => t('scene.lectern') },
-    { id: 'dummy', sprite: 'dummy', screen: 'training', nav: 'training', x: 91, y: 88, xs: 85, ys: 93, label: () => t('scene.dummy'), unlock: 'training' },
+    { id: 'lectern', sprite: 'lectern', screen: 'codex', nav: 'codex', x: 8, y: 93, xs: 14, ys: 92, label: () => t('scene.lectern') },
+    { id: 'dummy', sprite: 'dummy', screen: 'training', nav: 'training', x: 91, y: 88, xm: 89, ym: 92, xs: 81, ys: 93, label: () => t('scene.dummy'), unlock: 'training' },
   ];
 
   /** Momento del día según la hora real. */
@@ -252,10 +252,15 @@
     night: { sky: ['#050308', '#14070c', '#3d0c10'], mtn: '#1c0d12', ruin: '#0f070a', hill: '#140a0d', ground: ['#231716', '#1b1211', '#140d0c'], cloud: '#1a0a0e', cloudOp: 0.75, stars: 46, body: 'moon', bx: 298, by: 16, disc: ['#dc2626', '#ef4444', '#b91c1c'], halo: '#ef4444', haloOp: 0.45, fire: 0.6, path: ['#2a2026', '#362a2e'] },
   };
 
+  /** Posición del sol / la luna en pantallas estrechas (arriba a la izquierda, sobre el tablón). */
+  const NARROW_BODY = { day: { bx: 146, by: 22 }, dawn: { bx: 138, by: 38 }, dusk: { bx: 142, by: 30 }, night: { bx: 146, by: 20 } };
+
   /** Fondo oscuro: cielo según la hora, sol pálido o luna roja, ruinas, montañas, tierra yerma, tumbas y el camino al portal. */
-  function backdrop(tod) {
+  function backdrop(tod, narrow = false) {
     const W = 400, H = 180, HZ = 82;
-    const P = GRIM[tod] || GRIM.night;
+    let P = GRIM[tod] || GRIM.night;
+    // v4.45: en el móvil sólo se ve la franja central del fondo (x ≈ 127–273): el sol / la luna se pasan ahí
+    if (narrow) P = Object.assign({}, P, NARROW_BODY[tod] || NARROW_BODY.night);
     const s = svgEl('svg', { viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: 'xMidYMax slice', class: 'camp-bg', 'shape-rendering': 'crispEdges', 'aria-hidden': 'true' });
     const defs = svgEl('defs');
     const lg = svgEl('linearGradient', { id: 'campSky', x1: 0, y1: 0, x2: 0, y2: 1 });
@@ -331,7 +336,8 @@
     const a = DK.pix.animated && DK.pix.animated(name); if (!a) return null;
     const k = (scale * a.base) / a.frames[0].w;
     return h('span', { class: `camp-anim a-${name} n${a.frames.length}`, style: delay ? { '--d': delay + 's' } : null },
-      ...a.frames.map((cv, i) => { const el = pixSvg(cv, k, 'fr fr' + i); el.style.setProperty('--i', i); return el; }));
+      ...a.frames.map((cv, i) => { const el = pixSvg(cv, k, 'fr fr' + i); el.style.setProperty('--i', i); return el; }),
+      a.over ? pixSvg(a.over, k, 'fr-top') : null);
   }
 
   /**
@@ -340,9 +346,10 @@
    * @returns {HTMLElement}
    */
   DK.views.campScene = (o = {}) => {
-    const tod = timeOfDay();
+    const tod = o.tod || timeOfDay();
     const narrow = window.innerWidth <= 600;
-    const scale = narrow ? 2.8 : 5;
+    const mid = !narrow && window.innerWidth < 1100;
+    const scale = narrow ? 2.8 : mid ? 4 : 5;
     const nav = Object.fromEntries(DK.menus.items('nav').map((it) => [it.id, it]));
     const spots = SPOTS.map((sp) => {
       const locked = sp.unlock && !DK.unlocks.has(sp.unlock);
@@ -352,7 +359,7 @@
       const label = typeof sp.label === 'function' ? sp.label() : sp.label;
       return h('button', {
         class: `camp-spot s-${sp.id}` + (locked ? ' locked' : '') + (sp.main ? ' main' : ''), type: 'button',
-        style: { left: (narrow ? sp.xs : sp.x) + '%', top: (narrow ? sp.ys : sp.y) + '%' },
+        style: { left: (narrow ? sp.xs : mid && sp.xm != null ? sp.xm : sp.x) + '%', top: (narrow ? sp.ys : mid && sp.ym != null ? sp.ym : sp.y) + '%' },
         'aria-label': locked ? `${label} · ${t('scene.locked')}` : label,
         tip: locked ? t('unlock.trainingLocked') : label,
         onClick: () => { if (locked) { DK.audio.sfx('error'); DK.ui.toast(t('unlock.trainingLocked'), { icon: 'lock' }); return; } DK.audio.sfx('select'); if (o.onSpot) o.onSpot(sp); else DK.router.reset(sp.screen); },
@@ -371,10 +378,10 @@
     // Ascuas que suben de la hoguera, niebla baja y antorchas
     const embers = h('div', { class: 'camp-embers', 'aria-hidden': 'true', style: { left: fx + '%', top: fy + '%' } }, Array.from({ length: 16 }, (_, i) => h('i', { style: { '--dx': ((i * 37) % 60 - 30) + 'px', left: ((i * 13) % 40 - 20) + 'px', animationDelay: (i * 0.35) + 's', animationDuration: (2.6 + (i % 5) * 0.5) + 's' } })));
     const fog = h('div', { class: 'camp-fog', 'aria-hidden': 'true' }, h('i'), h('i'));
-    const torches = (narrow ? [[6, 62], [94, 60]] : [[28, 66], [74, 62], [4, 80], [97, 78]]).map(([x, y], i) =>
+    const torches = (narrow ? [[37, 62], [94, 60]] : [[31, 62], [74, 62], [3, 78], [97, 78]]).map(([x, y], i) =>
       h('span', { class: 'camp-torch', 'aria-hidden': 'true', style: { left: x + '%', top: y + '%' } }, animArt('torch', scale * 0.8, i * 0.13) || pixSvg(SPRITES.torch(0), scale * 0.8)));
     return h('section', { class: 'camp-scene grim tod-' + tod, 'aria-label': t('scene.title') },
-      backdrop(tod), fog, ...torches, embers,
+      backdrop(tod, narrow), fog, ...torches, embers,
       h('div', { class: 'camp-greet' }, h('span', { class: 'camp-greet-text' }, t('scene.greet.' + tod))),
       ...team, ...spots);
   };

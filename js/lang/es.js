@@ -47,7 +47,7 @@ DK.i18n.register('es', {
   trait: { title: 'Rasgo', statTip: 'Rasgo {name}: {n}% en este atributo' },
   newGame: {
     lineTitle: 'Línea evolutiva', 
-    strong: 'Fuerte contra {house}', weak: 'Débil contra {house}', statsTitle: 'Atributos', statsNote: 'Barra: comparado con el mejor inicial · cada daskai nace con ±{n}% y 1 de cada 5 con un rasgo que mejora sus atributos', 
+    strong: 'Fuerte contra {house}', weak: 'Débil contra {house}', statsTitle: 'Atributos', statsNote: 'Este daskai en concreto: el % es lo que ha sacado sobre lo normal de su especie (±{n}% y, a veces, un rasgo)', 
     nameTitle: 'Nuevo aventurero', pickTitle: 'Elige tu daskai',
     nameQ: '¿Cómo te llamas, aventurero?', nameHint: 'Tu partida se guardará en la ranura {slot}.',
     nameLabel: 'Nombre de aventurero', placeholder: 'Escribe tu nombre...', nameError: 'El nombre debe tener al menos 2 caracteres.',

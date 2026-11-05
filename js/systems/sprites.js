@@ -268,8 +268,14 @@
    *
    *   DK.sprites.pixel(especie, { shiny }) → Promise<dataURL>
    *   DK.sprites.pixelCached(especie, { shiny }) → dataURL | null
+   *
+   * v4.46: colas, alas y llamas que salen del viewBox (el SVG se ve con
+   * overflow visible) se cortaban en el pixel art. Ahora se dibuja con un
+   * margen de PAD unidades a cada lado (lienzo PIX_W×PIX_H, misma densidad)
+   * y css/theme.css ensancha la imagen y la centra para que el cuerpo quede igual.
    */
-  const PIX_W = 64, PIX_H = 66, LEVELS = 8;
+  const PAD = 31.5, PIX_W = 100, PIX_H = 66, LEVELS = 8;
+  const VIEW = `viewBox="${4 - PAD} -6 ${112 + PAD * 2} 116"`;
   const cache = new Map();
   const pending = new Map();
   const keyOf = (sp, shiny) => sp.id + (shiny ? '*' : '');
@@ -279,7 +285,7 @@
     if (cache.has(key)) return Promise.resolve(cache.get(key));
     if (pending.has(key)) return pending.get(key);
     if (sp.sprite && sp.sprite.img) return Promise.resolve(null);
-    const text = svg(sp, { shiny }).replace('<svg ', `<svg width="${PIX_W}" height="${PIX_H}" `);
+    const text = svg(sp, { shiny }).replace('viewBox="4 -6 112 116"', VIEW).replace('<svg ', `<svg width="${PIX_W}" height="${PIX_H}" `);
     const p = new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {

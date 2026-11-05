@@ -742,6 +742,12 @@ body { min-height: 100vh; min-height: 100dvh; padding-left: env(safe-area-inset-
 .st-stat-bar i { display: block; height: 100%; border-radius: 3px; background: var(--c); }
 .st-stat.top { border-color: color-mix(in srgb, var(--c) 60%, var(--border)); }
 .st-stat.top b { color: var(--c); }
+/* v4.46: inicial con genes al azar → % sobre lo normal de su especie y naturaleza/pasiva/rasgo */
+.st-stat.low { opacity: .85; }
+.st-luck { margin-left: 5px; font-size: .68rem; font-weight: 700; }
+.st-luck.up { color: #4ade80; } .st-luck.down { color: #f87171; }
+.st-traits { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; align-items: start; }
+.st-traits > .badge { justify-self: start; }
 .st-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 :root[data-theme="light"] .st-stat-bar { background: rgba(15, 23, 42, .12); }
 

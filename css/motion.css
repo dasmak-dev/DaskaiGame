@@ -19,7 +19,10 @@
 @keyframes cf2 { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 0; } }
 @keyframes cf3 { 0% { opacity: 1; } 33.333% { opacity: 0; } 100% { opacity: 0; } }
 @keyframes cf4 { 0% { opacity: 1; } 25% { opacity: 0; } 100% { opacity: 0; } }
-.a-fire { --dur: .56s; } .a-torch { --dur: .42s; } .a-portal { --dur: .72s; }
+.camp-anim.n12 .fr { animation: cf12 var(--dur) steps(1, end) infinite; animation-delay: calc((var(--i) / 12 - 1) * var(--dur) + var(--d)); }
+@keyframes cf12 { 0% { opacity: 1; } 8.333% { opacity: 0; } 100% { opacity: 0; } }
+.camp-anim .fr-top { position: absolute; left: 0; top: 0; }
+.a-fire { --dur: .56s; } .a-torch { --dur: .42s; } .a-portal { --dur: 1.1s; }
 .a-tent { --dur: 1.1s; } .a-anvil { --dur: 1.6s; } .a-dummy { --dur: 2.4s; }
 .a-lectern { --dur: 1.8s; } .a-board { --dur: 1.5s; }
 
@@ -69,7 +72,7 @@
 .train-slot.ready { animation: readyGlow 2.6s ease-in-out infinite; }
 @keyframes readyGlow { 50% { box-shadow: 0 0 0 1px rgba(34, 197, 94, .45), 0 0 22px -4px rgba(34, 197, 94, .45); } }
 /* Iconos de cabecera de panel: aparecen con un pequeño giro */
-.panel-head > .icon svg { animation: headIcon .5s var(--ease, ease-out) backwards; }
+.screen.screen-enter .panel-head > .icon svg { animation: headIcon .5s var(--ease, ease-out) backwards; }
 @keyframes headIcon { from { transform: rotate(-30deg) scale(.6); opacity: 0; } }
 
 /* ---------- 4. Respuesta al pulsar ---------- */

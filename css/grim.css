@@ -880,7 +880,7 @@ body.in-exp { background: #0b0807 !important; }
 /* Bolsa: el detalle sólo aparece al pulsar un objeto, con botón de cerrar — v4.41 */
 .inv-side { position: sticky; }
 .inv-side-x { position: absolute; top: 10px; right: 10px; z-index: 2; }
-.inv-main.has-detail .inv-side { animation: invSideIn .22s ease-out; }
+.inv-main.has-detail .inv-side.fresh { animation: invSideIn .22s ease-out; }
 @keyframes invSideIn { from { opacity: 0; transform: translateX(12px); } }
 :root[data-motion="reduced"] .inv-main.has-detail .inv-side { animation: none; }
 /* Iconos de objeto «gema» a color (V.itemIcon, v4.42): la caja la pone el contexto */
@@ -893,7 +893,7 @@ body.in-exp { background: #0b0807 !important; }
 .cr-screen.wb:not(.has-detail) { grid-template-columns: minmax(0, 1fr); }
 .wb-side { position: sticky; }
 .wb-side-x { position: absolute; top: 10px; right: 10px; z-index: 2; }
-.cr-screen.wb.has-detail .wb-side { animation: invSideIn .22s ease-out; }
+.cr-screen.wb.has-detail .wb-side.fresh { animation: invSideIn .22s ease-out; }
 .wb-chipset { display: inline-flex; gap: 2px; padding: 3px; border-radius: 10px; background: rgba(0, 0, 0, .25); border: 1px solid var(--border); }
 .wb-chipset .wb-chip { border: 0; padding: 5px 9px; }
 .wb-chipset .wb-chip.ico { padding: 5px 8px; }
@@ -937,3 +937,7 @@ details.inv-tgroup[open] > summary .icon:last-child { transform: rotate(90deg); 
 :root[data-motion="reduced"] .up-add { animation: none !important; }
 .inv-groups > .inv-mats-link { grid-column: 1 / -1; } .inv-mats-link b { font-size: .92rem; } .inv-mats-link .muted { font-weight: 500; }
 .inv-mats-link { justify-content: flex-start; } .inv-mats-link > span { align-items: flex-start; text-align: left; }
+
+/* v4.45 · Crafteo: «Equipar» dentro del detalle (ya no salta una ventana al forjar) */
+.wb-equip { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid color-mix(in srgb, #22c55e 35%, transparent); border-radius: 8px; background: color-mix(in srgb, #22c55e 8%, transparent); color: #86efac; }
+.wb-equip .grow { color: var(--muted); }

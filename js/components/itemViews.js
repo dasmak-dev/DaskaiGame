@@ -120,11 +120,14 @@
    * @param {Object} d
    * @param {Object} info  resultado de DK.daskai.gainExp
    */
-  V.afterLevel = async (d, info) => {
+  V.afterLevel = async (d, info, o = {}) => {
     if (!info) return;
-    if (info.levels.length) await V.levelUpDialog(d, info);
+    // quiet (v4.45, usar objetos desde la Bolsa): sin ventanas de subida de nivel ni de evolución,
+    // sólo un aviso; aprender un movimiento sí se pregunta (es una elección)
+    if (info.levels.length && !o.quiet) await V.levelUpDialog(d, info);
     for (const m of info.pending) await V.learnMovePrompt(d, m);
-    if (info.evolveReady) await V.evolveDialog(d);
+    if (info.evolveReady && !o.quiet) await V.evolveDialog(d);
+    else if (info.evolveReady) DK.ui.toast(`${DK.daskai.name(d)} · ${t('evo.ready')}`, { icon: 'evolve', kind: 'good' });
   };
 
   /** Chips de ingredientes con "tengo/necesito". */

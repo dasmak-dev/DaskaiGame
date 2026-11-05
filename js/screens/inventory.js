@@ -105,7 +105,9 @@
         DK.icon('cube', 16), h('span', null, h('b', null, t('inv.matsTitle')), h('span', { class: 'muted small' }, t('inv.matsText', { n: mats.length, q: mats.reduce((a, x) => a + x.qty, 0) }))), DK.icon('next', 16)) : null;
       const list = groups.length ? h('div', { class: 'inv-groups' }, groups, params.cat === 'all' ? matLink : null) : h('div', { class: 'stack' }, DK.ui.empty('bag', t('bag.empty'), q ? '' : t('bag.emptyText')), matLink);
 
-      const detail = !narrow && params.item ? h('aside', { class: 'card inv-side' },
+      // v4.46: la entrada animada sólo al abrir otro objeto (al usar se repinta sin parpadear)
+      const freshSide = params.item !== params._shown; params._shown = !narrow ? params.item || null : null;
+      const detail = !narrow && params.item ? h('aside', { class: 'card inv-side' + (freshSide ? ' fresh' : '') },
         h('button', { class: 'icon-btn inv-side-x', type: 'button', tip: t('common.close'), 'aria-label': t('common.close'), onClick: () => { params.item = null; refresh(); } }, DK.icon('x', 16)),
         itemPanel(params.item, refresh)) : null;
 
@@ -184,7 +186,7 @@
       const r = DK.bag.use(itemId, d);
       DK.audio.sfx(!r.ok ? 'error' : r.levelInfo ? 'levelup' : 'heal');
       toast(r.msg, { icon: r.levelInfo ? 'star' : 'flask', kind: r.ok ? 'good' : 'bad' });
-      if (r.levelInfo) { V.afterLevel(d, r.levelInfo).then(refresh); return; }
+      if (r.levelInfo) { refresh(); V.afterLevel(d, r.levelInfo).then(refresh); return; }
     } else if (it.category === 'equipo') {
       let s = slot;
       if (s == null) { s = d.equip.findIndex((x) => !x); if (s < 0) s = 0; }

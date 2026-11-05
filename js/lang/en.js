@@ -46,7 +46,7 @@ DK.i18n.register('en', {
   trait: { title: 'Trait', statTip: '{name} trait: {n}% on this stat' },
   newGame: {
     lineTitle: 'Evolution line', 
-    strong: 'Strong vs {house}', weak: 'Weak vs {house}', statsTitle: 'Stats', statsNote: 'Bar: compared to the best starter · each daskai is born ±{n}% and 1 in 5 with a trait that improves its stats', 
+    strong: 'Strong vs {house}', weak: 'Weak vs {house}', statsTitle: 'Stats', statsNote: 'This very daskai: the % is how it rolled versus its species average (±{n}% and, sometimes, a trait)', 
     nameTitle: 'New adventurer', pickTitle: 'Choose your daskai',
     nameQ: "What's your name, adventurer?", nameHint: 'Your game will be saved in slot {slot}.',
     nameLabel: 'Adventurer name', placeholder: 'Type your name...', nameError: 'The name must have at least 2 characters.',

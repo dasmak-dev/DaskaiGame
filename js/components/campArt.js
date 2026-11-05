@@ -4,15 +4,15 @@
  * Sustituye los dibujos sencillos de los lugares del campamento por
  * versiones con sombreado (luz por la izquierda), contorno oscuro,
  * texturas y VARIOS FOTOGRAMAS para animarlos:
- *   tent    tienda de lona con banderín que ondea y bajo que se mueve (3)
+ *   tent    tienda grande y cuadrada con banderín, farolillo y bajo que se mueve (3)
  *   fire    hoguera con llamas, brasas y chispas (4)
  *   anvil   yunque sobre tocón con lingote al rojo y chispas (3)
  *   dummy   muñeco de paja que se balancea (2)
  *   lectern atril con libro abierto, vela y runas que flotan (3)
  *   board   tablón con notas; una se agita con el viento (3)
- *   portal  arco de piedra con runas y un vórtice que gira (4)
+ *   portal  arco de piedra (capa fija) con runas y un vórtice que gira (12, fluido)
  *   torch   antorcha (3)
- * DK.pix.animated(name) → { frames: [lienzo…], base } (base = ancho con el
+ * DK.pix.animated(name) → { frames: [lienzo…], base, over } (over = capa fija encima; base = ancho con el
  * que se veía el dibujo antiguo, para conservar el tamaño en pantalla).
  * camp.js pinta los fotogramas apilados (.camp-anim) y css/motion.css los
  * alterna. Se carga después de camp.js.
@@ -42,39 +42,48 @@
 
   const ART = {
     /* ---------- Tienda de lona ---------- */
-    tent: { base: 26, frames: 3, draw(f) {
-      const c = canvas(44, 34);
-      // sombra en el suelo
-      c.rect(4, 31, 36, 2, 'rgba(0,0,0,.35)');
+    // v4.45: tienda de campaña grande y cuadrada (paredes rectas, tejado a dos aguas, faldón festoneado)
+    tent: { base: 38, frames: 3, draw(f) {
+      const c = canvas(52, 42);
+      const RED = ['#a32a22', '#86211b', '#5e1513'], BONE = ['#c9bba0', '#a89a80', '#6d6253'];
+      const stripe = (x, shade) => (Math.floor((x - 2) / 5) % 2 ? RED : BONE)[shade];
+      // sombra
+      c.rect(3, 39, 46, 2, 'rgba(0,0,0,.35)');
       // vientos y estacas
-      line(c, 8, 21, 2, 31, '#a8957a'); line(c, 36, 21, 42, 31, '#a8957a');
-      c.rect(1, 30, 2, 3, W.d).rect(41, 30, 2, 3, W.d);
-      // lona: franjas rojo oscuro / hueso, lado derecho en sombra
-      c.tri(22, 6, 30, 19, (x, y, hw, dx) => {
-        const stripe = Math.floor((x + 2) / 4) % 2;
-        const shade = dx > 0 ? 1 : 0, edge = dx < -hw + 2 ? 2 : 0;
-        if (stripe) return shade ? '#5e1513' : edge ? '#a32a22' : '#86211b';
-        return shade ? '#6d6253' : edge ? '#c9bba0' : '#a89a80';
-      });
-      // costuras y remiendo
-      for (let y = 9; y < 30; y += 3) c.set(22, y, '#3b1d0e');
-      c.rect(13, 20, 4, 3, '#7a6a4f').set(13, 20, '#c9bba0').set(16, 22, '#4d3f2e');
-      // bajo que ondea con el viento
-      for (let x = 4; x <= 40; x++) if ((x + f * 2) % 6 < 2) c.set(x, 30, Math.floor((x + 2) / 4) % 2 ? '#5e1513' : '#6d6253');
-      // entrada con luz cálida dentro
-      c.tri(22, 14, 30, 6, (x, y, hw, dx) => (y > 26 ? (f === 1 ? '#7c3a0e' : '#6a300c') : y > 22 ? '#2a1408' : '#140a05'));
-      c.rect(20, 27, 4, 2, f === 1 ? '#f59e0b' : '#d97706').set(21, 26, '#fde68a');
-      // solapa recogida
-      c.tri(17, 15, 29, 3, (x, y, hw, dx) => (dx < 0 ? '#c9bba0' : '#a89a80'));
-      line(c, 16, 22, 19, 22, '#5c3a1c');
-      // mástil y banderín que ondea
-      c.rect(22, 0, 1, 7, W.d);
-      for (let x = 0; x < 8; x++) {
-        const off = Math.round(Math.sin((x + f * 2) * 0.9) * (x / 5));
-        const h = Math.max(1, 3 - Math.floor(x / 4));
-        c.rect(23 + x, 1 + off, 1, h, x % 3 === 2 ? '#7f1d1d' : '#b91c1c');
+      line(c, 5, 18, 0, 39, '#a8957a'); line(c, 46, 18, 51, 39, '#a8957a');
+      c.rect(0, 38, 2, 3, W.d).rect(50, 38, 2, 3, W.d);
+      // paredes rectas (lado derecho en sombra)
+      for (let y = 19; y <= 38; y++) for (let x = 6; x <= 45; x++) c.set(x, y, stripe(x, x < 9 ? 0 : x > 36 ? 2 : 1));
+      // tejado a dos aguas (trapecio) con el alero que sobresale
+      for (let y = 7; y <= 18; y++) {
+        const k = (y - 7) / 11, x0 = Math.round(13 - k * 10), x1 = Math.round(38 + k * 10);
+        for (let x = x0; x <= x1; x++) c.set(x, y, stripe(x, y < 9 ? 0 : x > 36 ? 2 : x < 16 ? 0 : 1));
       }
-      c.set(23, 1, '#fca5a5');
+      c.rect(13, 7, 26, 1, '#e3d6bb');
+      // faldón festoneado bajo el alero
+      for (let x = 3; x <= 48; x++) { c.set(x, 19, '#3b1d0e'); if (x % 4 !== 0) c.set(x, 20, (Math.floor(x / 4) % 2 ? RED : BONE)[1]); }
+      // costuras y remiendo
+      for (let y = 22; y < 38; y += 3) { c.set(6, y, '#3b1d0e'); c.set(45, y, '#2a140a'); }
+      c.rect(10, 27, 4, 3, '#7a6a4f').set(10, 27, '#c9bba0').set(13, 29, '#4d3f2e');
+      // bajo que ondea con el viento
+      for (let x = 6; x <= 45; x++) if ((x + f * 2) % 6 < 2) c.set(x, 38, stripe(x, 2));
+      // entrada con luz cálida dentro y solapas recogidas
+      c.rect(20, 23, 12, 16, '#140a05').rect(21, 30, 10, 9, '#2a1408').rect(22, 34, 8, 5, f === 1 ? '#7c3a0e' : '#6a300c');
+      c.rect(24, 36, 4, 2, f === 1 ? '#f59e0b' : '#d97706').set(25, 35, '#fde68a');
+      c.tri(19, 22, 34, 3, (x, y, hw, dx) => (dx < 0 ? '#c9bba0' : '#a89a80'));
+      c.tri(32, 22, 34, 3, (x, y, hw, dx) => (dx > 0 ? '#6d6253' : '#a89a80'));
+      line(c, 17, 29, 21, 29, W.d); line(c, 31, 29, 35, 29, W.d);
+      // farolillo junto a la puerta
+      c.rect(35, 23, 1, 2, W.dd).rect(34, 25, 3, 3, '#3b2414').set(35, 26, ['#fbbf24', '#fde68a', '#f59e0b'][f]);
+      // postes de las esquinas y mástil con banderín
+      c.rect(12, 4, 1, 4, W.d).rect(39, 4, 1, 4, W.d).set(12, 3, W.l).set(39, 3, W.l);
+      c.rect(25, 0, 1, 8, W.d);
+      for (let x = 0; x < 9; x++) {
+        const off = Math.round(Math.sin((x + f * 2) * 0.9) * (x / 5));
+        const hh = Math.max(1, 3 - Math.floor(x / 4));
+        c.rect(26 + x, 1 + off, 1, hh, x % 3 === 2 ? '#7f1d1d' : '#b91c1c');
+      }
+      c.set(26, 1, '#fca5a5');
       return outline(c);
     } },
 
@@ -215,38 +224,47 @@
     } },
 
     /* ---------- Portal de piedra ---------- */
-    portal: { base: 26, frames: 4, draw(f) {
-      const c = canvas(38, 44);
-      c.rect(2, 42, 34, 2, 'rgba(0,0,0,.4)');
-      // vórtice que gira
-      const cx = 19, cy = 26;
-      for (let y = 11; y <= 41; y++) for (let x = 9; x <= 28; x++) {
-        const dx = (x - cx) / 10, dy = (y - cy) / 15, r = Math.sqrt(dx * dx + dy * dy);
-        if (r > 1.02) continue;
-        const a = Math.atan2(dy, dx) + r * 5 - f * (Math.PI / 2);
-        const band = (Math.sin(a * 2) + 1) / 2;
-        const col = r < 0.18 ? '#fef3c7' : r < 0.35 ? (band > 0.5 ? '#fde68a' : '#fb923c') : r < 0.7 ? (band > 0.5 ? '#f97316' : '#dc2626') : (band > 0.55 ? '#b91c1c' : '#5b0f12');
-        c.set(x, y, col);
-      }
-      // pilares de bloques con mortero
-      const pillar = (x0) => {
-        c.rect(x0, 10, 7, 32, STONE.m).rect(x0, 10, 1, 32, STONE.l).rect(x0 + 6, 10, 1, 32, STONE.dd);
-        for (let y = 10; y < 42; y += 5) { c.rect(x0, y, 7, 1, STONE.d); c.set(x0 + ((y / 5) % 2 ? 3 : 4), y + 2, STONE.d); }
-      };
-      pillar(2); pillar(29);
-      c.rect(1, 39, 9, 3, STONE.d).rect(28, 39, 9, 3, STONE.d).rect(1, 39, 9, 1, STONE.m).rect(28, 39, 9, 1, STONE.m);
-      // dintel y piedra angular
-      c.rect(0, 5, 38, 6, STONE.m).rect(0, 5, 38, 1, STONE.l).rect(0, 10, 38, 1, STONE.dd);
-      [9, 19, 28].forEach((x) => c.rect(x, 5, 1, 6, STONE.d));
-      c.rect(14, 0, 10, 6, STONE.m).rect(14, 0, 10, 1, STONE.l).rect(23, 0, 1, 6, STONE.dd);
-      // musgo
-      [[3, 11], [4, 12], [33, 14], [34, 13], [8, 5], [27, 5], [2, 30], [35, 33]].forEach(([x, y]) => c.set(x, y, '#3f5a2a'));
-      // runas que laten en los pilares y la clave
-      const on = ['#f97316', '#fb923c', '#fdba74', '#fb923c'][f];
-      [[5, 16], [5, 24], [5, 32], [32, 16], [32, 24], [32, 32]].forEach(([x, y], i) => c.rect(x, y, 1, 3, (i + f) % 2 ? on : '#7c2d12').set(x - 1, y + 1, (i + f) % 2 ? on : '#7c2d12'));
-      c.rect(18, 2, 2, 2, on).set(17, 3, '#fde047');
-      return outline(c);
-    } },
+    portal: { base: 26, frames: 12, size: [38, 44],
+      // v4.45: el arco de piedra va en una capa fija (over) y sólo el vórtice y las runas cambian,
+      // en 12 fotogramas que dan media vuelta a las bandas → giro continuo y fluido
+      draw(f) {
+        const c = canvas(38, 44);
+        c.rect(2, 42, 34, 2, 'rgba(0,0,0,.4)');
+        const cx = 19, cy = 26, N = 12;
+        const pulse = 0.5 + 0.5 * Math.cos((f / N) * Math.PI * 2);
+        for (let y = 11; y <= 41; y++) for (let x = 9; x <= 28; x++) {
+          const dx = (x - cx) / 10, dy = (y - cy) / 15, r = Math.sqrt(dx * dx + dy * dy);
+          if (r > 1.02) continue;
+          const a = Math.atan2(dy, dx) + r * 5 - (f / N) * Math.PI;
+          const band = (Math.sin(a * 2) + 1) / 2;
+          const core = 0.16 + pulse * 0.05;
+          const col = r < core ? '#fef3c7' : r < 0.35 ? (band > 0.5 ? '#fde68a' : '#fb923c') : r < 0.7 ? (band > 0.5 ? '#f97316' : '#dc2626') : (band > 0.55 ? '#b91c1c' : '#5b0f12');
+          c.set(x, y, col);
+        }
+        // runas que laten en los pilares y la clave (encima del arco)
+        const on = ['#7c2d12', '#9a3412', '#c2410c', '#ea580c', '#f97316', '#fb923c', '#fdba74', '#fb923c', '#f97316', '#ea580c', '#c2410c', '#9a3412'];
+        [[5, 16], [5, 24], [5, 32], [32, 16], [32, 24], [32, 32]].forEach(([x, y], i) => { const col = on[(f + i * 2) % N]; c.rect(x, y, 1, 3, col).set(x - 1, y + 1, col); });
+        c.rect(18, 2, 2, 2, on[(f + 6) % N]).set(17, 3, '#fde047');
+        return c;
+      },
+      over() {
+        const c = canvas(38, 44);
+        const pillar = (x0) => {
+          c.rect(x0, 10, 7, 32, STONE.m).rect(x0, 10, 1, 32, STONE.l).rect(x0 + 6, 10, 1, 32, STONE.dd);
+          for (let y = 10; y < 42; y += 5) { c.rect(x0, y, 7, 1, STONE.d); c.set(x0 + ((y / 5) % 2 ? 3 : 4), y + 2, STONE.d); }
+        };
+        pillar(2); pillar(29);
+        c.rect(1, 39, 9, 3, STONE.d).rect(28, 39, 9, 3, STONE.d).rect(1, 39, 9, 1, STONE.m).rect(28, 39, 9, 1, STONE.m);
+        c.rect(0, 5, 38, 6, STONE.m).rect(0, 5, 38, 1, STONE.l).rect(0, 10, 38, 1, STONE.dd);
+        [9, 19, 28].forEach((x) => c.rect(x, 5, 1, 6, STONE.d));
+        c.rect(14, 0, 10, 6, STONE.m).rect(14, 0, 10, 1, STONE.l).rect(23, 0, 1, 6, STONE.dd);
+        [[3, 11], [4, 12], [33, 14], [34, 13], [8, 5], [27, 5], [2, 30], [35, 33]].forEach(([x, y]) => c.set(x, y, '#3f5a2a'));
+        outline(c);
+        // huecos de las runas (se ven las de los fotogramas por debajo)
+        [[5, 16], [5, 24], [5, 32], [32, 16], [32, 24], [32, 32]].forEach(([x, y]) => { for (let k = 0; k < 3; k++) c.g[y + k][x] = null; c.g[y + 1][x - 1] = null; });
+        c.g[2][18] = c.g[2][19] = c.g[3][18] = c.g[3][19] = c.g[3][17] = null;
+        return c;
+      } },
 
     /* ---------- Antorcha ---------- */
     torch: { base: 8, frames: 3, draw(f) {
@@ -264,7 +282,7 @@
   /** Fotogramas de un dibujo animado (en caché). */
   DK.pix.animated = (name) => {
     const a = ART[name]; if (!a) return null;
-    if (!cache[name]) cache[name] = { base: a.base, frames: Array.from({ length: a.frames }, (_, i) => a.draw(i)) };
+    if (!cache[name]) cache[name] = { base: a.base, frames: Array.from({ length: a.frames }, (_, i) => a.draw(i)), over: a.over ? a.over() : null };
     return cache[name];
   };
   DK.pix.outline = outline;
