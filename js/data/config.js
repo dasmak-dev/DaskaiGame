@@ -103,11 +103,17 @@
        *   capture   + probabilidad de vínculo · recruit  + candidatos en cada nodo de reclutas
        *   coins / exp  +% de monedas / experiencia · levels  + niveles de los rivales
        *   emblems   emblemas extra por cada jefe · needsBoss  hace falta haber vencido a algún jefe */
+      // Curar al equipo con monedas antes de salir (Batalla): caro a propósito
+      //   coste = Σ (vida que falta × perHp + maná que falta × perMp + fainted si está debilitado) × (1 + nivel × perLevel)
+      healCoins: { perHp: 3, perMp: 1.5, fainted: 200, perLevel: 0.03, round: 10 },
       kinds: {
         normal: { icon: 'compass', chance: 50, weights: {} },
         captura: { icon: 'paw', chance: 16, sizes: ['short'], weights: { recruit: 6, fight: 1.3, elite: 0.3, event: 0.6, treasure: 0.6, shop: 0.7, shrine: 0.4, cave: 0 }, minRecruits: 6, multiRecruit: true, recruit: 1, shiny: 0.04, coins: -0.3 },
         combate: { icon: 'swords', chance: 16, weights: { fight: 2.4, elite: 2, event: 0.3, recruit: 0.4, treasure: 0.5, shop: 0.7, shrine: 0.6 }, minElites: 2, coins: 0.3, exp: 0.25 },
-        tesoro: { icon: 'gift', chance: 12, weights: { treasure: 3, event: 1.6, shop: 1.6, cave: 2, fight: 0.6, elite: 0.6 }, coins: 0.2, levels: 1 },
+        // Tesoro: MUY rara (1%) pero muy buena: mínimo 5 cofres, cofres con +2 objetos, raros, reliquias épicas,
+        // ×2,5 monedas y runa extra; +100% monedas en todo el mapa y +1 emblema por jefe
+        tesoro: { icon: 'gift', chance: 1, weights: { treasure: 5, event: 1.2, shop: 1.4, cave: 2.5, fight: 0.5, elite: 0.5 }, minTreasures: 5, coins: 1, levels: 1, emblems: 1,
+          chest: { items: 2, rare: 0.8, relic: 0.35, rune: 0.5, coins: 2.5 } },
         // El Abismo (DK.abyss): no sale al azar; se elige en Batalla
         abismo: { icon: 'moon', chance: 0, special: true, sizes: ['abyss'], weights: { elite: 2, fight: 1.4, event: 0.6, recruit: 0.4, treasure: 0.8, shop: 0.8, cave: 0 }, minElites: 1 },
         desafio: { icon: 'skull', chance: 6, sizes: ['short'], weights: { elite: 4, fight: 0.8, event: 0.3, recruit: 0.2, treasure: 0.5, shop: 0.8 }, minElites: 3, levels: 3, emblems: 1, coins: 0.2, needsBoss: true },

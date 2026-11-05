@@ -101,8 +101,9 @@
       if ((outcome === 'completed' || (e.depth || 1) > 1) && !r.rewarded) {
         r.rewarded = true;
         DK.store.state.emblems = DK.camp.emblems() + CFG.reward.emblems;
-        const rune = DK.runes.roll1(DK.runes.roll(1)[0], CFG.reward.runeTier, Math.random, 'm');
-        DK.runes.add(rune);
+        // Runa sólo si tienes el Taller de runas (hasta tu tier)
+        const rune = DK.runes.enabled() ? DK.runes.roll1(DK.runes.roll(1)[0], CFG.reward.runeTier, Math.random, 'm') : null;
+        if (rune) DK.runes.add(rune);
         reward = { emblems: CFG.reward.emblems, rune };
       }
       // Sólo las últimas semanas

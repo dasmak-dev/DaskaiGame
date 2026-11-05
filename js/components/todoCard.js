@@ -64,7 +64,7 @@
       return free > 0 && idle ? { id: 'trainFree', icon: 'dumbbell', kind: '', text: tn('todo.trainFree', free), cta: t('todo.see'), run: go('training') } : null;
     },
     // Recetas que se pueden fabricar ya
-    () => { const n = D.recipes.filter((r) => DK.crafting.canCraft(r)).length; return n ? { id: 'craft', icon: 'anvil', kind: '', text: tn('todo.craft', n), cta: t('todo.see'), run: go('craft') } : null; },
+    () => { const n = D.recipes.filter((r) => DK.crafting.canCraft(r)).length; return n ? { id: 'craft', icon: 'craftCog', kind: '', text: tn('todo.craft', n), cta: t('todo.see'), run: go('craft') } : null; },
   ];
 
   DK.todo = {

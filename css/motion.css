@@ -5,6 +5,7 @@
  *   3. Iconos importantes: monedas, emblemas, campana, avisos, accesos.
  *   4. Respuesta al pulsar (js/core/fx.js: .is-pressed).
  *   5. Entrada suave de las pantallas.
+ *   6. Fondo animado de remolino (js/core/bgfx.js).
  * Con «Reducir animaciones» (data-motion="reduced") se apaga todo.
  * ============================================================= */
 
@@ -79,6 +80,15 @@
 .screen.screen-enter > * { animation: screenIn .34s var(--ease, ease-out) backwards; }
 .screen.screen-enter > *:nth-child(2) { animation-delay: .04s; } .screen.screen-enter > *:nth-child(3) { animation-delay: .08s; } .screen.screen-enter > *:nth-child(n + 4) { animation-delay: .12s; }
 @keyframes screenIn { from { opacity: 0; transform: translateY(8px); } }
+
+/* ---------- 6. Fondo animado (core/bgfx.js) ---------- */
+/* Remolino de pintura a píxeles gordos detrás de todo; colores por tema/estilo */
+:root { --bgfx-a: #3b2a7a; --bgfx-b: #6b1430; --bgfx-c: #0b0d1a; --bgfx-op: .55; }
+:root[data-skin="exile"]:not([data-theme="light"]) { --bgfx-a: #6a2c14; --bgfx-b: #173b3d; --bgfx-c: #0d0a08; --bgfx-op: .5; }
+:root[data-style="classic"]:not([data-theme="light"]) { --bgfx-a: #5a1f2a; --bgfx-b: #2a2350; --bgfx-c: #0b0807; }
+:root[data-theme="light"] { --bgfx-a: #b9a9f7; --bgfx-b: #f6b9c7; --bgfx-c: #f2f3fa; --bgfx-op: .4; }
+#bgfx { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none; image-rendering: pixelated; opacity: 0; transition: opacity .7s ease; }
+body.bgfx-on #bgfx { opacity: var(--bgfx-op); }
 
 /* ---------- Reducir animaciones ---------- */
 :root[data-motion="reduced"] :is(.camp-anim, .camp-anim .fr, .hud-pill, .hud-pill b, .hud-pill .icon svg, .topbar-bell .icon svg, .nav-dot, .dock-slot .icon svg, .train-slot, .panel-head > .icon svg, .is-pressed .icon svg, .screen > *, .camp-spot .camp-art, .btn-primary::after) { animation: none !important; }

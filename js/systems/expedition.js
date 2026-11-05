@@ -149,7 +149,7 @@
       U.pick(swap.length ? swap : pool, rnd).type = 'recruit';
     });
     // Garantías del tipo de expedición: reclutas (captura) y mini jefes (combate, desafío)
-    [['recruit', kd.minRecruits], ['elite', (kd.minElites || 0) + (extra.minElites || 0)]].forEach(([type, min]) => {
+    [['recruit', kd.minRecruits], ['treasure', kd.minTreasures], ['elite', (kd.minElites || 0) + (extra.minElites || 0)]].forEach(([type, min]) => {
       for (let k = rows.flat().filter((n) => n.type === type).length; k < (min || 0); k++) {
         const pool = rows.slice(type === 'elite' ? Math.min(c.eliteFrom, c.rows - 1) : 1).flat().filter((n) => (n.type === 'fight' || n.type === 'event') && !(type === 'recruit' && !kd.multiRecruit && rows[n.row].some((x) => x.type === 'recruit')));
         if (!pool.length) break;
@@ -737,20 +737,41 @@
       const e = this.active();
       // Pesadilla: objetos mejores · runa de botín maldito: uno más
       const pool = this.zoneLoot(DK.nightmare.on() ? 'raro' : 'comun');
-      const items = Array.from({ length: U.rand(2, 3) + DK.relics.sum('loot') + (DK.runes.bonus('loot') > 0 ? 1 : 0) }, () => U.pick(pool));
+      // Expedición de tesoro (muy rara): cofres mucho mejores (config kinds.tesoro.chest)
+      const kc = this.kindDef().chest || {};
+      const items = Array.from({ length: U.rand(2, 3) + (kc.items || 0) + DK.relics.sum('loot') + (DK.runes.bonus('loot') > 0 ? 1 : 0) }, () => U.pick(pool));
       if (U.chance(0.35)) items.push(U.pick(this.zoneLoot('raro')));
+      if (kc.rare && U.chance(kc.rare)) items.push(U.pick(this.zoneLoot('raro')));
       if (U.chance(DK.config.expItemChance)) items.push(this.expItem());
       // Tónico: más probable cuanto más profundo es el mapa
       const TD = cfg().tonicDrops;
       if (U.chance(Math.min(TD.chestMax, TD.chest + TD.chestPerDepth * ((e.depth || 1) - 1)))) items.push(this.tonic());
       const lv = D.zones[e.zone].levels[1];
-      const coins = Math.round(lv * U.rand(6, 10) + 20);
+      const coins = Math.round((lv * U.rand(6, 10) + 20) * (kc.coins || 1));
       const split = this.addLoot(items, coins);
-      // A veces hay una reliquia
-      const relic = U.chance(DK.config.expedition.chestRelicChance) ? DK.relics.give(DK.relics.roll(['comun', 'raro'], 1)[0]) : null;
+      // A veces hay una reliquia (en las de tesoro, también épicas)
+      const relic = U.chance(DK.config.expedition.chestRelicChance + (kc.relic || 0)) ? DK.relics.give(DK.relics.roll(kc.relic ? ['comun', 'raro', 'epico'] : ['comun', 'raro'], 1)[0]) : null;
       // A veces, una runa de expedición (se guarda ya: DK.runes)
-      const runes = DK.runes.drop('treasure');
+      const runes = DK.runes.drop('treasure').concat(kc.rune && U.chance(kc.rune) ? DK.runes.drop('boss') : []);
       return { items, coins, bag: split.bag, loot: split.loot, relic, runes };
+    },
+
+    /** Coste en monedas de curar del todo al equipo antes de salir (0 si no hace falta). */
+    healCost(team = DK.party.active()) {
+      const H = cfg().healCoins;
+      const raw = team.reduce((a, d) => {
+        const m = DK.daskai.stats(d), miss = (m.hp - d.cur.hp) * H.perHp + (m.mp - d.cur.mp) * H.perMp + (DK.daskai.isFainted(d) ? H.fainted : 0) + (d.status ? 20 : 0);
+        return a + Math.max(0, miss) * (1 + d.level * H.perLevel);
+      }, 0);
+      return raw > 0 ? Math.ceil(raw / H.round) * H.round : 0;
+    },
+    /** Paga y cura del todo al equipo (sólo fuera de una expedición). @returns {number|false} lo pagado */
+    healPaid(team = DK.party.active()) {
+      if (this.active()) return false;
+      const c = this.healCost(team); if (!c || !DK.wallet.spend(c)) return false;
+      team.forEach((d) => DK.daskai.fullHeal(d));
+      DK.store.save();
+      return c;
     },
 
     /** Descanso: cura un % de vida y maná y los estados. */
@@ -1158,7 +1179,7 @@
       const [packBack, lostPack] = this.packOnDefeat();
       this.snapshot('lost', { coins: 0, items: {}, lostItems: e.loot.items, lostCoins: e.loot.coins, recruits, packBack, lostPack, keepPack: DK.rules.keepPack() });
       st().expedition = null;
-      this.afterEnd();
+      this.afterEnd({ defeat: true });
       DK.bag.addHome(packBack);
       DK.store.save();
       lost.packBack = packBack;
@@ -1178,7 +1199,7 @@
       this.snapshot('lostBoss', { coins, items: keptLoot, lostItems: lostLoot, lostCoins: e.loot.coins - coins, recruits, packBack: keptPack, lostPack, keepPack: DK.rules.keepPack() });
       st().consolation = { zone: e.zone, depth: e.depth || 1 };
       st().expedition = null;
-      this.afterEnd();
+      this.afterEnd({ defeat: true });
       DK.bag.addHome(keptLoot); DK.bag.addHome(keptPack); DK.wallet.add(coins);
       DK.store.save();
       return { recruits: left, kept: keptLoot, coins, boss: true };
@@ -1192,12 +1213,15 @@
      *  - si el equipo se ha quedado sin nadie en pie pero hay daskai sanos
      *    en la reserva, se meten en el equipo;
      *  - si no queda ningún daskai, la partida termina.
+     *  - derrota en Normal (rules.defeatHeal): el equipo vuelve con al menos
+     *    el 50% de vida y maná.
      */
-    afterEnd() {
-      const P = DK.party, s = st();
+    afterEnd({ defeat = false } = {}) {
+      const P = DK.party, s = st(), heal = defeat ? DK.rules.defeatHeal() : 0;
       P.all().forEach((d) => {
         DK.daskai.clamp(d);
         if (DK.daskai.isFainted(d)) { const m = DK.daskai.stats(d); d.cur.hp = Math.max(1, Math.ceil(m.hp * DK.config.lossHpPct)); d.status = null; }
+        if (heal) { const m = DK.daskai.stats(d); d.cur.hp = Math.max(d.cur.hp, Math.ceil(m.hp * heal)); d.cur.mp = Math.max(d.cur.mp, Math.ceil(m.mp * heal)); d.status = null; }
       });
       s.team = s.team.filter((u) => P.get(u));
       if (!s.team.length) P.all().slice(0, DK.config.maxTeam).forEach((d) => s.team.push(d.uid));

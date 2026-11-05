@@ -133,7 +133,7 @@
       const needs = Object.entries(DK.crafting.goalNeeds());
       const goalsPanel = DK.crafting.goals().length ? h('div', { class: 'panel stack-s brief-goals' },
         h('div', { class: 'panel-head' }, DK.icon('star', 18), h('h3', null, t('craft.goals')),
-          h('span', { class: 'grow' }), btn({ icon: 'anvil', label: t('nav.craft'), iconOnly: true, size: 'sm', variant: 'ghost', onClick: () => DK.router.go('craft') })),
+          h('span', { class: 'grow' }), btn({ icon: 'craftCog', label: t('nav.craft'), iconOnly: true, size: 'sm', variant: 'ghost', onClick: () => DK.router.go('craft') })),
         needs.length ? h('div', { class: 'pk-list' }, needs.map(([id, n]) => h('div', { class: 'pk-row r-' + D.items[id].rarity },
           h('span', { class: 'pk-icon' }, V.itemIcon(D.items[id], 20)),
           h('span', { class: 'pk-main' }, h('b', null, D.items[id].name), h('span', { class: 'muted small' }, V.craftSourceText ? V.craftSourceText(id) : '')),

@@ -25,7 +25,7 @@
       { id: 'defeatAny', type: 'defeat', icon: 'skull', target: [8, 40], reward: { coins: 100, item: 'eter', qty: 2 } },
       { id: 'win', type: 'win', icon: 'trophy', target: [5, 30], reward: { coins: 150 } },
       { id: 'capture', type: 'capture', icon: 'orb', target: [1, 4], reward: { coins: 150, item: 'cristal_vinculo', qty: 1 } },
-      { id: 'craft', type: 'craft', icon: 'anvil', target: [2, 10], reward: { coins: 100, item: 'polvo_brillante', qty: 1 } },
+      { id: 'craft', type: 'craft', icon: 'craftCog', target: [2, 10], reward: { coins: 100, item: 'polvo_brillante', qty: 1 } },
       { id: 'useItem', type: 'useItem', icon: 'flask', target: [3, 15], reward: { coins: 80, item: 'superpocion', qty: 1 } },
       { id: 'damage', type: 'damage', icon: 'target', target: [600, 5000], reward: { coins: 130 } },
       { id: 'levelUp', type: 'levelUp', icon: 'star', target: [2, 10], reward: { coins: 120, item: 'supereter', qty: 1 } },

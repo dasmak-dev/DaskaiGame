@@ -115,6 +115,10 @@
     eye: p('M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z') + c(12, 12, 3),
     swap: p('M16 3l4 4-4 4', 'M20 7H4', 'M8 21l-4-4 4-4', 'M4 17h16'),
     skull: p('M9 12h.01', 'M15 12h.01', 'M10 17h4', 'M12 3a8 8 0 0 0-5 14.2V20a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-2.8A8 8 0 0 0 12 3z'),
+    // Crafteo (v4.44): engranaje grueso de 10 dientes con una gema en el centro (no se confunde con «Ajustes»)
+    craftCog: p('M10.55 3.52L10.65 1.29L13.35 1.29L13.45 3.52A8.6 8.6 0 0 1 15.81 4.29L17.2 2.54L19.39 4.13L18.16 6A8.6 8.6 0 0 1 19.61 8L21.77 7.4L22.61 9.98L20.51 10.76A8.6 8.6 0 0 1 20.51 13.24L22.61 14.02L21.77 16.6L19.61 16A8.6 8.6 0 0 1 18.16 18L19.39 19.87L17.2 21.46L15.81 19.71A8.6 8.6 0 0 1 13.45 20.48L13.35 22.71L10.65 22.71L10.55 20.48A8.6 8.6 0 0 1 8.19 19.71L6.8 21.46L4.61 19.87L5.84 18A8.6 8.6 0 0 1 4.39 16L2.23 16.6L1.39 14.02L3.49 13.24A8.6 8.6 0 0 1 3.49 10.76L1.39 9.98L2.23 7.4L4.39 8A8.6 8.6 0 0 1 5.84 6L4.61 4.13L6.8 2.54L8.19 4.29A8.6 8.6 0 0 1 10.55 3.52z', 'M7.6 10.3l1.9-2.8h5l1.9 2.8-4.4 6.2z', 'M7.6 10.3h8.8'),
+    // Ordenar (flechas arriba/abajo)
+    sortArrows: p('M7 4v16', 'M3 8l4-4 4 4', 'M17 20V4', 'M13 16l4 4 4-4'),
     // Calavera con cuernos (modo Pesadilla)
     demon: p('M9 13h.01', 'M15 13h.01', 'M10 18h4', 'M12 5a7.5 7.5 0 0 0-4.7 13.3V21h9.4v-2.7A7.5 7.5 0 0 0 12 5z', 'M7.5 7.5C5 6.5 3.5 4.5 3.5 2c2 1 3.6 1.6 5.2 3', 'M16.5 7.5c2.5-1 4-3 4-5.5-2 1-3.6 1.6-5.2 3'),
     poison: p('M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z', 'M9.5 13.5h.01', 'M14.5 13.5h.01', 'M10 17h4'),
@@ -181,4 +185,6 @@
     span.innerHTML = `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[name] || I.question}</svg>`;
     return span;
   };
+  /** Trazos SVG de un icono (para dibujarlo dentro de otro SVG, p. ej. los iconos de objeto). */
+  DK.icon.raw = (name) => I[name] || I.question;
 })();

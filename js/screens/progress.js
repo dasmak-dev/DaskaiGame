@@ -110,7 +110,7 @@
   }
 
   /* ---------- Logros por categorías ---------- */
-  const CAT_ICON = { combat: 'swords', collection: 'paw', expedition: 'flag', bosses: 'crown', craft: 'anvil' };
+  const CAT_ICON = { combat: 'swords', collection: 'paw', expedition: 'flag', bosses: 'crown', craft: 'craftCog' };
   function achTab(params, refresh) {
     const list = DK.achievements.list(), cats = DK.achievements.byCat();
     params.cat = params.cat || 'all';

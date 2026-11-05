@@ -872,3 +872,68 @@ body.in-exp { background: #0b0807 !important; }
 @media (max-width: 600px) { .wk-board li { grid-template-columns: 24px 1fr auto; } .wk-board li > span:nth-child(3), .wk-board li > span:last-child { display: none; } }
 :root[data-theme="light"] .wk-best b { color: #92400e; }
 .wk-chip { color: var(--gold); border-color: color-mix(in srgb, var(--gold) 50%, var(--border)); }
+/* Curar pagando monedas (preparación) — v4.41 */
+.bt-heal-coins { display: inline-flex; align-items: center; gap: 3px; height: 30px; padding: 0 9px; border-radius: 8px; border: 1px solid color-mix(in srgb, #4ade80 40%, var(--border)); background: color-mix(in srgb, #4ade80 10%, var(--surface-2)); color: var(--text); font: inherit; font-size: .78rem; font-weight: 700; cursor: pointer; }
+.bt-heal-coins .icon:first-child { color: #4ade80; } .bt-heal-coins .icon:nth-child(2) { color: var(--gold); }
+.bt-heal-coins:hover:not(:disabled) { border-color: #4ade80; }
+.bt-heal-coins.poor { opacity: .5; cursor: not-allowed; }
+/* Bolsa: el detalle sólo aparece al pulsar un objeto, con botón de cerrar — v4.41 */
+.inv-side { position: sticky; }
+.inv-side-x { position: absolute; top: 10px; right: 10px; z-index: 2; }
+.inv-main.has-detail .inv-side { animation: invSideIn .22s ease-out; }
+@keyframes invSideIn { from { opacity: 0; transform: translateX(12px); } }
+:root[data-motion="reduced"] .inv-main.has-detail .inv-side { animation: none; }
+/* Iconos de objeto «gema» a color (V.itemIcon, v4.42): la caja la pone el contexto */
+.item-icon.ii { background: none; box-shadow: none; border-radius: 0; padding: 0; overflow: visible; }
+.item-icon.ii svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .45)); }
+.item-icon.ii.r-legendario svg { filter: drop-shadow(0 0 6px rgba(251, 191, 36, .55)) drop-shadow(0 2px 3px rgba(0, 0, 0, .45)); }
+:root[data-theme="light"] .item-icon.ii svg { filter: drop-shadow(0 1px 2px rgba(60, 40, 20, .3)); }
+
+/* §24 Crafteo y bolsa más limpios (v4.42) */
+.cr-screen.wb:not(.has-detail) { grid-template-columns: minmax(0, 1fr); }
+.wb-side { position: sticky; }
+.wb-side-x { position: absolute; top: 10px; right: 10px; z-index: 2; }
+.cr-screen.wb.has-detail .wb-side { animation: invSideIn .22s ease-out; }
+.wb-chipset { display: inline-flex; gap: 2px; padding: 3px; border-radius: 10px; background: rgba(0, 0, 0, .25); border: 1px solid var(--border); }
+.wb-chipset .wb-chip { border: 0; padding: 5px 9px; }
+.wb-chipset .wb-chip.ico { padding: 5px 8px; }
+.wb-filters .wb-search { max-width: 260px; height: 32px; }
+.wb-prog { display: block; height: 4px; margin-top: auto; border-radius: 2px; background: var(--surface-3); overflow: hidden; }
+.wb-prog i { display: block; height: 100%; background: linear-gradient(90deg, #a16207, var(--gold)); }
+.wb-tile.s-ready .wb-prog i { background: linear-gradient(90deg, #15803d, #4ade80); }
+.wb-tile { gap: 8px; }
+.wb-tile .wb-top .item-icon { width: 38px; height: 38px; }
+/* Bolsa: grupos por uso, materiales aparte, objetivo con vista previa */
+.inv-bar-row { display: flex; align-items: center; gap: 6px; }
+.inv-bar-row .inv-search { max-width: 320px; height: 34px; }
+.inv-mats-link { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px dashed var(--border); background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.inv-mats-link > span { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.inv-mats-link:hover { border-style: solid; border-color: var(--gold); }
+.inv-mats-link .icon { color: var(--gold); }
+.inv-tgroup { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+.inv-tgroup-head { display: flex; align-items: center; gap: 6px; font-size: .78rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; list-style: none; cursor: default; }
+details.inv-tgroup > summary { cursor: pointer; }
+details.inv-tgroup > summary::-webkit-details-marker { display: none; }
+details.inv-tgroup > summary .icon:last-child { margin-left: auto; transition: transform .15s; }
+details.inv-tgroup[open] > summary .icon:last-child { transform: rotate(90deg); }
+.inv-target.v2 { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; padding: 8px 10px; }
+.inv-target.v2.in-team { border-color: color-mix(in srgb, var(--gold) 30%, var(--border)); }
+.inv-target-art { position: relative; display: grid; place-items: center; width: 48px; height: 48px; }
+.inv-target-team { position: absolute; right: -2px; bottom: -2px; width: 18px; height: 18px; display: grid; place-items: center; border-radius: 50%; background: var(--gold); color: #1a1206; box-shadow: 0 0 0 2px var(--surface); }
+.inv-target.v2 .inv-target-main { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.up-list { display: flex; flex-direction: column; gap: 4px; }
+.up-row { display: grid; grid-template-columns: minmax(80px, 1fr) auto; align-items: center; gap: 8px; font-size: .8rem; }
+.up-bar { position: relative; height: 7px; border-radius: 4px; background: var(--surface-3); overflow: hidden; }
+.up-bar i { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 4px; }
+.up-row.hp .up-now { background: #16a34a; } .up-row.hp .up-add { background: #86efac; box-shadow: 0 0 8px rgba(134, 239, 172, .8); animation: upPulse 1.4s ease-in-out infinite; }
+.up-row.mp .up-now { background: #2563eb; } .up-row.mp .up-add { background: #93c5fd; box-shadow: 0 0 8px rgba(147, 197, 253, .8); animation: upPulse 1.4s ease-in-out infinite; }
+.up-row.exp .up-now { background: #a16207; } .up-row.exp .up-add { background: #fde047; box-shadow: 0 0 8px rgba(253, 224, 71, .8); animation: upPulse 1.4s ease-in-out infinite; }
+.up-row.exp.lvup .up-add.full { background: linear-gradient(90deg, #facc15, #fde68a); }
+@keyframes upPulse { 50% { opacity: .65; } }
+.up-txt { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.up-txt b { color: var(--text); } .up-txt em { font-style: normal; font-weight: 800; color: #4ade80; }
+.up-row.mp .up-txt em { color: #93c5fd; } .up-row.exp .up-txt em { color: #fde047; }
+:root[data-theme="light"] .up-txt em { color: #15803d; } :root[data-theme="light"] .up-row.exp .up-txt em { color: #a16207; }
+:root[data-motion="reduced"] .up-add { animation: none !important; }
+.inv-groups > .inv-mats-link { grid-column: 1 / -1; } .inv-mats-link b { font-size: .92rem; } .inv-mats-link .muted { font-weight: 500; }
+.inv-mats-link { justify-content: flex-start; } .inv-mats-link > span { align-items: flex-start; text-align: left; }

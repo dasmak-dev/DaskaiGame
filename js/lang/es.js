@@ -470,6 +470,7 @@ DK.i18n.register('es', {
   },
   track: { chip: 'Rastreo +{n}%', tip: 'Has derrotado {n} de esta especie: más probable que salga variocolor' },
   forge: {
+    tierLocked: 'Mejora el Taller de runas para el tier {n}', 
     help: '3 iguales → 1 del tier siguiente ({a} / {b} monedas).',
     fuse: 'Fundir 3 · {cost}', need: 'Te faltan {n}', noCoins: 'No tienes monedas suficientes', tip: 'Obtienes {name}', done: '¡Has forjado {name}!',
   },
@@ -539,6 +540,7 @@ DK.i18n.register('es', {
 
   settings: {
     autoHeal: 'Curar en automático', autoHealDesc: 'En automático, si tu daskai baja del {n}% de vida usa su ataque de curación o el objeto curativo más barato que sirva (como mucho {max} veces por combate).',
+    bgFx: 'Fondo animado', bgFxDesc: 'Remolino de color detrás de las pantallas del campamento (no en la expedición)',
     pixelArt: 'Daskai en pixel art', pixelArtDesc: 'Dibujos pixelados de estilo retro (desactívalo para verlos suaves)',
     autoBattle: 'Empezar los combates en automático', autoBattleDesc: 'Tu daskai elige solo el mejor ataque. Pulsa A para tomar el control cuando quieras.',
     autoPause: 'Pausar el automático con poca vida', autoPauseDesc: 'Si tu daskai baja del 30% de vida, el automático se detiene para que decidas tú (importante en modo difícil).',
@@ -609,6 +611,8 @@ DK.i18n.register('es', {
     yourTeam: 'Tu equipo', manage: 'Gestionar', today: 'Misiones de hoy', allMissions: 'Ver todas', quick: 'Acciones rápidas',
   },
   inv: {
+    ug: { all: 'Todo', heal: 'Curar', mana: 'Maná', status: 'Estados', boost: 'Mejorar', gear: 'Equipo', other: 'Otros' }, sort: { qty: 'cantidad', name: 'nombre', rarity: 'rareza' }, sortBy: 'Ordenar por {s}', matsTitle: 'Materiales de crafteo', matsText: '{n} tipos · {q} unidades → Crafteo', 
+    inTeam: 'En el equipo', inReserve: 'En la reserva', curesStatus: 'Le quita: {s}', tonicLeft: 'le quedan {n} tónicos', resetPreview: 'Devuelve sus {n} tónicos', 
     toNext: 'faltan {n} para subir', sellAtMerchant: 'Puedes venderlo al mercader de una expedición por {n} monedas.', toWorkshop: 'Ver recetas que lo usan',
     title: 'Inventario', items: 'Objetos', all: 'Todo', search: 'Buscar objeto...',
     dropHint: 'Arrastra un objeto sobre un daskai para usarlo o equiparlo',
@@ -755,7 +759,7 @@ DK.i18n.register('es', {
       difficulty: { t: 'Dificultad', b: 'Normal: los daskai debilitados se recuperan. Difícil: si un daskai cae en una expedición muere para siempre. Pesadilla: además no puedes retirarte, las hogueras no son fijas y pierdes la mochila al caer.' },
       relics: { t: 'Reliquias', b: 'Las reliquias son mejoras que sólo duran una expedición. Salen en tesoros, élites y jefes y se acumulan entre sí. Las Mejoras del campamento desbloquean más reliquias posibles.' },
       kinds: { t: 'Tipos de expedición', b: 'Cada mapa tiene un tipo y un tamaño: de captura (más reclutas), de combate (más élites y experiencia), de tesoro (más botín) o de desafío (rivales más fuertes y más emblemas). Los mapas grandes dan más emblemas.' },
-      runes: { t: 'Runas de expedición', b: 'Las runas caen en cofres, élites y jefes y se guardan para siempre. Al preparar la expedición engastas hasta 4: una de tamaño y una de tipo, que los fijan, y las de bonificación que quieras (oro, saber…). Se gastan al partir.' },
+      runes: { t: 'Runas de expedición', b: 'Se desbloquean con la mejora «Taller de runas» (emblemas): cada nivel abre un tier. Las runas caen en cofres, élites y jefes y se guardan para siempre. Al preparar la expedición engastas hasta 4: una de tamaño y una de tipo, que los fijan, y las de bonificación que quieras (oro, saber…). Se gastan al partir.' },
       runeTiers: { t: 'Tiers de runas', b: 'Las runas tienen tier I, II y III. Tres de la misma runa y tier (de cualquier rareza) se funden en una del tier siguiente en Crafteo → Runas, con la rareza más alta de las tres. Las bonificaciones se multiplican con el tier; las de tamaño fijan los pisos (pequeño 8/14/18, mediano 14/20/26, XL 20/28/36) y las de tier alto dan emblemas extra por jefe.\nAl caer pueden ser normales, mágicas (1 modificador) o raras (2): más élites, tesoros, reclutas o cuevas en el mapa, o más monedas, experiencia o variocolores.' },
       emblems: { t: 'Emblemas y Mejoras', b: 'Los jefes dan emblemas (más en mapas grandes). Se gastan en las Mejoras permanentes al terminar cada expedición y en las mejoras del campo de entrenamiento.' },
       training: { t: 'Campo de entrenamiento', b: 'Deja daskai ganando experiencia en tiempo real, aunque cierres el juego. Ganan un % de su nivel cada minuto (menos cuanto más nivel) y van más rápido cuanto más tiempo pasan.\nNo pagas al entrar: se cobra al sacarlo según el tiempo y su nivel. Puedes pagar un acelerador al dejarlo. Las mejoras del campo cuestan emblemas y monedas.' },
@@ -785,6 +789,7 @@ DK.i18n.register('es', {
     scoring: 'Puntos: pisos × 100 + emblemas × 150 + monedas / 10 + 1000 si vences al jefe + 500 por mapa extra. Sin runas ni corrupción: todos los intentos son comparables.',
     result: 'Desafío semanal: {n} puntos', newBest: '¡Nuevo récord!', gotReward: '+{e} emblemas y una runa',
   },
+  healPay: { title: 'Curar al equipo', text: 'Vida, maná y estados al máximo por {n} monedas. Es caro: las pociones salen más baratas.', ok: 'Pagar {n}', tip: 'Curar todo al equipo pagando monedas', poor: 'Te faltan {n} monedas', done: 'Equipo curado (−{n} monedas)' },
   talent: {
     next: 'Próximo talento en el nivel {n}',
     tab: 'Talentos', help: 'Cada {n} niveles elige uno de dos talentos. La elección es para siempre.',
@@ -849,7 +854,7 @@ DK.i18n.register('es', {
     normal: { name: 'Normal', desc: 'De todo un poco: combates, sucesos, cofres, reclutas y tiendas.' },
     captura: { name: 'Captura', desc: 'Corta y llena de daskai salvajes: muchos reclutas, más candidatos y más variocolores. Menos monedas.' },
     combate: { name: 'Combate', desc: 'Casi todo son peleas y mini jefes. Más monedas y experiencia.' },
-    tesoro: { name: 'Tesoro', desc: 'Cofres, tiendas, sucesos y cuevas. Pocas peleas, pero los rivales son algo más fuertes.' },
+    tesoro: { name: 'Tesoro', desc: '¡Muy rara! Al menos 5 cofres llenos: más objetos, reliquias épicas, runas y monedas ×2,5. +1 emblema por jefe.' },
     abismo: { name: 'Abismo', desc: 'Pisos cortos que se encadenan sin fin: cada uno más duro. Premios cada pocos pisos.' },
     desafio: { name: 'Desafío', desc: 'Corta y dura: mini jefes por todas partes, rivales +3 niveles y +1 emblema por jefe.' },
     fx: { shiny: '+{n}% variocolor', capture: '+{n}% vínculo', recruit: '+{n} candidato', coins: '{n}% monedas', exp: '+{n}% exp.', levels: 'Rivales +{n} Nv.', emblems: '+{n} emblema por jefe', short: 'Corta' },
@@ -993,7 +998,7 @@ campfire: 'Volviste a casa desde una hoguera: te llevas la mitad del botín y to
   /* Dificultad (data/difficulties.js) */
   difficulty: {
     title: 'Dificultad', final: 'No se puede cambiar después de crear la partida.',
-    normal: { name: 'Normal', desc: 'Los daskai que caen sólo se debilitan. Rivales algo más flojos. Si pierdes, conservas lo que metiste en la mochila.' },
+    normal: { name: 'Normal', desc: 'Los daskai que caen sólo se debilitan. Rivales algo más flojos. Si pierdes, conservas la mochila y tu equipo vuelve con la mitad de vida.' },
     dificil: { name: 'Difícil', desc: 'Muerte permanente en las expediciones. Una salvación por expedición. Si pierdes, conservas lo que metiste en la mochila.' },
     pesadilla: { name: 'Pesadilla', desc: 'Muerte permanente, sin volver a casa desde las hogueras, sin descanso fijo antes del jefe y rivales más fuertes. Si pierdes, pierdes también la mochila.' },
   },
@@ -1019,6 +1024,7 @@ campfire: 'Volviste a casa desde una hoguera: te llevas la mitad del botín y to
       reclutador: { name: 'Reclutador', desc: 'En los nodos de reclutamiento hay un candidato más y llegan con más nivel.', effect: '+1 candidato · +{n} niveles' },
       hoguera: { name: 'Hoguera mejorada', desc: 'Las hogueras del mapa de la expedición curan más.', effect: '+{n}% al descansar' },
       comercio: { name: 'Contactos comerciales', desc: 'Los mercaderes traen más mercancía.', effect: '+{n} ofertas por mercader' },
+      runas: { name: 'Taller de runas', desc: 'Abre los huecos de runas en la preparación y hace que caigan runas. Cada nivel desbloquea un tier más.', effect: 'Runas hasta el tier {n}' },
       fenix: { name: 'Altar del fénix', desc: 'Salvaciones de la muerte extra en cada expedición.', effect: '+{n} salvaciones por expedición' },
     },
   },

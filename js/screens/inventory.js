@@ -24,6 +24,15 @@
   });
 
   const CAT_ORDER = ['batalla', 'mejora', 'equipo', 'pieza'];
+  /** Grupos POR USO de la bolsa (v4.42). El último recoge lo demás (cristales…). */
+  const USE_GROUPS = [
+    { id: 'heal', icon: 'heart', test: (it) => it.category === 'batalla' && it.use && (it.use.heal || it.use.healPct) },
+    { id: 'mana', icon: 'droplet', test: (it) => it.category === 'batalla' && it.use && (it.use.mana || it.use.manaPct) },
+    { id: 'status', icon: 'pill', test: (it) => it.category === 'batalla' && it.use && it.use.cure },
+    { id: 'boost', icon: 'star', test: (it) => it.category === 'mejora' },
+    { id: 'gear', icon: 'gem', test: (it) => it.category === 'equipo' },
+    { id: 'other', icon: 'layers', test: () => true },
+  ];
 
   DK.screens.register('inventory', {
     title: () => (DK.bag.inPack() ? t('nav.pack') : t('inv.title')), icon: 'bag', section: 'inventory', tutorial: 'inventory', music: () => DK.audio.zoneTrack(),
@@ -34,28 +43,44 @@
       const q = (params.q || '').trim().toLowerCase();
       const narrow = DK.ui.isNarrow();
 
-      /* ---- Barra: filtros horizontales + buscador + accesos ---- */
-      const cats = ['all', ...CAT_ORDER.filter((c) => !exp || c !== 'pieza')];
-      const tabs = h('div', { class: 'inv-tabs', role: 'tablist' }, cats.map((c) => {
-        const n = c === 'all' ? DK.bag.total() : DK.bag.total(c);
-        return h('button', { class: 'inv-tab' + (params.cat === c ? ' on' : ''), type: 'button', role: 'tab', 'aria-selected': params.cat === c,
-          onClick: () => { params.cat = c; refresh(); } },
-          DK.icon(c === 'all' ? 'layers' : D.categories[c].icon, 18),
-          h('span', null, c === 'all' ? t('inv.all') : DK.tr('categories', D.categories[c])), h('b', null, String(n)));
+      /* ---- v4.42: grupos POR USO (Curar, Maná, Estados, Mejorar, Equipo, Otros) ----
+       * Los materiales de crafteo ya no salen aquí: viven en Crafteo → Materiales.
+       * Buscar y ordenar van en dos botones de icono (la búsqueda se abre al pulsar). */
+      params.cat = USE_GROUPS.some((g) => g.id === params.cat) || params.cat === 'all' ? params.cat : 'all';
+      params.sort = params.sort || 'qty';
+      const groupOf = (it) => (USE_GROUPS.find((g) => g.test(it)) || USE_GROUPS[USE_GROUPS.length - 1]).id;
+      const owned = DK.bag.list(null).filter(({ item }) => item.category !== 'pieza');
+      const counts = {}; owned.forEach(({ item, qty }) => { const g = groupOf(item); counts[g] = (counts[g] || 0) + qty; });
+      const shown = USE_GROUPS.filter((g) => counts[g.id]);
+      if (params.cat !== 'all' && !counts[params.cat]) params.cat = 'all';
+      const tabs = h('div', { class: 'inv-tabs inv-tabs-use', role: 'tablist' }, [{ id: 'all', icon: 'layers' }].concat(shown).map((g) => {
+        const n = g.id === 'all' ? owned.reduce((a, x) => a + x.qty, 0) : counts[g.id];
+        return h('button', { class: 'inv-tab' + (params.cat === g.id ? ' on' : ''), type: 'button', role: 'tab', 'aria-selected': params.cat === g.id,
+          onClick: () => { params.cat = g.id; refresh(); } },
+          DK.icon(g.icon, 17), h('span', null, t(['inv', 'ug', g.id].join('.'))), h('b', null, String(n)));
       }));
-      const search = h('input', { class: 'input inv-search', type: 'search', placeholder: t('inv.search'), value: params.q || '',
-        onInput: (e) => { params.q = e.target.value; clearTimeout(params._qt); params._qt = setTimeout(() => { refresh(); const i = document.querySelector('.inv-search'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }, 220); } });
+      const SORTS = ['qty', 'name', 'rarity'];
+      const sortBtn = btn({ icon: 'sortArrows', label: t('inv.sortBy', { s: t('inv.sort.' + params.sort) }), iconOnly: true, size: 'sm', variant: 'ghost',
+        onClick: () => { params.sort = SORTS[(SORTS.indexOf(params.sort) + 1) % SORTS.length]; DK.ui.toast(t('inv.sortBy', { s: t('inv.sort.' + params.sort) }), { icon: 'sortArrows' }); refresh(); } });
+      const searchBtn = btn({ icon: 'search', label: t('inv.search'), iconOnly: true, size: 'sm', variant: params.searchOpen || q ? 'tone' : 'ghost',
+        onClick: () => { params.searchOpen = !params.searchOpen; if (!params.searchOpen) params.q = ''; refresh(); if (params.searchOpen) setTimeout(() => { const i = document.querySelector('.inv-search'); if (i) i.focus(); }, 30); } });
+      const search = params.searchOpen || q ? h('input', { class: 'input inv-search', type: 'search', placeholder: t('inv.search'), value: params.q || '',
+        onInput: (e) => { params.q = e.target.value; clearTimeout(params._qt); params._qt = setTimeout(() => { refresh(); const i = document.querySelector('.inv-search'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }, 220); } }) : null;
       const bar = h('div', { class: 'inv-bar' }, tabs,
-        h('div', { class: 'inv-bar-row' }, search,
+        h('div', { class: 'inv-bar-row' }, search, h('span', { class: 'grow' }),
           exp ? null : V.coins(DK.wallet.get()),
-          exp ? null : btn({ icon: 'anvil', label: t('nav.craft'), iconOnly: true, size: 'sm', variant: 'ghost', onClick: () => DK.router.reset('craft') }),
+          searchBtn, sortBtn,
+          exp ? null : btn({ icon: 'craftCog', label: t('nav.craft'), iconOnly: true, size: 'sm', variant: 'ghost', onClick: () => DK.router.reset('craft') }),
           btn({ icon: 'heart', label: t('heal.button'), iconOnly: true, size: 'sm', variant: 'ghost', onClick: async () => { if (await V.healDialog(DK.party.active())) refresh(); } })));
 
       /* ---- Lista ---- */
-      const all = DK.bag.list(params.cat === 'all' ? null : params.cat).filter(({ item }) => !q || item.name.toLowerCase().includes(q));
+      const rOrd = (it) => (D.rarities[it.rarity] || {}).order || 0;
+      const sorter = params.sort === 'name' ? (a, b) => a.item.name.localeCompare(b.item.name) : params.sort === 'rarity' ? (a, b) => rOrd(b.item) - rOrd(a.item) || b.qty - a.qty : (a, b) => b.qty - a.qty;
+      const all = owned.filter(({ item }) => (params.cat === 'all' || groupOf(item) === params.cat) && (!q || item.name.toLowerCase().includes(q))).sort(sorter);
       if (params.item && !DK.bag.count(params.item)) params.item = null;
-      if (!params.item && !narrow && all.length) params.item = all[0].item.id;
+      // El detalle NO se abre solo; sólo al pulsar un objeto (y pulsarlo otra vez lo cierra)
       const open = (id) => {
+        if (!narrow && params.item === id) { params.item = null; refresh(); return; }
         params.item = id;
         if (!narrow) { refresh(); return; }
         const holder = h('div');
@@ -67,16 +92,22 @@
         V.itemIcon(item, 26),
         h('span', { class: 'inv-row-main' }, h('b', null, item.name), h('span', { class: 'muted small' }, shortText(item))),
         h('span', { class: 'inv-qty' }, 'x' + qty));
-      const groups = (params.cat === 'all' ? CAT_ORDER : [params.cat]).map((c) => {
-        const items = all.filter(({ item }) => item.category === c);
+      const groups = (params.cat === 'all' ? shown : USE_GROUPS.filter((g) => g.id === params.cat)).map((g) => {
+        const items = all.filter(({ item }) => groupOf(item) === g.id);
         if (!items.length) return null;
         return h('section', { class: 'inv-group' },
-          params.cat === 'all' ? h('h4', { class: 'inv-group-head' }, DK.icon(D.categories[c].icon, 14), DK.tr('categories', D.categories[c]), h('span', { class: 'muted' }, String(items.reduce((a, x) => a + x.qty, 0)))) : null,
+          params.cat === 'all' ? h('h4', { class: 'inv-group-head' }, DK.icon(g.icon, 14), t(['inv', 'ug', g.id].join('.')), h('span', { class: 'muted' }, String(items.reduce((a, x) => a + x.qty, 0)))) : null,
           h('div', { class: 'inv-grid' }, items.map(row)));
       }).filter(Boolean);
-      const list = groups.length ? h('div', { class: 'inv-groups' }, groups) : DK.ui.empty('bag', t('bag.empty'), q ? '' : t('bag.emptyText'));
+      // Materiales: sólo un acceso a Crafteo → Materiales
+      const mats = exp ? [] : DK.bag.list('pieza');
+      const matLink = mats.length ? h('button', { class: 'inv-mats-link', type: 'button', onClick: () => DK.router.reset('craft', { tab: 'materials' }) },
+        DK.icon('cube', 16), h('span', null, h('b', null, t('inv.matsTitle')), h('span', { class: 'muted small' }, t('inv.matsText', { n: mats.length, q: mats.reduce((a, x) => a + x.qty, 0) }))), DK.icon('next', 16)) : null;
+      const list = groups.length ? h('div', { class: 'inv-groups' }, groups, params.cat === 'all' ? matLink : null) : h('div', { class: 'stack' }, DK.ui.empty('bag', t('bag.empty'), q ? '' : t('bag.emptyText')), matLink);
 
-      const detail = !narrow ? h('aside', { class: 'card inv-side' }, params.item ? itemPanel(params.item, refresh) : DK.ui.empty('bag', t('inv.pickOne'), '')) : null;
+      const detail = !narrow && params.item ? h('aside', { class: 'card inv-side' },
+        h('button', { class: 'icon-btn inv-side-x', type: 'button', tip: t('common.close'), 'aria-label': t('common.close'), onClick: () => { params.item = null; refresh(); } }, DK.icon('x', 16)),
+        itemPanel(params.item, refresh)) : null;
 
       return h('div', { class: 'screen inv-screen' },
         exp ? packHead(exp) : null,
@@ -102,6 +133,48 @@
         h('div', { class: 'grow' }, h('b', null, t('nav.pack')), h('p', { class: 'muted small' }, t('pack.inExp')))),
       h('div', { class: 'pack-loot' }, h('span', { class: 'muted small' }, DK.icon('gift', 13), ' ', t('pack.loot')), V.coins(e.loot.coins),
         items.length ? h('div', { class: 'chips' }, items.map(([id, n]) => h('span', { class: 'chip', tip: t('pack.lootTip') }, DK.icon(D.items[id].icon, 13), `${D.items[id].name} x${n}`))) : h('span', { class: 'muted small' }, t('exp.lootEmpty'))));
+  }
+
+  /**
+   * Vista previa de usar un objeto en un daskai (sin usarlo):
+   *  - cura / maná: barra con lo que tiene y, en verde, lo que recupera (45/90 → 75/90)
+   *  - experiencia: barra de experiencia con lo que gana y los niveles que sube (Nv 12 → 14)
+   *  - tónico: el atributo antes → después · estados: el estado que quita
+   */
+  function usePreview(itemId, d, why) {
+    const it = D.items[itemId], u = it.use || {}, s = DK.daskai.stats(d);
+    const bar = (cls, cur, max, add, label) => h('div', { class: 'up-row ' + cls },
+      h('div', { class: 'up-bar' }, h('i', { class: 'up-now', style: { width: Math.round((Math.min(cur, max) / max) * 100) + '%' } }),
+        add > 0 ? h('i', { class: 'up-add', style: { left: Math.round((Math.min(cur, max) / max) * 100) + '%', width: Math.round((Math.min(add, max - cur) / max) * 100) + '%' } }) : null),
+      h('span', { class: 'up-txt' }, label));
+    if (why) return h('span', { class: 'small muted' }, why);
+    const out = [];
+    if (u.heal || u.healPct || u.mana || u.manaPct) {
+      const p = DK.bag.potency(itemId, d);
+      if (p.hp) { const add = Math.min(p.hp, s.hp - d.cur.hp); out.push(bar('hp', d.cur.hp, s.hp, add, h('span', null, `${d.cur.hp} → `, h('b', null, d.cur.hp + add), `/${s.hp}`, h('em', null, ` +${add}`)))); }
+      if (p.mp) { const add = Math.min(p.mp, s.mp - d.cur.mp); out.push(bar('mp', d.cur.mp, s.mp, add, h('span', null, `${d.cur.mp} → `, h('b', null, d.cur.mp + add), `/${s.mp}`, h('em', null, ` +${add}`)))); }
+    }
+    if (u.cure && d.status && u.cure.includes(d.status)) out.push(h('span', { class: 'small good-text' }, DK.icon('check', 12), ' ', t('inv.curesStatus', { s: DK.tr('statuses', D.statuses[d.status]) })));
+    if (u.exp || u.levels) {
+      // Simula la experiencia: cuántos niveles sube y cómo queda la barra
+      const cap = DK.config.maxLevel, curve = DK.config.expCurve;
+      let lv = d.level, exp = d.exp || 0;
+      const amount = u.exp || Math.max(1, curve(lv) - exp) + (u.levels > 1 ? curve(lv + 1) * (u.levels - 1) : 0);
+      exp += amount;
+      while (lv < cap && exp >= curve(lv)) { exp -= curve(lv); lv++; }
+      const up = lv - d.level;
+      out.push(h('div', { class: 'up-row exp' + (up ? ' lvup' : '') },
+        h('div', { class: 'up-bar' },
+          up ? h('i', { class: 'up-add full', style: { left: 0, width: (lv >= cap ? 100 : Math.round((exp / curve(lv)) * 100)) + '%' } })
+            : [h('i', { class: 'up-now', style: { width: Math.round(((d.exp || 0) / curve(d.level)) * 100) + '%' } }), h('i', { class: 'up-add', style: { left: Math.round(((d.exp || 0) / curve(d.level)) * 100) + '%', width: Math.round((amount / curve(d.level)) * 100) + '%' } })]),
+        h('span', { class: 'up-txt' }, up ? h('span', null, `${t('common.lvl')} ${d.level} → `, h('b', null, lv), h('em', null, ` +${up}`)) : h('span', null, `+${amount} ${t('common.expShort')}`))));
+    }
+    if (u.perm) {
+      const k = u.perm, n = DK.config.tonic.per[k];
+      out.push(h('span', { class: 'small' }, DK.icon(D.stats[k].icon, 12), ' ', DK.tr('stats', D.stats[k]), ': ', s[k], ' → ', h('b', { class: 'good-text' }, s[k] + n), h('span', { class: 'muted' }, ` · ${t('inv.tonicLeft', { n: DK.config.tonic.cap - DK.daskai.tonicsUsed(d) })}`)));
+    }
+    if (u.resetPerm) out.push(h('span', { class: 'small' }, t('inv.resetPreview', { n: DK.daskai.tonicsUsed(d) })));
+    return out.length ? h('div', { class: 'up-list' }, out) : h('span', { class: 'small muted' }, V.useText(it));
   }
 
   /** Usa o equipa un objeto sobre un daskai. */
@@ -143,7 +216,7 @@
     const blocks = [];
     // Cabecera grande
     blocks.push(h('div', { class: 'inv-hero r-' + it.rarity, style: { '--c': it.color || 'var(--primary)' } },
-      h('span', { class: 'inv-hero-icon' }, DK.icon(it.icon, 40)),
+      h('span', { class: 'inv-hero-icon' }, V.itemIcon(it, 40)),
       h('div', { class: 'grow' }, h('h2', null, it.name),
         h('div', { class: 'row gap-s wrap' }, V.rarity(it.rarity), h('span', { class: 'badge' }, DK.icon(cat.icon, 12), DK.tr('categories', cat)), h('span', { class: 'badge' }, t('item.owned', { n: qty })))),
       h('p', { class: 'muted inv-hero-desc' }, it.desc)));
@@ -156,20 +229,29 @@
     if (it.grants && it.grants.passive) what.push(V.passiveBox(it.grants.passive));
     if (what.length) blocks.push(h('section', { class: 'inv-block' }, h('h4', null, t('craft.whatDoes')), what));
 
-    // Usar en…
+    // Usar en… (v4.42): equipo arriba y reserva aparte (plegada), con una vista
+    // previa de lo que hará en cada uno (vida/maná que cura, experiencia y niveles, tónico…)
     if ((it.category === 'batalla' && !it.use.capture) || it.category === 'mejora') {
       if (it.use && it.use.guardian) blocks.push(h('div', { class: 'warning' }, DK.icon('info', 16), h('span', null, t('bag.autoItem'))));
-      else blocks.push(h('section', { class: 'inv-block' }, h('h4', null, t('inv.useOn')),
-        h('div', { class: 'inv-targets' }, party.map((d) => {
+      else {
+        const team = party.filter((d) => DK.party.isActive(d.uid)), rest = party.filter((d) => !DK.party.isActive(d.uid));
+        // En la reserva: primero en los que tiene efecto
+        rest.sort((a, b) => (DK.bag.cannotUse(itemId, a) ? 1 : 0) - (DK.bag.cannotUse(itemId, b) ? 1 : 0) || b.level - a.level);
+        const target = (d) => {
           const why = DK.bag.cannotUse(itemId, d);
-          const p = DK.bag.potency(itemId, d);
-          const gain = why ? why : it.use.exp ? `+${it.use.exp} ${t('common.expShort')}` : it.use.perm ? `+${DK.config.tonic.per[it.use.perm]} ${DK.tr('stats', D.stats[it.use.perm])}` : p.hp ? `+${p.hp} ${t('common.hpShort')}` : p.mp ? `+${p.mp} ${t('common.mpShort')}` : '';
-          return h('div', { class: 'inv-target' + (why ? ' off' : '') },
-            V.dSprite(d, { size: 42 }),
-            h('div', { class: 'inv-target-main' }, h('b', null, DK.daskai.name(d), ' ', h('span', { class: 'muted small' }, `${t('common.lvl')} ${d.level}`)), V.vitals(d),
-              h('span', { class: 'small ' + (why ? 'muted' : 'good-text') }, gain)),
-            btn({ icon: 'hand', label: t('inv.use'), size: 'sm', variant: 'primary', disabled: !!why, onClick: () => applyItemTo(itemId, d, refresh) }));
-        }))));
+          return h('div', { class: 'inv-target v2' + (why ? ' off' : '') + (DK.party.isActive(d.uid) ? ' in-team' : '') },
+            h('span', { class: 'inv-target-art' }, V.dSprite(d, { size: 44 }), DK.party.isActive(d.uid) ? h('span', { class: 'inv-target-team', tip: t('team.inTeam') }, DK.icon('users', 10)) : null),
+            h('div', { class: 'inv-target-main' },
+              h('div', { class: 'row gap-s' }, h('b', null, DK.daskai.name(d)), h('span', { class: 'muted small' }, `${t('common.lvl')} ${d.level}`)),
+              usePreview(itemId, d, why)),
+            btn({ icon: 'hand', label: t('inv.use'), size: 'sm', variant: why ? 'ghost' : 'primary', disabled: !!why, tip: why || null, onClick: () => applyItemTo(itemId, d, refresh) }));
+        };
+        blocks.push(h('section', { class: 'inv-block' }, h('h4', null, t('inv.useOn')),
+          team.length ? h('div', { class: 'inv-tgroup' }, h('span', { class: 'inv-tgroup-head' }, DK.icon('users', 13), t('inv.inTeam'), h('span', { class: 'muted' }, team.length)), h('div', { class: 'inv-targets' }, team.map(target))) : null,
+          rest.length ? h('details', { class: 'inv-tgroup reserve', open: !team.length },
+            h('summary', { class: 'inv-tgroup-head' }, DK.icon('grid', 13), t('inv.inReserve'), h('span', { class: 'muted' }, rest.length), DK.icon('next', 13)),
+            h('div', { class: 'inv-targets' }, rest.map(target))) : null));
+      }
     }
     if (it.use && it.use.capture) blocks.push(h('div', { class: 'warning' }, DK.icon('info', 16), h('span', null, t('bag.onlyInBattle'))));
 

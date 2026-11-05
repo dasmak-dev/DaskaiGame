@@ -30,7 +30,7 @@
   sources.push(() => [
     { icon: 'play', label: t('home.play'), run: () => DK.play.quick() },
     { icon: 'flask', label: t('heal.button'), run: async () => { if (await DK.views.healDialog(DK.party.active())) DK.router.refresh(); } },
-    { icon: 'anvil', label: t('nav.craft'), home: true, run: () => DK.router.reset('craft') },
+    { icon: 'craftCog', label: t('nav.craft'), home: true, run: () => DK.router.reset('craft') },
     { icon: 'scroll', label: t('menu.missions'), home: true, run: () => DK.router.reset('progress', { tab: 'missions' }) },
     { icon: 'award', label: t('menu.achievements'), home: true, run: () => DK.router.reset('progress', { tab: 'ach' }) },
     { icon: 'settings', label: t('top.settings'), run: () => DK.settingsPanel.open() },

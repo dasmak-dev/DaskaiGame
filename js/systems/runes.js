@@ -27,6 +27,11 @@
  * Las de TAMAÑO fijan los pisos según su tier (tierFloors: pequeño 8/14/18…).
  * Fundir: 3 de la misma runa y tier (cualquier rareza) → tier siguiente, con
  * la rareza más alta de las tres y modificadores nuevos.
+ *
+ * MEJORA «Taller de runas» (v4.41, data/upgrades.js `runas`, con emblemas):
+ * sin ella no hay huecos en la preparación ni caen runas; nivel 1 abre los
+ * huecos y las de tier I, nivel 2 el tier II y nivel 3 el tier III
+ * (`maxTier()`). Caer, recompensas y fundir no pasan del tier desbloqueado.
  * ============================================================= */
 (function () {
   const U = DK.util;
@@ -34,6 +39,20 @@
   const st = () => DK.store.state;
 
   DK.runes = {
+    /** Tier máximo desbloqueado con la mejora «Taller de runas» (0 = sin runas: no caen ni hay huecos). */
+    maxTier() {
+      const v = DK.camp.value('runas') || 0;
+      // Partidas que ya tenían runas antes de la mejora: se les da el nivel de su mejor runa
+      if (!v && DK.store.state && !DK.store.state.runesGrandfathered && Object.keys(this.all()).length) {
+        const best = Math.max(...Object.keys(this.all()).map((id) => this.parse(id).tier));
+        DK.store.state.camp = DK.store.state.camp || {}; DK.store.state.camp.runas = Math.min(3, best);
+        DK.store.state.runesGrandfathered = true;
+        return Math.min(3, best);
+      }
+      return v;
+    },
+    /** ¿Están abiertos los huecos de runas? */
+    enabled() { return this.maxTier() >= 1; },
     /** Todas las runas definidas: [{id, group, value, icon, weight}] */
     defs(group) { return Object.entries(cfg().list).map(([id, r]) => Object.assign({ id, base: id, tier: 1 }, r)).filter((r) => !group || r.group === group); },
     /** Partes de un id: { base, tier, rarity ('n'|'m'|'r'), affixes: [{k, v}] } */
@@ -70,6 +89,7 @@
     },
     /** Una runa nueva de esa base y tier con rareza al azar (o la dada). */
     roll1(base, tier, rnd = Math.random, rarity = null, up = 0) {
+      tier = Math.max(1, Math.min(tier, this.maxTier() || 1));
       const rr = rarity || this.rollRarity(rnd, up);
       return this.make(base, tier, rr, this.rollAffixes(rr === 'r' ? 2 : rr === 'm' ? 1 : 0, tier, rnd));
     },
@@ -113,11 +133,12 @@
      * Se guardan ya (no se pierden aunque caigas). @returns {string[]} ids
      */
     drop(source, rnd = Math.random) {
+      if (!this.enabled()) return [];
       const p = cfg().drop[source] || 0;
       const n = p >= 1 ? Math.floor(p) : rnd() < p ? 1 : 0;
       // A más profundidad y corrupción, más probable que salga de un tier mayor
       const up = DK.endgame.runeTier() + (source === 'secret' ? 0.2 : 0);
-      const ids = this.roll(n, rnd).map((id) => this.roll1(id, rnd() < up ? (rnd() < up / 3 ? 3 : 2) : 1, rnd, null, up));
+      const ids = this.roll(n, rnd).map((id) => this.roll1(id, Math.min(this.maxTier(), rnd() < up ? (rnd() < up / 3 ? 3 : 2) : 1), rnd, null, up));
       ids.forEach((id) => this.add(id));
       const e = DK.expedition.active();
       if (ids.length && e && e.log) e.log.runes = (e.log.runes || []).concat(ids);
@@ -132,7 +153,7 @@
      * sólo las que aún tienes; como mucho una de tamaño y una de tipo).
      */
     slots() {
-      const n = st() && st().nextExpedition; if (!n) return [];
+      const n = st() && st().nextExpedition; if (!n || !this.enabled()) return [];
       let raw = n.runeSlots;
       if (!raw && n.runes) raw = [n.runes.size, n.runes.kind].filter(Boolean); // v4.22.0
       const used = {}, groups = {}, out = [];
@@ -153,7 +174,7 @@
     },
     /** ¿Se puede engastar? (la tienes libre, no está bloqueada y hay hueco o reemplaza a la de su grupo) */
     canSocket(id) {
-      const r = this.get(id); if (!r || this.locked(id) || this.free(id) <= 0) return false;
+      const r = this.get(id); if (!r || !this.enabled() || this.locked(id) || this.free(id) <= 0) return false;
       const n = st() && st().nextExpedition;
       if (n && n.kind === 'abismo' && r.group !== 'bonus') return false;
       const sl = this.slots();
@@ -217,7 +238,7 @@
     /** Libres (sin engastar) de esa runa y tier, de cualquier rareza. */
     freeKey(id) { return this.idsOfKey(id).reduce((a, x) => a + Math.max(0, this.free(x)), 0); },
     /** ¿Se pueden fundir 3 de esta runa y tier (libres, cualquier rareza) en una del tier siguiente? */
-    canFuse(id) { const c = this.fuseCost(id); return c != null && this.freeKey(id) >= 3 && DK.wallet.get() >= c; },
+    canFuse(id) { const c = this.fuseCost(id); return c != null && this.parse(id).tier < this.maxTier() && this.freeKey(id) >= 3 && DK.wallet.get() >= c; },
     /** Gasta 3 (primero las de menor rareza) y da una del tier siguiente con la rareza más alta de las gastadas. */
     fuse(id, rnd = Math.random) {
       if (!this.canFuse(id)) return null;

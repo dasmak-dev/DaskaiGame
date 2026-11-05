@@ -469,6 +469,7 @@ DK.i18n.register('en', {
   },
   track: { chip: 'Tracking +{n}%', tip: 'You have defeated {n} of this species: shinies are more likely' },
   forge: {
+    tierLocked: 'Upgrade the Rune workshop for tier {n}', 
     help: '3 equal → 1 of the next tier ({a} / {b} coins).',
     fuse: 'Fuse 3 · {cost}', need: 'You need {n} more', noCoins: 'Not enough coins', tip: 'You get {name}', done: 'You forged {name}!',
   },
@@ -538,6 +539,7 @@ DK.i18n.register('en', {
 
   settings: {
     autoHeal: 'Auto heal', autoHealDesc: 'In auto, if your daskai drops below {n}% HP it uses its healing move or the cheapest healing item that works (at most {max} times per battle).',
+    bgFx: 'Animated background', bgFxDesc: 'Swirling colour behind the camp screens (not during expeditions)',
     pixelArt: 'Pixel art daskai', pixelArtDesc: 'Retro pixelated sprites (turn off for smooth drawings)',
     autoBattle: 'Start battles in auto mode', autoBattleDesc: 'Your daskai picks the best move by itself. Press A to take control at any time.',
     autoPause: 'Pause auto on low HP', autoPauseDesc: 'If your daskai drops below 30% HP, auto stops so you decide (important in hard mode).',
@@ -607,6 +609,8 @@ DK.i18n.register('en', {
     yourTeam: 'Your team', manage: 'Manage', today: "Today's missions", allMissions: 'See all', quick: 'Quick actions',
   },
   inv: {
+    ug: { all: 'All', heal: 'Heal', mana: 'Mana', status: 'Status', boost: 'Boost', gear: 'Gear', other: 'Other' }, sort: { qty: 'quantity', name: 'name', rarity: 'rarity' }, sortBy: 'Sort by {s}', matsTitle: 'Crafting materials', matsText: '{n} kinds · {q} units → Crafting', 
+    inTeam: 'In the team', inReserve: 'In reserve', curesStatus: 'Cures: {s}', tonicLeft: '{n} tonics left', resetPreview: 'Returns its {n} tonics', 
     toNext: '{n} to next level', sellAtMerchant: 'You can sell it to an expedition merchant for {n} coins.', toWorkshop: 'See recipes that use it',
     title: 'Inventory', items: 'Items', all: 'All', search: 'Search item...',
     dropHint: 'Drag an item onto a daskai to use or equip it',
@@ -751,7 +755,7 @@ DK.i18n.register('en', {
       difficulty: { t: 'Difficulty', b: 'Normal: fainted daskai recover. Hard: a daskai that falls in an expedition dies for good. Nightmare: you also cannot retreat, campfires are not fixed and you lose the backpack on defeat.' },
       relics: { t: 'Relics', b: 'Relics are upgrades that last one expedition. They come from treasure, elites and bosses and stack. Camp Upgrades unlock more possible relics.' },
       kinds: { t: 'Expedition types', b: 'Each map has a type and a size: capture (more recruits), combat (more elites and experience), treasure (more loot) or challenge (stronger rivals and more emblems). Bigger maps give more emblems.' },
-      runes: { t: 'Expedition runes', b: 'Runes drop from chests, elites and bosses and are kept forever. When preparing you socket up to 4: one size and one type rune, which fix those, and any bonus runes (gold, wisdom…). They are spent on departure.' },
+      runes: { t: 'Expedition runes', b: 'Unlocked with the «Rune workshop» upgrade (emblems): each level opens a tier. Runes drop from chests, elites and bosses and are kept forever. When preparing you socket up to 4: one size and one type rune, which fix those, and any bonus runes (gold, wisdom…). They are spent on departure.' },
       runeTiers: { t: 'Rune tiers', b: 'Runes come in tier I, II and III. Three of the same rune and tier (any rarity) fuse into the next tier in Crafting → Runes, keeping the highest rarity. Bonuses multiply with tier; size runes set the floors (small 8/14/18, medium 14/20/26, XL 20/28/36) and high tiers give extra emblems per boss.\nThey can drop normal, magic (1 modifier) or rare (2): more elites, treasure, recruits or caves on the map, or more coins, experience or shinies.' },
       emblems: { t: 'Emblems and Upgrades', b: 'Bosses give emblems (more on big maps). Spend them on permanent Upgrades after each expedition and on training grounds upgrades.' },
       training: { t: 'Training grounds', b: 'Leave daskai gaining experience in real time, even with the game closed. They gain a % of their level per minute (less at higher levels) and speed up the longer they stay.\nNothing to pay up front: you pay when taking them out, based on time and level. You can buy a booster when leaving them. Grounds upgrades cost emblems and coins.' },
@@ -781,6 +785,7 @@ DK.i18n.register('en', {
     scoring: 'Score: floors × 100 + emblems × 150 + coins / 10 + 1000 for beating the boss + 500 per extra map. No runes or corruption: every try is comparable.',
     result: 'Weekly challenge: {n} points', newBest: 'New record!', gotReward: '+{e} emblems and a rune',
   },
+  healPay: { title: 'Heal the team', text: 'Full health, mana and status for {n} coins. It is pricey: potions are cheaper.', ok: 'Pay {n}', tip: 'Fully heal the team for coins', poor: 'You need {n} more coins', done: 'Team healed (−{n} coins)' },
   talent: {
     next: 'Next talent at level {n}',
     tab: 'Talents', help: 'Every {n} levels, pick one of two talents. The choice is permanent.',
@@ -845,7 +850,7 @@ DK.i18n.register('en', {
     normal: { name: 'Normal', desc: 'A bit of everything: fights, events, chests, recruits and shops.' },
     captura: { name: 'Capture', desc: 'Short and full of wild daskai: many recruits, more candidates and more shinies. Fewer coins.' },
     combate: { name: 'Combat', desc: 'Almost all fights and mini bosses. More coins and experience.' },
-    tesoro: { name: 'Treasure', desc: 'Chests, shops, events and caves. Few fights, but rivals are a bit stronger.' },
+    tesoro: { name: 'Treasure', desc: 'Very rare! At least 5 loaded chests: more items, epic relics, runes and ×2.5 coins. +1 emblem per boss.' },
     abismo: { name: 'Abyss', desc: 'Short floors chained without end, each harder. Rewards every few floors.' },
     desafio: { name: 'Challenge', desc: 'Short and tough: mini bosses everywhere, rivals +3 levels and +1 emblem per boss.' },
     fx: { shiny: '+{n}% shiny', capture: '+{n}% bonding', recruit: '+{n} candidate', coins: '{n}% coins', exp: '+{n}% exp.', levels: 'Rivals +{n} Lv.', emblems: '+{n} emblem per boss', short: 'Short' },
@@ -985,7 +990,7 @@ campfire: 'You went home from a campfire: you keep half the loot and all your re
 
   difficulty: {
     title: 'Difficulty', final: 'It cannot be changed after creating the game.',
-    normal: { name: 'Normal', desc: 'Fallen daskai only faint. Slightly weaker foes. If you lose, you keep what you packed.' },
+    normal: { name: 'Normal', desc: 'Fallen daskai only faint. Slightly weaker foes. If you lose, you keep your backpack and your team returns at half health.' },
     dificil: { name: 'Hard', desc: 'Permanent death in expeditions. One save per expedition. If you lose, you keep what you packed.' },
     pesadilla: { name: 'Nightmare', desc: 'Permanent death, no going home from campfires, no fixed rest before the boss and stronger foes. If you lose, you also lose the backpack.' },
   },
@@ -1010,6 +1015,7 @@ campfire: 'You went home from a campfire: you keep half the loot and all your re
       reclutador: { name: 'Recruiter', desc: 'Recruit nodes have one more candidate and they come at a higher level.', effect: '+1 candidate · +{n} levels' },
       hoguera: { name: 'Better campfire', desc: 'Campfires on the expedition map heal more.', effect: '+{n}% when resting' },
       comercio: { name: 'Trade contacts', desc: 'Merchants bring more goods.', effect: '+{n} offers per merchant' },
+      runas: { name: 'Rune workshop', desc: 'Opens the rune slots when preparing and makes runes drop. Each level unlocks one more tier.', effect: 'Runes up to tier {n}' },
       fenix: { name: 'Phoenix altar', desc: 'Extra saves from death on every expedition.', effect: '+{n} saves per expedition' },
     },
   },

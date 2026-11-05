@@ -8,7 +8,42 @@
   const { t } = DK;
   const V = (DK.views = DK.views || {});
 
-  V.itemIcon = (it, size = 22) => h('span', { class: 'item-icon r-' + it.rarity, style: { '--c': it.color || 'var(--primary)' } }, DK.icon(it.icon, size));
+  /**
+   * Icono de objeto «gema» a color (v4.42), como las runas: una pieza con la
+   * forma de su categoría (batalla = orbe, mejora = rombo, equipo = escudo
+   * hexagonal, pieza = losa), rellena con el color del objeto, su símbolo en
+   * claro encima, brillo y un aro según la rareza (raro azul, épico morado,
+   * legendario dorado). Ocupa la caja .item-icon (su tamaño lo pone el CSS).
+   */
+  const SHAPES = {
+    batalla: '<circle cx="24" cy="24" r="21"/>',
+    mejora: '<path d="M24 2.5 45.5 24 24 45.5 2.5 24z"/>',
+    equipo: '<path d="M24 2.5 43 13v22L24 45.5 5 35V13z"/>',
+    pieza: '<rect x="3.5" y="3.5" width="41" height="41" rx="10"/>',
+  };
+  const RING = { raro: '#60a5fa', epico: '#c084fc', legendario: '#fbbf24' };
+  const mix = (a, b, k) => {
+    const p = (x) => [1, 3, 5].map((i) => parseInt(x.slice(i, i + 2), 16));
+    if (!/^#[0-9a-f]{6}$/i.test(a)) return a;
+    const A = p(a), B = p(b);
+    return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * k).toString(16).padStart(2, '0')).join('');
+  };
+  let iiN = 0;
+  V.itemIcon = (it, size = 22) => {
+    const c = /^#[0-9a-f]{6}$/i.test(it.color || '') ? it.color : '#c0392b';
+    const id = 'ii' + (++iiN), shape = SHAPES[it.category] || SHAPES.pieza, ring = RING[it.rarity];
+    const light = mix(c, '#ffffff', 0.62), dark = mix(c, '#000000', 0.62), deep = mix(c, '#000000', 0.86);
+    const fillShape = shape.replace('/>', ` fill="url(#${id})" stroke="${mix(c, '#ffffff', 0.25)}" stroke-opacity=".7" stroke-width="1.4"/>`);
+    const ringShape = ring ? shape.replace('/>', ` fill="none" stroke="${ring}" stroke-width="2.4" stroke-opacity=".95" transform="translate(24 24) scale(1.07) translate(-24 -24)"/>`) : '';
+    const span = document.createElement('span');
+    span.className = 'item-icon ii r-' + it.rarity + ' c-' + it.category;
+    span.style.setProperty('--c', c);
+    span.innerHTML = `<svg viewBox="-2 -2 52 52" aria-hidden="true"><defs><radialGradient id="${id}" cx="38%" cy="32%" r="75%"><stop offset="0" stop-color="${c}"/><stop offset=".6" stop-color="${dark}"/><stop offset="1" stop-color="${deep}"/></radialGradient></defs>`
+      + ringShape + fillShape
+      + `<g transform="translate(11 11) scale(1.0833)" fill="none" stroke="${light}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${DK.icon.raw(it.icon)}</g>`
+      + `<ellipse cx="17" cy="12" rx="8" ry="3.6" fill="#fff" opacity=".2"/></svg>`;
+    return span;
+  };
 
   /**
    * Tarjeta de objeto.

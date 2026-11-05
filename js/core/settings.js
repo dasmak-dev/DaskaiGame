@@ -22,6 +22,7 @@
     sfxVol: 0.7,
     muted: false,
     battleSpeed: 1,         // 1 | 2 | 4
+    bgFx: true,             // fondo animado de remolino (core/bgfx.js) fuera de la expedición
     pixelArt: true,         // daskai en pixel art (false = dibujo suave)
     autoBattle: false,      // los combates empiezan en modo automático
     autoPause: true,        // el automático se pausa si tu daskai baja del 30% de vida

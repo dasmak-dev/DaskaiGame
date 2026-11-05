@@ -145,7 +145,7 @@
       tile('flag', t('profile.expTitle'), num(s.expeditions), t('profile.xl', { n: num(s.xlCleared || 0) }), '#a855f7'),
       tile('paw', t('profile.owned'), num(DK.party.all().length), t('profile.inTeam', { n: DK.party.active().length }), '#22c55e'),
       tile('evolve', t('pstats.evolutions'), num(s.evolutions), t('profile.shinies', { n: num(s.shinies) }), '#38bdf8'),
-      tile('anvil', t('pstats.crafts'), num(s.crafts), t('profile.recipesKnown', { n: (st.recipesKnown || []).length }), '#eab308'),
+      tile('craftCog', t('pstats.crafts'), num(s.crafts), t('profile.recipesKnown', { n: (st.recipesKnown || []).length }), '#eab308'),
       tile('coin', t('pstats.coinsEarned'), num(s.coinsEarned), t('profile.coinsNowShort', { n: num(DK.wallet.get()) }), '#facc15'),
       tile('emblem', t('profile.emblems'), num(DK.camp.emblems()), t('profile.runes', { n: num(DK.runes ? DK.runes.total() : 0) }), '#e7c27a'));
   }
@@ -172,7 +172,7 @@
         row('map', t('profile.ppZones'), open, zones.length, '#eab308'),
         row('crown', t('profile.ppBosses'), tot.bosses, tot.bossesTotal, '#ef4444'),
         row('award', t('profile.ppAch'), DK.achievements.unlockedCount(), D.achievements.length, '#a855f7'),
-        row('anvil', t('profile.ppRecipes'), known, recipes, '#f97316')));
+        row('craftCog', t('profile.ppRecipes'), known, recipes, '#f97316')));
   }
 
   /** Tira de los últimos combates (un punto por combate, el más reciente a la derecha). */
@@ -250,7 +250,7 @@
         row('sparkles', t('pstats.shinies'), num(s.shinies)), row('trash', t('pstats.released'), num(s.released)), row('skull', t('profile.fallen'), num((DK.store.state.graveyard || []).length))),
       h('div', { class: 'card' }, h('h3', null, t('pstats.economy')),
         row('coin', t('profile.coinsNow'), num(DK.wallet.get())), row('coin', t('pstats.coinsEarned'), num(s.coinsEarned)),
-        row('shop', t('pstats.coinsSpent'), num(s.coinsSpent)), row('anvil', t('pstats.crafts'), num(s.crafts))));
+        row('shop', t('pstats.coinsSpent'), num(s.coinsSpent)), row('craftCog', t('pstats.crafts'), num(s.crafts))));
   }
 
   /**

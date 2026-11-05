@@ -104,7 +104,7 @@
       const r = G().abyss.reward(depth), got = { floor: depth, emblems: r.emblems, coins: r.coins, runes: [], abisal: !!r.abisal };
       DK.camp.addEmblems(r.emblems);
       DK.expedition.addLoot([], r.coins);
-      for (let i = 0; i < 2; i++) { const id = DK.runes.roll1(DK.runes.roll(1)[0], r.rune); DK.runes.add(id); got.runes.push(id); }
+      for (let i = 0; i < 2 && DK.runes.enabled(); i++) { const id = DK.runes.roll1(DK.runes.roll(1)[0], r.rune); DK.runes.add(id); got.runes.push(id); }
       if (r.abisal) DK.bag.addHome({ fragmento_abisal: 1 });
       DK.ui.toast(t('abyss.reward', { n: depth }), { icon: 'gift', kind: 'good' });
       return got;

@@ -26,6 +26,8 @@
  *   hoguera     +% de curación en las hogueras del mapa           (expedition.rest)
  *   comercio    ofertas extra en cada mercader                    (expedition.makeOffers)
  *   fenix       salvaciones extra de la muerte por expedición     (rules.maxRevives)
+ *   runas       1: huecos de runas y runas de tier I · 2: tier II ·
+ *               3: tier III (sin ella no caen runas)               (runes.maxTier)
  *
  * Para añadir una mejora: añádela aquí, escribe sus textos en
  * lang → camp.up.<id>.{name,desc,effect} y lee DK.camp.value('<id>')
@@ -50,6 +52,7 @@
     { id: 'hoguera', icon: 'campfire', group: 'expedition', levels: L([1, 0.15], [2, 0.3]) },
     { id: 'comercio', icon: 'shop', group: 'expedition', levels: L([1, 1], [2, 2]) },
     { id: 'fenix', icon: 'sparkles', group: 'expedition', levels: L([4, 1], [8, 2]) },
+    { id: 'runas', icon: 'rune', group: 'expedition', levels: L([2, 1], [6, 2], [12, 3]) },
   ];
   DK.data.upgradeGroups = ['combat', 'progress', 'expedition'];
 })();

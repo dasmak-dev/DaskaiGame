@@ -357,6 +357,36 @@ Se carga la última y sólo sobrescribe: paleta (piedra oscura, bronce, oro `--g
 - **Expedición:** al entrar en el mapa, el equipo, la mochila o un combate durante una expedición, `#zone-backdrop` (creado en `screens/expedition.js` con `screen:enter`) pinta detrás de todo la escena de la zona actual, oscurecida; `body.in-exp`.
 - **Combate:** la arena usa la escena de la zona (`components/scenes.js`, ahora con árboles muertos, ruinas, tumbas, cristales o tentáculos según la zona) y los **jefes tienen su propio fondo**: `DK.scenes.bossScene(zona, secreto)` → `boss_<escena>` (menhires bajo luna roja, bosque muerto, naufragio con tormenta, bosque de cristales, forja de lava, santuario con estatua, fauces del abismo, ruinas entre rayos) y `boss_secret` (cripta) para los jefes ocultos.
 
+### Cambios de la v4.44 — Icono de Crafteo «engranaje con gema» y fondo animado
+
+- **Icono `craftCog`** (`js/core/icons.js`): engranaje grueso de 10 dientes con una gema en el centro, para que no se confunda con «Ajustes». Sustituye a `craftGem` (v4.43) en todos los sitios de Crafteo; se quitan `craftGem` y `craftGear`.
+- **Fondo animado** (`js/core/bgfx.js`, `DK.bgfx`): `<canvas id="bgfx">` fijo detrás de todo con un shader WebGL de remolino de pintura, a ¼ de resolución (píxeles gordos, `image-rendering: pixelated`) y a 30 fps.
+  - Colores e intensidad desde CSS (`css/motion.css` §6): `--bgfx-a`, `--bgfx-b`, `--bgfx-c` y `--bgfx-op`, distintos en Exilio (brasa y verde azulado), limpio, clásico y tema claro.
+  - Sólo fuera de la expedición: se apaga en `DK.bgfx.offScreens` (`expedition`, `battle`, `expSummary`, `gameOver`) y mientras haya una expedición en curso. Se actualiza con `screen:enter`, `settings:changed` y el final de la expedición.
+  - Ajuste nuevo **«Fondo animado»** (`settings.bgFx`, por defecto activado; lang `settings.bgFx`/`bgFxDesc`). Con alto contraste no sale; con «Reducir animaciones» queda un fotograma fijo. Se pausa con la pestaña oculta y sin WebGL no hace nada.
+- Test nuevo en `tests/craft.test.js`: el fondo sale en Crafteo, se apaga con el ajuste y en la expedición, y la cabecera usa `craftCog`.
+
+### Cambios de la v4.43 — Nuevo icono de Crafteo
+
+- **Icono `craftGem`** (`js/core/icons.js`): gema tallándose con destellos. Sustituye a `anvil` en todo lo que es Crafteo: menú y cabecera (`screens/craft.js`), tarjeta de pendientes (`components/todoCard.js`), paleta de comandos (`components/palette.js`), misiones (`data/missions.js`), logros (`data/achievements.js`), preparar expedición (`screens/expPrepare.js`), perfil (`screens/profile.js`), progreso (`screens/progress.js`), bolsa (`screens/inventory.js`) y wiki (`data/wiki.js`).
+- **Alternativa `craftGear`**: engranaje y llave, ya definida en `icons.js`. Para cambiar, basta sustituir `'craftGem'` por `'craftGear'` en esos archivos.
+- `anvil` se mantiene para el herrero (`data/events.js`), la entrada de tiers de runas del wiki y el yunque del campamento.
+
+### Cambios de la v4.42 — Iconos de objeto a color, bolsa por usos y crafteo más limpio
+
+- **Iconos de objeto «gema»** (`V.itemIcon` en components/itemViews.js): SVG con la forma de su categoría (batalla = orbe, mejora = rombo, equipo = escudo hexagonal, pieza = losa), rellena con el color del objeto (`it.color`), su símbolo en claro (`DK.icon.raw(name)` da los trazos), brillo y un aro de rareza (raro azul, épico morado, legendario dorado). La caja la sigue poniendo el CSS de cada sitio (`.item-icon`); `.item-icon.ii` quita el fondo antiguo.
+- **Bolsa** (screens/inventory.js): pestañas **por uso** (`USE_GROUPS`: Curar, Maná, Estados, Mejorar, Equipo, Otros); los materiales ya no salen (tarjeta «Materiales de crafteo» → Crafteo › Materiales); **buscar y ordenar** son dos botones de icono (la búsqueda se abre al pulsar; ordenar alterna cantidad / nombre / rareza, `params.sort`).
+- **Usar en…** con vista previa (`usePreview`): equipo arriba (insignia de equipo) y la reserva en un desplegable; cura/maná con barra y lo que recupera en verde (45 → 75/90 +30), experiencia con los niveles que sube (Nv 5 → 11 +6) y la barra resultante, tónicos (atributo antes → después y tónicos restantes), estados que quita.
+- **Crafteo** (screens/craft.js): el detalle ya no se abre solo (pulsar otra vez o la X lo cierra; la lista ocupa todo el ancho), fichas sin la fila de materiales (una barra fina `.wb-prog` con lo que tienes; los materiales en el tooltip y en el detalle), filtros de tipo como iconos en un grupo, «sólo las que puedo» y la búsqueda como botones de icono. CSS §24 en grim.css.
+
+### Cambios de la v4.41 — Taller de runas, tesoro raro, curar pagando y derrota en Normal
+
+- **Taller de runas** (mejora `runas` en data/upgrades.js: 2 / 6 / 12 emblemas): sin ella no hay huecos de runas en la preparación (`DK.runes.enabled()`), no caen runas y las recompensas de runas (Abismo, desafío semanal) no se dan. Nivel 1 = huecos + tier I, 2 = tier II, 3 = tier III (`DK.runes.maxTier()`): `drop`, `roll1` y `canFuse` no pasan de ese tier. Partidas con runas de antes: se les da el nivel de su mejor runa una vez (`state.runesGrandfathered`).
+- **Expedición de tesoro**: probabilidad 12 → 1 (≈1%), pero mínimo 5 cofres (`minTreasures`), +100% monedas, +1 emblema por jefe y cofres mejores (`kinds.tesoro.chest`: +2 objetos, 80% de raro extra, +35% de reliquia (también épicas), 50% de runa extra y ×2,5 monedas).
+- **Derrota en Normal** (`difficulties.normal.defeatHeal: 0.5`, `DK.rules.defeatHeal()`): `afterEnd({ defeat: true })` deja a todos con al menos el 50% de vida y maná.
+- **Curar pagando** antes de salir (Batalla → Tu equipo, botón `.bt-heal-coins`): `DK.expedition.healCost()` = Σ (vida que falta × 3 + maná × 1,5 + 200 si está debilitado + 20 si tiene estado) × (1 + nivel × 3%), redondeado a 10 (`config.expedition.healCoins`); `healPaid()` cobra y cura del todo.
+- **Bolsa**: el detalle ya no se abre solo; aparece al pulsar un objeto (pulsar otra vez o la X lo cierra) y la lista ocupa todo el ancho mientras tanto.
+
 ### Cambios de la v4.40 — Eficacia clara en combate, pasivas «al entrar» y desafío semanal
 
 - **Botón de ataque v2** (`moveButton` en screens/battle.js, CSS al final de battle.css): 4 capas — nombre + orden (`.bm-order` 1º/2º, con rayo o reloj si tiene prioridad) + tecla · franja de **eficacia** (`.bm-eff` strong/weak/normal con el multiplicador ×1,5 / ×0,75 / ×1; «Casa desconocida» si aún no la conoces; efecto si es de apoyo; «Débil» si golpea su punto débil) · daño previsto, % y «Remata» · coste, poder, precisión (si < 100) y extras (su casa, ruptura). En el móvil la franja muestra sólo icono y multiplicador.

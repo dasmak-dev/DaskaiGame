@@ -7,6 +7,44 @@ const bosses = (n) => `(() => { Object.keys(DK.data.zones).filter((z) => !DK.dat
 module.exports = {
   name: 'Final del juego',
   cases: [{
+    name: 'Taller de runas: sin la mejora no hay huecos ni caen runas; cada nivel abre un tier',
+    run: (browser, view) => play(browser, view, async (p) => {
+      const r = await p.evaluate(() => {
+        const R = DK.runes; DK.store.state.camp = DK.store.state.camp || {}; DK.store.state.runesGrandfathered = true;
+        const t0 = { en: R.enabled(), drops: Array.from({ length: 20 }, () => R.drop('boss')).flat().length, slots: (DK.expedition.nextStart(), R.slots().length) };
+        DK.store.state.camp.runas = 1;
+        const d1 = Array.from({ length: 40 }, () => R.drop('secret')).flat();
+        DK.store.state.camp.runas = 2;
+        DK.store.state.runes = { saber: 5 }; DK.wallet.add(10000, { silent: true });
+        const f1 = R.canFuse('saber'), next = R.fuse('saber'), f2 = R.canFuse(R.withTier('saber', 2));
+        return { t0, en1: R.enabled(), maxT1: Math.max(...d1.map((id) => R.parse(id).tier)), n1: d1.length, f1, next, f2 };
+      });
+      check(!r.t0.en && r.t0.drops === 0 && r.t0.slots === 0, 'sin el taller no debería haber runas: ' + JSON.stringify(r.t0));
+      check(r.en1 && r.n1 > 0 && r.maxT1 === 1, 'con el nivel 1 sólo caen de tier I: ' + JSON.stringify(r));
+      check(r.f1 && R2(r.next) && !r.f2, 'con el nivel 2 se funde a II pero no a III: ' + JSON.stringify(r));
+      function R2(id) { return /:2/.test(id); }
+    }),
+  }, {
+    name: 'Normal: al perder el equipo vuelve con la mitad de vida; curar pagando antes de salir; tesoro muy rara y mejor',
+    run: (browser, view) => play(browser, view, async (p) => {
+      const r = await p.evaluate(() => {
+        DK.settings && 0;
+        DK.store.state.difficulty = 'normal';
+        const d = DK.party.active()[0], m = DK.daskai.stats(d);
+        DK.store.state.nextExpedition = { zone: 'pradera', seed: 'df', size: 'short', kind: 'normal' };
+        DK.expedition.start({}); d.cur.hp = 0; d.cur.mp = 0;
+        DK.expedition.fail();
+        const hpPct = d.cur.hp / m.hp, mpPct = d.cur.mp / m.mp;
+        d.cur.hp = 1; const cost = DK.expedition.healCost(); DK.wallet.add(cost, { silent: true }); const w0 = DK.wallet.get();
+        const paid = DK.expedition.healPaid();
+        const ch = DK.expedition.kindChances();
+        return { diff: DK.rules.difficulty(), hpPct, mpPct, cost, paid, spent: w0 - DK.wallet.get(), full: d.cur.hp === DK.daskai.stats(d).hp, tesoro: ch.tesoro, chest: DK.config.expedition.kinds.tesoro.chest.items };
+      });
+      check(r.diff !== 'normal' || (r.hpPct >= 0.5 && r.mpPct >= 0.5), 'en Normal deberían volver con la mitad: ' + JSON.stringify(r));
+      check(r.cost > 0 && r.paid === r.cost && r.spent === r.cost && r.full, 'curar pagando no funciona: ' + JSON.stringify(r));
+      check(r.tesoro < 0.02 && r.chest >= 2, 'la expedición de tesoro debería ser muy rara y mejor: ' + JSON.stringify(r));
+    }),
+  }, {
     name: 'Desafío semanal: mapa fijo de la semana, pactos obligatorios, sin gastar runas y tabla de récords',
     run: (browser, view) => play(browser, view, async (p) => {
       const r = await p.evaluate((B) => {
@@ -62,6 +100,7 @@ module.exports = {
         const R = DK.runes;
         const lateBefore = R.locked('elite');
         eval(B); DK.corruption.check();
+        DK.store.state.camp = DK.store.state.camp || {}; DK.store.state.camp.runas = 3; // Taller de runas al máximo
         R.add('oro', 3); DK.wallet.add(5000, { silent: true });
         const fused = R.fuse('oro');
         const after = { oro: R.count('oro'), oro2: R.count('oro:2') };

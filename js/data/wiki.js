@@ -35,7 +35,7 @@
     { id: 'difficulty', group: 'expedition', icon: 'gauge', when: () => true },
     { id: 'relics', group: 'expedition', icon: 'gem', when: () => (st().expeditions || 0) > 0 || !!S().expedition },
     { id: 'kinds', group: 'expedition', icon: 'flag', when: () => (st().expeditions || 0) > 0 },
-    { id: 'runes', group: 'expedition', icon: 'gem', when: () => DK.runes.total() > 0 || DK.endgame.late(),
+    { id: 'runes', group: 'expedition', icon: 'gem', when: () => DK.runes.enabled() || DK.runes.total() > 0 || DK.endgame.late(),
       stat: () => DK.t('wiki.s.runes', { n: num(DK.runes.total()) }) },
     { id: 'runeTiers', group: 'expedition', icon: 'anvil', when: () => Object.keys(DK.runes.all()).some((id) => DK.runes.parse(id).tier > 1) || DK.endgame.late() },
     // --- Progreso ---
@@ -43,7 +43,7 @@
       stat: () => num(DK.camp.emblems()) },
     { id: 'training', group: 'progress', icon: 'dumbbell', when: () => DK.unlocks.has('training'),
       stat: () => DK.t('wiki.s.training', { n: DK.training.level(), max: C().training.instructor.length - 1, s: DK.training.slotCount() }) },
-    { id: 'craft', group: 'progress', icon: 'anvil', when: () => (S().recipesKnown || []).length > 0 || (st().crafts || 0) > 0,
+    { id: 'craft', group: 'progress', icon: 'craftCog', when: () => (S().recipesKnown || []).length > 0 || (st().crafts || 0) > 0,
       stat: () => DK.t('wiki.s.craft', { n: (S().recipesKnown || []).length }) },
     { id: 'missions', group: 'progress', icon: 'target', when: () => true },
     { id: 'pass', group: 'progress', icon: 'award', when: () => true, stat: () => DK.t('wiki.s.level', { n: DK.pass.level() }) },

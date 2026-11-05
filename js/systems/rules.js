@@ -26,6 +26,8 @@
     permadeath() { return this.def().permadeath; },
     /** ¿Se conserva al perder lo que metiste en la mochila? (data/difficulties.js → keepPack) */
     keepPack() { return this.def().keepPack !== false; },
+    /** % de vida y maná con el que vuelve tu equipo al caer derrotado (0 = lo normal). */
+    defeatHeal() { return this.def().defeatHeal || 0; },
     /** ¿Se puede abandonar una expedición? */
     canRetreat() { return this.def().retreat; },
     /** ¿Hay un descanso fijo antes del jefe? */

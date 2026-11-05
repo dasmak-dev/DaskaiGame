@@ -238,7 +238,8 @@
         onClick: () => { DK.runes.unsocket(i); DK.audio.sfx('click'); refresh(); } },
         h('span', { class: 'rune-socket-ring' }, V.runeGem(id, 46)), h('span', { class: 'rune-socket-x' }, DK.icon('x', 10)));
     });
-    const runeBox = h('div', { class: 'bt-runes' },
+    // Sin la mejora «Taller de runas» no hay huecos (se compra con emblemas tras el primer jefe)
+    const runeBox = !DK.runes.enabled() ? null : h('div', { class: 'bt-runes' },
       h('div', { class: 'bt-runes-text' },
         h('span', { class: 'bt-label' }, t('rune.title')),
         h('span', { class: 'small muted' }, slots.length ? slots.map(V.runeEffect).join(' · ') : t('rune.random')),
@@ -294,6 +295,16 @@
           h('div', { class: 'bt-label-row' }, h('span', { class: 'bt-label' }, t('pack.team'), ` ${team.length}/${DK.config.maxTeam}`),
             h('span', { class: 'grow' }),
             h('button', { class: 'icon-btn bt-icon', type: 'button', tip: t('heal.button'), 'aria-label': t('heal.button'), onClick: async () => { if (await V.healDialog(team)) refresh(); } }, DK.icon('flask', 16)),
+            // Curar pagando monedas (caro): sólo si a alguien le falta vida o maná
+            (() => {
+              const c = E.healCost(team); if (!c) return null;
+              const poor = DK.wallet.get() < c;
+              return h('button', { class: 'bt-heal-coins' + (poor ? ' poor' : ''), type: 'button', disabled: poor, tip: poor ? t('healPay.poor', { n: c - DK.wallet.get() }) : t('healPay.tip'),
+                onClick: async () => {
+                  if (!(await DK.ui.confirm(t('healPay.title'), t('healPay.text', { n: c.toLocaleString(DK.i18n.lang) }), { okLabel: t('healPay.ok', { n: c.toLocaleString(DK.i18n.lang) }) }))) return;
+                  if (E.healPaid(team)) { DK.audio.sfx('heal'); DK.ui.toast(t('healPay.done', { n: c.toLocaleString(DK.i18n.lang) }), { icon: 'heart', kind: 'good' }); DK.app.renderRes && DK.app.renderRes(); refresh(); }
+                } }, DK.icon('heart', 13), DK.icon('coin', 12), c.toLocaleString(DK.i18n.lang));
+            })(),
             h('button', { class: 'icon-btn bt-icon', type: 'button', tip: t('home.manage'), 'aria-label': t('home.manage'), onClick: () => DK.router.go('team') }, DK.icon('edit', 16))),
           teamStrip),
         h('div', { class: 'bt-block' },
