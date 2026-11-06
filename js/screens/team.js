@@ -40,6 +40,7 @@
       name: (a, b) => DK.daskai.name(a).localeCompare(DK.daskai.name(b)),
       house: (a, b) => DK.daskai.species(a).house.localeCompare(DK.daskai.species(b).house) || b.level - a.level,
       hp: (a, b) => DK.daskai.hpPct(a) - DK.daskai.hpPct(b),
+      rarity: (a, b) => DK.looks.rarityScore(b) - DK.looks.rarityScore(a) || b.level - a.level,
       recent: () => 0,
     };
     list = list.slice().sort(sorters[params.sort || 'level']);
@@ -120,7 +121,7 @@
           const hp = DK.util.percent(d.cur.hp, s.hp), mp = DK.util.percent(d.cur.mp, s.mp);
           inner = h('div', { class: 'party-mon' + (picked(d) ? ' selected' : '') + (DK.daskai.isFainted(d) ? ' fainted' : ''), role: 'button', tabindex: '0', 'data-drag': params.compare ? null : '1', dataset: { uid: d.uid }, style: { '--c': D.houseColor(sp.house) },
             tip: `${DK.daskai.name(d)} · ${sp.name}`, onClick: (e) => { if (!e.target.closest('.party-out')) select(d); }, onKeydown: (e) => { if (e.key === 'Enter') select(d); } },
-            h('span', { class: 'party-art' }, V.dSprite(d, { size: 64 }), V.formPips(d), i === 0 ? h('span', { class: 'party-crown', tip: t('team.leaderHint') }, DK.icon('crown', 14)) : null),
+            h('span', { class: 'party-art' }, V.dSprite(d, { size: 64 }), V.formPips(d), V.newDot(d), i === 0 ? h('span', { class: 'party-crown', tip: t('team.leaderHint') }, DK.icon('crown', 14)) : null),
             h('span', { class: 'party-info' },
               h('span', { class: 'party-name' }, h('b', null, DK.daskai.name(d)), h('span', { class: 'party-lv' }, `${t('common.lvl')} ${d.level}`)),
               h('span', { class: 'party-tags' }, V.houseBadge(sp.house), V.roleBadge(d), V.shinyTag(d), V.tempTag(d), V.statusTag(d.status), DK.daskai.canEvolve(d) ? h('span', { class: 'badge evo', tip: t('evo.readyTip') }, DK.icon('evolve', 12)) : null),
@@ -153,7 +154,7 @@
             role: 'button', tabindex: '0', 'data-drag': params.compare || training || !usable ? null : '1', dataset: { uid: d.uid }, style: { '--c': D.houseColor(sp.house) },
             tip: `${DK.daskai.name(d)} · ${sp.name} · ${t('common.lvl')} ${d.level}${training ? ' · ' + t('train.title') : ''}${!usable && !training ? ' · ' + t('box.atHome') : ''}`,
             onClick: () => select(d), onKeydown: (e) => { if (e.key === 'Enter') select(d); } },
-            V.dSprite(d, { size: 56 }), V.formPips(d),
+            V.dSprite(d, { size: 56 }), V.formPips(d), V.newDot(d),
             h('span', { class: 'pc-lv' }, d.level),
             h('span', { class: 'pc-house' }, DK.icon(D.houses[sp.house].icon, 11)),
             d.shiny ? h('span', { class: 'pc-flag shiny' }, DK.icon('sparkles', 11)) : training ? h('span', { class: 'pc-flag train' }, DK.icon('dumbbell', 11)) : DK.daskai.canEvolve(d) ? h('span', { class: 'pc-flag evo' }, DK.icon('evolve', 11)) : null);
@@ -164,7 +165,7 @@
       const nBoxes = DK.boxes.list().length;
       const rename = async () => { const v = await DK.ui.prompt(t('box.renameTitle'), { placeholder: DK.boxes.name(bi), maxlength: 24, icon: 'edit', value: box.name || '' }); if (v != null) { DK.boxes.rename(bi, v); refresh(); } };
       const sortSel = DK.ui.select({ label: t('box.sort'), value: '', onChange: (v) => { if (v) { DK.boxes.sort(bi, v); DK.audio.sfx('swap'); refresh(); } },
-        options: [{ value: '', label: t('box.sort') }, ...['level', 'house', 'species', 'name'].map((v) => ({ value: v, label: t('box.sortBy.' + v), icon: { level: 'star', house: 'sparkles', species: 'paw', name: 'edit' }[v] }))] });
+        options: [{ value: '', label: t('box.sort') }, ...['level', 'house', 'species', 'name', 'rarity'].map((v) => ({ value: v, label: t('box.sortBy.' + v), icon: { level: 'star', house: 'sparkles', species: 'paw', name: 'edit', rarity: 'gem' }[v] }))] });
 
       // Buscador y filtros (resaltan en las cajas)
       const toggleSearch = () => { params.search = !params.search; refresh(); if (params.search) setTimeout(() => { const s2 = document.querySelector('.team-filters input[type=search]'); if (s2) s2.focus(); }, 30); };
@@ -216,23 +217,37 @@
       /* ---- Esencias y caídos ---- */
       const graves = inExp ? [] : DK.store.state.graveyard || [];
       const essences = inExp ? [] : DK.legacy.list();
-      const target = params.uid && DK.party.get(params.uid);
+      // v4.58: cada esencia abre un selector propio (antes había que tener un daskai seleccionado,
+      // y en el móvil la ficha tapaba la lista): eliges a quién, ves lo que gana y se hereda.
+      const inheritInto = async (es, target) => {
+        const r = DK.legacy.inherit(es.id, target.uid); if (!r) return;
+        DK.audio.sfx('levelup'); DK.ui.toast(t('legacy.done', { name: DK.daskai.name(r.d), from: es.name }), { icon: 'sparkle', kind: 'good' });
+        await V.afterLevel(r.d, r.levelInfo); refresh();
+      };
+      const pickFor = (es) => {
+        const p = DK.legacy.preview(es), stat = DK.tr('stats', D.stats[p.stat]);
+        const list = DK.party.all().filter((d) => !d.temp).sort((a, b) => (DK.party.isActive(b.uid) - DK.party.isActive(a.uid)) || b.level - a.level);
+        const m = DK.ui.modal({ title: t('legacy.pickTitle', { name: es.name }), icon: 'sparkle', cls: 'essence-pick', closeX: true, content: () => h('div', { class: 'stack-s' },
+          h('p', { class: 'muted small' }, t('legacy.qText', { exp: p.exp, n: p.points, stat })),
+          h('div', { class: 'ep-list' }, list.map((d) => {
+            const now = DK.daskai.stats(d)[p.stat];
+            return h('button', { class: 'ep-row', type: 'button', style: { '--c': D.houseColor(DK.daskai.species(d).house) }, onClick: async () => { m.close(true); await inheritInto(es, d); } },
+              h('span', { class: 'ep-art' }, V.dSprite(d, { size: 44 })),
+              h('span', { class: 'ep-main' }, h('b', null, DK.daskai.name(d)), h('small', { class: 'muted' }, `${t('common.lvl')} ${d.level}` + (DK.party.isActive(d.uid) ? ' · ' + t('team.inTeam') : ''))),
+              h('span', { class: 'ep-gain' }, h('small', null, stat), h('b', null, `${now} → ${now + p.points}`)),
+              DK.icon('next', 16));
+          }))) });
+      };
       const essenceBox = essences.length ? h('div', { class: 'essences inline-panel' },
-        h('div', { class: 'team-section-head' }, DK.icon('sparkle', 16), h('b', null, t('legacy.title', { n: essences.length })), h('span', { class: 'muted small' }, t('legacy.hint'))),
-        h('div', { class: 'list' }, essences.map((es) => {
+        h('div', { class: 'team-section-head' }, DK.icon('sparkle', 16), h('b', null, t('legacy.title', { n: essences.length }))),
+        h('p', { class: 'muted small' }, t('legacy.hint')),
+        h('div', { class: 'essence-grid' }, essences.map((es) => {
           const p = DK.legacy.preview(es);
-          const goInherit = async () => {
-            if (!target) return;
-            if (!(await DK.ui.confirm(t('legacy.q', { from: es.name, to: DK.daskai.name(target) }), t('legacy.qText', { exp: p.exp, n: p.points, stat: DK.tr('stats', D.stats[p.stat]) }), { okLabel: t('legacy.inherit'), okIcon: 'sparkle' }))) return;
-            const r = DK.legacy.inherit(es.id, target.uid);
-            DK.audio.sfx('levelup'); DK.ui.toast(t('legacy.done', { name: DK.daskai.name(r.d), from: es.name }), { icon: 'sparkle', kind: 'good' });
-            await V.afterLevel(r.d, r.levelInfo); refresh();
-          };
-          return h('div', { class: 'essence' },
-            V.sprite(es.species, { look: es.look, size: 36, cls: 'grave-sprite' }),
-            h('div', { class: 'grow' }, h('b', null, t('legacy.of', { name: es.name })),
-              h('div', { class: 'muted small' }, `+${p.exp} ${t('common.expShort')} · +${p.points} ${DK.tr('stats', D.stats[p.stat])}`)),
-            btn({ icon: 'sparkle', label: target ? t('legacy.inheritIn', { name: DK.daskai.name(target) }) : t('legacy.pick'), size: 'sm', variant: 'primary', disabled: !target, onClick: goInherit }));
+          return h('button', { class: 'essence-card', type: 'button', onClick: () => pickFor(es) },
+            h('span', { class: 'essence-art' }, V.sprite(es.species, { look: es.look, size: 48, cls: 'grave-sprite' })),
+            h('span', { class: 'essence-main' }, h('b', null, t('legacy.of', { name: es.name })),
+              h('span', { class: 'chips' }, h('span', { class: 'chip' }, DK.icon('star', 12), `+${p.exp} ${t('common.expShort')}`), h('span', { class: 'chip pos' }, DK.icon(D.stats[p.stat].icon, 12), `+${p.points} ${DK.tr('stats', D.stats[p.stat], 'short')}`))),
+            h('span', { class: 'essence-cta' }, DK.icon('sparkle', 14), t('legacy.inherit')));
         }))) : null;
       const extras = essenceBox || graves.length ? h('div', { class: 'panel team-extras' }, essenceBox,
         graves.length ? h('div', { class: 'graves' },
@@ -250,7 +265,7 @@
           const sp = DK.daskai.species(d);
           const mon = h('div', { class: 'pc-mon' + (picked(d) ? ' selected' : ''), role: 'button', tabindex: '0', 'data-drag': params.compare ? null : '1', dataset: { uid: d.uid }, style: { '--c': D.houseColor(sp.house) },
             tip: `${DK.daskai.name(d)} · ${sp.name} · ${t('common.lvl')} ${d.level}`, onClick: () => select(d), onKeydown: (e) => { if (e.key === 'Enter') select(d); } },
-            V.dSprite(d, { size: 56 }), V.formPips(d), h('span', { class: 'pc-lv' }, d.level), h('span', { class: 'pc-house' }, DK.icon(D.houses[sp.house].icon, 11)),
+            V.dSprite(d, { size: 56 }), V.formPips(d), V.newDot(d), h('span', { class: 'pc-lv' }, d.level), h('span', { class: 'pc-house' }, DK.icon(D.houses[sp.house].icon, 11)),
             d.temp ? h('span', { class: 'pc-flag evo', tip: t('exp.tempRule') }, DK.icon('paw', 11)) : null);
           ctx(mon, d);
           return h('div', { class: 'pc-slot' }, mon);

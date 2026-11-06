@@ -64,7 +64,7 @@
    * @param {Object} o
    * @param {string} o.icon     icono
    * @param {string} o.label    texto principal
-   * @param {string} [o.desc]   texto secundario (visible en size:'lg')
+   * @param {string} [o.desc]   texto secundario (visible en size:'lg' o con showDesc)
    * @param {Function} o.onClick
    * @param {string} [o.variant] '' | 'primary' | 'ghost' | 'danger' | 'tone'
    * @param {string} [o.size]    '' | 'sm' | 'lg'
@@ -72,7 +72,7 @@
    * @param {string} [o.tip]     texto de ayuda al pasar el ratón
    * @param {boolean} [o.silent] no reproducir sonido al pulsar
    */
-  function btn({ icon, label, desc, onClick, variant = '', size = '', disabled = false, title, cls = '', type = 'button', hotkey, tip, silent, iconOnly = false } = {}) {
+  function btn({ icon, label, desc, onClick, variant = '', size = '', disabled = false, title, cls = '', type = 'button', hotkey, tip, silent, iconOnly = false, showDesc = false } = {}) {
     // iconOnly: sólo el icono; el texto pasa al tooltip y a la etiqueta accesible
     if (iconOnly && icon) { tip = tip || label; title = title || label; label = null; desc = null; hotkey = null; cls = (cls ? cls + ' ' : '') + 'btn-icon-only'; }
     const b = h('button', {
@@ -82,7 +82,7 @@
       icon ? DK.icon(icon, size === 'sm' ? 16 : size === 'lg' ? 22 : 18) : null,
       label || desc ? h('span', { class: 'btn-text' },
         label ? h('span', { class: 'btn-label' }, label) : null,
-        desc && size === 'lg' ? h('span', { class: 'btn-desc' }, desc) : null) : null,
+        desc && (size === 'lg' || showDesc) ? h('span', { class: 'btn-desc' }, desc) : null) : null,
       hotkey ? h('kbd', { class: 'hotkey' }, hotkey) : null);
     b.addEventListener('click', (e) => {
       if (b.disabled) return;
@@ -168,7 +168,7 @@
     }));
   }
 
-  function modal({ title, icon, content, actions = [], dismissable = true, size = '', cls = '' }) {
+  function modal({ title, icon, content, actions = [], dismissable = true, size = '', cls = '', closeX = false }) {
     let resolve;
     const promise = new Promise((r) => (resolve = r));
     const backdrop = h('div', { class: 'modal-backdrop' });
@@ -188,7 +188,8 @@
       ? h('div', { class: 'modal-actions' }, actions.map((a) => btn({ ...a, onClick: () => (a.onClick ? a.onClick(close) : close(a.value)) })))
       : null;
     const grab = dismissable ? h('div', { class: 'sheet-grab', 'aria-hidden': 'true' }) : null;
-    const head = title ? h('div', { class: 'modal-head' }, icon ? DK.icon(icon, 22) : null, h('h3', null, title)) : null;
+    const head = title ? h('div', { class: 'modal-head' }, icon ? DK.icon(icon, 22) : null, h('h3', null, title),
+      closeX ? h('button', { class: 'icon-btn modal-x', type: 'button', tip: t('common.close'), 'aria-label': t('common.close'), onClick: () => close(null) }, DK.icon('x', 16)) : null) : null;
     const box = h('div', { class: `modal ${size ? 'modal-' + size : ''} ${cls}`, role: 'dialog', 'aria-modal': 'true', 'aria-label': title || '' },
       grab, head, body, foot);
     if (dismissable) swipeToClose(box, [grab, head], close);
@@ -255,7 +256,7 @@
    * @param {{x:number, y:number}} pos  coordenadas de pantalla
    * @param {Array} items  [{icon, label, onClick, disabled, danger}] (null = separador)
    */
-  let ctxMenu = null;
+  let ctxMenu = null, ctxAt = 0;
   function contextMenu(pos, items) {
     closeContextMenu();
     const list = h('div', { class: 'ctx-menu', role: 'menu' }, items.map((it) => it
@@ -266,14 +267,15 @@
     const r = list.getBoundingClientRect();
     list.style.left = Math.min(pos.x, window.innerWidth - r.width - 8) + 'px';
     list.style.top = Math.min(pos.y, window.innerHeight - r.height - 8) + 'px';
-    ctxMenu = list;
+    ctxMenu = list; ctxAt = Date.now();
     DK.keys.push();
     DK.keys.on('Escape', closeContextMenu);
     setTimeout(() => { const f = list.querySelector('.ctx-item'); if (f) f.focus(); }, 10);
   }
   function closeContextMenu() { if (ctxMenu) { ctxMenu.remove(); ctxMenu = null; DK.keys.pop(); } }
   document.addEventListener('mousedown', (e) => { if (ctxMenu && !ctxMenu.contains(e.target)) closeContextMenu(); });
-  window.addEventListener('scroll', () => closeContextMenu(), true);
+  // (un desplazamiento justo al abrir —el navegador centrando lo pulsado— no lo cierra)
+  window.addEventListener('scroll', () => { if (Date.now() - ctxAt > 350) closeContextMenu(); }, true);
 
   /**
    * Conecta un menú contextual a un elemento (clic derecho y pulsación larga).
@@ -341,8 +343,9 @@
   /** Programa la salida de un aviso (se reinicia si se repite). */
   function schedule(el) {
     clearTimeout(el._t1); clearTimeout(el._t2);
-    el._t1 = setTimeout(() => el.classList.add('out'), toastMs());
-    el._t2 = setTimeout(() => { el.remove(); }, toastMs() + 400);
+    const ms = toastMs() * (el._long ? 2.2 : 1);
+    el._t1 = setTimeout(() => el.classList.add('out'), ms);
+    el._t2 = setTimeout(() => { el.remove(); }, ms + 400);
   }
   function showMore() {
     const host = hostEl();
@@ -359,7 +362,7 @@
    * @param {string} text
    * @param {Object} [o] {icon, kind: ''|'good'|'bad'}
    */
-  function toast(text, { icon = 'info', kind = '' } = {}) {
+  function toast(text, { icon = 'info', kind = '', action = null } = {}) {
     if (notices[0] && notices[0].text === text) { notices[0].n = (notices[0].n || 1) + 1; notices[0].at = Date.now(); }
     else notices.unshift({ text, icon, kind, at: Date.now() });
     if (notices.length > 60) notices.length = 60;
@@ -379,8 +382,12 @@
       return;
     }
     if (live.length >= toastMax()) { overflow++; showMore(); return; }
-    const el = h('div', { class: 'toast ' + kind, dataset: { text }, role: 'status', onClick: () => { clearTimeout(el._t1); el.classList.add('out'); setTimeout(() => el.remove(), 300); } },
-      DK.icon(icon, 18), h('span', { class: 'grow' }, text));
+    const dismiss = () => { clearTimeout(el._t1); el.classList.add('out'); setTimeout(() => el.remove(), 300); };
+    // v4.57: action = { label, icon, onClick } → botón dentro del aviso (p. ej. «Deshacer»); el aviso dura más
+    const act = action ? h('button', { class: 'toast-action', type: 'button', onClick: (e) => { e.stopPropagation(); dismiss(); action.onClick(); } }, action.icon ? DK.icon(action.icon, 14) : null, action.label) : null;
+    const el = h('div', { class: 'toast ' + kind + (action ? ' has-action' : ''), dataset: { text }, role: 'status', onClick: dismiss },
+      DK.icon(icon, 18), h('span', { class: 'grow' }, text), act);
+    if (action) el._long = true;
     if (moreEl) host.insertBefore(el, moreEl); else host.append(el);
     schedule(el);
   }

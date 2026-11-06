@@ -31,7 +31,7 @@ module.exports = {
         out.stronger = D.baseOf(mk(1), 'atk') > D.baseOf(mk(2), 'atk') && D.baseOf(mk(2), 'atk') > D.baseOf(mk(4), 'atk');
         const one = mk(1); one.level = 70; out.single = !D.canEvolve(one) && !D.nextForm(one);
         const two = D.create('lumino', 40); two.forms = 2; two.form = 0; D.evolve(two); out.two = two.species === 'luminar' && two.form === 1 && !D.canEvolve(two);
-        const ex = D.create('brotin', 60); ex.species = 'arbolon'; ex.forms = 4; ex.form = 2; D.evolve(ex); out.extra = D.name(ex).endsWith(' II') && ex.species === 'arbolon';
+        const ex = D.create('brotin', 60); ex.species = 'arbolon'; ex.forms = 4; ex.form = 2; D.evolve(ex); out.extra = D.speciesName(ex).endsWith(' II') && D.name(ex) === DK.names.of(ex) && ex.species === 'arbolon';
         return out;
       });
       check(Object.values(r).every(Boolean), 'formas: ' + JSON.stringify(r));
@@ -72,7 +72,7 @@ module.exports = {
         const tr = document.querySelector('.cx-head .lk-trait:not(.lk-house)');
         out.iconOnly = !!tr && !tr.textContent.trim() && !!tr.dataset.tip;
         DK.router.reset('codex', { tab: 'looks' }); await w(300);
-        out.traits = document.querySelectorAll('.cx-trait-cat').length === 9 && document.querySelectorAll('.cx-trait-cat .lk-trait:not(.unseen)').length > 3;
+        out.traits = document.querySelectorAll('.cx-trait-cat').length === 10 && document.querySelectorAll('.cx-trait-cat .lk-trait:not(.unseen)').length > 3;
         return out;
       });
       check(Object.values(r).every(Boolean), 'aspecto de los daskai: ' + JSON.stringify(r));

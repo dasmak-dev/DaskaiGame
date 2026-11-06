@@ -84,7 +84,7 @@ DK.i18n.register('es', {
     title: 'Mi equipo', collection: 'Colección ({n} de {total})', active: 'Equipo de batalla ({n}/{max})',
     leaderHint: 'El primero es el líder y sale primero al combate. Arrastra para reordenar.',
     search: 'Buscar por nombre...', sort: 'Ordenar', anyNature: 'Cualquier naturaleza', anyPassive: 'Cualquier pasiva',
-    sortBy: { level: 'Nivel', name: 'Nombre', house: 'Casa', hp: 'Menos vida', recent: 'Más recientes' },
+    sortBy: { level: 'Nivel', name: 'Nombre', house: 'Casa', hp: 'Menos vida', recent: 'Más recientes', rarity: 'Más raros' },
     onlyWounded: 'Sólo heridos', compare: 'Comparar', compareOn: 'Comparando ({n}/2)', clear: 'Quitar filtros',
     add: 'Añadir', remove: 'Quitar', inTeam: 'En equipo', fullTip: 'El equipo está completo',
     emptySlot: 'Hueco libre', emptySlotHint: 'Arrastra aquí un daskai',
@@ -102,7 +102,7 @@ DK.i18n.register('es', {
     removeTeam: 'Quitar del equipo', addTeam: 'Añadir al equipo', joined: '{name} se une al equipo de batalla.',
     teamFull: 'Equipo completo: ¿a quién sustituye?', teamFullNote: 'Sólo puedes llevar {n} daskai activos.',
     useItem: 'Usar objeto', useItemOn: 'Usar objeto en {name}', noItems: 'Sin objetos', noItemsText: 'Gana objetos en las expediciones o constrúyelos en Crafteo.',
-    rename: 'Apodo', renameTitle: 'Ponle un apodo (vacío = nombre original)', compare: 'Comparar', compareWith: '¿Con quién lo comparas?',
+    rename: 'Apodo', renameTitle: 'Ponle un apodo (vacío = su nombre propio)', speciesTip: 'Especie', viewBig: 'Verlo en grande', showAgain: 'Pulsa para otra animación', showAnother: 'Otra', compare: 'Comparar', compareWith: '¿Con quién lo comparas?',
     release: 'Liberar', teamLeader: 'Líder del equipo', maxLevel: 'Nivel máximo alcanzado.',
     toNext: 'Faltan {n} de experiencia para el nivel {level}.',
     stats: 'Atributos', moves: 'Ataques', equip: 'Equipamiento', learn: 'Aprendizaje',
@@ -113,7 +113,15 @@ DK.i18n.register('es', {
   release: {
     title: '¿Liberar a {name}?', text: 'Volverá a la naturaleza. Recibirás {coins} monedas y: {items}. Su equipo vuelve a la bolsa.',
     cant: 'No puedes liberar a tu último daskai del equipo.', done: '{name} vuelve a la naturaleza. +{coins} monedas',
+    undo: 'Deshacer', undone: '{name} ha vuelto contigo.', undoFail: 'Ya no se puede deshacer: has gastado lo que te dio.',
   },
+  lock: {
+    on: 'Proteger', off: 'Quitar protección', onTip: 'Proteger: no se podrá liberar por error', offTip: 'Protegido · pulsa para quitar la protección',
+    locked: 'Protegido: no se puede liberar', done: '{name} está protegido', undone: '{name} ya no está protegido', cantRelease: '{name} está protegido. Quita la protección para liberarlo.',
+  },
+  newMark: { label: 'Nuevo', tip: 'Recién llegado: abre su ficha para verlo' },
+  healAll: { tip: 'Curar a todo el equipo con los objetos justos', none: 'Tu equipo está sano' },
+  uiScale: { label: 'Tamaño de la interfaz', desc: 'Agranda o reduce toda la interfaz (además del tamaño del texto).' },
   equip: {
     change: 'Cambiar', remove: 'Quitar', freeSlot: 'Ranura {n} libre', freeSlotHint: 'Equipar un objeto de la bolsa',
     choose: 'Elige un objeto para equipar', done: '{name} se equipa {item}.', none: 'Sin equipamiento',
@@ -142,7 +150,7 @@ DK.i18n.register('es', {
   },
   learn: {
     title: '{name} quiere aprender {move}', text: 'Ya conoce {n} ataques. Elige cuál olvidar o guárdalo en la reserva (podrás cambiarlo luego desde su ficha).',
-    replace: 'Sustituir a:', skip: 'Guardar en reserva',
+    replace: 'Elige cuál olvidar', skip: 'Guardar en reserva', newMove: 'Ataque nuevo', pickFirst: 'Elige cuál olvidar', confirm: 'Aprender y olvidar {old}', forget: 'Olvidar', dmg: 'daño', deltaTip: 'Daño aproximado del nuevo comparado con éste', attack: 'Pierdes un ataque', losesDamage: 'Cambiarías un ataque que hace daño por uno de apoyo', support: 'Ataque de apoyo (no hace daño)', supportShort: 'Apoyo',
   },
   levelup: { title: '¡{name} sube al nivel {level}!', multi: '+{n} niveles', restored: 'Vida y maná restaurados al máximo.', learned: 'Aprende {move}' },
   evo: {
@@ -247,6 +255,7 @@ DK.i18n.register('es', {
     allGood: 'Tu equipo está listo.',
   },
   pack: {
+    addMore: 'Añadir', suggestShort: 'Sugerir', repeatShort: 'Repetir la última', clearShort: 'Vaciar', capTip: 'Objetos en la mochila / capacidad',
     chooseTitle: 'Elegir objetos para la mochila', choose: 'Elegir objetos', emptyShort: 'Mochila vacía.', tapRemove: '{name}: pulsa para quitar uno', consolationShort: 'Consuelo', riskShort: 'Si pierdes, pierdes la mochila', riskKeepShort: 'Si pierdes, tu mochila vuelve', riskKeep: 'Si pierdes, vuelve a tu bolsa lo que metiste en la mochila y no gastaste. Todo lo que encuentres por el camino se pierde.', keepText: 'Lo que metiste en la mochila (sin gastar) vuelve a tu bolsa.', loseText: 'Pierdes también lo que llevabas en la mochila.', 
     less: 'Quitar uno', more: 'Añadir otro', haveTip: 'Unidades que quedan en tu bolsa', tipAdd2: 'Añadir 1 (Mayús: todas)', dropHint2: 'Pulsa + en tu bolsa o arrastra objetos aquí.', bagHint2: 'Pulsa + o arrastra a la mochila',
     consolation: 'Recompensa por caer ante el jefe: empiezas con una reliquia rara o épica y 2 superpociones (no ocupan hueco).',
@@ -368,6 +377,7 @@ DK.i18n.register('es', {
   },
 
   battle: {
+    coinsLootShort: 'Monedas al botín',
     captureOff: 'Por ahora no se puede vincular en combate: recluta daskai en los nodos de reclutas de las expediciones.', 
     curtainEliteTitle: '¡Mini jefe!', curtainBoss: '¡Jefe! {name} · Nv. {n}', curtainSecret: '¡Jefe oculto! {name} · Nv. {n}', curtainElite: 'Mini jefe · Nv. {n}',
     autoHealed: 'Automático: {name} está en zona crítica, usa {item}.',
@@ -457,6 +467,7 @@ DK.i18n.register('es', {
     title: 'El Abismo', normal: 'Expedición', enter: 'Abismo', best: 'Récord: piso {n}', help: 'pisos cortos sin fin, cada uno más duro; premio cada {n} pisos',
     reward: '¡Piso {n} del Abismo superado! Premio: emblemas, runas y monedas.', floor: 'Abismo · piso {n}',
   },
+  endgameBox: { title: 'Reglas de la aventura', sub: 'Cambian toda la expedición: más peligro, mejores premios.', harder: 'Más difícil', rewards: 'Premios' },
   nightmare: { title: 'Versión pesadilla', on: 'Activada', off: 'Desactivada', desc: 'Rivales +{lv} Nv. y +{n}% · +{c}% monedas · +{e} emblema por jefe.' },
   engrave: {
     title: 'Grabadas', done: 'Grabada', remove: 'Quitar', button: 'Grabar · {n}', full: 'Ya tienes {n} grabada(s): quita una para grabar otra', tip: 'Saldrá siempre al empezar tus expediciones',
@@ -608,6 +619,7 @@ DK.i18n.register('es', {
     main: 'Navegación principal', breadcrumb: 'Estás en',
   },
   home: {
+    leaderNow: 'Es tu líder: sale primero a combatir', tapToLead: 'Pulsa para hacerlo líder o ver su ficha', openTip: 'Ver cómo está (clic derecho: más acciones)', fullSheet: 'Ficha completa', makeLeaderTip: 'Hacer líder a {name}', newLeader: '{name} es ahora tu líder',
     playExp: 'Empezar expedición',
     play: 'Jugar', expedition: 'Expedición en curso', recommended: 'Zona recomendada', otherZone: 'Otra zona',
     yourTeam: 'Tu equipo', manage: 'Gestionar', today: 'Misiones de hoy', allMissions: 'Ver todas', quick: 'Acciones rápidas',
@@ -746,17 +758,18 @@ DK.i18n.register('es', {
     title: 'Aspecto', typical: 'Forma típica', variants: 'Variantes vistas', variantsN: '{n} vistas', noVariants: 'Aún no has visto ninguna variante.',
     traitsTitle: 'Rasgos descubiertos', traitsTab: 'Rasgos', traitsIntro: 'Cada daskai nace con su propio aspecto. Aquí se apuntan los rasgos que has visto: los raros brillan.',
     unknownTrait: 'Rasgo aún no visto', rare: 'Raro', house: 'Casa', handsFur: '{hands} · {fur}', mine: 'Tuyo', boss: 'Los jefes siempre tienen la forma típica',
-    cat: { hair: 'Pelo', size: 'Tamaño', body: 'Cuerpo', legs: 'Patas', eyes: 'Ojos', mouth: 'Boca', ears: 'Cabeza', mark: 'Marca', final: 'Adorno final', wings: 'Alas (última evolución, muy raras)' },
+    cat: { arms: 'Brazos', hair: 'Pelo', size: 'Tamaño', body: 'Cuerpo', legs: 'Patas', eyes: 'Ojos', mouth: 'Boca', ears: 'Cabeza', mark: 'Marca', final: 'Adorno final', wings: 'Alas (última evolución, muy raras)' },
     wings: { feather: 'de plumas', bat: 'de murciélago', fin: 'de aleta', crystal: 'de cristal' },
     size: { xs: 'pequeñito', s: 'pequeño', m: 'normal', l: 'grande', xl: 'enorme' },
-    body: { round: 'redondo', chubby: 'rechoncho', egg: 'ovalado', bean: 'alubia', block: 'cuadrado', tall: 'espigado', blob: 'blandito', drop: 'gota', squat: 'achaparrado', ghost: 'fantasma', long: 'alargado', cloud: 'nube', pear: 'pera', mound: 'montículo' },
-    legs: { stubby: 'patitas → cuatro patas', digi: 'patitas → patas de salto', paws: 'zarpas → patas gruesas', bird: 'patas de ave', tent: 'tentáculos', hover: 'flota', late: 'patitas (cambian tarde)', pillar: 'patas de columna' },
-    eyes: { big: 'grandes', sharp: 'afilados', slit: 'de gato', sleepy: 'dormilones', happy: 'felices', glow: 'brillantes', dot: 'de punto', angry: 'ceño fruncido', star: 'pupilas de estrella', button: 'de botón', uneven: 'dispares', cyclops: 'un solo ojo', three: 'tres ojos', visor: 'visor', spiral: 'mareados', heart: 'enamorados', wink: 'guiño', anime: 'brillantes y enormes', halflid: 'párpado caído' },
-    mouth: { w: 'boquita', smile: 'sonrisa', open: 'abierta', grin: 'dientes', tiny: 'pequeña', flat: 'seria', fangs: 'colmillos', tusks: 'defensas', buck: 'paletas', tongue: 'lengua fuera', beak: 'pico', smirk: 'sonrisa pícara', wavy: 'nerviosa', cat3: 'hocico gatuno', sabre: 'dientes de sable', pout: 'morritos', oh: 'sorprendida', jagged: 'dientes de sierra', bubble: 'pompa', mustache: 'bigote', biggrin: 'sonrisa enorme' },
-    ears: { cat: 'orejas de gato', bunny: 'orejas de conejo', bear: 'orejas de oso', droopy: 'orejas caídas', horns: 'cuernos', unicorn: 'cuerno único', antenna: 'antenas', crest: 'cresta', sprout: 'brote', fins: 'aletas', spikes: 'púas', tuft: 'tupé', none: 'lisa', antlers: 'astas', ram: 'cuernos de carnero', mushroom: 'sombrero de seta', flower: 'flor', mohawk: 'cresta punk', elf: 'orejas de elfo', mouse: 'orejas de ratón', headwings: 'alitas', trihorn: 'tres cuernos', lynx: 'orejas de lince' },
-    mark: { star: 'estrella', moon: 'luna', heart: 'corazón', spots: 'manchas', stripes: 'rayas', zigzag: 'zigzag', gem: 'gema', freckles: 'pecas', patch: 'parche en el ojo', band: 'franja', swirl: 'remolino', blaze: 'lucero' },
-    hair: { fringe: 'flequillo', curl: 'rizo', spiky: 'pinchos', ponytail: 'coleta', cheektufts: 'patillas', beard: 'perilla' },
-    final: { mane: 'melena', crown: 'corona', halo: 'halo', aura: 'aura', gemstone: 'gema frontal', orbit: 'orbes en órbita', runes: 'runas flotantes', scarf: 'bufanda', thorns: 'corona de espinas' },
+    body: { round: 'redondo', chubby: 'rechoncho', egg: 'ovalado', bean: 'alubia', block: 'cuadrado', tall: 'espigado', blob: 'blandito', drop: 'gota', squat: 'achaparrado', ghost: 'fantasma', long: 'alargado', cloud: 'nube', pear: 'pera', mound: 'montículo', gourd: 'calabaza', gem: 'rombo', puff: 'peludo', bell: 'campana', bulb: 'trébol', wide: 'ancho', tower: 'torre', topheavy: 'cabezón', bubble: 'burbujas', lumpy: 'grumoso' },
+    legs: { stubby: 'patitas → cuatro patas', digi: 'patitas → patas de salto', paws: 'zarpas → patas gruesas', bird: 'patas de ave', tent: 'tentáculos', hover: 'flota', late: 'patitas (cambian tarde)', pillar: 'patas de columna', hoof: 'pezuñas', frog: 'ancas de rana', talon: 'garras de rapaz', root: 'raíces', puff: 'nubecitas', peg: 'patas de palo', webbed: 'patas palmeadas', spring: 'muelles', bigfoot: 'pies grandes', stilts: 'zancos' },
+    eyes: { big: 'grandes', sharp: 'afilados', slit: 'de gato', sleepy: 'dormilones', happy: 'felices', glow: 'brillantes', dot: 'de punto', angry: 'ceño fruncido', star: 'pupilas de estrella', button: 'de botón', uneven: 'dispares', cyclops: 'un solo ojo', three: 'tres ojos', visor: 'visor', spiral: 'mareados', heart: 'enamorados', wink: 'guiño', anime: 'brillantes y enormes', halflid: 'párpado caído', sparkle: 'con destellos', crescent: 'pupila de luna', squint: 'apretados', bug: 'de insecto', ringed: 'hipnóticos', crosseye: 'pupila en cruz', teary: 'lloroso', robot: 'de robot', lashes: 'con pestañas', diamond: 'pupila de rombo' },
+    mouth: { w: 'boquita', smile: 'sonrisa', open: 'abierta', grin: 'dientes', tiny: 'pequeña', flat: 'seria', fangs: 'colmillos', tusks: 'defensas', buck: 'paletas', tongue: 'lengua fuera', beak: 'pico', smirk: 'sonrisa pícara', wavy: 'nerviosa', cat3: 'hocico gatuno', sabre: 'dientes de sable', pout: 'morritos', oh: 'sorprendida', jagged: 'dientes de sierra', bubble: 'pompa', mustache: 'bigote', biggrin: 'sonrisa enorme', stitch: 'cosida', toothy: 'dientes apretados', gaptooth: 'mellada', drool: 'babeando', whistle: 'silbando', vampire: 'colmillitos', zipper: 'cremallera', catmouth: 'de gato con bigotes', lips: 'labios', frown: 'enfurruñada' },
+    ears: { cat: 'orejas de gato', bunny: 'orejas de conejo', bear: 'orejas de oso', droopy: 'orejas caídas', horns: 'cuernos', unicorn: 'cuerno único', antenna: 'antenas', crest: 'cresta', sprout: 'brote', fins: 'aletas', spikes: 'púas', tuft: 'tupé', none: 'lisa', antlers: 'astas', ram: 'cuernos de carnero', mushroom: 'sombrero de seta', flower: 'flor', mohawk: 'cresta punk', elf: 'orejas de elfo', mouse: 'orejas de ratón', headwings: 'alitas', trihorn: 'tres cuernos', lynx: 'orejas de lince', leafy: 'orejas de hoja', plume: 'pluma', devil: 'cuernecillos', bow: 'lazo', crystals: 'cristales' },
+    mark: { star: 'estrella', moon: 'luna', heart: 'corazón', spots: 'manchas', stripes: 'rayas', zigzag: 'zigzag', gem: 'gema', freckles: 'pecas', patch: 'parche en el ojo', band: 'franja', swirl: 'remolino', blaze: 'lucero', bolt: 'rayo', chevron: 'galones', ring: 'anillo', bloom: 'flor', triad: 'tres puntos' },
+    hair: { fringe: 'flequillo', curl: 'rizo', spiky: 'pinchos', ponytail: 'coleta', cheektufts: 'patillas', beard: 'perilla', bun: 'moño', afro: 'afro', swoop: 'tupé ladeado', braids: 'trenzas', quiff: 'copete' },
+    final: { mane: 'melena', crown: 'corona', halo: 'halo', aura: 'aura', gemstone: 'gema frontal', orbit: 'orbes en órbita', runes: 'runas flotantes', scarf: 'bufanda', thorns: 'corona de espinas', cape: 'capa', flowercrown: 'corona de flores', bandana: 'pañuelo', goggles: 'gafas de aviador', collar: 'collar de pinchos' },
+    arms: { stubby: 'cortitos', long: 'largos', noodle: 'de fideo', pincer: 'pinzas', mitten: 'manoplas' },
     hands: { paw: 'manitas de almohadilla', claw: 'garras de sombra', ember: 'garras de brasa', flipper: 'aletas', fist: 'puños de piedra' },
     fur: { fluff: 'pelusa clara', smoke: 'humo', flame: 'llamas', scales: 'escamas', moss: 'musgo y piedras' },
   },
@@ -944,7 +957,7 @@ DK.i18n.register('es', {
     name: 'Caja {n}', count: '{n}/{max}', prev: 'Caja anterior', next: 'Caja siguiente', rename: 'Cambiar nombre', renameTitle: 'Nombre de la caja',
     bg: 'Cambiar fondo', bgTitle: 'Fondo de la caja', add: 'Nueva caja', sort: 'Ordenar caja', matches: '{n} coinciden', atHome: 'se quedó en casa',
     dragHint: 'Arrastra para mover · mantén pulsado en el móvil.',
-    sortBy: { level: 'Por nivel', house: 'Por casa', species: 'Por especie', name: 'Por nombre' },
+    sortBy: { level: 'Por nivel', house: 'Por casa', species: 'Por especie', name: 'Por nombre', rarity: 'Por rareza' },
     bgName: { noche: 'Noche estrellada', nieve: 'Nieve', arena: 'Desierto', cristal: 'Cristal', lava: 'Lava' },
   },
   party: { toReserve: 'Sacar del equipo (sigue contigo)', emptyHintExp: 'Arrastra aquí a quien va contigo', title: 'Tu equipo', empty: 'Hueco libre', emptyHint: 'Arrastra aquí un daskai de la caja', toBox: 'Guardar en la caja' },
@@ -1053,8 +1066,8 @@ campfire: 'Volviste a casa desde una hoguera: te llevas la mitad del botín y to
 
   /* Herencia de los caídos (DK.legacy) */
   legacy: {
-    title: 'Esencias de los caídos ({n})', hint: 'Elige un daskai y hereda: experiencia y puntos de atributo permanentes.',
-    of: 'Esencia de {name}', inherit: 'Heredar', inheritIn: 'Heredar en {name}', pick: 'Elige un daskai',
+    title: 'Esencias de los caídos ({n})', hint: 'Pulsa una esencia y elige quién la hereda: experiencia y puntos de atributo para siempre.',
+    of: 'Esencia de {name}', inherit: 'Heredar', inheritIn: 'Heredar en {name}', pick: 'Elige un daskai', pickTitle: '¿Quién hereda la esencia de {name}?',
     q: '¿Heredar la esencia de {from} en {to}?', qText: 'Ganará {exp} de experiencia y +{n} de {stat} para siempre. La esencia se gasta.',
     done: '{name} hereda la fuerza de {from}.',
   },

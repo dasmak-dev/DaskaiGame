@@ -258,13 +258,21 @@
         h('span', { class: 'bt-mon-hp' + (hp < 30 ? ' crit' : hp < 60 ? ' mid' : '') }, h('i', { style: { width: hp + '%' } })));
     }));
 
-    // Mochila: chips de lo que llevas (pulsar uno quita una unidad)
+    // Mochila (v4.60b): cada objeto en su ficha (icono, nombre, ×N y «−» para quitar uno) y una
+    // ficha «+» que abre el editor completo; debajo, sugerir / repetir la última con su texto.
     const chosen = Object.keys(pack).filter((id) => pack[id] > 0);
     const last = V.lastPack();
-    const packChips = chosen.length
-      ? h('div', { class: 'bt-pack-items' }, chosen.map((id) => h('button', { class: 'bt-item r-' + D.items[id].rarity, type: 'button', tip: t('pack.tapRemove', { name: D.items[id].name }),
-        onClick: () => { pack[id]--; if (pack[id] <= 0) delete pack[id]; DK.audio.sfx('select'); refresh(); } }, V.itemIcon(D.items[id], 18), h('b', null, '×' + pack[id]))))
-      : h('p', { class: 'muted small bt-pack-empty' }, t('pack.emptyShort'));
+    const openPack = () => packDrawer(params, refresh);
+    const packTiles = h('div', { class: 'pk-tiles' },
+      chosen.map((id) => { const it = D.items[id]; return h('div', { class: 'pk-tile r-' + it.rarity, tip: `${it.name} · ${V.useText(it) || it.desc || ''}` },
+        h('span', { class: 'pk-tile-ico' }, V.itemIcon(it, 26)), h('span', { class: 'pk-tile-name' }, it.name), h('b', { class: 'pk-tile-n' }, '×' + pack[id]),
+        h('button', { class: 'pk-tile-x', type: 'button', tip: t('pack.tapRemove', { name: it.name }), 'aria-label': t('pack.tapRemove', { name: it.name }),
+          onClick: () => { pack[id]--; if (pack[id] <= 0) delete pack[id]; DK.audio.sfx('select'); refresh(); } }, DK.icon('minus', 12))); }),
+      h('button', { class: 'pk-tile add', type: 'button', onClick: openPack }, DK.icon(chosen.length ? 'plus' : 'bag', 20), h('span', null, chosen.length ? t('pack.addMore') : t('pack.choose'))));
+    const packTools = h('div', { class: 'pk-tools' },
+      btn({ icon: 'sparkles', label: t('pack.suggestShort'), size: 'sm', variant: 'ghost', tip: t('pack.suggest'), onClick: () => { params.pack = E.suggestPack(); DK.audio.sfx('select'); refresh(); } }),
+      Object.keys(last).length ? btn({ icon: 'repeat', label: t('pack.repeatShort'), size: 'sm', variant: 'ghost', tip: t('pack.repeat'), onClick: () => { params.pack = Object.assign({}, last); DK.audio.sfx('select'); refresh(); } }) : null,
+      chosen.length ? btn({ icon: 'x', label: t('pack.clearShort'), size: 'sm', variant: 'ghost', tip: t('pack.clear'), onClick: () => { params.pack = {}; refresh(); } }) : null);
 
     const notes = [
       DK.rules.permadeath() ? h('span', { class: 'chip neg', tip: t('zones.permadeath') }, DK.icon('skull', 12), t('zones.hardMode')) : null,
@@ -308,12 +316,11 @@
             h('button', { class: 'icon-btn bt-icon', type: 'button', tip: t('home.manage'), 'aria-label': t('home.manage'), onClick: () => DK.router.go('team') }, DK.icon('edit', 16))),
           teamStrip),
         h('div', { class: 'bt-block' },
-          h('div', { class: 'bt-label-row' }, h('span', { class: 'bt-label' }, t('pack.backpack'), ` ${used}/${cap}`), h('span', { class: 'grow' }),
-            Object.keys(last).length ? btn({ icon: 'repeat', label: t('pack.repeat'), iconOnly: true, size: 'sm', variant: 'ghost', onClick: () => { params.pack = Object.assign({}, last); refresh(); } }) : null,
-            btn({ icon: 'sparkles', label: t('pack.suggest'), iconOnly: true, size: 'sm', variant: 'ghost', onClick: () => { params.pack = E.suggestPack(); refresh(); } })),
+          h('div', { class: 'bt-label-row' }, h('span', { class: 'bt-label' }, t('pack.backpack')), h('span', { class: 'grow' }),
+            h('span', { class: 'pk-count' + (used >= cap ? ' full' : ''), tip: t('pack.capTip') }, h('b', null, used), '/' + cap)),
           h('div', { class: 'cap-bar' + (used >= cap ? ' full' : ''), style: { '--p': Math.min(100, (used / cap) * 100) + '%' } }, h('span')),
-          packChips,
-          btn({ icon: 'bag', label: t('pack.choose'), size: 'sm', variant: 'tone', cls: 'bt-pack-btn', onClick: () => packDrawer(params, refresh) }))),
+          packTiles,
+          packTools)),
       problems.length ? V.warnings(problems, async () => { if (await V.healDialog(team)) refresh(); }) : null,
       h('div', { class: 'bt-prep-foot' }, h('div', { class: 'chips' }, notes),
         btn({ icon: 'flag', label: t('pack.go'), desc: t('pack.goDesc', { n: used }), size: 'lg', variant: 'primary', hotkey: '↵', disabled: !ok, cls: 'bt-go play-btn', onClick: go })));
@@ -363,54 +370,59 @@
       h('p', { class: 'muted small' }, t('weekly.scoring'))) });
   }
 
-  /** Bloque del final del juego en la preparación (sólo lo que ya se ha abierto). */
+  /**
+   * Bloque del final del juego en la preparación (sólo lo que ya se ha abierto).
+   * v4.60b: «Reglas de la aventura»: un panel con estilo de advertencia (rojo oscuro) y una fila
+   * por regla: icono, nombre, qué hace y su control a la derecha; la activa brilla.
+   */
   function endgameBox(refresh) {
     const E = DK.expedition, n = E.nextStart(), C = DK.corruption, G = D.endgame;
-    const parts = [];
+    const rows = [];
+    const row = (kind, icon, title, desc, control, on, extra) => h('div', { class: 'egx-row k-' + kind + (on ? ' on' : '') },
+      h('span', { class: 'egx-ico' }, DK.icon(icon, 18)),
+      h('div', { class: 'egx-main' }, h('b', null, title), desc ? h('small', null, desc) : null),
+      h('div', { class: 'egx-ctl' }, control),
+      extra ? h('div', { class: 'egx-extra' }, extra) : null);
     // El Abismo: mapas cortos encadenados sin fin
     if (DK.abyss.unlocked()) {
       const on = n.kind === 'abismo';
-      parts.push(h('div', { class: 'eg-row' },
-        h('span', { class: 'eg-label' }, DK.icon('moon', 14), t('abyss.title')),
-        h('div', { class: 'eg-seg' },
-          h('button', { class: 'eg-opt' + (on ? '' : ' on'), type: 'button', onClick: () => { DK.abyss.set(false); refresh(); } }, t('abyss.normal')),
-          h('button', { class: 'eg-opt abyss' + (on ? ' on' : ''), type: 'button', onClick: () => { DK.abyss.set(true); DK.audio.sfx('select'); refresh(); } }, DK.icon('moon', 13), t('abyss.enter'))),
-        h('span', { class: 'small muted' }, t('abyss.best', { n: DK.abyss.best() }), ' · ', t('abyss.help', { n: G.abyss.every }))));
+      rows.push(row('abyss', 'moon', t('abyss.title'), `${t('abyss.best', { n: DK.abyss.best() })} · ${t('abyss.help', { n: G.abyss.every })}`,
+        h('div', { class: 'egx-seg' },
+          h('button', { class: on ? '' : 'on', type: 'button', 'aria-pressed': String(!on), onClick: () => { DK.abyss.set(false); refresh(); } }, t('abyss.normal')),
+          h('button', { class: on ? 'on' : '', type: 'button', 'aria-pressed': String(on), onClick: () => { DK.abyss.set(true); DK.audio.sfx('select'); refresh(); } }, DK.icon('moon', 12), t('abyss.enter'))), on));
     }
     // Corrupción: niveles 1-5 (se ven tras el jefe de la 3ª zona)
     if (C.visible()) {
       const cur = n.corruption || 0, max = C.max();
-      const opt = (lv) => h('button', { class: 'eg-cor' + (lv === cur ? ' on' : '') + (lv > max ? ' locked' : ''), type: 'button', disabled: lv > max, tip: lv > max ? t('corruption.lockedTip', { n: lv - 1 }) : lv ? t('corruption.levelN', { n: lv }) : t('corruption.none'),
-        onClick: () => { C.set(lv); DK.audio.sfx(lv ? 'select' : 'click'); refresh(); } }, lv > max ? DK.icon('lock', 12) : lv ? ['I', 'II', 'III', 'IV', 'V'][lv - 1] : '—');
+      const opt = (lv) => h('button', { class: (lv === cur ? 'on' : '') + (lv > max ? ' locked' : ''), type: 'button', disabled: lv > max, 'aria-pressed': String(lv === cur), tip: lv > max ? t('corruption.lockedTip', { n: lv - 1 }) : lv ? t('corruption.levelN', { n: lv }) : t('corruption.none'),
+        onClick: () => { C.set(lv); DK.audio.sfx(lv ? 'select' : 'click'); refresh(); } }, lv > max ? DK.icon('lock', 11) : lv ? ['I', 'II', 'III', 'IV', 'V'][lv - 1] : '—');
       const def = C.def(cur);
       const rules = C.levels().slice(0, cur).map((l) => l.rule).filter(Boolean);
-      parts.push(h('div', { class: 'eg-row cor' + (cur ? ' active' : '') },
-        h('span', { class: 'eg-label' }, DK.icon('skull', 14), t('corruption.title')),
-        h('div', { class: 'eg-cors' }, [0, 1, 2, 3, 4, 5].map(opt)),
-        def ? h('div', { class: 'eg-detail' },
-          h('span', { class: 'chip neg' }, DK.icon('star', 12), t('corruption.foes', { lv: def.levels, n: Math.round(def.stat * 100) })),
-          rules.map((r) => h('span', { class: 'chip neg' }, DK.icon('alert', 12), t('corruption.rule.' + r))),
-          h('span', { class: 'chip pos' }, DK.icon('emblem', 12), t('corruption.rewardEmblems', { n: def.emblems })),
-          h('span', { class: 'chip pos' }, DK.icon('coin', 12), '+' + Math.round(def.coins * 100) + '%'),
-          h('span', { class: 'chip pos' }, DK.icon('sparkles', 12), t('corruption.rewardShiny', { n: Math.round(def.shiny * 100) })),
-          h('span', { class: 'chip pos' }, DK.icon('rune', 12), t('corruption.rewardTier', { n: Math.round(def.tier * 100) })),
-          cur === max && max < C.levels().length ? h('span', { class: 'small muted' }, t('corruption.nextHint', { n: max + 1 })) : null)
-          : h('span', { class: 'small muted' }, max < C.levels().length ? t('corruption.help', { n: max }) : t('corruption.helpMax'))));
+      const extra = def ? [
+        h('div', { class: 'egx-list bad' }, h('span', { class: 'egx-k' }, DK.icon('alert', 12), t('endgameBox.harder')),
+          h('span', null, t('corruption.foes', { lv: def.levels, n: Math.round(def.stat * 100) })), ...rules.map((r) => h('span', null, t('corruption.rule.' + r)))),
+        h('div', { class: 'egx-list good' }, h('span', { class: 'egx-k' }, DK.icon('gift', 12), t('endgameBox.rewards')),
+          h('span', null, DK.icon('emblem', 11), t('corruption.rewardEmblems', { n: def.emblems })), h('span', null, DK.icon('coin', 11), '+' + Math.round(def.coins * 100) + '%'),
+          h('span', null, DK.icon('sparkles', 11), t('corruption.rewardShiny', { n: Math.round(def.shiny * 100) })), h('span', null, DK.icon('rune', 11), t('corruption.rewardTier', { n: Math.round(def.tier * 100) }))),
+      ] : null;
+      rows.push(row('cor', 'skull', t('corruption.title'), cur ? (cur === max && max < C.levels().length ? t('corruption.nextHint', { n: max + 1 }) : t('corruption.levelN', { n: cur })) : (max < C.levels().length ? t('corruption.help', { n: max }) : t('corruption.helpMax')),
+        h('div', { class: 'egx-levels' }, [0, 1, 2, 3, 4, 5].map(opt)), cur > 0, extra));
     }
     // Versión pesadilla de la zona (códice al 100%)
     if (DK.nightmare.available(n.zone) && n.kind !== 'abismo') {
       const on = n.nightmare === n.zone, N = G.nightmare;
-      parts.push(h('div', { class: 'eg-row' },
-        h('span', { class: 'eg-label' }, DK.icon('demon', 14), t('nightmare.title')),
-        h('button', { class: 'eg-toggle' + (on ? ' on' : ''), type: 'button', 'aria-pressed': String(on), onClick: () => { DK.nightmare.toggle(); DK.audio.sfx('select'); refresh(); } },
-          h('i'), h('span', null, on ? t('nightmare.on') : t('nightmare.off'))),
-        h('span', { class: 'small muted' }, t('nightmare.desc', { lv: N.levels, n: Math.round(N.stat * 100), c: Math.round(N.coins * 100), e: N.emblems }))));
+      rows.push(row('nightmare', 'demon', t('nightmare.title'), t('nightmare.desc', { lv: N.levels, n: Math.round(N.stat * 100), c: Math.round(N.coins * 100), e: N.emblems }),
+        h('button', { class: 'egx-switch' + (on ? ' on' : ''), type: 'button', role: 'switch', 'aria-checked': String(on), onClick: () => { DK.nightmare.toggle(); DK.audio.sfx('select'); refresh(); } },
+          h('i'), h('span', null, on ? t('nightmare.on') : t('nightmare.off'))), on));
     }
     // Reliquias grabadas (salen siempre)
     const eng = DK.engrave.list();
-    if (eng.length) parts.push(h('div', { class: 'eg-row' }, h('span', { class: 'eg-label' }, DK.icon('amulet', 14), t('engrave.title')),
-      h('div', { class: 'chips' }, eng.map((id) => h('span', { class: 'chip pos', tip: V.relicText ? V.relicText(D.relics[id]) : '' }, DK.icon(D.relics[id].icon, 12), D.relics[id].name)))));
-    return parts.length ? h('div', { class: 'bt-endgame' }, parts) : null;
+    if (eng.length) rows.push(row('engrave', 'amulet', t('engrave.title'), null,
+      h('div', { class: 'chips' }, eng.map((id) => h('span', { class: 'chip pos', tip: V.relicText ? V.relicText(D.relics[id]) : '' }, DK.icon(D.relics[id].icon, 12), D.relics[id].name))), false));
+    if (!rows.length) return null;
+    const hot = (n.corruption || 0) > 0 || n.kind === 'abismo' || (n.nightmare && n.nightmare === n.zone);
+    // v4.62: sin título y sin rojo; discreto, con un filo dorado a la izquierda que se enciende si hay alguna activa
+    return h('section', { class: 'egx' + (hot ? ' hot' : ''), 'aria-label': t('endgameBox.title'), tip: t('endgameBox.sub') }, rows);
   }
 
   /**

@@ -236,10 +236,14 @@
       api.clamp(d); DK.store.save();
       return true;
     },
-    /** Nombre visible (apodo o nombre de especie). */
-    name(d) { return d.nickname || api.speciesName(d); },
+    /** Nombre visible: apodo, o su nombre propio (systems/names.js, v4.54), o el de su especie. */
+    name(d) { return d.nickname || (DK.names && DK.names.of(d)) || api.speciesName(d); },
     /** Nombre de su forma: la especie y, si tiene formas de más, su número («Hojaral II»). */
     speciesName(d) { const ROM = ['', '', 'II', 'III', 'IV', 'V']; return D.species[d.species].name + (d.extra ? ' ' + ROM[d.extra + 1] : ''); },
+    /** Protegido (v4.57): no se puede liberar mientras lo esté. */
+    setLocked(d, v) { if (v) d.locked = true; else delete d.locked; DK.store.save(); },
+    /** Lo marca como visto (quita «Nuevo»). */
+    seen(d) { if (d && d.isNew) { delete d.isNew; DK.store.save(); } },
     /** Cambia el apodo ('' lo elimina). */
     rename(d, nick) { d.nickname = nick ? nick.slice(0, 16) : undefined; DK.store.save(); },
 
@@ -512,6 +516,7 @@
 
     /** Añade un daskai a la colección (y al equipo si hay hueco). */
     add(d) {
+      if (this.all().length) d.isNew = true; // v4.57: marca «Nuevo» hasta que abras su ficha
       this.all().push(d);
       if (DK.looks) DK.looks.see(d);
       if (this.st().team.length < DK.config.maxTeam) this.st().team.push(d.uid);
@@ -563,7 +568,9 @@
      */
     release(uid) {
       const d = this.get(uid);
-      if (!d || d.temp || this.all().length <= 1 || (DK.training && DK.training.isTraining(uid))) return null;
+      if (!d || d.temp || d.locked || this.all().length <= 1 || (DK.training && DK.training.isTraining(uid))) return null;
+      // v4.57: copia para poder deshacerlo (unrelease) mientras sale el aviso
+      const snap = { d: JSON.parse(JSON.stringify(d)), at: this.all().indexOf(d), teamAt: this.st().team.indexOf(uid) };
       if (this.isActive(uid) && this.st().team.length <= 1) return null;
       const r = api.releaseReward(d);
       (d.equip || []).forEach((id) => id && DK.bag.add(id));
@@ -572,8 +579,28 @@
       this.st().party = this.all().filter((x) => x.uid !== uid);
       this.st().team = this.st().team.filter((x) => x !== uid);
       this.st().stats.released++;
+      snap.r = r; this._lastRelease = snap;
       DK.store.save();
       return r;
+    },
+    /**
+     * Deshace la última liberación (v4.57): devuelve el daskai a su sitio y retira lo que dio
+     * (monedas, piezas y lo que llevaba equipado). false si ya no se puede (lo has gastado).
+     */
+    unrelease() {
+      const s = this._lastRelease; if (!s) return false;
+      const st = this.st(), items = Object.assign({}, s.r.items);
+      (s.d.equip || []).forEach((id) => { if (id) items[id] = (items[id] || 0) + 1; });
+      if ((st.coins || 0) < s.r.coins || Object.entries(items).some(([id, n]) => DK.bag.count(id) < n)) return false;
+      this._lastRelease = null;
+      st.coins -= s.r.coins; st.stats.coinsEarned = Math.max(0, (st.stats.coinsEarned || 0) - s.r.coins);
+      Object.entries(items).forEach(([id, n]) => DK.bag.remove(id, n));
+      st.party.splice(Math.min(s.at, st.party.length), 0, s.d);
+      if (s.teamAt >= 0 && st.team.length < DK.config.maxTeam) st.team.splice(Math.min(s.teamAt, st.team.length), 0, s.d.uid);
+      st.stats.released = Math.max(0, st.stats.released - 1);
+      if (DK.boxes && DK.boxes.sync) DK.boxes.sync();
+      DK.store.save();
+      return s.d;
     },
 
     /**

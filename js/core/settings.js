@@ -13,6 +13,7 @@
     theme: null,            // 'dark' | 'light' | null (según el sistema)
     lang: 'es',
     textSize: 'md',         // 'sm' | 'md' | 'lg' | 'xl'
+    uiScale: 1,             // v4.57: tamaño de toda la interfaz (0.9 | 1 | 1.1 | 1.25), con CSS zoom
     uiStyle: 'exile',       // 'exile' (Exilio: limpio + css/exile.css) | 'clean' (limpio, css/clean.css) | 'classic' (el de antes)
     styleV: 2,              // v4.36: las partidas con el estilo limpio por defecto pasan a «Exilio» una vez
     highContrast: false,
@@ -85,6 +86,7 @@
       const meta = document.querySelector('meta[name="theme-color"]');
       if (meta && window.getComputedStyle) { const bg = getComputedStyle(el).getPropertyValue('--bg').trim(); if (bg) meta.setAttribute('content', bg); }
       el.dataset.textsize = this.data.textSize;
+      const z = Number(this.data.uiScale) || 1; el.style.zoom = z === 1 ? '' : String(z);
       el.dataset.style = this.data.uiStyle === 'classic' ? 'classic' : 'clean';
       el.dataset.skin = this.data.uiStyle === 'exile' ? 'exile' : 'none';
       el.dataset.contrast = this.data.highContrast ? 'high' : 'normal';

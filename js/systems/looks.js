@@ -56,6 +56,8 @@
     blob: ['blob', 'blob', 'chubby', 'squat'], drop: ['drop', 'egg', 'tall', 'tall'], squat: ['squat', 'squat', 'block', 'block'],
     ghost: ['ghost', 'ghost', 'ghost', 'ghost'], long: ['long', 'long', 'long', 'long'],
     cloud: ['cloud', 'cloud', 'chubby', 'squat'], pear: ['pear', 'pear', 'pear', 'tall'], mound: ['mound', 'mound', 'mound', 'block'],
+    wide: ['wide', 'wide', 'squat', 'squat'], tower: ['tower', 'tower', 'tall', 'tall'], topheavy: ['topheavy', 'topheavy', 'topheavy', 'block'], bubble: ['bubble', 'bubble', 'cloud', 'chubby'], lumpy: ['lumpy', 'lumpy', 'blob', 'chubby'],
+    gourd: ['gourd', 'gourd', 'gourd', 'pear'], gem: ['gem', 'gem', 'gem', 'block'], puff: ['puff', 'puff', 'cloud', 'chubby'], bell: ['bell', 'bell', 'bell', 'squat'], bulb: ['bulb', 'bulb', 'blob', 'chubby'],
   };
   const LEG_PATHS = { // patas en cada etapa
     stubby: [['stubby', 'paws', 'quad', 'quad'], 9], digi: [['stubby', 'digi', 'digi', 'pillars'], 6], paws: [['paws', 'paws', 'quad', 'pillars'], 8],
@@ -72,6 +74,27 @@
   const EARS2 = { elf: 5, mouse: 5, headwings: 3, trihorn: 3, lynx: 4 };
   const MARKS2 = { freckles: 5, patch: 4, band: 4, swirl: 3, blaze: 4 };
   const HAIR = { none: 6, fringe: 4, curl: 4, spiky: 4, ponytail: 3, cheektufts: 4, beard: 3 };
+  // v4.56: 5 rasgos nuevos de cada tipo. Sólo los tienen los aspectos nuevos (semilla con la marca NEW3:
+  // los daskai que ya tenías no cambian); cada rasgo tiene NEW3_CHANCE de cambiarse por uno de estas tablas.
+  const NEW3_CHANCE = 0.45, NEW3_TAG = 0xa5, NEW4_TAG = 0xa6;
+  // v4.62: los aspectos nuevos llevan NEW4_TAG: tienen los rasgos de la v4.56 y además los de la v4.62
+  const isNew4 = (seed) => ((seed >>> 0) & 0xff) === NEW4_TAG;
+  const isNew3 = (seed) => ((seed >>> 0) & 0xff) === NEW3_TAG || isNew4(seed);
+  const NEW4_CHANCE = 0.35;
+  const BODIES4 = { wide: 4, tower: 4, topheavy: 4, bubble: 4, lumpy: 4 };
+  const EYES4 = { crosseye: 3, teary: 4, robot: 3, lashes: 5, diamond: 3 };
+  const MOUTHS4 = { vampire: 4, zipper: 3, catmouth: 4, lips: 3, frown: 4 };
+  const LEGS4 = { peg: [['peg', 'peg', 'peg', 'peg'], 4], webbed: [['stubby', 'webbed', 'webbed', 'webbed'], 4], spring: [['spring', 'spring', 'spring', 'spring'], 3], bigfoot: [['bigfoot', 'bigfoot', 'bigfoot', 'bigfoot'], 4], stilts: [['peg', 'stilts', 'stilts', 'stilts'], 3] };
+  const ARMS = { stubby: 4, long: 4, noodle: 3, pincer: 3, mitten: 4 };
+  const FINALS4 = { cape: 4, flowercrown: 4, bandana: 4, goggles: 3, collar: 4 };
+  const BODIES3 = { gourd: 5, gem: 4, puff: 5, bell: 5, bulb: 4 };
+  const EYES3 = { sparkle: 5, crescent: 4, squint: 4, bug: 3, ringed: 4 };
+  const MOUTHS3 = { stitch: 3, toothy: 4, gaptooth: 4, drool: 4, whistle: 4 };
+  const EARS3 = { leafy: 4, plume: 4, devil: 4, bow: 4, crystals: 3 };
+  const MARKS3 = { bolt: 4, chevron: 4, ring: 4, bloom: 4, triad: 4 };
+  const HAIR3 = { bun: 4, afro: 3, swoop: 4, braids: 3, quiff: 4 };
+  const LEGS3 = { hoof: [['stubby', 'hooves', 'hooves', 'hooves'], 5], frog: [['frog', 'frog', 'frog', 'frog'], 4], talon: [['stubby', 'talons', 'talons', 'talons'], 4], root: [['roots', 'roots', 'roots', 'roots'], 3], puff: [['puffs', 'puffs', 'puffs', 'puffs'], 3] };
+  const ALL_LEGS = Object.assign({}, LEG_PATHS, LEGS3, LEGS4);
   const EYES = { big: 10, sharp: 9, slit: 6, sleepy: 5, happy: 5, glow: 5, dot: 6, angry: 6, star: 3, button: 3, uneven: 2, cyclops: 1.5, three: 1.2, visor: 1.2 };
   const MOUTHS = { w: 7, smile: 8, open: 6, grin: 5, tiny: 6, flat: 4, fangs: 6, tusks: 3, buck: 3, tongue: 4, beak: 2, smirk: 4, wavy: 3, cat3: 4, sabre: 2, pout: 3 };
   const EARS = { cat: 9, bunny: 6, bear: 7, droopy: 5, horns: 7, unicorn: 2, antenna: 4, crest: 6, sprout: 4, fins: 5, spikes: 5, tuft: 6, none: 3, antlers: 3, ram: 3, mushroom: 2, flower: 3, mohawk: 4 };
@@ -93,7 +116,7 @@
   const GLOW_COLORS = ['#fde047', '#22d3ee', '#f472b6', '#a3e635', '#f87171', '#c4b5fd'];
 
   const rare = (table, k) => (table[k] || 99) <= 2;
-  const ALL = { body: Object.assign({}, BODIES, BODIES2), eyes: Object.assign({}, EYES, EYES2), mouth: Object.assign({}, MOUTHS, MOUTHS2), ears: Object.assign({}, EARS, EARS2), mark: Object.assign({}, MARKS, MARKS2), hair: HAIR };
+  const ALL = { body: Object.assign({}, BODIES, BODIES2, BODIES3, BODIES4), eyes: Object.assign({}, EYES, EYES2, EYES3, EYES4), mouth: Object.assign({}, MOUTHS, MOUTHS2, MOUTHS3, MOUTHS4), arms: ARMS, ears: Object.assign({}, EARS, EARS2, EARS3), mark: Object.assign({}, MARKS, MARKS2, MARKS3), hair: Object.assign({}, HAIR, HAIR3) };
   function rng(seed) { let s = (seed >>> 0) || 1; return () => { s ^= s << 13; s >>>= 0; s ^= s >> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; }
   function pick(table, R, bias = {}) {
     const e = Object.entries(table).map(([k, w]) => [k, (Array.isArray(w) ? w[1] : w) * (bias[k] || 1)]);
@@ -131,6 +154,21 @@
       ind.hairColor = HC[Math.floor(R3() * HC.length)];
       if (ind.mouth === 'beak' && ['beard'].includes(ind.hair)) ind.hair = 'none';
     }
+    if (isNew3(seed)) { // v4.56: rasgos nuevos (sólo aspectos nuevos)
+      const R4 = rng(seed ^ 0x3c6ef372), sw = (key, table) => { if (R4() < NEW3_CHANCE) ind[key] = pick(table, R4); else R4(); };
+      const solid = !['ghost', 'long'].includes(ind.body);
+      if (solid) sw('body', BODIES3); else R4();
+      sw('eyes', EYES3); sw('mouth', MOUTHS3); sw('ears', EARS3); sw('mark', MARKS3); sw('hair', HAIR3);
+      if (solid && ind.legs !== 'hover' && R4() < 0.4) ind.legs = pick(LEGS3, R4);
+    }
+    if (isNew4(seed)) { // v4.62: más rasgos (cuerpos, ojos, bocas, patas, brazos y adornos finales)
+      const R5 = rng(seed ^ 0x7f4a7c15), sw = (key, table) => { if (R5() < NEW4_CHANCE) ind[key] = pick(table, R5); else R5(); };
+      const solid = !['ghost', 'long'].includes(ind.body);
+      if (solid) sw('body', BODIES4); else R5();
+      sw('eyes', EYES4); sw('mouth', MOUTHS4); sw('final', FINALS4);
+      if (solid && ind.legs !== 'hover' && R5() < 0.35) ind.legs = pick(LEGS4, R5); else R5();
+      ind.arms = R5() < 0.5 ? pick(ARMS, R5) : null;
+    }
     { const R2 = rng(seed ^ 0x9e3779b9); ind.baby = R2() < 0.75 ? 0.82 + R2() * 0.14 : 1 + R2() * 0.12; } // 3 de cada 4 nacen pequeños
     ind.rare = rare(ALL.eyes, ind.eyes) || rare(ALL.mouth, ind.mouth) || rare(ALL.ears, ind.ears) || ind.size > 1.18 || ind.size < 0.82 || rare(ALL.body, ind.body);
     return ind;
@@ -152,6 +190,9 @@
     blob: { w: 1.05, h: 0.96, n: 2, wob: 0.07, k: 5 }, drop: { w: 0.92, h: 1.12, n: 2, drop: 0.6 }, squat: { w: 1.25, h: 0.8, n: 2.8, pear: 0.06 },
     ghost: { w: 0.95, h: 1.05, n: 2 }, long: { w: 1.02, h: 0.86, n: 2.4 },
     cloud: { w: 1.08, h: 0.94, n: 2, bump: 0.075, k: 9 }, pear: { w: 0.94, h: 1.06, n: 2.1, pear: 0.42 }, mound: { w: 1.16, h: 0.9, n: 2.2, drop: 0.34 },
+    wide: { w: 1.38, h: 0.76, n: 2.6, pear: 0.05 }, tower: { w: 0.72, h: 1.32, n: 2.4, pear: 0.06 }, topheavy: { w: 1.02, h: 1.04, n: 2.2, pear: -0.32 },
+    bubble: { w: 1.04, h: 0.98, n: 2, bump: 0.09, k: 5 }, lumpy: { w: 1.06, h: 0.96, n: 2, wob: 0.09, k: 7 },
+    gourd: { w: 0.98, h: 1.1, n: 2, waist: 0.2, pear: 0.18 }, gem: { w: 1.02, h: 1.1, n: 1.4 }, puff: { w: 1.06, h: 0.96, n: 2, bump: 0.05, k: 16 }, bell: { w: 1.02, h: 1.02, n: 3, pear: 0.5 }, bulb: { w: 1.04, h: 0.98, n: 2, wob: 0.11, k: 3 },
   };
   function bodyPath(kind, cx, cy, W, H, ind) {
     const P = PRESET[kind] || PRESET.round, N = 44, pts = [];
@@ -165,6 +206,7 @@
       const a = (i / N) * Math.PI * 2;
       let x = W * sp(Math.cos(a), 2 / P.n), y = H * sp(Math.sin(a), 2 / P.n);
       if (P.pear) x *= 1 + P.pear * (y / H);
+      if (P.waist) x *= 1 - P.waist * Math.exp(-Math.pow(y / H + 0.12, 2) * 9);
       if (P.drop && y < 0) { const k = -y / H; x *= Math.pow(1 - k * P.drop, 1.2); y *= 1 + k * 0.18; }
       if (P.wob) { const r = 1 + P.wob * Math.sin(a * P.k + ind.wob); x *= r; y *= r; }
       if (P.bump) { const r = 1 + P.bump * Math.abs(Math.sin((a * P.k) / 2 + ind.wob)); x *= r; y *= r; }
@@ -202,6 +244,16 @@
       case 'wink': return big(e1) + `<path d="M ${f(e2[0] - er)} ${f(e2[1] + 1)} Q ${f(e2[0])} ${f(e2[1] - er * 0.9)} ${f(e2[0] + er)} ${f(e2[1] + 1)}" fill="none" ${STROKE(dk, 2.4)}/>`;
       case 'anime': return [e1, e2].map(([x, y]) => `<ellipse cx="${f(x)}" cy="${f(y)}" rx="${f(er * 0.95)}" ry="${f(er * 1.35)}" fill="#fff" ${STROKE(dk, 1.5)}/><ellipse cx="${f(x - er * 0.08)}" cy="${f(y + er * 0.2)}" rx="${f(er * 0.72)}" ry="${f(er * 1.02)}" fill="${col}"/><ellipse cx="${f(x - er * 0.08)}" cy="${f(y + er * 0.3)}" rx="${f(er * 0.36)}" ry="${f(er * 0.55)}" fill="#0b0a12"/><ellipse cx="${f(x - er * 0.38)}" cy="${f(y - er * 0.35)}" rx="${f(er * 0.3)}" ry="${f(er * 0.36)}" fill="#fff"/><circle cx="${f(x + er * 0.3)}" cy="${f(y + er * 0.6)}" r="${f(er * 0.16)}" fill="#fff"/><path d="M ${f(x - er)} ${f(y - er * 1.15)} Q ${f(x)} ${f(y - er * 1.75)} ${f(x + er)} ${f(y - er * 1.2)}" fill="none" ${STROKE(dk, 1.6)}/>`).join('');
       case 'halflid': return [e1, e2].map(([x, y]) => big([x, y]) + `<path d="M ${f(x - er * 1.05)} ${f(y + 0.3)} A ${f(er * 1.05)} ${f(er * 1.12)} 0 0 1 ${f(x + er * 1.05)} ${f(y + 0.3)} Z" fill="${P.skin}"/><path d="M ${f(x - er * 1.05)} ${f(y + 0.3)} L ${f(x + er * 1.05)} ${f(y + 0.3)}" ${STROKE(dk, 2)}/>`).join('');
+      case 'crosseye': return [e1, e2].map(([x, y]) => `<ellipse cx="${f(x)}" cy="${f(y)}" rx="${f(er)}" ry="${f(er * 1.08)}" fill="#fff" ${STROKE(dk, 1.4)}/><path d="M ${f(x - er * 0.5)} ${f(y)} H ${f(x + er * 0.5)} M ${f(x)} ${f(y - er * 0.5)} V ${f(y + er * 0.5)}" stroke="${col === '#1b1b2f' ? '#0b0a12' : col}" stroke-width="${f(er * 0.32)}" stroke-linecap="round"/>`).join('');
+      case 'teary': return [e1, e2].map(([x, y], i) => big([x, y], er * 1.1) + (i ? '' : `<path d="M ${f(x - er * 0.6)} ${f(y + er * 0.9)} q ${f(-er * 0.35)} ${f(er * 0.8)} 0 ${f(er * 1.1)} q ${f(er * 0.35)} ${f(-er * 0.3)} 0 ${f(-er * 1.1)} Z" fill="#7dd3fc" stroke="#0ea5e9" stroke-width=".7"/>`)).join('');
+      case 'robot': return [e1, e2].map(([x, y]) => `<rect x="${f(x - er)}" y="${f(y - er * 0.85)}" width="${f(er * 2)}" height="${f(er * 1.7)}" rx="${f(er * 0.35)}" fill="#1f2937" ${STROKE(dk, 1.4)}/><rect x="${f(x - er * 0.55)}" y="${f(y - er * 0.4)}" width="${f(er * 1.1)}" height="${f(er * 0.8)}" rx="${f(er * 0.15)}" fill="${col === '#1b1b2f' ? '#22d3ee' : col}"/><rect x="${f(x - er * 0.5)}" y="${f(y - er * 0.35)}" width="${f(er * 0.35)}" height="${f(er * 0.25)}" fill="#fff" opacity=".8"/>`).join('');
+      case 'lashes': return [e1, e2].map(([x, y], i) => big([x, y]) + `<path d="M ${f(x - er * 0.9)} ${f(y - er * 0.9)} l ${f(-er * 0.35)} ${f(-er * 0.45)} M ${f(x - er * 0.3)} ${f(y - er * 1.1)} l ${f(-er * 0.1)} ${f(-er * 0.55)} M ${f(x + er * 0.35)} ${f(y - er * 1.05)} l ${f(er * 0.15)} ${f(-er * 0.55)} M ${f(x + er * 0.9)} ${f(y - er * 0.8)} l ${f(er * 0.4)} ${f(-er * 0.4)}" stroke="${dk}" stroke-width="1.3" stroke-linecap="round"/>`).join('');
+      case 'diamond': return [e1, e2].map(([x, y]) => `<ellipse cx="${f(x)}" cy="${f(y)}" rx="${f(er)}" ry="${f(er * 1.08)}" fill="#fff" ${STROKE(dk, 1.4)}/><path d="M ${f(x)} ${f(y - er * 0.75)} L ${f(x + er * 0.55)} ${f(y + er * 0.05)} L ${f(x)} ${f(y + er * 0.85)} L ${f(x - er * 0.55)} ${f(y + er * 0.05)} Z" fill="${col === '#1b1b2f' ? '#8b5cf6' : col}"/><path d="M ${f(x)} ${f(y - er * 0.35)} L ${f(x + er * 0.25)} ${f(y + er * 0.05)} L ${f(x)} ${f(y + er * 0.45)} L ${f(x - er * 0.25)} ${f(y + er * 0.05)} Z" fill="#0b0a12"/><circle cx="${f(x - er * 0.35)}" cy="${f(y - er * 0.35)}" r="${f(er * 0.16)}" fill="#fff"/>`).join('');
+      case 'sparkle': return [e1, e2].map(([x, y]) => big([x, y], er * 1.08) + star(x + er * 0.32, y - er * 0.3, er * 0.42, er * 0.14, '#fff') + star(x - er * 0.45, y + er * 0.5, er * 0.22, er * 0.08, '#fff')).join('');
+      case 'crescent': return [e1, e2].map(([x, y]) => `<ellipse cx="${f(x)}" cy="${f(y)}" rx="${f(er)}" ry="${f(er * 1.08)}" fill="#fff" ${STROKE(dk, 1.4)}/><circle cx="${f(x)}" cy="${f(y + er * 0.1)}" r="${f(er * 0.72)}" fill="${col}"/><path d="M ${f(x + er * 0.15)} ${f(y - er * 0.45)} A ${f(er * 0.55)} ${f(er * 0.55)} 0 1 0 ${f(x + er * 0.15)} ${f(y + er * 0.65)} A ${f(er * 0.42)} ${f(er * 0.42)} 0 1 1 ${f(x + er * 0.15)} ${f(y - er * 0.45)} Z" fill="#0b0a12"/><circle cx="${f(x - er * 0.4)}" cy="${f(y - er * 0.4)}" r="${f(er * 0.2)}" fill="#fff"/>`).join('');
+      case 'squint': return [[e1, 1], [e2, -1]].map(([[x, y], d]) => `<path d="M ${f(x - d * er * 0.8)} ${f(y - er * 0.7)} L ${f(x + d * er * 0.6)} ${f(y)} L ${f(x - d * er * 0.8)} ${f(y + er * 0.7)}" fill="none" ${STROKE(dk, 2.4)}/>`).join('');
+      case 'bug': return [e1, e2].map(([x, y]) => `<ellipse cx="${f(x)}" cy="${f(y)}" rx="${f(er * 1.15)}" ry="${f(er * 1.3)}" fill="#1f1a2e" ${STROKE(dk, 1.4)}/>` + [[-0.4, -0.3], [0.25, -0.45], [-0.1, 0.25], [0.45, 0.2], [-0.5, 0.55], [0.1, 0.75]].map(([ox, oy]) => `<circle cx="${f(x + er * ox)}" cy="${f(y + er * oy)}" r="${f(er * 0.18)}" fill="${col === '#1b1b2f' ? '#4ade80' : col}" opacity=".55"/>`).join('') + `<ellipse cx="${f(x - er * 0.4)}" cy="${f(y - er * 0.55)}" rx="${f(er * 0.35)}" ry="${f(er * 0.22)}" fill="#fff" opacity=".85"/>`).join('');
+      case 'ringed': return [e1, e2].map(([x, y]) => `<ellipse cx="${f(x)}" cy="${f(y)}" rx="${f(er)}" ry="${f(er * 1.08)}" fill="#fff" ${STROKE(dk, 1.4)}/><circle cx="${f(x - er * 0.08)}" cy="${f(y + er * 0.08)}" r="${f(er * 0.74)}" fill="${col}"/><circle cx="${f(x - er * 0.08)}" cy="${f(y + er * 0.08)}" r="${f(er * 0.52)}" fill="none" stroke="#fff" stroke-width="${f(er * 0.12)}" opacity=".7"/><circle cx="${f(x - er * 0.08)}" cy="${f(y + er * 0.08)}" r="${f(er * 0.24)}" fill="#0b0a12"/><circle cx="${f(x - er * 0.38)}" cy="${f(y - er * 0.35)}" r="${f(er * 0.16)}" fill="#fff"/>`).join('');
       default: return big(e1) + big(e2);
     }
   }
@@ -232,6 +284,16 @@
       case 'mustache': return `<path d="M ${f(mx - w * 0.7)} ${f(my + 1.5)} Q ${f(mx)} ${f(my + w * 0.9)} ${f(mx + w * 0.7)} ${f(my + 1.5)}" fill="none" ${STROKE(dk, 1.8)}/><path d="M ${f(mx)} ${f(my - 1)} q ${f(-w * 0.6)} ${f(-w * 0.55)} ${f(-w * 1.3)} ${f(w * 0.05)} q ${f(-w * 0.35)} ${f(w * 0.3)} ${f(-w * 0.1)} ${f(-w * 0.45)} q ${f(w * 0.55)} ${f(w * 0.5)} ${f(w * 1.4)} ${f(w * 0.4)} Z M ${f(mx)} ${f(my - 1)} q ${f(w * 0.6)} ${f(-w * 0.55)} ${f(w * 1.3)} ${f(w * 0.05)} q ${f(w * 0.35)} ${f(w * 0.3)} ${f(w * 0.1)} ${f(-w * 0.45)} q ${f(-w * 0.55)} ${f(w * 0.5)} ${f(-w * 1.4)} ${f(w * 0.4)} Z" fill="#3b2a20"/>`;
       case 'biggrin': return `<path d="M ${f(mx - w * 1.4)} ${f(my - 1.5)} Q ${f(mx)} ${f(my + w * 2)} ${f(mx + w * 1.4)} ${f(my - 1.5)} Z" fill="#4a0f1c" ${STROKE(dk, 1.6)}/><path d="M ${f(mx - w * 1.25)} ${f(my - 1)} L ${f(mx + w * 1.25)} ${f(my - 1)} L ${f(mx + w * 1.05)} ${f(my + w * 0.35)} L ${f(mx - w * 1.05)} ${f(my + w * 0.35)} Z" fill="#fff"/><ellipse cx="${f(mx)}" cy="${f(my + w * 1.05)}" rx="${f(w * 0.6)}" ry="${f(w * 0.32)}" fill="#f472b6"/>`;
       case 'beak': return `<path d="M ${f(mx + w * 0.6)} ${f(my - w * 0.9)} L ${f(mx - w * 2.3)} ${f(my + w * 0.1)} L ${f(mx + w * 0.6)} ${f(my + w * 0.8)} Z" fill="#f59e0b" ${STROKE(dk, 1.4)}/><path d="M ${f(mx + w * 0.6)} ${f(my)} L ${f(mx - w * 2.1)} ${f(my + w * 0.1)}" stroke="${dk}" stroke-width="1"/>`;
+      case 'vampire': return `<path d="M ${f(mx - w)} ${f(my - 1)} Q ${f(mx)} ${f(my + w * 0.8)} ${f(mx + w)} ${f(my - 1)}" fill="none" ${STROKE(dk, 2)}/><path d="M ${f(mx - w * 0.55)} ${f(my + w * 0.05)} l ${f(w * 0.2)} ${f(w * 0.55)} l ${f(w * 0.2)} ${f(-w * 0.5)} Z M ${f(mx + w * 0.15)} ${f(my + w * 0.12)} l ${f(w * 0.2)} ${f(w * 0.55)} l ${f(w * 0.2)} ${f(-w * 0.52)} Z" fill="#fff" ${STROKE(dk, 0.7)}/>`;
+      case 'zipper': return `<path d="M ${f(mx - w)} ${f(my + 0.5)} H ${f(mx + w)}" ${STROKE(dk, 2)}/>` + [-0.7, -0.35, 0, 0.35, 0.7].map((o) => `<path d="M ${f(mx + w * o)} ${f(my - 1.2)} v 3.4" stroke="${dk}" stroke-width="1"/>`).join('') + `<rect x="${f(mx + w * 0.9)}" y="${f(my - 0.8)}" width="${f(w * 0.35)}" height="${f(w * 0.6)}" rx=".8" fill="#d6d3d1" ${STROKE(dk, 0.8)}/>`;
+      case 'catmouth': return `<path d="M ${f(mx - w * 0.85)} ${f(my)} q ${f(w * 0.42)} ${f(w * 0.7)} ${f(w * 0.85)} 0 q ${f(w * 0.42)} ${f(w * 0.7)} ${f(w * 0.85)} 0" fill="none" ${STROKE(dk, 1.8)}/><path d="M ${f(mx - w * 1.2)} ${f(my - 1.5)} l ${f(-w * 1.1)} ${f(-w * 0.25)} M ${f(mx - w * 1.2)} ${f(my)} l ${f(-w * 1.15)} ${f(w * 0.15)} M ${f(mx + w * 1.2)} ${f(my - 1.5)} l ${f(w * 1.1)} ${f(-w * 0.25)} M ${f(mx + w * 1.2)} ${f(my)} l ${f(w * 1.15)} ${f(w * 0.15)}" stroke="${dk}" stroke-width=".8" opacity=".6"/>`;
+      case 'lips': return `<path d="M ${f(mx - w * 0.8)} ${f(my + 0.5)} Q ${f(mx - w * 0.4)} ${f(my - w * 0.45)} ${f(mx)} ${f(my)} Q ${f(mx + w * 0.4)} ${f(my - w * 0.45)} ${f(mx + w * 0.8)} ${f(my + 0.5)} Q ${f(mx)} ${f(my + w * 0.9)} ${f(mx - w * 0.8)} ${f(my + 0.5)} Z" fill="#e11d48" ${STROKE(dk, 1.2)}/><path d="M ${f(mx - w * 0.7)} ${f(my + 0.5)} Q ${f(mx)} ${f(my + w * 0.25)} ${f(mx + w * 0.7)} ${f(my + 0.5)}" stroke="#881337" stroke-width=".8" fill="none"/>`;
+      case 'frown': return `<path d="M ${f(mx - w * 0.9)} ${f(my + w * 0.55)} Q ${f(mx)} ${f(my - w * 0.4)} ${f(mx + w * 0.9)} ${f(my + w * 0.55)}" fill="none" ${STROKE(dk, 2)}/>`;
+      case 'stitch': return `<path d="M ${f(mx - w)} ${f(my + 0.5)} Q ${f(mx)} ${f(my + w * 0.45)} ${f(mx + w)} ${f(my)}" fill="none" ${STROKE(dk, 1.8)}/>` + [-0.6, 0, 0.6].map((o) => `<path d="M ${f(mx + w * o - 1.3)} ${f(my - 1.2)} l 2.6 ${f(2.8 + w * 0.15)} M ${f(mx + w * o + 1.3)} ${f(my - 1.2)} l -2.6 ${f(2.8 + w * 0.15)}" stroke="${dk}" stroke-width="1.1" stroke-linecap="round"/>`).join('');
+      case 'toothy': return `<rect x="${f(mx - w)}" y="${f(my - 1.5)}" width="${f(w * 2)}" height="${f(w * 0.85)}" rx="${f(w * 0.3)}" fill="#fff" ${STROKE(dk, 1.6)}/><path d="M ${f(mx - w)} ${f(my - 1.5 + w * 0.42)} H ${f(mx + w)}" stroke="${dk}" stroke-width=".9"/>` + [-0.5, 0, 0.5].map((o) => `<path d="M ${f(mx + w * o)} ${f(my - 1.5)} v ${f(w * 0.85)}" stroke="${dk}" stroke-width=".9"/>`).join('');
+      case 'gaptooth': return `<path d="M ${f(mx - w * 1.1)} ${f(my - 1)} Q ${f(mx)} ${f(my + w * 1.6)} ${f(mx + w * 1.1)} ${f(my - 1)} Z" fill="#4a0f1c" ${STROKE(dk, 1.6)}/><rect x="${f(mx - w * 0.5)}" y="${f(my - 0.8)}" width="${f(w * 0.45)}" height="${f(w * 0.55)}" rx=".6" fill="#fff"/><ellipse cx="${f(mx + w * 0.1)}" cy="${f(my + w * 0.85)}" rx="${f(w * 0.5)}" ry="${f(w * 0.25)}" fill="#f472b6"/>`;
+      case 'drool': return `<path d="M ${f(mx - w)} ${f(my - 1)} Q ${f(mx)} ${f(my + w * 1.1)} ${f(mx + w)} ${f(my - 1)}" fill="none" ${STROKE(dk, 2)}/><path d="M ${f(mx + w * 0.85)} ${f(my)} q ${f(w * 0.35)} ${f(w * 0.7)} 0 ${f(w * 1.1)} q ${f(-w * 0.35)} ${f(-w * 0.4)} 0 ${f(-w * 1.1)} Z" fill="#bae6fd" stroke="#38bdf8" stroke-width=".8"/>`;
+      case 'whistle': return `<ellipse cx="${f(mx)}" cy="${f(my + 1)}" rx="${f(w * 0.32)}" ry="${f(w * 0.36)}" fill="#4a0f1c" ${STROKE(dk, 1.5)}/><path d="M ${f(mx + w * 0.7)} ${f(my - 0.5)} l ${f(w * 0.6)} ${f(-w * 0.3)} M ${f(mx + w * 0.75)} ${f(my + 1.2)} l ${f(w * 0.7)} 0 M ${f(mx + w * 0.7)} ${f(my + 2.8)} l ${f(w * 0.6)} ${f(w * 0.3)}" stroke="${dk}" stroke-width="1" stroke-linecap="round" opacity=".6"/>`;
       default: return `<path d="M ${f(mx - w)} ${f(my)} Q ${f(mx - w / 2)} ${f(my + w * 0.85)} ${f(mx)} ${f(my)} Q ${f(mx + w / 2)} ${f(my + w * 0.85)} ${f(mx + w)} ${f(my)}" fill="none" ${STROKE(dk, 2)}/>`;
     }
   }
@@ -262,19 +324,35 @@
       case 'headwings': return front ? '' : [[cx - W * 0.8, P.ey - 6, -1], [cx + W * 0.55, P.ey - 8, 1]].map(([x, y, d]) => `<path d="M ${f(x)} ${f(y + 4)} Q ${f(x + d * 6 * k)} ${f(y - 14 * k)} ${f(x + d * 17 * k)} ${f(y - 12 * k)} Q ${f(x + d * 12 * k)} ${f(y - 6 * k)} ${f(x + d * 15 * k)} ${f(y - 3 * k)} Q ${f(x + d * 9 * k)} ${f(y)} ${f(x + d * 11 * k)} ${f(y + 3 * k)} Q ${f(x + d * 4 * k)} ${f(y + 3)} ${f(x)} ${f(y + 4)} Z" fill="#fffdf5" ${STROKE(dk, 1.5)}/>`).join('');
       case 'trihorn': return front ? '' : [-0.42, -0.12, 0.18].map((o, i) => { const x = cx + W * o, y = top(x) + 3, hh = (i === 1 ? 13 : 9) * k; return `<path d="M ${f(x - 3.5 * k)} ${f(y)} Q ${f(x - 1)} ${f(y - hh * 0.6)} ${f(x + (i - 1) * 2)} ${f(y - hh)} Q ${f(x + 2)} ${f(y - hh * 0.5)} ${f(x + 3.5 * k)} ${f(y)} Z" fill="${hornC}" ${STROKE(dk, 1.5)}/>`; }).join('');
       case 'lynx': return front ? '' : [[L, yL, -1], [Rr, yR, 1]].map(([x, y, d]) => `<path d="M ${f(x - 7 * k)} ${f(y + 6)} L ${f(x + d * 2 * k)} ${f(y - 15 * k)} L ${f(x + 8 * k)} ${f(y + 5)} Z" fill="${skin}" ${STROKE(dk)}/><path d="M ${f(x - 3.5 * k)} ${f(y + 3)} L ${f(x + d * 1.5 * k)} ${f(y - 8 * k)} L ${f(x + 4 * k)} ${f(y + 3)} Z" fill="${inner}"/><path d="M ${f(x + d * 2 * k)} ${f(y - 14 * k)} l ${f(d * 1.5)} ${f(-7 * k)} M ${f(x + d * 2 * k)} ${f(y - 14 * k)} l ${f(d * -1.5)} ${f(-5 * k)}" stroke="#1c1917" stroke-width="${f(2 * k)}" stroke-linecap="round"/>`).join('');
+      case 'leafy': return front ? '' : [[L, yL, -1], [Rr, yR, 1]].map(([x, y, d]) => `<path d="M ${f(x)} ${f(y + 4)} Q ${f(x + d * 14 * k)} ${f(y - 4 * k)} ${f(x + d * 9 * k)} ${f(y - 18 * k)} Q ${f(x - d * 3 * k)} ${f(y - 8 * k)} ${f(x)} ${f(y + 4)} Z" fill="#65a30d" ${STROKE('#365314', 1.6)}/><path d="M ${f(x)} ${f(y + 3)} Q ${f(x + d * 6 * k)} ${f(y - 6 * k)} ${f(x + d * 8.5 * k)} ${f(y - 16 * k)}" fill="none" stroke="#365314" stroke-width="1" opacity=".7"/>`).join('');
+      case 'plume': { const x = cx - W * 0.1, y = top(x) + 3, c = hue(skin, 60); return front ? '' : `<path d="M ${f(x)} ${f(y)} Q ${f(x - 4 * k)} ${f(y - 16 * k)} ${f(x + 10 * k)} ${f(y - 26 * k)} Q ${f(x + 6 * k)} ${f(y - 14 * k)} ${f(x + 4 * k)} ${f(y)} Z" fill="${c}" ${STROKE(dk, 1.6)}/><path d="M ${f(x + 2 * k)} ${f(y - 1)} Q ${f(x + 1 * k)} ${f(y - 14 * k)} ${f(x + 9 * k)} ${f(y - 24 * k)}" fill="none" stroke="${dk}" stroke-width="1" opacity=".55"/>`; }
+      case 'devil': return front ? '' : [[L + 2, yL, -1], [Rr - 1, yR, 1]].map(([x, y, d]) => `<path d="M ${f(x - 3.5 * k)} ${f(y + 4)} Q ${f(x + d * 2 * k)} ${f(y - 6 * k)} ${f(x + d * 7 * k)} ${f(y - 11 * k)} Q ${f(x + d * 2 * k)} ${f(y - 3 * k)} ${f(x + 3.5 * k)} ${f(y + 4)} Z" fill="#b91c1c" ${STROKE(dk, 1.6)}/>`).join('');
+      case 'bow': { const x = cx - W * 0.42, y = top(x) + 2; return front ? `<path d="M ${f(x)} ${f(y)} L ${f(x - 9 * k)} ${f(y - 6 * k)} L ${f(x - 9 * k)} ${f(y + 5 * k)} Z M ${f(x)} ${f(y)} L ${f(x + 9 * k)} ${f(y - 6 * k)} L ${f(x + 9 * k)} ${f(y + 5 * k)} Z" fill="#ec4899" ${STROKE(dk, 1.5)}/><circle cx="${f(x)}" cy="${f(y)}" r="${f(2.6 * k)}" fill="#f9a8d4" ${STROKE(dk, 1.2)}/>` : ''; }
+      case 'crystals': return front ? '' : [[-0.35, 11, -2], [-0.08, 17, 0], [0.2, 10, 2]].map(([o, hh, r]) => { const x = cx + W * o, y = top(x) + 4; return `<path d="M ${f(x - 4 * k)} ${f(y)} L ${f(x - 1 * k + r)} ${f(y - hh * k)} L ${f(x + 4 * k)} ${f(y)} Z" fill="#a5f3fc" ${STROKE('#0e7490', 1.4)}/><path d="M ${f(x - 1 * k + r)} ${f(y - hh * k)} L ${f(x + 0.5)} ${f(y)}" stroke="#fff" stroke-width=".9" opacity=".75"/>`; }).join('');
       case 'tuft': { const x = cx - W * 0.2, y = top(x); return front ? '' : `<path d="M ${f(x - 9 * k)} ${f(y + 5)} Q ${f(x - 10 * k)} ${f(y - 12 * k)} ${f(x + 2 * k)} ${f(y - 13 * k)} Q ${f(x - 4 * k)} ${f(y - 7 * k)} ${f(x + 3 * k)} ${f(y - 4 * k)} Q ${f(x + 10 * k)} ${f(y - 10 * k)} ${f(x + 11 * k)} ${f(y - 5 * k)} Q ${f(x + 8 * k)} ${f(y + 1)} ${f(x + 8 * k)} ${f(y + 5)} Z" fill="${shade(skin, -0.12)}" ${STROKE(dk, 1.8)}/>`; }
       default: return '';
     }
   }
 
   // Manos según la casa
+  const Pm2 = (kind) => PRESET[kind] || PRESET.round;
   function armSvg(ind, P, side) {
     const { cx, cy, W, H, skin, dk, s, house } = P, k = ind.armScale * s * (0.75 + P.stage * 0.12);
     const near = side === 'near', d = near ? -1 : 1;
-    const sx = near ? cx - W * 0.9 : cx + W * 0.74, sy = cy + H * 0.08;
-    const hx = sx + d * 5 * k, hy = sy + 9 * k;
+    // v4.57: el brazo de detrás sale del borde del cuerpo y la mano asoma (en cuerpos grandes quedaba tapado)
+    const edge = Pm2(P.kind).pear ? 1 + Pm2(P.kind).pear * 0.08 : 1;
+    const sx = near ? cx - W * 0.9 : cx + W * 0.9 * edge, sy = cy + H * 0.08;
+    // v4.62: tipo de brazo del individuo (más cortos, largos, de fideo, pinzas o manoplas)
+    const A = ind.arms, reach = A === 'long' ? 1.7 : A === 'stubby' ? 0.55 : 1;
+    const hx = sx + d * (near ? 5 : 7) * k * reach, hy = sy + 9 * k * reach;
+    if (A === 'noodle') {
+      const pth = `M ${f(sx)} ${f(sy - 3 * k)} C ${f(sx + d * 10 * k)} ${f(sy - 6 * k)} ${f(sx - d * 2 * k)} ${f(sy + 10 * k)} ${f(sx + d * 8 * k)} ${f(sy + 13 * k)}`;
+      return `<path d="${pth}" fill="none" stroke="${dk}" stroke-width="${f(5 * k)}" stroke-linecap="round"/><path d="${pth}" fill="none" stroke="${skin}" stroke-width="${f(2.8 * k)}" stroke-linecap="round"/><circle cx="${f(sx + d * 8 * k)}" cy="${f(sy + 13 * k)}" r="${f(3 * k)}" fill="${shade(skin, 0.2)}" ${STROKE(dk, 1.3)}/>`;
+    }
     const arm = `<path d="M ${f(sx)} ${f(sy - 3 * k)} Q ${f(sx + d * 6 * k)} ${f(sy)} ${f(hx)} ${f(hy - 2 * k)}" fill="none" stroke="${dk}" stroke-width="${f(7.5 * k)}" stroke-linecap="round"/><path d="M ${f(sx)} ${f(sy - 3 * k)} Q ${f(sx + d * 6 * k)} ${f(sy)} ${f(hx)} ${f(hy - 2 * k)}" fill="none" stroke="${skin}" stroke-width="${f(4.6 * k)}" stroke-linecap="round"/>`;
     const H_ = HOUSES[house];
+    if (A === 'pincer') return arm + `<path d="M ${f(hx)} ${f(hy - 1 * k)} q ${f(d * 7 * k)} ${f(-6 * k)} ${f(d * 8 * k)} ${f(1 * k)} l ${f(-d * 4 * k)} ${f(-0.5 * k)} q ${f(d * 3 * k)} ${f(5 * k)} ${f(-d * 5 * k)} ${f(5 * k)} q ${f(-d * 3 * k)} ${f(-2 * k)} ${f(-d * 1 * k)} ${f(-5.5 * k)} Z" fill="${shade(skin, -0.12)}" ${STROKE(dk, 1.5)}/>`;
+    if (A === 'mitten') return arm + `<ellipse cx="${f(hx)}" cy="${f(hy + 0.5 * k)}" rx="${f(6 * k)}" ry="${f(5.2 * k)}" fill="#f5f0e6" ${STROKE(dk, 1.6)}/><ellipse cx="${f(hx - d * 4.5 * k)}" cy="${f(hy - 2 * k)}" rx="${f(2.2 * k)}" ry="${f(2.8 * k)}" fill="#f5f0e6" ${STROKE(dk, 1.3)}/><path d="M ${f(hx - 5 * k)} ${f(hy + 3 * k)} h ${f(10 * k)}" stroke="#ef4444" stroke-width="${f(1.6 * k)}"/>`;
     switch (H_.hands) {
       case 'paw': return arm + `<ellipse cx="${f(hx)}" cy="${f(hy)}" rx="${f(4.8 * k)}" ry="${f(4.2 * k)}" fill="${shade(skin, 0.25)}" ${STROKE(dk, 1.6)}/>` + [-1, 0, 1].map((i) => `<circle cx="${f(hx + i * 1.9 * k)}" cy="${f(hy + 1.6 * k)}" r="${f(0.9 * k)}" fill="#f9a8d4"/>`).join('');
       case 'claw': return arm.replace(`stroke-width="${f(4.6 * k)}"`, `stroke-width="${f(3.6 * k)}"`) + [-1, 0, 1].map((i) => `<path d="M ${f(hx + i * 1.6 * k)} ${f(hy - 1 * k)} q ${f(d * 1.5 * k + i * k)} ${f(4 * k)} ${f(d * -1 * k + i * 1.5 * k)} ${f(6 * k)}" fill="none" stroke="#1a1430" stroke-width="${f(1.8 * k)}" stroke-linecap="round"/>`).join('');
@@ -298,11 +376,21 @@
       case 'pillars': return (layer === 'far' ? [cx - W * 0.15, cx + W * 0.6] : [cx - W * 0.55, cx + W * 0.28]).map((x) => pillar(x, 13 * s, layer === 'far' ? dark : skin) + [-1, 0, 1].map((i) => `<ellipse cx="${f(x + i * 3.6 * s)}" cy="${f(groundY - 1.5)}" rx="${f(1.6 * s)}" ry="${f(1.1 * s)}" fill="#f5f0e6" opacity=".9"/>`).join('')).join('');
       case 'digi': return (layer === 'far' ? [cx + W * 0.5] : [cx - W * 0.42]).map((x) => `<ellipse cx="${f(x)}" cy="${f(y0 - 2)}" rx="${f(8 * s)}" ry="${f(10 * s)}" fill="${layer === 'far' ? dark : skin}" ${STROKE(dk, 1.8)}/><path d="M ${f(x + 2 * s)} ${f(y0 + 6 * s)} L ${f(x + 1 * s)} ${f(groundY - 3)}" stroke="${dk}" stroke-width="${f(6 * s)}" stroke-linecap="round"/><path d="M ${f(x + 2 * s)} ${f(y0 + 6 * s)} L ${f(x + 1 * s)} ${f(groundY - 3)}" stroke="${layer === 'far' ? dark : skin}" stroke-width="${f(3.6 * s)}" stroke-linecap="round"/>` + foot(x - 2, groundY - 2.4, 8 * s, 3.4 * s, shade(skin, -0.25)) + toes(x - 4, groundY - 2.4, 4 * s)).join('');
       case 'tall': return layer === 'near' ? [cx - W * 0.25, cx + W * 0.22].map((x) => `<path d="M ${f(x)} ${f(y0 - 3)} L ${f(x)} ${f(groundY - 2)} M ${f(x)} ${f(groundY - 2)} l ${f(-5 * s)} ${f(2)} M ${f(x)} ${f(groundY - 2)} l ${f(4.5 * s)} ${f(2)} M ${f(x)} ${f(groundY - 2)} l ${f(-0.5)} ${f(2.4)}" fill="none" stroke="#c2410c" stroke-width="${f(2.6 * s)}" stroke-linecap="round"/>`).join('') : '';
+      case 'peg': return layer === 'near' ? [cx - W * 0.3, cx + W * 0.25].map((x) => `<path d="M ${f(x)} ${f(y0 - 3)} V ${f(groundY - 3)}" stroke="${dk}" stroke-width="${f(4.2 * s)}" stroke-linecap="round"/><path d="M ${f(x)} ${f(y0 - 3)} V ${f(groundY - 3)}" stroke="${shade(skin, -0.1)}" stroke-width="${f(2.2 * s)}" stroke-linecap="round"/><circle cx="${f(x)}" cy="${f(groundY - 2.5)}" r="${f(3.4 * s)}" fill="${dark}" ${STROKE(dk, 1.4)}/>`).join('') : '';
+      case 'stilts': return layer === 'near' ? [cx - W * 0.25, cx + W * 0.2].map((x, i) => `<path d="M ${f(x)} ${f(y0 - 3)} L ${f(x + (i ? 2 : -2))} ${f(groundY - 2)}" stroke="${dk}" stroke-width="${f(3.6 * s)}" stroke-linecap="round"/><path d="M ${f(x)} ${f(y0 - 3)} L ${f(x + (i ? 2 : -2))} ${f(groundY - 2)}" stroke="${skin}" stroke-width="${f(1.8 * s)}" stroke-linecap="round"/>` + foot(x + (i ? 2 : -2), groundY - 1.8, 4.6 * s, 2.2 * s, dark)).join('') : '';
+      case 'webbed': return layer === 'near' ? [cx - W * 0.4, cx + W * 0.32].map((x) => `<path d="M ${f(x)} ${f(y0 - 2)} V ${f(groundY - 3)}" stroke="#ea580c" stroke-width="${f(3 * s)}" stroke-linecap="round"/><path d="M ${f(x)} ${f(groundY - 3)} l ${f(-6 * s)} ${f(3)} l ${f(4 * s)} 0 l ${f(2 * s)} -1 l ${f(2 * s)} 1 l ${f(4 * s)} 0 Z" fill="#fb923c" ${STROKE('#9a3412', 1.2)}/>`).join('') : '';
+      case 'spring': return layer === 'near' ? [cx - W * 0.28, cx + W * 0.22].map((x) => { let d = `M ${f(x)} ${f(y0 - 3)}`; const n = 5, hgt = groundY - 4 - (y0 - 3); for (let i = 1; i <= n; i++) d += ` L ${f(x + (i % 2 ? 4 : -4) * s)} ${f(y0 - 3 + (hgt * i) / n)}`; return `<path d="${d}" fill="none" stroke="#a8a29e" stroke-width="${f(2 * s)}" stroke-linejoin="round"/>` + foot(x, groundY - 2.4, 6 * s, 3 * s, dark); }).join('') : '';
+      case 'bigfoot': return layer === 'near' ? [cx - W * 0.42, cx + W * 0.34].map((x) => `<path d="M ${f(x)} ${f(y0 - 3)} V ${f(groundY - 5)}" stroke="${dk}" stroke-width="${f(7 * s)}" stroke-linecap="round"/><path d="M ${f(x)} ${f(y0 - 3)} V ${f(groundY - 5)}" stroke="${skin}" stroke-width="${f(4.6 * s)}" stroke-linecap="round"/>` + foot(x - 2, groundY - 3, 10 * s, 4.4 * s, shade(skin, 0.12)) + [-1, 0, 1].map((i) => `<circle cx="${f(x - 2 - 7 * s + i * 2.4 * s)}" cy="${f(groundY - 4.5)}" r="${f(1.3 * s)}" fill="#f5f0e6" ${STROKE(dk, 0.7)}/>`).join('')).join('') : '';
+      case 'hooves': return (layer === 'far' ? [cx - W * 0.18, cx + W * 0.6] : [cx - W * 0.52, cx + W * 0.28]).map((x) => pillar(x, 8 * s, layer === 'far' ? dark : skin) + `<path d="M ${f(x - 4.6 * s)} ${f(groundY - 4 * s)} h ${f(9.2 * s)} l ${f(0.6 * s)} ${f(4 * s)} h ${f(-10.4 * s)} Z" fill="#3f3f46" ${STROKE(dk, 1.4)}/><path d="M ${f(x)} ${f(groundY - 3.6 * s)} v ${f(3.4 * s)}" stroke="#18181b" stroke-width="1"/>`).join('');
+      case 'frog': return layer === 'near' ? [[cx - W * 0.5, -1], [cx + W * 0.4, 1]].map(([x, d]) => `<path d="M ${f(x)} ${f(y0 - 2)} Q ${f(x + d * 5 * s)} ${f(groundY - 6)} ${f(x + d * 2 * s)} ${f(groundY - 2.5)}" fill="none" stroke="${dk}" stroke-width="${f(6.5 * s)}" stroke-linecap="round"/><path d="M ${f(x)} ${f(y0 - 2)} Q ${f(x + d * 5 * s)} ${f(groundY - 6)} ${f(x + d * 2 * s)} ${f(groundY - 2.5)}" fill="none" stroke="${skin}" stroke-width="${f(4 * s)}" stroke-linecap="round"/>` + [-1, 0, 1].map((i) => `<circle cx="${f(x + d * 2 * s + i * 3.6 * s)}" cy="${f(groundY - 1.6)}" r="${f(2.4 * s)}" fill="${shade(skin, 0.15)}" ${STROKE(dk, 1.2)}/>`).join('')).join('') : '';
+      case 'talons': return layer === 'near' ? [cx - W * 0.3, cx + W * 0.25].map((x) => `<path d="M ${f(x)} ${f(y0 - 3)} L ${f(x - 1)} ${f(groundY - 3)}" stroke="${dk}" stroke-width="${f(6.4 * s)}" stroke-linecap="round"/><path d="M ${f(x)} ${f(y0 - 3)} L ${f(x - 1)} ${f(groundY - 3)}" stroke="${shade(skin, -0.15)}" stroke-width="${f(4 * s)}" stroke-linecap="round"/>` + [-1, 0, 1].map((i) => `<path d="M ${f(x - 1)} ${f(groundY - 3)} q ${f(i * 3 * s)} ${f(1)} ${f(i * 4.5 * s - 0.5)} ${f(3)}" fill="none" stroke="#1c1917" stroke-width="${f(1.8 * s)}" stroke-linecap="round"/>`).join('')).join('') : '';
+      case 'roots': return layer === 'near' ? [-0.55, -0.2, 0.15, 0.5].map((o, i) => { const x = cx + W * o, d = o < 0 ? -1 : 1; return `<path d="M ${f(x)} ${f(y0 - 6)} Q ${f(x + d * 2)} ${f(groundY - 4)} ${f(x + d * (5 + i % 2 * 3) * s)} ${f(groundY)}" fill="none" stroke="#3b2414" stroke-width="${f(4.2 * s)}" stroke-linecap="round"/><path d="M ${f(x)} ${f(y0 - 6)} Q ${f(x + d * 2)} ${f(groundY - 4)} ${f(x + d * (5 + i % 2 * 3) * s)} ${f(groundY)}" fill="none" stroke="#8b5a2b" stroke-width="${f(2.4 * s)}" stroke-linecap="round"/>`; }).join('') : '';
+      case 'puffs': return layer === 'near' ? [cx - W * 0.42, cx + W * 0.3].map((x) => [[-3.5, 0, 3.6], [0, -2.5, 4.4], [3.8, 0, 3.4]].map(([ox, oy, r]) => `<circle cx="${f(x + ox * s)}" cy="${f(groundY - 6 + oy * s)}" r="${f(r * s)}" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.1"/>`).join('')).join('') : '';
       case 'tentacles': return layer === 'near' ? [-0.55, -0.15, 0.25, 0.6].map((o, i) => { const x = cx + W * o; return `<path d="M ${f(x - 3)} ${f(y0 - 6)} Q ${f(x - 6 + (i % 2) * 9)} ${f(groundY - 6)} ${f(x + (i % 2 ? 4 : -5))} ${f(groundY - 1)} Q ${f(x + (i % 2 ? 1 : -1))} ${f(groundY - 6)} ${f(x + 4)} ${f(y0 - 6)} Z" fill="${i % 2 ? dark : skin}" ${STROKE(dk, 1.6)}/>`; }).join('') : '';
       default: return '';
     }
   }
-  const LIFT = { none: 0, stubby: 0, paws: 4, quad: 9, pillars: 8, digi: 9, tall: 13, tentacles: 7, hover: 9 };
+  const LIFT = { none: 0, stubby: 0, paws: 4, quad: 9, pillars: 8, digi: 9, tall: 13, tentacles: 7, hover: 9, hooves: 9, frog: 3, talons: 11, roots: 6, puffs: 9, peg: 9, stilts: 16, webbed: 7, spring: 10, bigfoot: 7 };
 
   // Pelo / textura según la casa (recortado al cuerpo)
   function furSvg(ind, P, clip) {
@@ -373,6 +461,11 @@
       case 'spiky': { if (layer !== 'front') return ''; return [-0.5, -0.32, -0.14, 0.04].map((o, i) => { const x = cx + W * o, y = top(x) + 4, hh = (8 + (i % 2) * 4) * s; return `<path d="M ${f(x - 5)} ${f(y)} L ${f(x - 3 + i)} ${f(y - hh)} L ${f(x + 4)} ${f(y)} Z" fill="${c}" ${st}/>`; }).join(''); }
       case 'ponytail': { if (layer !== 'back') return ''; const x = cx + W * 0.45, y = top(x) + 4; return `<path d="M ${f(x)} ${f(y)} Q ${f(x + 16 * s)} ${f(y - 6)} ${f(x + 18 * s)} ${f(y + 10 * s)} Q ${f(x + 12 * s)} ${f(y + 6 * s)} ${f(x + 4)} ${f(y + 6)} Z" fill="${c}" ${st}/><circle cx="${f(x + 3)}" cy="${f(y + 2)}" r="${f(2.6 * s)}" fill="#ef4444" ${STROKE(dk, 1)}/>`; }
       case 'cheektufts': { if (layer !== 'front') return ''; return [[cx - W * 0.98, cy + H * 0.1, -1], [cx + W * 0.95, cy + H * 0.05, 1]].map(([x, y, d]) => `<path d="M ${f(x - d * 3)} ${f(y - 6)} l ${f(d * 7)} 2 l ${f(-d * 4)} 3 l ${f(d * 6)} 3 l ${f(-d * 5)} 2 l ${f(d * 3)} 4 l ${f(-d * 7)} -3 Z" fill="${c}" ${st}/>`).join(''); }
+      case 'bun': { if (layer !== 'back') return ''; const x = cx - W * 0.05, y = top(x) - 2; return `<circle cx="${f(x)}" cy="${f(y - 4 * s)}" r="${f(7 * s)}" fill="${c}" ${st}/><path d="M ${f(x - 6 * s)} ${f(y + 1)} h ${f(12 * s)}" stroke="#ef4444" stroke-width="${f(2.4 * s)}" stroke-linecap="round"/>`; }
+      case 'afro': { if (layer !== 'back') return ''; return [-0.75, -0.4, -0.05, 0.3, 0.62, -0.55, -0.15, 0.25].map((o, i) => { const x = cx + W * o, y = top(x) + (i > 4 ? -7 : 1) * s; return `<circle cx="${f(x)}" cy="${f(y)}" r="${f((i > 4 ? 8 : 7) * s)}" fill="${c}" ${st}/>`; }).join(''); }
+      case 'swoop': { if (layer !== 'front') return ''; const x0 = fx - W * 0.5, x1 = fx + W * 0.55, y = top(fx); return `<path d="M ${f(x0)} ${f(top(x0) + 5)} Q ${f(fx - W * 0.1)} ${f(y - 9)} ${f(x1)} ${f(top(x1) + 2)} Q ${f(fx + W * 0.2)} ${f(y + 2)} ${f(fx - W * 0.35)} ${f(y + 10)} Q ${f(fx - W * 0.2)} ${f(y + 3)} ${f(x0)} ${f(top(x0) + 5)} Z" fill="${c}" ${st}/>`; }
+      case 'braids': { if (layer !== 'back') return ''; return [[cx - W * 0.92, -1], [cx + W * 0.85, 1]].map(([x, d]) => [0, 1, 2, 3].map((i) => `<ellipse cx="${f(x + d * i * 0.6)}" cy="${f(cy - H * 0.35 + i * 5.2 * s)}" rx="${f(3.4 * s)}" ry="${f(3 * s)}" fill="${c}" ${STROKE(dk, 1.2)}/>`).join('') + `<circle cx="${f(x + d * 2.4)}" cy="${f(cy - H * 0.35 + 19 * s)}" r="${f(2 * s)}" fill="#ef4444" ${STROKE(dk, 1)}/>`).join(''); }
+      case 'quiff': { if (layer !== 'front') return ''; const x = fx - W * 0.05, y = top(x) + 4; return `<path d="M ${f(x - 8 * s)} ${f(y)} Q ${f(x - 8 * s)} ${f(y - 16 * s)} ${f(x + 6 * s)} ${f(y - 15 * s)} Q ${f(x + 12 * s)} ${f(y - 14 * s)} ${f(x + 9 * s)} ${f(y - 8 * s)} Q ${f(x + 3 * s)} ${f(y - 11 * s)} ${f(x + 1 * s)} ${f(y - 4 * s)} Q ${f(x + 6 * s)} ${f(y - 1)} ${f(x + 7 * s)} ${f(y + 1)} Z" fill="${c}" ${st}/>`; }
       case 'beard': { if (layer !== 'front') return ''; return `<path d="M ${f(mx - 5 * s)} ${f(my + 3)} Q ${f(mx)} ${f(my + 13 * s)} ${f(mx + 5 * s)} ${f(my + 3)} Q ${f(mx)} ${f(my + 6)} ${f(mx - 5 * s)} ${f(my + 3)} Z" fill="${c}" ${st}/>`; }
       default: return '';
     }
@@ -392,6 +485,11 @@
       case 'band': return `<path d="M ${f(cx - W * 1.2)} ${f(cy + H * 0.05)} Q ${f(cx)} ${f(cy + H * 0.25)} ${f(cx + W * 1.2)} ${f(cy + H * 0.02)} L ${f(cx + W * 1.2)} ${f(cy + H * 0.24)} Q ${f(cx)} ${f(cy + H * 0.46)} ${f(cx - W * 1.2)} ${f(cy + H * 0.27)} Z" fill="${shade(P.skin, -0.3)}" opacity=".7"/>`;
       case 'swirl': { const sx = cx + W * 0.45, sy = cy - H * 0.1; return `<path d="M ${f(sx)} ${f(sy)} a 2 2 0 1 1 3 -1 a 4 4 0 1 1 -6 -3 a 6.5 6.5 0 1 1 10 4" fill="none" stroke="${inner}" stroke-width="2" stroke-linecap="round"/>`; }
       case 'blaze': return `<path d="M ${f(P.fx - 3)} ${f(cy - H * 1.05)} Q ${f(P.fx)} ${f(cy - H * 0.55)} ${f(P.fx - 1)} ${f(P.ey - P.er * 0.4)} Q ${f(P.fx + 3)} ${f(cy - H * 0.55)} ${f(P.fx + 6)} ${f(cy - H * 1.05)} Z" fill="${inner}" opacity=".9"/>`;
+      case 'bolt': return `<path d="M ${f(x + 1)} ${f(y - 7)} L ${f(x - 4)} ${f(y + 1)} L ${f(x)} ${f(y + 1)} L ${f(x - 2)} ${f(y + 8)} L ${f(x + 5)} ${f(y - 1)} L ${f(x + 1)} ${f(y - 1)} Z" fill="#facc15" ${STROKE(dk, 1)}/>`;
+      case 'chevron': return [0, 1].map((i) => `<path d="M ${f(cx - W * 0.42)} ${f(cy + H * (0.15 + i * 0.22))} L ${f(cx - W * 0.18)} ${f(cy + H * (0.3 + i * 0.22))} L ${f(cx + W * 0.06)} ${f(cy + H * (0.15 + i * 0.22))}" fill="none" stroke="${shade(P.skin, -0.32)}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" opacity=".75"/>`).join('');
+      case 'ring': return `<circle cx="${f(x)}" cy="${f(y)}" r="5.2" fill="none" stroke="${inner}" stroke-width="2.2"/><circle cx="${f(x)}" cy="${f(y)}" r="1.6" fill="${inner}"/>`;
+      case 'bloom': return [0, 1, 2, 3, 4].map((i) => { const a = (i / 5) * Math.PI * 2 - Math.PI / 2; return `<circle cx="${f(x + Math.cos(a) * 3.4)}" cy="${f(y + Math.sin(a) * 3.4)}" r="2.4" fill="${inner}"/>`; }).join('') + `<circle cx="${f(x)}" cy="${f(y)}" r="1.9" fill="#facc15"/>`;
+      case 'triad': return [[0, -4], [-4, 3], [4, 3]].map(([ox, oy]) => `<circle cx="${f(x + ox)}" cy="${f(y + oy)}" r="2.1" fill="${shade(P.skin, -0.35)}" opacity=".8"/>`).join('');
       case 'gem': return `<path d="M ${f(x)} ${f(y - 6)} L ${f(x + 5)} ${f(y)} L ${f(x)} ${f(y + 6)} L ${f(x - 5)} ${f(y)} Z" fill="#22d3ee" ${STROKE(dk, 1.3)}/><path d="M ${f(x - 2)} ${f(y - 2)} L ${f(x)} ${f(y - 4)}" stroke="#fff" stroke-width="1.2"/>`;
       default: return '';
     }
@@ -409,6 +507,11 @@
       case 'runes': if (layer !== 'front') return ''; return [[-1.1, -0.9], [0.95, -1.05], [1.25, 0.1]].map(([ox, oy], i) => { const x = cx + W * ox, y = cy + H * oy; const g = ['M -3 -4 L 0 4 L 3 -4', 'M -3 -4 V 4 M -3 0 L 3 -4 M -3 0 L 3 4', 'M 0 -4 V 4 M -3 -1 H 3'][i]; return `<g transform="translate(${f(x)} ${f(y)})"><circle r="6" fill="${shade(skin, 0.5)}" opacity=".18"/><path d="${g}" fill="none" stroke="${shade(skin, 0.6)}" stroke-width="1.6" stroke-linecap="round"/></g>`; }).join('');
       case 'scarf': { if (layer !== 'front') return ''; const y = cy - H * 0.02, c = hue(skin, 170); return `<path d="M ${f(cx - W * 0.92)} ${f(y - 3)} Q ${f(cx)} ${f(y + 6)} ${f(cx + W * 0.9)} ${f(y - 4)} L ${f(cx + W * 0.9)} ${f(y + 3)} Q ${f(cx)} ${f(y + 13)} ${f(cx - W * 0.92)} ${f(y + 4)} Z" fill="${c}" ${STROKE(dk, 1.6)}/><path d="M ${f(cx + W * 0.5)} ${f(y + 5)} l 4 14 l 6 -2 l -3 -13 Z" fill="${shade(c, -0.15)}" ${STROKE(dk, 1.4)}/>`; }
       case 'thorns': if (layer !== 'back') return ''; return [-0.75, -0.45, -0.15, 0.15, 0.45, 0.75].map((o) => { const x = cx + W * o, y = top(x) + 4, hh = 10 + (1 - Math.abs(o)) * 6; return `<path d="M ${f(x - 4)} ${f(y)} L ${f(x + o * 4)} ${f(y - hh)} L ${f(x + 4)} ${f(y)} Z" fill="${shade(skin, -0.55)}" ${STROKE(dk, 1.4)}/>`; }).join('');
+      case 'cape': { if (layer !== 'back') return ''; const c = hue(skin, 180), c2 = shade(c, -0.25); return `<path d="M ${f(cx - W * 0.75)} ${f(cy - H * 0.75)} Q ${f(cx + W * 0.3)} ${f(cy - H * 0.95)} ${f(cx + W * 1.15)} ${f(cy - H * 0.55)} Q ${f(cx + W * 1.6)} ${f(cy + H * 0.3)} ${f(cx + W * 1.5)} ${f(cy + H * 1.05)} Q ${f(cx + W * 1.1)} ${f(cy + H * 0.85)} ${f(cx + W * 0.7)} ${f(cy + H * 1.1)} Q ${f(cx)} ${f(cy + H * 0.9)} ${f(cx - W * 0.6)} ${f(cy + H * 1.1)} Q ${f(cx - W * 1.0)} ${f(cy + H * 0.9)} ${f(cx - W * 1.35)} ${f(cy + H * 1.0)} Q ${f(cx - W * 1.35)} ${f(cy - H * 0.2)} ${f(cx - W * 0.75)} ${f(cy - H * 0.75)} Z" fill="${c2}" ${STROKE(dk, 1.6)}/><path d="M ${f(cx + W * 1.15)} ${f(cy - H * 0.5)} Q ${f(cx + W * 1.45)} ${f(cy + H * 0.3)} ${f(cx + W * 1.4)} ${f(cy + H * 0.95)}" fill="none" stroke="${c}" stroke-width="3" opacity=".6"/>`; }
+      case 'flowercrown': if (layer !== 'front') return ''; return [-0.55, -0.3, -0.05, 0.2].map((o, i) => { const x = cx + W * o, y = top(x) + 2; const pc = ['#f9a8d4', '#fde047', '#c4b5fd', '#fdba74'][i]; return [0, 1, 2, 3, 4].map((j) => { const a = (j / 5) * Math.PI * 2; return `<circle cx="${f(x + Math.cos(a) * 2.6)}" cy="${f(y + Math.sin(a) * 2.6)}" r="2.1" fill="${pc}" ${STROKE(dk, 0.7)}/>`; }).join('') + `<circle cx="${f(x)}" cy="${f(y)}" r="1.4" fill="#f59e0b"/>`; }).join('');
+      case 'bandana': { if (layer !== 'front') return ''; const y = top(hx) + 5, c = '#dc2626'; return `<path d="M ${f(cx - W * 0.92)} ${f(y + 3)} Q ${f(hx)} ${f(y - 4)} ${f(cx + W * 0.7)} ${f(y + 2)} L ${f(cx + W * 0.72)} ${f(y + 7)} Q ${f(hx)} ${f(y + 1)} ${f(cx - W * 0.9)} ${f(y + 8)} Z" fill="${c}" ${STROKE(dk, 1.4)}/><path d="M ${f(cx + W * 0.7)} ${f(y + 3)} l 9 -3 l -2 6 Z M ${f(cx + W * 0.7)} ${f(y + 5)} l 8 5 l -6 2 Z" fill="${c}" ${STROKE(dk, 1.2)}/>` + [-0.5, -0.1, 0.3].map((o) => `<circle cx="${f(cx + W * o)}" cy="${f(y + 3)}" r="1" fill="#fff"/>`).join(''); }
+      case 'goggles': { if (layer !== 'front') return ''; const y = top(hx) + 4; return `<path d="M ${f(cx - W * 0.95)} ${f(y + 2)} Q ${f(hx)} ${f(y - 3)} ${f(cx + W * 0.75)} ${f(y + 2)}" fill="none" stroke="#3f2a1d" stroke-width="2.6"/>` + [hx - 6, hx + 6].map((x) => `<circle cx="${f(x)}" cy="${f(y)}" r="4.6" fill="#7dd3fc" stroke="#78716c" stroke-width="2"/><circle cx="${f(x - 1.4)}" cy="${f(y - 1.4)}" r="1.2" fill="#fff"/>`).join(''); }
+      case 'collar': { if (layer !== 'front') return ''; const y = cy - H * 0.02; return `<path d="M ${f(cx - W * 0.9)} ${f(y - 2)} Q ${f(cx)} ${f(y + 6)} ${f(cx + W * 0.88)} ${f(y - 3)} L ${f(cx + W * 0.88)} ${f(y + 2)} Q ${f(cx)} ${f(y + 11)} ${f(cx - W * 0.9)} ${f(y + 3)} Z" fill="#292524" ${STROKE(dk, 1.3)}/>` + [-0.6, -0.2, 0.2, 0.6].map((o) => { const x = cx + W * o, yy = y + 5 + (1 - Math.abs(o)) * 2.4; return `<path d="M ${f(x - 2)} ${f(yy)} l 2 4 l 2 -4 Z" fill="#d6d3d1" ${STROKE(dk, 0.6)}/>`; }).join(''); }
       case 'gemstone': if (layer !== 'front') return ''; return `<path d="M ${f(cx - W * 0.2)} ${f(cy - H * 0.62)} l 5 -6 h 8 l 5 6 l -9 10 Z" fill="#c084fc" ${STROKE('#581c87', 1.5)}/><path d="M ${f(cx - W * 0.2 + 3)} ${f(cy - H * 0.62 - 3)} l 3 -2" stroke="#fff" stroke-width="1.2"/>`;
       default: return '';
     }
@@ -428,7 +531,7 @@
     const id = 'lk' + (++SEQ), H_ = HOUSES[ind.house] || HOUSES.luz;
     const grow = GROWTH[st] * ind.size * (st === 0 ? ind.baby : 1), s = clamp(0.85 + (grow - 1) * 0.55, 0.62, 1.25);
     const kind = ind.bodyFixed || (BODY_PATH[ind.body] || BODY_PATH.round)[st];
-    const legKind = ind.legs === 'slither' ? 'none' : ind.legs === 'hover' ? 'hover' : (LEG_PATHS[ind.legs] ? LEG_PATHS[ind.legs][0][st] : ['stubby', 'paws', 'quad', 'quad'][st]);
+    const legKind = ind.legs === 'slither' ? 'none' : ind.legs === 'hover' ? 'hover' : (ALL_LEGS[ind.legs] ? ALL_LEGS[ind.legs][0][st] : ['stubby', 'paws', 'quad', 'quad'][st]);
     const Pm = PRESET[kind] || PRESET.round;
     const W = clamp(23 * grow * Pm.w, 11, 47), H = clamp(21 * grow * Pm.h, 10, 41);
     const groundY = 112, lift = LIFT[legKind] || 0;
@@ -457,10 +560,20 @@
       case 'legs': vb = sq(cx, groundY - 12, W * 2.6); break;
       case 'mark': vb = sq(cx + W * 0.25, cy - H * 0.2, W * 1.3); break;
       case 'full': { const side = Math.max(W, H) * 2.9; vb = [74 - side / 2, groundY + 6 - side, side, side]; break; }
-      default: { const side = VIEW_SIDE[st]; vb = [76 - side / 2, 118 - side, side, side]; }
+      default: {
+        // v4.58: centrado en vertical según lo que ocupa de verdad (antes iba pegado abajo y en
+        // las formas pequeñas sobraba mucho arriba: se veían desplazados hacia abajo). Un poco
+        // más de aire abajo que arriba para que «pise» el suelo.
+        const side = VIEW_SIDE[st];
+        const extraTop = (ind.ears && ind.ears !== 'none' ? 16 : 6) * s + (o.final && ['crown', 'halo', 'thorns'].includes(ind.final) ? 8 : 0) + (ind.hair === 'afro' || ind.hair === 'bun' ? 6 : 0);
+        const cTop = cy - H - extraTop, cBot = groundY + 6, cH = cBot - cTop;
+        const y0 = Math.max(118 - side, Math.min(cTop - (side - cH) * 0.42, cBot - side * 0.62));
+        vb = [76 - side / 2, y0, side, side];
+      }
     }
     const flip = o.flip ? `transform="translate(${f(vb[0] * 2 + vb[2])} 0) scale(-1 1)"` : '';
-    const sparkles = o.shiny ? `<g fill="#fff8b0">${star(vb[0] + vb[2] * 0.14, vb[1] + vb[3] * 0.2, 5, 1.6, '#fff8b0')}${star(vb[0] + vb[2] * 0.86, vb[1] + vb[3] * 0.12, 4, 1.3, '#fff8b0')}${star(vb[0] + vb[2] * 0.9, vb[1] + vb[3] * 0.62, 3.4, 1.1, '#fff8b0')}</g>` : '';
+    // v4.62: sin las 3 estrellitas sueltas del variocolor (en pixel art parecían puntos flotando); se distingue por su color y su etiqueta
+    const sparkles = '';
     return `<svg viewBox="${vb.map(f).join(' ')}" xmlns="http://www.w3.org/2000/svg" role="img">` +
       `<defs><radialGradient id="b${id}" cx="34%" cy="26%" r="85%"><stop offset="0%" stop-color="${shade(skin, 0.42)}"/><stop offset="50%" stop-color="${skin}"/><stop offset="100%" stop-color="${shade(skin, -0.3)}"/></radialGradient>` +
       `<linearGradient id="ao${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="55%" stop-color="#000" stop-opacity="0"/><stop offset="100%" stop-color="#000" stop-opacity=".28"/></linearGradient>` +
@@ -509,7 +622,8 @@
     return r;
   }
   /** Aspecto nuevo al nacer (los jefes: el típico). */
-  function rollLook(sid, o = {}) { return o.boss ? null : { s: Math.floor(Math.random() * 4294967295) }; }
+  // v4.56: las semillas nuevas llevan la marca NEW3 en su byte bajo (pueden tener los rasgos nuevos)
+  function rollLook(sid, o = {}) { return o.boss ? null : { s: ((Math.floor(Math.random() * 16777216) << 8) | NEW4_TAG) >>> 0 }; }
   /** Aspecto de un daskai (las partidas antiguas: sale fijo de su uid). */
   function lookOf(d, form) {
     if (!d) return null;
@@ -569,15 +683,15 @@
   }
 
   /* ---------- Rasgos: lista, iconos y colección del Códice ---------- */
-  const CATS = { hair: Object.fromEntries(Object.entries(HAIR).filter(([k]) => k !== 'none')), wings: WINGS, body: ALL.body, legs: Object.fromEntries(Object.entries(LEG_PATHS).map(([k, v]) => [k, v[1]])), eyes: ALL.eyes, mouth: ALL.mouth, ears: ALL.ears, mark: ALL.mark, final: FINALS };
-  const CAT_ICON = { hair: 'sparkles', wings: 'feather', size: 'maximize', body: 'paw', legs: 'footprints', eyes: 'eye', mouth: 'smile', ears: 'sparkles', mark: 'star', wings: 'feather', final: 'crown' };
+  const CATS = { hair: Object.fromEntries(Object.entries(HAIR).filter(([k]) => k !== 'none')), wings: WINGS, body: ALL.body, legs: Object.fromEntries(Object.entries(ALL_LEGS).map(([k, v]) => [k, v[1]])), eyes: ALL.eyes, mouth: ALL.mouth, ears: ALL.ears, mark: ALL.mark, final: Object.assign({}, FINALS, FINALS4), arms: ARMS };
+  const CAT_ICON = { arms: 'hand', hair: 'sparkles', wings: 'feather', size: 'maximize', body: 'paw', legs: 'footprints', eyes: 'eye', mouth: 'smile', ears: 'sparkles', mark: 'star', wings: 'feather', final: 'crown' };
   const sizeKey = (z) => (z < 0.86 ? 'xs' : z < 0.95 ? 's' : z <= 1.06 ? 'm' : z <= 1.15 ? 'l' : 'xl');
   /** Rasgos de un individuo, para pintarlos como iconos. */
   function traits(i, { final = true } = {}) {
     const out = [{ cat: 'size', key: sizeKey(i.size), rare: i.size > 1.18 || i.size < 0.82 }];
-    ['body', 'legs', 'eyes', 'mouth', 'ears', 'hair', 'mark', 'final'].forEach((cat) => {
+    ['body', 'legs', 'arms', 'eyes', 'mouth', 'ears', 'hair', 'mark', 'final'].forEach((cat) => {
       const key = cat === 'body' ? i.body : i[cat];
-      if ((cat === 'mark' || cat === 'final' || cat === 'hair') && (key === 'none' || !key)) return;
+      if ((cat === 'mark' || cat === 'final' || cat === 'hair' || cat === 'arms') && (key === 'none' || !key)) return;
       if (cat === 'legs' && (key === 'slither' || (key === 'hover' && i.body === 'ghost'))) return;
       out.push({ cat, key, rare: rare(CATS[cat] || {}, key) });
     });
@@ -600,6 +714,7 @@
       case 'ears': out = draw(Object.assign(t, { ears: key, eyes: 'dot' }), 1, { focus: 'ears', plain: true }); break;
       case 'mark': out = draw(Object.assign(t, { mark: key, eyes: 'dot' }), 1, { focus: 'mark', plain: true }); break;
       case 'legs': out = draw(Object.assign(t, { legs: key, eyes: 'dot' }), key === 'bird' ? 0 : 2, { focus: 'legs', plain: true }); break;
+      case 'arms': out = draw(Object.assign(t, { arms: key, eyes: 'dot' }), 2, { focus: 'full', plain: false, armsIcon: true }); break;
       case 'body': out = draw(Object.assign(t, { body: key, bodyFixed: key, eyes: 'dot', legs: key === 'ghost' ? 'hover' : 'stubby' }), 1, { focus: 'full', plain: true }); break;
       case 'final': out = draw(Object.assign(t, { final: key, eyes: 'dot' }), 3, { focus: 'full', plain: true, final: true }); break;
       case 'wings': out = draw(Object.assign(t, { winged: true, eyes: 'dot', house: WING_HOUSE[key] || 'luz', skin: (HOUSES[WING_HOUSE[key]] || HOUSES.luz).skins[0] }), 2, { focus: 'full', plain: true, wingsIcon: true }); break;
@@ -620,12 +735,26 @@
     if (!d || !DK.store.state || !D.species[d.species]) return;
     const lk = lookOf(d), b = book(), root = rootOf(d.species);
     if (lk) { const arr = (b.seen[root] = b.seen[root] || []); if (!arr.includes(lk.s)) { arr.unshift(lk.s); if (arr.length > MAX_SEEN) arr.length = MAX_SEEN; } b.count = b.count || {}; b.count[root] = (b.count[root] || 0) + (arr[0] === lk.s ? 1 : 0); }
-    traits(ind(d.species, lk), { final: lk && lk.fin != null ? lk.fin : stageOf(d.species).final }).forEach(({ cat, key }) => { if (cat === 'size') return; const t = (b.traits[cat] = b.traits[cat] || {}); t[key] = (t[key] || 0) + 1; });
+    const had = Object.keys(b.traits).length > 0; // (los rasgos del primer daskai no cuentan como «nuevos»)
+    traits(ind(d.species, lk), { final: lk && lk.fin != null ? lk.fin : stageOf(d.species).final }).forEach(({ cat, key }) => {
+      if (cat === 'size') return; const t = (b.traits[cat] = b.traits[cat] || {});
+      if (!t[key] && had) { b.fresh = b.fresh || {}; b.fresh[cat + ':' + key] = 1; } // v4.57: rasgo recién descubierto («Nuevo» en el Códice)
+      t[key] = (t[key] || 0) + 1;
+    });
   }
+  /** Rareza de un daskai para ordenar (v4.57): rasgos raros, alas, tamaño extremo y brillo. */
+  function rarityScore(d) {
+    if (!d || d.boss) return 0;
+    const lk = lookOf(d), i = ind(d.species, lk);
+    return traits(i, { final: true }).filter((x) => x.rare).length * 2 + (i.winged ? 3 : 0) + (d.shiny ? 5 : 0) + (d.variant ? 2 : 0);
+  }
+  const isFresh = (cat, key) => { const b = DK.store.state && DK.store.state.looks; return !!(b && b.fresh && b.fresh[cat + ':' + key]); };
+  const freshCount = () => { const b = DK.store.state && DK.store.state.looks; return b && b.fresh ? Object.keys(b.fresh).length : 0; };
+  const clearFresh = () => { const b = DK.store.state && DK.store.state.looks; if (b && b.fresh) { delete b.fresh; DK.store.save(); } };
   const seenOf = (sid) => { const b = DK.store.state && DK.store.state.looks; return (b && b.seen[rootOf(sid)]) || []; };
   const traitSeen = (cat, key) => { const b = DK.store.state && DK.store.state.looks; return !!(b && b.traits[cat] && b.traits[cat][key]); };
   function collection() {
-    const cats = ['body', 'legs', 'eyes', 'mouth', 'ears', 'hair', 'mark', 'final', 'wings'];
+    const cats = ['body', 'legs', 'arms', 'eyes', 'mouth', 'ears', 'hair', 'mark', 'final', 'wings'];
     const list = cats.map((cat) => ({ cat, keys: allKeys(cat).map((key) => ({ key, seen: traitSeen(cat, key), rare: rare(CATS[cat], key) })) }));
     const total = list.reduce((a, c) => a + c.keys.length, 0), got = list.reduce((a, c) => a + c.keys.filter((k) => k.seen).length, 0);
     return { list, total, got };
@@ -637,6 +766,7 @@
   }
 
   DK.looks = {
+    rarityScore, isFresh, freshCount, clearFresh,
     svg, pixel, pixelCached, ind, stageOf, lineOf, rootOf, rollLook, of: lookOf, see, seenOf, traitSeen, collection, traits, icon, label,
     typical: (sid) => ind(sid, null), houses: HOUSES, catIcon: CAT_ICON, allKeys, draw, hash,
     /** Para pruebas: genera el aspecto de una casa con una semilla. */

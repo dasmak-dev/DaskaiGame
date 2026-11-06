@@ -208,15 +208,17 @@
   /* ---------------- Lugares del campamento ----------------
    * x, y: posición (en %) del pie del dibujo dentro de la escena.
    * xs, ys: posición en pantallas estrechas (móvil); xm, ym: en las medianas (< 1100 px), si hace falta. */
+  // v4.58: recolocados para que nada se toque (fila del fondo: tienda, tablón, portal; delante: códice, hoguera, yunque, muñeco)
   const SPOTS = [
-    { id: 'path', sprite: 'portal', screen: 'zones', nav: 'battle', x: 66, y: 55, xs: 73, ys: 45, label: () => t('scene.path'), main: true },
-    { id: 'board', sprite: 'board', screen: 'progress', nav: 'progress', x: 40, y: 56, xs: 33, ys: 42, label: () => t('scene.board') },
-    { id: 'tent', sprite: 'tent', screen: 'inventory', nav: 'inventory', x: 19, y: 61, xs: 20, ys: 69, label: () => t('scene.tent') },
-    { id: 'anvil', sprite: 'anvil', screen: 'craft', nav: 'craft', x: 82, y: 72, xm: 76, ym: 78, xs: 83, ys: 65, label: () => t('scene.anvil') },
-    { id: 'fire', sprite: 'fire', screen: 'team', nav: 'team', x: 50, y: 82, xs: 50, ys: 84, label: () => t('scene.fire'), fire: true },
-    { id: 'lectern', sprite: 'lectern', screen: 'codex', nav: 'codex', x: 8, y: 93, xs: 14, ys: 92, label: () => t('scene.lectern') },
-    { id: 'dummy', sprite: 'dummy', screen: 'training', nav: 'training', x: 91, y: 88, xm: 89, ym: 92, xs: 81, ys: 93, label: () => t('scene.dummy'), unlock: 'training' },
+    { id: 'path', sprite: 'portal', screen: 'zones', nav: 'battle', x: 66, y: 54, xm: 66, ym: 53, xs: 73, ys: 43, label: () => t('scene.path'), main: true },
+    { id: 'board', sprite: 'board', screen: 'progress', nav: 'progress', x: 40, y: 50, xm: 39, ym: 48, xs: 29, ys: 37, label: () => t('scene.board') },
+    { id: 'tent', sprite: 'tent', screen: 'inventory', nav: 'inventory', x: 16, y: 57, xm: 15, ym: 57, xs: 20, ys: 73, label: () => t('scene.tent') },
+    { id: 'anvil', sprite: 'anvil', screen: 'craft', nav: 'craft', x: 83, y: 71, xm: 84, ym: 71, xs: 84, ys: 63, label: () => t('scene.anvil') },
+    { id: 'fire', sprite: 'fire', screen: 'team', nav: 'team', x: 49, y: 82, xm: 48, ym: 82, xs: 52, ys: 85, label: () => t('scene.fire'), fire: true },
+    { id: 'lectern', sprite: 'lectern', screen: 'codex', nav: 'codex', x: 9, y: 94, xm: 11, ym: 95, xs: 13, ys: 95, label: () => t('scene.lectern') },
+    { id: 'dummy', sprite: 'dummy', screen: 'training', nav: 'training', x: 92, y: 93, xm: 91, ym: 95, xs: 85, ys: 96, label: () => t('scene.dummy'), unlock: 'training' },
   ];
+
 
   /** Momento del día según la hora real. */
   function timeOfDay(d = new Date()) {
@@ -348,7 +350,8 @@
   DK.views.campScene = (o = {}) => {
     const tod = o.tod || timeOfDay();
     const narrow = window.innerWidth <= 600;
-    const mid = !narrow && window.innerWidth < 1100;
+    // v4.54: en el Inicio la escena va en una columna (o.compact) → dibujos y posiciones de pantalla mediana
+    const mid = !narrow && (window.innerWidth < 1100 || (o.compact && window.innerWidth < 1800));
     const scale = narrow ? 2.8 : mid ? 4 : 5;
     const nav = Object.fromEntries(DK.menus.items('nav').map((it) => [it.id, it]));
     const spots = SPOTS.map((sp) => {
@@ -364,21 +367,22 @@
         tip: locked ? t('unlock.trainingLocked') : label,
         onClick: () => { if (locked) { DK.audio.sfx('error'); DK.ui.toast(t('unlock.trainingLocked'), { icon: 'lock' }); return; } DK.audio.sfx('select'); if (o.onSpot) o.onSpot(sp); else DK.router.reset(sp.screen); },
       }, h('span', { class: 'camp-art' }, art, locked ? h('span', { class: 'camp-lock' }, DK.icon('lock', 16)) : null, badge ? h('span', { class: 'nav-dot' }, badge) : null),
-      h('span', { class: 'camp-plaque' }, label));
+      // v4.54: etiqueta moderna con el icono de su sección
+      h('span', { class: 'camp-plaque' }, DK.icon(locked ? 'lock' : (it && it.icon) || 'next', 13), h('span', null, label)));
     });
     // Tu equipo descansando junto a la hoguera
     const fire = SPOTS.find((sp) => sp.fire);
-    const fx = narrow ? fire.xs : fire.x, fy = narrow ? fire.ys : fire.y;
-    const offs = narrow ? [[-19, 1], [19, 1], [-10, -12], [10, -12], [0, -16]] : [[-12, -3], [12, -3], [-21, 5], [21, 5], [0, -14]];
-    const team = (o.team || []).slice(0, 5).map((d, i) => h('button', {
+    const fx = narrow ? fire.xs : mid && fire.xm != null ? fire.xm : fire.x, fy = narrow ? fire.ys : mid && fire.ym != null ? fire.ym : fire.y;
+    const offs = narrow ? [[-20, 0], [20, 0], [-12, -14], [13, -14]] : [[-14, -3], [14, -3], [-25, 5], [24, 8], [-13, 13]]; // v4.58: más separados (los daskai son más grandes)
+    const team = (o.team || []).slice(0, narrow ? 4 : 5).map((d, i) => h('button', {
       class: 'camp-mon', type: 'button', style: { left: fx + offs[i][0] + '%', top: fy + offs[i][1] + '%', animationDelay: (i * 0.4) + 's' },
       'aria-label': DK.daskai.name(d), tip: `${DK.daskai.name(d)} · ${t('common.lvl')} ${d.level}`,
       onClick: () => { DK.audio.sfx('select'); DK.router.reset('team', { uid: d.uid }); },
-    }, DK.views.sprite(d.species, { look: DK.looks.of(d), size: narrow ? 54 : 76, shiny: d.shiny, flip: offs[i][0] > 0 })));
+    }, DK.views.sprite(d.species, { look: DK.looks.of(d), size: narrow ? 66 : 96, shiny: d.shiny, flip: offs[i][0] > 0 })));
     // Ascuas que suben de la hoguera, niebla baja y antorchas
     const embers = h('div', { class: 'camp-embers', 'aria-hidden': 'true', style: { left: fx + '%', top: fy + '%' } }, Array.from({ length: 16 }, (_, i) => h('i', { style: { '--dx': ((i * 37) % 60 - 30) + 'px', left: ((i * 13) % 40 - 20) + 'px', animationDelay: (i * 0.35) + 's', animationDuration: (2.6 + (i % 5) * 0.5) + 's' } })));
     const fog = h('div', { class: 'camp-fog', 'aria-hidden': 'true' }, h('i'), h('i'));
-    const torches = (narrow ? [[37, 62], [94, 60]] : [[31, 62], [74, 62], [3, 78], [97, 78]]).map(([x, y], i) =>
+    const torches = (narrow ? [[38, 64], [95, 58]] : mid ? [[29, 56], [79, 52], [3, 78], [97, 78]] : [[31, 62], [74, 62], [3, 78], [97, 78]]).map(([x, y], i) =>
       h('span', { class: 'camp-torch', 'aria-hidden': 'true', style: { left: x + '%', top: y + '%' } }, animArt('torch', scale * 0.8, i * 0.13) || pixSvg(SPRITES.torch(0), scale * 0.8)));
     return h('section', { class: 'camp-scene grim tod-' + tod, 'aria-label': t('scene.title') },
       backdrop(tod, narrow), fog, ...torches, embers,

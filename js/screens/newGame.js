@@ -82,8 +82,8 @@
     const line = [sp]; while (line[line.length - 1].evolve && line.length < 6) line.push(D.species[line[line.length - 1].evolve.into]);
 
     const picker = h('div', { class: 'st-picker', role: 'radiogroup', 'aria-label': t('newGame.pickTitle') }, starters.map((s, i) =>
-      h('button', { class: 'st-pick' + (s.id === params.pick ? ' on' : ''), type: 'button', role: 'radio', 'aria-checked': String(s.id === params.pick), 'aria-label': s.name,
-        tip: `${s.name} · ${DK.tr('houses', D.houses[s.house])}`, style: { '--c': D.houseColor(s.house) }, onClick: () => choose(s.id) },
+      h('button', { class: 'st-pick' + (s.id === params.pick ? ' on' : ''), type: 'button', role: 'radio', 'aria-checked': String(s.id === params.pick), 'aria-label': DK.daskai.name(params.rolls[s.id]),
+        tip: `${DK.daskai.name(params.rolls[s.id])} · ${s.name} · ${DK.tr('houses', D.houses[s.house])}`, style: { '--c': D.houseColor(s.house) }, onClick: () => choose(s.id) },
         V.sprite(s.id, { size: 52, look: params.rolls[s.id].look }), h('span', { class: 'st-pick-house' }, DK.icon(D.houses[s.house].icon, 12)), h('kbd', { class: 'hotkey' }, String(i + 1)))));
 
     const stage = h('div', { class: 'st-stage', style: { '--c': D.houseColor(sp.house) } },
@@ -108,7 +108,8 @@
     const traits = h('div', { class: 'st-traits' }, V.natureInfo(dd), V.passiveInfo(dd), V.roleBadge(dd));
 
     const info = h('div', { class: 'st-info' },
-      h('div', { class: 'st-title' }, h('h2', null, sp.name), V.houseBadge(sp.house)),
+      // v4.56: su nombre propio (systems/names.js); la especie, al lado en pequeño
+      h('div', { class: 'st-title' }, h('h2', null, DK.daskai.name(dd)), h('span', { class: 'dk-species' }, sp.name), V.houseBadge(sp.house)),
       h('div', { class: 'chips' },
         h('span', { class: 'chip pos' }, DK.icon('swords', 13), t('newGame.strong', { house: DK.tr('houses', D.houses[hs.strongVs]) })),
         h('span', { class: 'chip neg' }, DK.icon('shield', 13), t('newGame.weak', { house: DK.tr('houses', V.weakAgainst(sp.house)) })),
@@ -134,6 +135,6 @@
       h('section', { class: 'card st-card', style: { '--c': D.houseColor(sp.house) } }, stage, info),
       h('div', { class: 'st-actions' },
         btn({ icon: 'back', label: t('newGame.changeName'), variant: 'ghost', onClick: () => { params.step = 'name'; refresh(); } }),
-        btn({ icon: 'check', label: t('newGame.choose', { name: sp.name }), variant: 'primary', size: 'lg', onClick: start, hotkey: '↵', cls: 'st-go' })));
+        btn({ icon: 'check', label: t('newGame.choose', { name: DK.daskai.name(params.rolls[sp.id]) }), variant: 'primary', size: 'lg', onClick: start, hotkey: '↵', cls: 'st-go' })));
   }
 })();

@@ -69,11 +69,11 @@ module.exports = {
       const r = await p.evaluate(() => ({ id: DK.router.current().id, prep: !!document.querySelector('.bt-prep'), pills: document.querySelectorAll('.bt-kind .bt-odd').length, team: document.querySelectorAll('.bt-mon').length }));
       check(r.id === 'zones' && r.prep, 'Preparar debería estar en la pantalla de Batalla: ' + JSON.stringify(r));
       check(r.pills >= 4 && r.team >= 1, 'faltan el tipo de expedición o el equipo');
-      await p.click('.bt-pack-btn'); await sleep(400);
+      await p.click('.pk-tile.add'); await sleep(400);
       check(await p.$('.drawer .pk-pack') && await p.$('.drawer .pk-bag'), 'el panel de objetos no muestra mochila y bolsa');
       await p.click('.drawer .pk-bag .pk-btn.add'); await sleep(300);
       await p.keyboard.press('Escape'); await sleep(300);
-      check((await p.$$('.bt-item')).length === 1, 'el objeto elegido no aparece en la mochila');
+      check((await p.$$('.pk-tile:not(.add)')).length === 1, 'el objeto elegido no aparece en la mochila');
       await p.click('.bt-go'); await sleep(800);
       const e = await p.evaluate(() => DK.expedition.active() && DK.expedition.active().pack);
       check(e && e.pocion === 1, 'la expedición no sale con la mochila elegida');

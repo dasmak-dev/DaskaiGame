@@ -132,6 +132,9 @@
   /* ---------------- Pestaña Rasgos (v4.47) ---------------- */
   function looksTab() {
     const col = DK.looks.collection();
+    // v4.57: los rasgos recién descubiertos llevan «Nuevo» la primera vez que abres esta pestaña
+    const fresh = (cat, key) => DK.looks.isFresh(cat, key);
+    setTimeout(() => DK.looks.clearFresh(), 0);
     return h('div', { class: 'stack' }, h('p', { class: 'muted small' }, t('look.traitsIntro')),
       h('div', { class: 'cx-traits' }, col.list.map((c) => {
         const got = c.keys.filter((k) => k.seen).length;
@@ -139,7 +142,7 @@
           h('h4', { class: 'row gap-s' }, DK.icon(DK.looks.catIcon[c.cat], 15), h('span', { class: 'grow' }, t('look.cat.' + c.cat)), h('span', { class: 'muted small' }, `${got}/${c.keys.length}`)),
           h('div', { class: 'lk-strip' }, c.keys.map((k) => {
             const tip = k.seen ? DK.looks.label(c.cat, k.key) + (k.rare ? ' · ' + t('look.rare') : '') : t('look.unknownTrait') + (k.rare ? ' · ' + t('look.rare') : '');
-            const el = h('span', { class: 'lk-trait big c-' + c.cat + (k.seen ? '' : ' unseen') + (k.rare && k.seen ? ' rare' : ''), tip, 'aria-label': tip, role: 'img' });
+            const el = h('span', { class: 'lk-trait big c-' + c.cat + (k.seen ? '' : ' unseen') + (k.rare && k.seen ? ' rare' : '') + (fresh(c.cat, k.key) ? ' fresh' : ''), tip: fresh(c.cat, k.key) ? t('newMark.label') + ' · ' + tip : tip, 'aria-label': tip, role: 'img' });
             el.innerHTML = DK.looks.icon(c.cat, k.key); return el;
           })));
       })));
@@ -256,7 +259,8 @@
       };
       const pct = (a, b) => Math.round((a / Math.max(1, b)) * 100) + '%';
       const tabs = h('div', { class: 'inv-tabs cx-tabs' }, [['species', 'paw', t('codex.tabSpecies'), pct(tot.species, tot.speciesTotal)], ...(traitsOn ? [['looks', 'dna', t('look.traitsTab'), (() => { const c = DK.looks.collection(); return `${c.got}/${c.total}`; })()]] : []), ['zones', 'map', t('codex.tabZones'), Math.round(zonesPct() * 100) + '%'], ['items', 'gift', t('codex.tabItems'), pct(tot.items, tot.itemsTotal)], ['bosses', 'crown', t('codex.tabBosses'), `${tot.bosses}/${tot.bossesTotal}`], ['wiki', 'book', t('wiki.tab'), `${DK.wiki.unlocked().length}/${D.wiki.length}`]]
-        .map(([id, icon, label, n]) => h('button', { class: 'inv-tab' + (params.tab === id ? ' on' : ''), type: 'button', onClick: () => { params.tab = id; params.sel = null; params.q = ''; refresh(); } }, DK.icon(icon, 18), h('span', null, label), h('b', null, n))));
+        .map(([id, icon, label, n]) => h('button', { class: 'inv-tab' + (params.tab === id ? ' on' : ''), type: 'button', onClick: () => { params.tab = id; params.sel = null; params.q = ''; refresh(); } }, DK.icon(icon, 18), h('span', null, label), h('b', null, n),
+          id === 'looks' && params.tab !== 'looks' && DK.looks.freshCount() ? h('span', { class: 'nav-dot', tip: t('newMark.label') }, String(DK.looks.freshCount())) : null)));
       const search = ['species', 'items', 'wiki'].includes(params.tab) ? h('input', { class: 'input inv-search', type: 'search', placeholder: params.tab === 'wiki' ? t('wiki.search') : t('codex.search'), value: params.q || '',
         onInput: (e) => { params.q = e.target.value; clearTimeout(params._qt); params._qt = setTimeout(() => { refresh(); const i = document.querySelector('.inv-search'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }, 220); } }) : null;
       const body = params.tab === 'species' ? speciesTab(params, open) : params.tab === 'looks' ? looksTab() : params.tab === 'items' ? itemsTab(params) : params.tab === 'zones' ? zonesTab(params) : params.tab === 'wiki' ? wikiTab(params) : bossesTab();

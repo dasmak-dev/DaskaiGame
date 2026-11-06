@@ -5,11 +5,11 @@
  * versiones con sombreado (luz por la izquierda), contorno oscuro,
  * texturas y VARIOS FOTOGRAMAS para animarlos:
  *   tent    tienda grande y cuadrada con banderín, farolillo y bajo que se mueve (3)
- *   fire    hoguera con llamas, brasas y chispas (4)
+ *   fire    hoguera grande: llamas procedurales, troncos en tipi, brasas y chispas (8, v4.54)
  *   anvil   yunque sobre tocón con lingote al rojo y chispas (3)
  *   dummy   muñeco de paja que se balancea (2)
- *   lectern atril con libro abierto, vela y runas que flotan (3)
- *   board   tablón con notas; una se agita con el viento (3)
+ *   lectern (códice) grimorio que flota sobre un pedestal y pasa página, círculo mágico (8, v4.54)
+ *   board   tablón con tejas, notas, sello y mapa; farol que se mece; nota al viento (6, v4.54)
  *   portal  arco de piedra (capa fija) con runas y un vórtice que gira (12, fluido)
  *   torch   antorcha (3)
  * DK.pix.animated(name) → { frames: [lienzo…], base, over } (over = capa fija encima; base = ancho con el
@@ -88,33 +88,56 @@
     } },
 
     /* ---------- Hoguera ---------- */
-    fire: { base: 20, frames: 4, draw(f) {
-      const c = canvas(32, 30);
-      c.rect(3, 27, 26, 2, 'rgba(0,0,0,.35)');
-      // brasas
-      c.rect(9, 23, 14, 3, '#7c2d12').rect(11, 24, 10, 1, f % 2 ? '#f97316' : '#ea580c');
-      // troncos cruzados con corteza y corte
-      for (let i = 0; i < 16; i++) {
-        const y = 25 - Math.floor(i / 3);
-        c.set(6 + i, y, W.d).set(6 + i, y + 1, W.m).set(6 + i, y + 2, i % 4 ? W.dd : W.d);
-        c.set(25 - i, y, W.l).set(25 - i, y + 1, W.m).set(25 - i, y + 2, W.d);
+    // v4.54: más grande (base 30) y con llamas procedurales en 8 fotogramas que suben y se enroscan
+    // (todo depende del ángulo de fase → el bucle no da saltos), troncos en tipi, lecho de brasas y chispas.
+    fire: { base: 30, frames: 8, draw(f) {
+      const c = canvas(44, 48), N = 8, ph = (f / N) * Math.PI * 2;
+      c.rect(4, 45, 36, 2, 'rgba(0,0,0,.4)');
+      // piedras de detrás
+      [[6, 38], [11, 36], [17, 35], [23, 35], [29, 36], [34, 38]].forEach(([x, y]) => c.rect(x, y, 5, 3, STONE.d).rect(x, y, 4, 1, STONE.m));
+      // lecho de brasas que late
+      const bed = ['#7c2d12', '#9a3412', '#c2410c', '#ea580c'];
+      for (let x = 9; x <= 34; x++) for (let y = 38; y <= 41; y++) {
+        const k = Math.sin(x * 1.7 + y * 2.3 + ph * 2) * 0.5 + 0.5;
+        c.set(x, y, bed[Math.min(3, Math.floor(k * 3 + (y === 39 ? 1 : 0)))]);
       }
-      c.rect(5, 25, 2, 3, '#d6b48a').set(5, 26, '#8b5a2b').rect(25, 25, 2, 3, '#d6b48a').set(26, 26, '#8b5a2b');
-      // anillo de piedras sombreadas
-      [[1, 24], [4, 26], [8, 27], [13, 28], [18, 28], [23, 27], [27, 26], [29, 24]].forEach(([x, y], i) => {
-        c.rect(x, y, 4, 3, STONE.m).rect(x, y, 3, 1, STONE.l).set(x, y + 1, STONE.l).rect(x + 1, y + 2, 3, 1, STONE.d);
-        if (i % 3 === 0) c.set(x + 2, y + 1, STONE.dd);
+      // llamas: cuerpo rojo y naranja, lenguas amarillas y un corazón claro pequeño
+      const col = ['#7f1d1d', '#dc2626', '#f97316', '#fbbf24', '#fde68a', '#fffbeb'];
+      for (let y = 8; y <= 39; y++) {
+        const up = (39 - y) / 31; // 0 abajo → 1 arriba
+        const cx = 22 + Math.sin(y * 0.35 - ph) * 2.4 * up + Math.sin(ph) * 0.7 * up;
+        const half = 12 * Math.pow(1 - up, 0.65) + 0.8;
+        for (let x = 4; x <= 40; x++) {
+          const d = Math.abs(x - cx) / half;
+          if (d > 1.4) continue;
+          const n = Math.sin(x * 0.95 + y * 0.6 + ph * 2) * Math.sin(y * 0.85 - x * 0.35 + ph * 3) + Math.sin(y * 0.5 + x * 0.2 + ph) * 0.45;
+          const v = (1 - d) - up * 0.6 + n * 0.2;
+          const i = v > 0.78 ? 5 : v > 0.6 ? 4 : v > 0.44 ? 3 : v > 0.26 ? 2 : v > 0.12 ? 1 : v > 0.04 ? 0 : -1;
+          if (i >= 0) c.set(x, y, col[i]);
+        }
+      }
+      // troncos cruzados delante de la base del fuego (corteza y corte claro)
+      for (let i = 0; i < 22; i++) {
+        const y = 41 - Math.floor(i / 4);
+        c.set(8 + i, y, W.d).set(8 + i, y + 1, W.m).set(8 + i, y + 2, i % 4 ? W.dd : W.d);
+        c.set(35 - i, y, W.l).set(35 - i, y + 1, W.m).set(35 - i, y + 2, W.d);
+      }
+      c.rect(6, 40, 3, 3, '#d6b48a').set(7, 41, W.m).rect(35, 40, 3, 3, '#d6b48a').set(36, 41, W.m);
+      // lenguas sueltas que se escapan arriba
+      [[0, -6], [2, 5], [5, 1]].forEach(([o, dx]) => {
+        const t = ((f + o) % N) / N, y = Math.round(16 - t * 10), x = 22 + dx + Math.round(Math.sin(ph + o) * 1.5);
+        if (t < 0.85) c.rect(x, y, 1, 2, t < 0.4 ? '#f97316' : '#dc2626');
       });
-      // llamas en capas (4 fotogramas)
-      const sw = [0, 1, 0, -1][f], sw2 = [1, 0, -1, 0][f];
-      c.tri(16 + sw, 3 + (f % 2), 23, 7, (x, y) => (y < 9 ? '#dc2626' : '#ef4444'));
-      c.tri(12 + sw2, 9, 23, 4, '#ef4444').tri(20 - sw2, 8, 23, 4, '#ef4444');
-      c.tri(16 - sw, 8, 23, 5, '#f97316');
-      c.tri(16 + sw2, 13, 23, 3, '#fbbf24');
-      c.tri(16, 17, 23, 2, '#fef3c7');
-      // lenguas sueltas y chispas
-      const sp = [[[9, 6], [24, 4], [14, 1]], [[10, 3], [22, 7], [18, 0]], [[8, 5], [23, 2], [13, 2]], [[11, 2], [25, 5], [17, 1]]][f];
-      sp.forEach(([x, y], i) => c.set(x, y, i === 2 ? '#fde68a' : '#fb923c'));
+      // piedras de delante (tapan la base del fuego)
+      [[3, 41], [8, 43], [14, 44], [20, 44], [26, 44], [32, 43], [37, 41]].forEach(([x, y], i) => {
+        c.rect(x, y, 5, 3, STONE.m).rect(x, y, 4, 1, STONE.l).set(x, y + 1, STONE.l).rect(x + 1, y + 2, 4, 1, STONE.d);
+        c.set(x + 2, y, i % 2 ? '#fdba74' : '#fb923c'); // reflejo del fuego
+      });
+      // chispas que suben
+      for (let k = 0; k < 6; k++) {
+        const t = ((f + k * 1.37) % N) / N, y = Math.round(26 - t * 25), x = Math.round(22 + Math.sin(k * 2.4 + t * 6) * (4 + t * 9));
+        if (y >= 0) c.set(x, y, t < 0.5 ? '#fde047' : '#fb923c');
+      }
       return c; // sin contorno: el fuego brilla
     } },
 
@@ -171,56 +194,96 @@
       return outline(c);
     } },
 
-    /* ---------- Atril con libro ---------- */
-    lectern: { base: 18, frames: 3, draw(f) {
-      const c = canvas(28, 32);
-      c.rect(5, 30, 18, 2, 'rgba(0,0,0,.35)');
-      // pie tallado
-      c.rect(12, 14, 4, 13, W.m).rect(12, 14, 1, 13, W.l).rect(15, 14, 1, 13, W.dd);
-      c.rect(10, 18, 8, 1, W.d).rect(10, 23, 8, 1, W.d);
-      c.rect(7, 27, 14, 3, W.m).rect(7, 27, 14, 1, W.l).rect(7, 29, 14, 1, W.dd);
-      // tablero inclinado
-      c.rect(3, 12, 22, 3, W.m).rect(3, 12, 22, 1, W.l).rect(3, 14, 22, 1, W.dd);
-      // libro abierto con renglones
-      c.rect(4, 6, 10, 6, '#f5ecd2').rect(14, 6, 10, 6, '#e9dcb6').rect(13, 6, 2, 6, '#7c4a1e');
-      c.rect(4, 6, 10, 1, '#fffaf0');
-      [7, 9].forEach((y) => { c.rect(5, y, 7, 1, '#9a8f7d'); c.rect(16, y, 7, 1, '#9a8f7d'); });
-      c.rect(16, 10, 4, 1, '#b45309');
-      c.rect(3, 11, 22, 1, '#5b3a1a');
-      // vela
-      c.rect(23, 2, 2, 5, '#f1e7d0').rect(22, 7, 4, 1, '#8b8b8b');
+    /* ---------- Códice: grimorio que flota sobre un pedestal ---------- */
+    // v4.54: pedestal de piedra con runas, círculo mágico que gira, libro abierto que flota
+    // y pasa una página, y motas de luz que suben (8 fotogramas).
+    lectern: { base: 24, frames: 8, draw(f) {
+      const c = canvas(38, 46), N = 8, ph = (f / N) * Math.PI * 2;
+      const V1 = '#4c1d95', V2 = '#7c3aed', V3 = '#a78bfa', V4 = '#ddd6fe';
+      c.rect(7, 44, 24, 2, 'rgba(0,0,0,.4)');
+      // pedestal: base escalonada, fuste con runas, capitel
+      c.rect(9, 41, 20, 3, STONE.m).rect(9, 41, 20, 1, STONE.l).rect(9, 43, 20, 1, STONE.dd);
+      c.rect(13, 30, 12, 11, STONE.m).rect(13, 30, 2, 11, STONE.l).rect(23, 30, 2, 11, STONE.d);
+      [[17, 32], [19, 35], [17, 38]].forEach(([x, y], i) => { const on = (f + i * 3) % N < 4; c.rect(x, y, 3, 1, on ? V3 : V1).set(x + 1, y + 1, on ? V2 : V1); });
+      c.rect(10, 27, 18, 3, STONE.m).rect(10, 27, 18, 1, STONE.l).rect(10, 29, 18, 1, STONE.dd);
       outline(c);
-      c.set(23 + (f === 1 ? 1 : 0), 0, '#fde047').set(23, 1, '#f97316').set(24, 1, '#fbbf24');
-      // runas que flotan
-      const runes = [[[6, 3], [11, 1], [17, 4]], [[7, 1], [12, 3], [18, 2]], [[5, 2], [10, 4], [16, 1]]][f];
-      runes.forEach(([x, y], i) => c.set(x, y, ['#c4b5fd', '#a78bfa', '#ddd6fe'][i]));
+      // círculo mágico en el suelo, alrededor del pedestal, con un brillo que gira
+      for (let k = 0; k < 40; k++) {
+        const a = (k / 40) * Math.PI * 2, x = Math.round(19 + Math.cos(a) * 17), y = Math.round(42 + Math.sin(a) * 3);
+        const lit = Math.cos(a - ph) > 0.6;
+        if (!c.g[y] || (c.g[y][x] && !lit && Math.sin(a) < 0)) continue;
+        if (Math.sin(a) < 0 || !c.g[y][x] || lit) c.set(x, y, lit ? V4 : k % 2 ? V2 : V1);
+      }
+      // libro que flota
+      const by = Math.round(Math.sin(ph) * 1.5);
+      const top = 11 + by;
+      c.rect(2, top + 10, 34, 2, '#3b1d0e').rect(2, top + 10, 34, 1, '#5b2d14'); // tapas
+      c.rect(3, top + 1, 15, 10, '#f5ecd2').rect(20, top + 1, 15, 10, '#e9dcb6'); // páginas
+      c.rect(3, top + 1, 15, 1, '#fffaf0').rect(18, top, 2, 11, '#7c4a1e');
+      [3, 5, 7, 9].forEach((dy) => { c.rect(5, top + dy, 11, 1, '#9a8f7d'); });
+      [7, 9].forEach((dy) => c.rect(22, top + dy, 11, 1, '#9a8f7d'));
+      c.circle(26, top + 4, 2, V2).set(25, top + 3, V4).set(27, top + 3, V4); // dibujo de un daskai
+      // página que se pasa (de derecha a izquierda)
+      const turn = f % N, w = [0, 0, 14, 9, 3, -5, -12, 0][turn];
+      if (w) {
+        const x0 = w > 0 ? 20 : 18 + w, ww = Math.abs(w), lift = Math.round((14 - ww) / 3);
+        c.rect(x0, top + 1 - lift, ww, 9, w > 0 ? '#fffaf0' : '#f1e6c8').rect(x0, top + 1 - lift, ww, 1, '#ffffff');
+      }
+      // marcapáginas
+      c.rect(30, top + 11, 1, 3, '#b91c1c');
+      // brillo bajo el libro y motas de luz
+      for (let x = 8; x <= 30; x += 2) c.set(x, top + 13, (x + f) % 4 ? 'rgba(167,139,250,.35)' : 'rgba(221,214,254,.6)');
+      for (let k = 0; k < 5; k++) {
+        const t = ((f + k * 1.6) % N) / N, y = Math.round(top - 1 - t * 10), x = Math.round(7 + k * 6 + Math.sin(ph + k) * 1.5);
+        if (y >= 0) c.set(x, y, t < 0.5 ? V4 : V3);
+      }
       return c;
     } },
 
     /* ---------- Tablón de misiones ---------- */
-    board: { base: 24, frames: 3, draw(f) {
-      const c = canvas(36, 34);
-      c.rect(3, 32, 30, 2, 'rgba(0,0,0,.35)');
+    // v4.54: tablón con tejadillo de tejas, notas (una con sello de lacre y otra con un mapa),
+    // un farol colgado que se mece y titila, y una nota que se agita con el viento (6 fotogramas).
+    board: { base: 30, frames: 6, draw(f) {
+      const c = canvas(44, 40), N = 6, ph = (f / N) * Math.PI * 2;
+      c.rect(3, 38, 34, 2, 'rgba(0,0,0,.35)');
       // postes
-      c.rect(3, 8, 3, 25, W.m).rect(3, 8, 1, 25, W.l).rect(30, 8, 3, 25, W.m).rect(32, 8, 1, 25, W.dd);
-      // tejadillo
-      c.tri(18, 0, 7, 17, (x, y, hw, dx) => (dx < 0 ? (y % 2 ? '#6b3a1f' : '#7c4524') : (y % 2 ? '#4a2614' : '#57301a')));
-      c.rect(1, 7, 34, 1, W.dd);
+      c.rect(4, 9, 3, 30, W.m).rect(4, 9, 1, 30, W.l).rect(6, 9, 1, 30, W.dd);
+      c.rect(31, 9, 3, 30, W.m).rect(31, 9, 1, 30, W.l).rect(33, 9, 1, 30, W.dd);
+      // tejadillo de tejas con alero
+      for (let y = 1; y <= 8; y++) {
+        const half = 6 + y * 2.1;
+        for (let x = Math.round(19 - half); x <= Math.round(19 + half); x++) {
+          const row = y % 2, tile = Math.floor((x + row * 2) / 4) % 2;
+          c.set(x, y, x < 19 ? (tile ? '#7c3a24' : '#8f4529') : (tile ? '#5a2918' : '#6a301d'));
+          if ((x + row * 2) % 4 === 0) c.set(x, y, '#3a1a10');
+        }
+      }
+      c.rect(1, 9, 37, 1, '#2a120b');
+      [[9, 3], [26, 5], [15, 7]].forEach(([x, y]) => c.set(x, y, '#3f5a2a').set(x + 1, y, '#4d6b33')); // musgo
       // tablones
-      c.rect(2, 9, 32, 15, W.m);
-      [9, 14, 19].forEach((y) => c.rect(2, y, 32, 1, W.l));
-      [13, 18, 23].forEach((y) => c.rect(2, y, 32, 1, W.d));
-      [[7, 11], [25, 16], [14, 21]].forEach(([x, y]) => c.set(x, y, W.dd));
-      // notas
-      c.rect(4, 10, 7, 9, '#f5ecd2').rect(5, 12, 5, 1, '#9a8f7d').rect(5, 14, 4, 1, '#9a8f7d').rect(5, 16, 5, 1, '#9a8f7d');
-      c.rect(13, 11, 6, 7, '#ffffff').rect(14, 13, 4, 1, '#a8a29e').rect(14, 15, 3, 1, '#a8a29e');
-      c.rect(21, 10, 8, 10, '#ecd9a0').rect(22, 12, 6, 1, '#9a8f7d').rect(22, 14, 5, 1, '#9a8f7d').rect(23, 16, 3, 2, '#b91c1c');
-      // la nota de la derecha se agita (esquina)
-      const flap = [[28, 19], [29, 18], [28, 20]][f];
-      c.set(flap[0], flap[1], '#fff7d6').set(flap[0] - 1, flap[1] + (f === 1 ? 0 : 1), '#d9c58a');
+      c.rect(3, 10, 32, 17, W.m);
+      [10, 16, 22].forEach((y) => c.rect(3, y, 32, 1, W.l));
+      [15, 21, 26].forEach((y) => c.rect(3, y, 32, 1, W.d));
+      [[8, 12], [27, 18], [14, 24], [30, 13]].forEach(([x, y]) => c.set(x, y, W.dd));
+      // notas: lista, cartel con sello de lacre, mapa
+      c.rect(5, 11, 8, 10, '#f5ecd2').rect(6, 13, 6, 1, '#9a8f7d').rect(6, 15, 5, 1, '#9a8f7d').rect(6, 17, 6, 1, '#9a8f7d').rect(6, 19, 3, 1, '#9a8f7d');
+      c.rect(14, 12, 8, 11, '#fffaf0').rect(15, 14, 6, 1, '#a8a29e').rect(15, 16, 4, 1, '#a8a29e').circle(18, 20, 1, '#b91c1c').set(18, 20, '#ef4444');
+      c.rect(23, 11, 10, 9, '#ecd9a0');
+      line(c, 24, 18, 27, 14, '#92400e'); line(c, 27, 14, 31, 16, '#92400e'); c.set(31, 16, '#b91c1c').set(30, 15, '#b91c1c').set(32, 17, '#b91c1c');
+      c.set(25, 13, '#4d6b33').set(29, 18, '#38bdf8');
+      // la esquina de la nota de la lista se agita
+      const flap = [0, 1, 2, 1, 0, 0][f];
+      if (flap) c.rect(12 - flap + 1, 20 - flap, flap, flap, '#fffaf0').set(12, 20, W.m);
       // chinchetas
-      [[7, 10], [16, 11], [25, 10]].forEach(([x, y]) => c.set(x, y, '#dc2626'));
-      return outline(c);
+      [[8, 11], [18, 12], [28, 11]].forEach(([x, y]) => c.set(x, y, '#dc2626'));
+      outline(c);
+      // farol colgado del alero (se mece y titila)
+      const sw = Math.round(Math.sin(ph) * 1.4);
+      line(c, 38, 9, 38 + sw, 13, '#57534e');
+      const lx = 36 + sw, lit = ['#fde047', '#fbbf24', '#fde68a', '#fbbf24', '#fef3c7', '#fbbf24'][f];
+      c.rect(lx, 13, 5, 1, '#292524').rect(lx, 14, 5, 5, '#44403c').rect(lx + 1, 15, 3, 3, lit).set(lx + 2, 16, '#fffbeb').rect(lx, 19, 5, 1, '#292524');
+      c.set(lx - 1, 16, 'rgba(253,224,71,.35)').set(lx + 5, 16, 'rgba(253,224,71,.35)').set(lx + 2, 20, 'rgba(253,224,71,.3)');
+      return c;
     } },
 
     /* ---------- Portal de piedra ---------- */

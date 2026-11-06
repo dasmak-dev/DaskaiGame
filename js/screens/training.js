@@ -17,7 +17,7 @@
   const T = () => DK.training;
 
   DK.menus.add('nav', {
-    id: 'training', icon: 'dumbbell', order: 17, screen: 'training', mobile: false, label: () => t('nav.training'),
+    id: 'training', icon: 'dumbbell', order: 17, screen: 'training', mobile: false, dock: false, label: () => t('nav.training'),
     visible: () => !DK.store.state || DK.unlocks.has('training'),   // se abre al derrotar al primer jefe
     badge: () => { const n = DK.store.state ? T().readyCount() : 0; return n ? String(n) : ''; },
   });

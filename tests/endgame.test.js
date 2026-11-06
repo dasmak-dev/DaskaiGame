@@ -150,7 +150,7 @@ module.exports = {
       check(Math.abs(r.shop - 2) < 0.05, 'con Corrupción IV los mercaderes deberían cobrar el doble: ' + r.shop);
       check(r.levels === 5, 'debería haber 5 niveles');
       await p.evaluate(() => { DK.store.state.expedition = null; DK.router.reset('zones'); }); await sleep(400);
-      check(await p.evaluate(() => document.querySelectorAll('.eg-cor').length === 6), 'la preparación debería enseñar el selector de Corrupción');
+      check(await p.evaluate(() => document.querySelectorAll('.egx-levels button').length === 6), 'la preparación debería enseñar el selector de Corrupción');
     }),
   }, {
     name: 'El Abismo: pisos cortos encadenados, récord y premio cada 5 pisos',

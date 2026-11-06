@@ -21,10 +21,14 @@
 @keyframes cf4 { 0% { opacity: 1; } 25% { opacity: 0; } 100% { opacity: 0; } }
 .camp-anim.n12 .fr { animation: cf12 var(--dur) steps(1, end) infinite; animation-delay: calc((var(--i) / 12 - 1) * var(--dur) + var(--d)); }
 @keyframes cf12 { 0% { opacity: 1; } 8.333% { opacity: 0; } 100% { opacity: 0; } }
+.camp-anim.n6 .fr { animation: cf6 var(--dur) steps(1, end) infinite; animation-delay: calc((var(--i) / 6 - 1) * var(--dur) + var(--d)); }
+@keyframes cf6 { 0% { opacity: 1; } 16.667% { opacity: 0; } 100% { opacity: 0; } }
+.camp-anim.n8 .fr { animation: cf8 var(--dur) steps(1, end) infinite; animation-delay: calc((var(--i) / 8 - 1) * var(--dur) + var(--d)); }
+@keyframes cf8 { 0% { opacity: 1; } 12.5% { opacity: 0; } 100% { opacity: 0; } }
 .camp-anim .fr-top { position: absolute; left: 0; top: 0; }
-.a-fire { --dur: .56s; } .a-torch { --dur: .42s; } .a-portal { --dur: 1.1s; }
+.a-fire { --dur: .8s; } .a-torch { --dur: .42s; } .a-portal { --dur: 1.1s; }
 .a-tent { --dur: 1.1s; } .a-anvil { --dur: 1.6s; } .a-dummy { --dur: 2.4s; }
-.a-lectern { --dur: 1.8s; } .a-board { --dur: 1.5s; }
+.a-lectern { --dur: 2.6s; } .a-board { --dur: 2.2s; }
 
 /* ---------- 2. Lugares del campamento ---------- */
 .s-tent .camp-anim { transform-origin: 50% 100%; animation: tentSway 5s ease-in-out infinite; }

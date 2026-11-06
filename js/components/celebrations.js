@@ -63,6 +63,29 @@
    * Propone evolucionar. Si se acepta, anima y aplica la evolución.
    * @returns {Promise<boolean>}
    */
+  /**
+   * Avisos de subida de nivel del resto del equipo (v4.59): tarjetitas que entran por un lado,
+   * se quedan un par de segundos y se van, sin tapar nada ni pedir clics.
+   * @param {Array} list [{ uid, from, to, evolveReady }]
+   */
+  V.levelFeed = (list) => {
+    if (!list || !list.length) return;
+    let host = document.querySelector('.lvl-feed');
+    if (!host) { host = h('div', { class: 'lvl-feed', 'aria-live': 'polite' }); document.body.append(host); }
+    list.forEach((x, i) => setTimeout(() => {
+      const d = DK.party.get(x.uid); if (!d) return;
+      const card = h('div', { class: 'lvl-card', style: { '--c': D.houseColor(DK.daskai.species(d).house) } },
+        h('span', { class: 'lvl-art' }, V.dSprite(d, { size: 40 })),
+        h('span', { class: 'lvl-main' }, h('b', null, DK.daskai.name(d)),
+          h('span', { class: 'lvl-lv' }, `${t('common.lvl')} ${x.from}`, DK.icon('next', 11), h('b', null, x.to)),
+          x.evolveReady ? h('small', { class: 'lvl-evo' }, DK.icon('evolve', 11), t('evo.ready')) : null),
+        h('span', { class: 'lvl-badge' }, DK.icon('arrowUp', 14)));
+      host.append(card);
+      DK.audio.sfx('select');
+      setTimeout(() => { card.classList.add('out'); setTimeout(() => card.remove(), 400); }, 2600);
+    }, i * 380));
+  };
+
   V.evolveDialog = async (d) => {
     if (!DK.daskai.canEvolve(d)) return false;
     const nf = DK.daskai.nextForm(d), into = D.species[nf.into];
@@ -87,8 +110,22 @@
           stage.classList.add('done');
           text.textContent = t('evo.done', { name: oldName, into: into.name });
           // Cuánto ha subido cada atributo (nueva base + puntos extra de evolución)
-          if (r) text.after(h('div', { class: 'evo-gains' }, h('p', { class: 'small muted center' }, t('evo.gains')),
-            h('div', { class: 'chips center-chips' }, D.statKeys.map((k) => h('span', { class: 'chip pos' }, DK.icon(D.stats[k].icon, 13), `${DK.tr('stats', D.stats[k])} ${r.before[k]} → ${r.after[k]} (+${r.after[k] - r.before[k]})`)))));
+          // v4.59: tabla ordenada (icono, atributo, antes → después, +subida) con una barra que crece una a una
+          if (r) {
+            const top = Math.max(...D.statKeys.map((k) => r.after[k]));
+            const total = D.statKeys.reduce((n, k) => n + (r.after[k] - r.before[k]), 0);
+            text.after(h('div', { class: 'evo-gains' },
+              h('div', { class: 'evg-head' }, h('span', null, t('evo.gains')), h('b', { class: 'evg-total' }, '+' + total)),
+              h('div', { class: 'evg-grid' }, D.statKeys.map((k, i) => {
+                const up = r.after[k] - r.before[k];
+                return h('div', { class: 'evg-row', style: { '--i': i } },
+                  h('span', { class: 'evg-ico' }, DK.icon(D.stats[k].icon, 14)),
+                  h('span', { class: 'evg-name' }, DK.tr('stats', D.stats[k], 'short')),
+                  h('span', { class: 'evg-bar' }, h('i', { class: 'old', style: { width: Math.round((r.before[k] / top) * 100) + '%' } }), h('i', { class: 'new', style: { left: Math.round((r.before[k] / top) * 100) + '%', width: Math.max(1, Math.round((up / top) * 100)) + '%' } })),
+                  h('span', { class: 'evg-val' }, h('small', null, r.before[k]), DK.icon('next', 11), h('b', null, r.after[k])),
+                  h('span', { class: 'evg-up' + (up ? '' : ' zero') }, up ? '+' + up : '='));
+              }))));
+          }
           // Se queda abierta para leer las subidas: sólo queda «Continuar»
           const foot = stage.closest('.modal-backdrop') && stage.closest('.modal-backdrop').querySelector('.modal-actions');
           if (foot) foot.replaceChildren(DK.ui.btn({ label: t('common.continue'), icon: 'next', variant: 'primary', onClick: () => close(true) }));

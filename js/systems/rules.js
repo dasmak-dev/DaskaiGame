@@ -133,7 +133,7 @@
       const s = DK.daskai.stats(d);
       const best = D.statKeys.filter((k) => k !== 'hp' && k !== 'mp').sort((a, b) => s[b] - s[a])[0];
       st().essences = this.list();
-      st().essences.unshift({ id: DK.util.uid(), name: DK.daskai.name(d), species: d.species, level: d.level, stat: best, at: Date.now() });
+      st().essences.unshift({ id: DK.util.uid(), name: DK.daskai.name(d), species: d.species, level: d.level, stat: best, look: d.look || null, at: Date.now() });
     },
 
     /** Lo que daría una esencia: { exp, stat, points }. */

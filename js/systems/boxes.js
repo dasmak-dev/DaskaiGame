@@ -129,6 +129,7 @@
         house: (x, y) => DK.daskai.species(x).house.localeCompare(DK.daskai.species(y).house) || y.level - x.level,
         name: (x, y) => DK.daskai.name(x).localeCompare(DK.daskai.name(y)),
         species: (x, y) => DK.daskai.species(x).name.localeCompare(DK.daskai.species(y).name) || y.level - x.level,
+        rarity: (x, y) => DK.looks.rarityScore(y) - DK.looks.rarityScore(x) || y.level - x.level,
       }[by];
       ds.sort(cmp);
       b.slots = ds.map((d) => d.uid).concat(Array(SIZE - ds.length).fill(null));

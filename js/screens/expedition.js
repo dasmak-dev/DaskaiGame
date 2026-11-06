@@ -415,7 +415,9 @@
   }
 
   /* ---------- Panel del nodo ---------- */
-  const cont = (refresh) => btn({ icon: 'next', label: t('exp.continuePath'), variant: 'primary', size: 'lg', hotkey: '↵', onClick: () => { E().completeNode(); refresh(); } });
+  const cont = (refresh) => btn({ icon: 'next', label: t('exp.continuePath'), variant: 'primary', hotkey: '↵', cls: 'exp-cont', onClick: () => { E().completeNode(); refresh(); } });
+  // v4.60: opciones del suceso en una fila compacta (antes, botones grandes uno debajo de otro)
+  const opts = (...b) => h('div', { class: 'exp-opts' }, b.flat().filter(Boolean));
   const head = (type, title, text) => h('div', { class: 'exp-node-head t-' + type },
     h('span', { class: 'exp-node-big t-' + type }, DK.icon(E().TYPES[type].icon, 28)), h('div', null, h('h3', null, title), text ? h('p', { class: 'muted small' }, text) : null));
 
@@ -427,7 +429,7 @@
     if (E().TYPES[n.type].battle) {
       DK.keys.on('Enter', () => fight());
       return h('div', { class: 'card stack-s' }, head(n.type, t('exp.node.' + n.type), t('exp.nodeDesc.' + n.type)),
-        btn({ icon: 'swords', label: t('exp.fightNow'), variant: 'primary', size: 'lg', hotkey: '↵', onClick: () => fight() }));
+        btn({ icon: 'swords', label: t('exp.fightNow'), variant: 'primary', hotkey: '↵', cls: 'exp-cont', onClick: () => fight() }));
     }
 
     if (n.type === 'treasure') {
@@ -436,7 +438,7 @@
         DK.keys.on('Enter', open);
         return h('div', { class: 'card stack chest-panel' }, head('treasure', t('exp.node.treasure'), t('exp.treasureText')),
           h('button', { class: 'chest-big closed', type: 'button', 'aria-label': t('exp.openChest'), onClick: open }, DK.icon('gift', 64), h('span', { class: 'chest-glow' })),
-          btn({ icon: 'gift', label: t('exp.openChest'), variant: 'primary', size: 'lg', hotkey: '↵', onClick: open }));
+          btn({ icon: 'gift', label: t('exp.openChest'), variant: 'primary', hotkey: '↵', cls: 'exp-cont', onClick: open }));
       }
       enterCont();
       // Botín del cofre en tarjetas: lo que es, para qué sirve y adónde va (mochila: ya; botín: al volver)
@@ -460,7 +462,7 @@
       return h('div', { class: 'card stack chest-panel' }, head('treasure', t('exp.node.treasure'), t('exp.chestOpened')),
         h('div', { class: 'chest-big open', 'aria-hidden': 'true' }, DK.icon('gift', 48), h('span', { class: 'chest-glow' })),
         h('div', { class: 'loot-grid' }, cards),
-        h('p', { class: 'muted small chest-legend' }, h('span', { class: 'loot-dest bag' }, DK.icon('bag', 11), t('exp.destBag')), ' ', t('exp.destBagHelp'), ' · ', h('span', { class: 'loot-dest loot' }, DK.icon('gift', 11), t('exp.destLoot')), ' ', t('exp.destLootHelp')),
+        h('p', { class: 'muted small chest-legend', tip: t('exp.destBagHelp') + ' · ' + t('exp.destLootHelp') }, h('span', { class: 'loot-dest bag' }, DK.icon('bag', 11), t('exp.destBag')), ' ', h('span', { class: 'loot-dest loot' }, DK.icon('gift', 11), t('exp.destLoot')), ' ', DK.icon('info', 12)),
         cont(refresh));
     }
 
@@ -501,12 +503,12 @@
       if (E().canCampfireExit()) DK.keys.on('3', goHome);
       const exitBox = E().canCampfireExit()
         ? h('div', { class: 'camp-exit' },
-          btn({ icon: 'home', label: t('exp.campExit'), desc: t('exp.campExitDesc', { pct: pv.pct, coins: pv.coins }), variant: 'ghost', size: 'lg', hotkey: '3', onClick: goHome }),
+          btn({ icon: 'home', label: t('exp.campExit'), desc: t('exp.campExitDesc', { pct: pv.pct, coins: pv.coins }), variant: 'ghost', showDesc: true, hotkey: '3', onClick: goHome }),
           pv.recruits.length ? h('p', { class: 'small good-text' }, DK.icon('paw', 12), ' ', t('exp.campExitKeeps', { names: pv.recruits.join(', ') })) : null)
         : h('p', { class: 'muted small' }, DK.icon('lock', 12), ' ', t('exp.noRetreat'));
       // Dos opciones grandes: descansar (todo el equipo) o entrenar (eliges a quién: sube 1 nivel)
       const who = DK.party.get(e.trainUid);
-      const trainBtn = (d) => btn({ icon: 'star', label: d ? t('exp.trainBtn', { name: DK.daskai.name(d), n: d.level + 1 }) : t('exp.train'), variant: 'tone', size: 'lg', hotkey: '2', cls: 'rest-train-btn', disabled: !d || d.level >= DK.config.maxLevel, onClick: train });
+      const trainBtn = (d) => btn({ icon: 'star', label: d ? t('exp.trainBtn', { name: DK.daskai.name(d), n: d.level + 1 }) : t('exp.train'), variant: 'tone', hotkey: '2', cls: 'rest-train-btn', disabled: !d || d.level >= DK.config.maxLevel, onClick: train });
       let tBtn = trainBtn(who);
       const pick = (d, el) => {
         e.trainUid = d.uid; DK.audio.sfx('select');
@@ -527,7 +529,7 @@
             h('span', { class: 'rest-opt-icon heal' }, DK.icon('bed', 28)),
             h('b', null, t('exp.restHeal')), h('p', { class: 'muted small' }, t('exp.restHealDesc', { n: Math.round(DK.config.expedition.restHeal * 100) })),
             h('div', { class: 'rest-team' }, team.map((d) => { const s = DK.daskai.stats(d); return h('span', { class: 'rest-mini', tip: `${DK.daskai.name(d)} ${d.cur.hp}/${s.hp}` }, V.dSprite(d, { size: 34 }), h('span', { class: 'rest-hp' }, h('i', { style: { width: DK.util.percent(d.cur.hp, s.hp) + '%' } }))); })),
-            btn({ icon: 'bed', label: t('exp.restHeal'), variant: 'primary', size: 'lg', hotkey: '1', onClick: rest })),
+            btn({ icon: 'bed', label: t('exp.restHeal'), variant: 'primary', hotkey: '1', onClick: rest })),
           h('section', { class: 'rest-opt' },
             h('span', { class: 'rest-opt-icon train' }, DK.icon('star', 28)),
             h('b', null, t('exp.train')), h('p', { class: 'muted small' }, t('exp.trainDescLevel')),
@@ -552,15 +554,15 @@
         if (r.fight) DK.keys.on('Enter', () => fight(r.fight)); else enterCont();
         return h('div', { class: 'card stack-s' }, head('event', T('title')),
           h('div', { class: 'warning ' + (r.fight ? 'warn' : 'good') }, DK.icon(r.fight ? 'skull' : ev.icon, 18), h('span', null, T('results.' + r.key, r.vars))),
-          r.fight ? btn({ icon: 'swords', label: t('exp.fightNow'), variant: 'primary', size: 'lg', hotkey: '↵', onClick: () => fight(r.fight) }) : cont(refresh));
+          r.fight ? btn({ icon: 'swords', label: t('exp.fightNow'), variant: 'primary', hotkey: '↵', cls: 'exp-cont', onClick: () => fight(r.fight) }) : cont(refresh));
       }
       const ctx = E().ctx();
       return h('div', { class: 'card stack-s' }, head('event', T('title'), T('text')),
-        h('div', { class: 'stack-s' }, ev.choices.map((c, i) => {
+        h('div', { class: 'exp-opts' }, ev.choices.map((c, i) => {
           const ok = !c.req || c.req(ctx);
           const pick = () => { if (E().resolveEvent(c.id)) { DK.audio.sfx('select'); DK.app.renderNav(); refresh(); } };
           if (ok) DK.keys.on(String(i + 1), pick);
-          return btn({ icon: c.icon, label: T('choices.' + c.id), desc: ok ? T('desc.' + c.id) : T('need.' + c.id), variant: i === 0 ? 'primary' : 'tone', size: 'lg', hotkey: String(i + 1), disabled: !ok, onClick: pick });
+          return btn({ icon: c.icon, label: T('choices.' + c.id), desc: ok ? T('desc.' + c.id) : T('need.' + c.id), variant: i === 0 ? 'primary' : 'tone', hotkey: String(i + 1), disabled: !ok, showDesc: true, onClick: pick });
         })));
     }
     return null;
@@ -578,6 +580,10 @@
     if (shopUi.node !== e.pending) { shopUi.node = e.pending; shopUi.mode = 'buy'; shopUi.qty = {}; }
     DK.keys.on('Enter', () => { E().completeNode(); refresh(); });
     const card = h('div', { class: 'card stack-s merchant' });
+    const flash = (text, icon, id) => {
+      shopUi.flash = { text, icon, id, at: Date.now() };
+      clearTimeout(shopUi.flashT); shopUi.flashT = setTimeout(() => { shopUi.flash = null; if (card.isConnected) draw(); }, 3200);
+    };
     const draw = () => {
       const coins = e.loot.coins;
       const q = (k) => shopUi.qty[shopUi.mode + k] || 1;
@@ -592,15 +598,16 @@
         const n = Math.max(1, Math.min(q(k), max || 1));
         const total = price * n, sold = !sell && left <= 0, cant = !sell && total > coins;
         const act = () => {
-          if (sell) { DK.shop.sell(id, n); DK.audio.sfx('coin'); DK.ui.toast(t('shop.soldN', { item: it.name, n, coins: total }), { icon: 'coin', kind: 'good' }); }
-          else if (E().buyOffer(k, n)) { DK.audio.sfx('coin'); DK.ui.toast(t('shop.bought', { item: it.name, n }), { icon: 'bag', kind: 'good' }); }
+          // v4.60b: sin avisos flotantes (tapaban «Seguir el camino»): confirmación en la propia tienda
+          if (sell) { DK.shop.sell(id, n); DK.audio.sfx('coin'); flash(t('shop.soldN', { item: it.name, n, coins: total }), 'coin', id); }
+          else if (E().buyOffer(k, n)) { DK.audio.sfx('coin'); flash(t('shop.bought', { item: it.name, n }), 'bag', id); }
           else { DK.audio.sfx('error'); return; }
           shopUi.qty[shopUi.mode + k] = 1; draw();
           // el botín de la cabecera y de la barra también cambian (sin repintar la pantalla)
           if (DK.app.renderRes) DK.app.renderRes();
           document.querySelectorAll('[data-loot-coins]').forEach((el) => { el.textContent = t('exp.lootNow', { items: E().lootCount(), coins: e.loot.coins }); });
         };
-        return h('div', { class: 'mr-row r-' + it.rarity + (sold ? ' sold' : ''), tip: it.desc },
+        return h('div', { class: 'mr-row r-' + it.rarity + (sold ? ' sold' : '') + (shopUi.flash && shopUi.flash.id === id && Date.now() - shopUi.flash.at < 900 ? ' just' : ''), tip: it.desc },
           h('span', { class: 'mr-icon' }, V.itemIcon(it, 26)),
           h('span', { class: 'mr-main' }, h('b', null, it.name), h('span', { class: 'muted small' }, V.useText(it) || it.desc),
             h('span', { class: 'mr-meta small' }, V.rarity(it.rarity),
@@ -622,6 +629,7 @@
         h('div', { class: 'mr-top' }, head('shop', t('exp.node.shop'), t('exp.shopText2')),
           btn({ icon: 'next', label: t('exp.continuePath'), variant: 'tone', size: 'sm', cls: 'mr-skip', onClick: () => { E().completeNode(); refresh(); } })),
         h('div', { class: 'mr-bar' }, tabs,
+          shopUi.flash ? h('span', { class: 'mr-flash', role: 'status' }, DK.icon('check', 13), DK.icon(shopUi.flash.icon, 13), h('span', null, shopUi.flash.text)) : null,
           h('span', { class: 'mr-purse', tip: t('exp.lootCoinsTip') }, DK.icon('gift', 15), h('small', null, t('exp.loot')), V.coins(coins))),
         h('p', { class: 'muted small mr-note' }, shopUi.mode === 'buy' ? t('exp.payNoteLoot') : t('shop.sellHelpLoot', { n: Math.round(DK.config.sellRatio * 100) })),
         list.length ? h('div', { class: 'mr-list' }, list) : DK.ui.empty('coin', t('shop.nothingToSell'), ''),
@@ -645,8 +653,8 @@
       DK.keys.on('1', explore); DK.keys.on('2', () => { E().completeNode(); refresh(); });
       return h('div', { class: 'card stack-s' }, headEl,
         rec.defeated ? h('div', { class: 'warning good' }, DK.icon('check', 16), h('span', null, t('exp.secretKnown', { title: sb.title }))) : null,
-        btn({ icon: 'compass', label: t('exp.caveExplore'), desc: t('exp.caveExploreDesc'), variant: 'primary', size: 'lg', hotkey: '1', onClick: explore }),
-        btn({ icon: 'next', label: t('exp.caveSkip'), variant: 'ghost', hotkey: '2', onClick: () => { E().completeNode(); refresh(); } }));
+        opts(btn({ icon: 'compass', label: t('exp.caveExplore'), desc: t('exp.caveExploreDesc'), variant: 'primary', hotkey: '1', showDesc: true, onClick: explore }),
+          btn({ icon: 'next', label: t('exp.caveSkip'), variant: 'ghost', hotkey: '2', onClick: () => { E().completeNode(); refresh(); } })));
     }
     const r = e.result;
     if (r.fight === 'secret') {
@@ -661,8 +669,8 @@
               rec.defeated ? null : h('span', { class: 'chip pos' }, DK.icon('crown', 12), t('exp.secretUnlockChip')),
               sb.drops.slice(0, 2).map(([id]) => h('span', { class: 'chip' }, DK.icon(D.items[id].icon, 12), D.items[id].name))))),
         h('p', { class: 'muted small' }, DK.icon('alert', 12), ' ', t('exp.secretRisk')),
-        btn({ icon: 'swords', label: t('exp.secretFight'), variant: 'primary', size: 'lg', hotkey: '1', onClick: () => fight('secret') }),
-        btn({ icon: 'next', label: t('exp.secretLeave'), variant: 'ghost', hotkey: '2', onClick: () => { E().completeNode(); refresh(); } }));
+        opts(btn({ icon: 'swords', label: t('exp.secretFight'), variant: 'primary', hotkey: '1', onClick: () => fight('secret') }),
+          btn({ icon: 'next', label: t('exp.secretLeave'), variant: 'ghost', hotkey: '2', onClick: () => { E().completeNode(); refresh(); } })));
     }
     DK.keys.on('Enter', () => { E().completeNode(); refresh(); });
     return h('div', { class: 'card stack-s' }, headEl,
@@ -679,13 +687,15 @@
     const cost = Math.round(DK.config.expedition.shortcutHpCost * 100);
     const take = () => { const r = E().takeShortcut(); if (!r) return; DK.audio.sfx('swap'); DK.ui.toast(t('exp.shortcutTaken', { n: r.skipped }), { icon: 'shortcut', kind: 'good' }); refresh(); };
     DK.keys.on('1', take); DK.keys.on('2', () => { E().completeNode(); refresh(); });
+    // v4.60: lo esencial en una línea (coste, pisos y adónde llegas); la explicación, al pasar el ratón
     return h('div', { class: 'card stack-s' }, head('shortcut', t('exp.node.shortcut'), t('exp.shortcutText', { n: skip })),
-      h('div', { class: 'chips' }, h('span', { class: 'chip neg' }, DK.icon('heart', 12), t('exp.shortcutCost', { n: cost })),
-        h('span', { class: 'chip pos' }, DK.icon('next', 12), t('exp.shortcutSkip', { n: skip })),
-        h('span', { class: 'chip' }, DK.icon(E().TYPES[target.type].icon, 12), t('exp.shortcutTo', { node: t('exp.node.' + target.type) }))),
-      h('p', { class: 'muted small' }, t('exp.shortcutHint')),
-      btn({ icon: 'shortcut', label: t('exp.shortcutTake'), variant: 'primary', size: 'lg', hotkey: '1', onClick: take }),
-      btn({ icon: 'next', label: t('exp.shortcutNo'), variant: 'ghost', hotkey: '2', onClick: () => { E().completeNode(); refresh(); } }));
+      h('div', { class: 'exp-facts', tip: t('exp.shortcutHint') },
+        h('span', { class: 'neg' }, DK.icon('heart', 12), t('exp.shortcutCost', { n: cost })),
+        h('span', { class: 'pos' }, DK.icon('next', 12), t('exp.shortcutSkip', { n: skip })),
+        h('span', null, DK.icon(E().TYPES[target.type].icon, 12), t('exp.shortcutTo', { node: t('exp.node.' + target.type) })),
+        DK.icon('info', 12)),
+      opts(btn({ icon: 'shortcut', label: t('exp.shortcutTake'), variant: 'primary', hotkey: '1', onClick: take }),
+        btn({ icon: 'next', label: t('exp.shortcutNo'), variant: 'ghost', hotkey: '2', onClick: () => { E().completeNode(); refresh(); } })));
   }
 
   /** Santuario: bendice a un daskai para que se salve de la muerte una vez en esta expedición. */
@@ -697,14 +707,19 @@
     }
     const team = DK.party.active();
     return h('div', { class: 'card stack-s' }, headEl,
-      h('div', { class: 'list' }, team.map((d, i) => {
+      // v4.60: fichas pequeñas (dibujo, nombre, vida): pulsar una la bendice
+      h('div', { class: 'exp-picks' }, team.map((d, i) => {
         const pick = () => { E().bless(d.uid); DK.audio.sfx('levelup'); refresh(); };
         DK.keys.on(String(i + 1), pick);
-        return V.daskaiRow(d, { compact: true, tags: e.blessed === d.uid ? [h('span', { class: 'badge good' }, DK.icon('sparkles', 13), t('exp.blessedTag'))] : [],
-          actions: btn({ icon: 'sparkles', label: t('exp.bless'), size: 'sm', variant: 'primary', hotkey: String(i + 1), onClick: pick }) });
+        const s2 = DK.daskai.stats(d), hp = DK.util.percent(d.cur.hp, s2.hp);
+        return h('button', { class: 'exp-pick' + (e.blessed === d.uid ? ' on' : ''), type: 'button', style: { '--c': D.houseColor(DK.daskai.species(d).house) }, tip: `${t('exp.bless')} · ${DK.daskai.name(d)}`, onClick: pick },
+          h('span', { class: 'exp-pick-art' }, V.dSprite(d, { size: 44 }), e.blessed === d.uid ? h('span', { class: 'exp-pick-mark' }, DK.icon('sparkles', 12)) : null),
+          h('b', null, DK.daskai.name(d)), h('small', null, `${t('common.lvl')} ${d.level}`),
+          h('span', { class: 'exp-pick-hp' }, h('i', { style: { width: hp + '%' } })),
+          h('kbd', { class: 'hotkey' }, String(i + 1)));
       })),
       e.blessed ? h('p', { class: 'muted small' }, t('exp.blessReplace')) : null,
-      btn({ icon: 'next', label: t('exp.shrineSkip'), variant: 'ghost', onClick: () => { E().completeNode(); refresh(); } }));
+      btn({ icon: 'next', label: t('exp.shrineSkip'), variant: 'ghost', cls: 'exp-cont', onClick: () => { E().completeNode(); refresh(); } }));
   }
 
   /**
@@ -775,7 +790,7 @@
         DK.keys.on(String(i + 1), pick);
         const s = DK.daskai.stats(Object.assign({}, c, { wild: false }));
         return h('div', { class: 'recruit-card', style: { '--c': D.houseColor(sp.house) } },
-          h('div', { class: 'recruit-art' }, V.dSprite(c, { size: 84, cls: 'float' })),
+          h('div', { class: 'recruit-art' }, V.dSprite(c, { size: 64, cls: 'float' })),
           h('div', { class: 'row gap-s wrap' }, h('b', null, sp.name), V.level(c.level), V.shinyTag(c)),
           h('div', { class: 'row gap-s wrap' }, V.houseBadge(sp.house), V.roleBadge(c)),
           h('div', { class: 'chips' },
@@ -785,7 +800,7 @@
           h('div', { class: 'recruit-stats' }, ['hp', 'atk', 'matk', 'spd'].map((k) => h('span', { tip: DK.tr('stats', D.stats[k]) }, DK.icon(D.stats[k].icon, 13), h('b', null, s[k])))),
           btn({ icon: 'plus', label: t('exp.recruitPick'), variant: 'primary', hotkey: String(i + 1), onClick: pick }));
       })),
-      btn({ icon: 'next', label: t('exp.recruitSkip'), variant: 'ghost', onClick: () => { E().completeNode(); refresh(); } }));
+      btn({ icon: 'next', label: t('exp.recruitSkip'), variant: 'ghost', cls: 'exp-cont', onClick: () => { E().completeNode(); refresh(); } }));
   }
 
   /* ---------- Panel de estado (sin nada pendiente) ---------- */

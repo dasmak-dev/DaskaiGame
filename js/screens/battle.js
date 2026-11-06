@@ -107,7 +107,7 @@
         h('div', { class: 'hud-tags' }, st.boss ? h('span', { class: 'badge leader' }, DK.icon('crown', 13), t('battle.boss')) : null, V.houseBadge(sp.house, { known: st.known }), V.roleBadge(e), V.shinyTag(e), ui.eStatus, ui.ePhase),
         ui.eHp, ui.eMp, ui.eBreak, ui.intent);
       updateBreak();
-      ui.eSprite = V.dSprite(e, { size: st.boss ? 210 : 180, cls: 'idle' });
+      ui.eSprite = V.dSprite(e, { size: st.boss ? 210 : 180, cls: 'idle grounded' });
       enemySlot.replaceChildren(ui.eSprite);
     }
     function buildAlly() {
@@ -121,7 +121,7 @@
         h('div', { class: 'hud-title' }, h('b', null, DK.daskai.name(a)), ui.aLevel),
         h('div', { class: 'hud-tags' }, V.houseBadge(sp.house), V.roleBadge(a), V.shinyTag(a), V.tempTag(a), ui.aStatus),
         ui.aHp, ui.aMp, ui.aExp);
-      ui.aSprite = V.dSprite(a, { size: 210, flip: true, cls: 'idle' });
+      ui.aSprite = V.dSprite(a, { size: 210, flip: true, cls: 'idle grounded' });
       allySlot.replaceChildren(ui.aSprite);
       updateStatus();
     }
@@ -706,8 +706,10 @@
       for (const id of r.runes || []) { await wait(200); log(t('rune.got', { name: V.runeName(id) }) + ' · ' + V.runeTip(id).split(' · ').slice(1).join(' · '), 'level', 'reward'); DK.ui.toast(t('rune.got', { name: V.runeName(id) }), { icon: 'rune', kind: 'good' }); }
       (r.shared || []).forEach((x) => {
         log(t('battle.sharedExp', { name: x.name, n: x.exp }), 'muted', 'reward');
-        if (x.to > x.from) { log(t('battle.levelUp', { name: x.name, n: x.to }), 'level', 'reward'); DK.ui.toast(t('battle.levelUp', { name: x.name, n: x.to }), { icon: 'star', kind: 'good' }); }
+        if (x.to > x.from) log(t('battle.levelUp', { name: x.name, n: x.to }), 'level', 'reward');
       });
+      // v4.59: los del banquillo que suben de nivel salen en tarjetitas que se van solas
+      V.levelFeed((r.shared || []).filter((x) => x.to > x.from));
       if (r.winHeal) { log(t('relics.winHealLog', { n: Math.round(r.winHeal * 100) }), 'good', 'reward'); const s2 = DK.daskai.stats(a); ui.aHp.update(a.cur.hp, s2.hp); }
       if (st.elite && st.expedition && DK.expedition.active() && DK.expedition.active().relicChoice) log(t('relics.eliteLog'), 'level', 'reward');
       if (!r.captured && !r.drops.length && !(r.runes || []).length) log(t('battle.noDrop'), 'muted', 'reward');
@@ -720,6 +722,27 @@
       // Jefe del mapa derrotado: se decide si continuar o terminar (panel final)
       if (st.expedition && DK.expedition.active()) { DK.expedition.completeNode(); if (st.boss && st.final !== false) DK.expedition.bossCleared(); }
       end(st.outcome, r);
+    }
+
+    /**
+     * Botín del panel final (v4.60): experiencia y monedas en dos casillas grandes y cada objeto,
+     * runa, reliquia o emblema en su tarjetita con icono y color de rareza (entran una a una).
+     */
+    function rewardsView(r) {
+      let k = 0; const dl = () => ({ animationDelay: (0.15 + k++ * 0.09).toFixed(2) + 's' });
+      const big = (icon, n, label, cls) => h('div', { class: 'rw-big ' + cls, style: dl() }, h('span', { class: 'rw-big-ico' }, DK.icon(icon, 22)), h('b', null, n), h('small', null, label));
+      const counts = {}; r.drops.forEach((id) => (counts[id] = (counts[id] || 0) + 1));
+      const items = [
+        ...Object.entries(counts).map(([id, n]) => { const it = D.items[id]; return h('div', { class: 'rw-item r-' + it.rarity, style: dl(), tip: it.desc || it.name },
+          h('span', { class: 'rw-item-ico' }, V.itemIcon ? V.itemIcon(it, 30) : DK.icon(it.icon, 26), n > 1 ? h('span', { class: 'rw-n' }, '×' + n) : null), h('span', { class: 'rw-item-name' }, it.name),
+          r.toLoot && !(r.toBag || []).includes(id) ? h('small', { class: 'rw-dest' }, DK.icon('gift', 10), t('exp.destLoot')) : null); }),
+        ...(r.runes || []).map((id) => h('div', { class: 'rw-item rune ' + V.runeRarity(id), style: dl(), tip: V.runeTip(id) }, h('span', { class: 'rw-item-ico' }, V.runeGem(id, 30)), h('span', { class: 'rw-item-name' }, V.runeName(id)))),
+        r.relicOffer ? h('div', { class: 'rw-item relic', style: dl() }, h('span', { class: 'rw-item-ico' }, DK.icon('amulet', 26)), h('span', { class: 'rw-item-name' }, t('relics.toChoose'))) : null,
+      ].filter(Boolean);
+      return h('div', { class: 'rw' },
+        h('div', { class: 'rw-main' }, big('star', '+' + r.exp, t('common.expShort'), 'exp'), big(r.toLoot ? 'gift' : 'coin', '+' + r.coins, r.toLoot ? t('battle.coinsLootShort') : t('hub.coins'), 'coin'),
+          r.emblems ? big('emblem', '+' + r.emblems, t('emblem.title'), 'emblem') : null),
+        items.length ? h('div', { class: 'rw-items' }, items) : null);
     }
 
     /** Panel final del combate. */
@@ -742,11 +765,14 @@
       };
       const [ic, title, sub] = titles[outcome];
       banner.replaceChildren(h('div', { class: 'banner-card ' + outcome }, DK.icon(ic, 34), h('h2', null, title), h('p', null, sub),
-        r ? h('div', { class: 'chips' }, h('span', { class: 'chip pos' }, DK.icon('star', 13), `+${r.exp} ${t('common.expShort')}`), h('span', { class: 'chip pos' }, DK.icon('coin', 13), `+${r.coins}`),
-          r.drops.map((id) => h('span', { class: 'chip pos' }, DK.icon(D.items[id].icon, 13), D.items[id].name)),
-          (r.runes || []).map((id) => h('span', { class: 'chip pos rune-chip ' + V.runeRarity(id), tip: V.runeTip(id) }, V.runeGem(id, 16), V.runeName(id))),
-          r.relicOffer ? h('span', { class: 'chip pos' }, DK.icon('amulet', 13), t('relics.toChoose')) : null,
-          r.emblems ? h('span', { class: 'chip pos emblem-chip' }, DK.icon('emblem', 13), t('emblem.plus', { n: r.emblems })) : null) : null,
+        r ? rewardsView(r) : null,
+        r && r.shared && r.shared.length ? h('div', { class: 'team-exp' }, r.shared.map((x) => {
+          const d = DK.party.get(x.uid); if (!d) return null;
+          const need = Math.max(1, DK.daskai.expToNext(d)), pct = d.level >= DK.config.maxLevel ? 100 : Math.round((d.exp / need) * 100);
+          return h('div', { class: 'te-row' + (x.to > x.from ? ' up' : ''), tip: `${x.name} · +${x.exp} ${t('common.expShort')}` },
+            V.dSprite(d, { size: 28 }), h('span', { class: 'te-bar' }, h('i', { style: { width: pct + '%' } })),
+            x.to > x.from ? h('span', { class: 'te-lv' }, DK.icon('arrowUp', 11), x.to) : h('span', { class: 'te-exp' }, '+' + x.exp));
+        })) : null,
         choice ? h('div', { class: 'exp-summary' }, h('b', null, DK.icon('crown', 14), ' ', t('exp.mapCleared', { n: choice.depth })),
           h('div', { class: 'chips' }, h('span', { class: 'chip pos' }, DK.icon('gift', 13), t('exp.lootNow', { items: choice.items, coins: DK.expedition.active().loot.coins })),
             DK.expedition.active().log.kept.slice(-4).map((x) => h('span', { class: 'chip pos' }, DK.icon('paw', 13), t('exp.keeps', { name: x.name }))))) : null,
@@ -823,6 +849,10 @@
       st._intro = true;
       busy = true;
       (async () => {
+        // v4.58: con la cortinilla todavía delante (jefe, mini jefe, zona) no empieza nada:
+        // ni las entradas ni el modo automático
+        for (let i = 0; i < 60 && document.querySelector('.curtain'); i++) await DK.util.sleep(80);
+        if (stopped) return;
         anim(ui.eSprite, 'enter-enemy', 700); anim(ui.aSprite, 'enter', 700);
         const sp = D.species[st.enemy.species];
         if (st.boss) { log(t('battle.bossAppears', { title: (st.bossInfo || zone.boss).title, name: sp.name, n: st.enemy.level }), 'warn'); DK.vibrate([80, 40, 80]); }

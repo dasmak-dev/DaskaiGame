@@ -151,7 +151,8 @@
       const { h } = DK.ui;
       if (!this.navVisible(lastEntry.def)) { dock.replaceChildren(); this.renderHud(); return; }
       const active = lastEntry.def.section || lastEntry.entry.id;
-      const items = this.navItems().filter((it) => it.id !== 'profile');
+      // v4.62: las que llevan dock:false no salen en la barra (Entrenamiento: se entra por el muñeco del campamento)
+      const items = this.navItems().filter((it) => it.id !== 'profile' && it.dock !== false);
       const go = (it) => { DK.audio.sfx('select'); if (it.action) it.action(); else DK.router.reset(it.screen, typeof it.params === 'function' ? it.params() : it.params || {}); };
       const make = (it) => {
         const badge = it.badge ? it.badge() : '';
@@ -162,8 +163,14 @@
         return b;
       };
       const narrow = window.innerWidth <= 600;
-      const pinned = !narrow || items.length <= 5 ? items : items.filter((it) => it.pin);
+      const pinned = (!narrow || items.length <= 5 ? items : items.filter((it) => it.pin)).slice();
       const rest = items.filter((it) => !pinned.includes(it));
+      // v4.54: el botón principal (Batalla / Mapa) siempre en el centro de la barra
+      const mainAt = pinned.findIndex((it) => it.id === 'battle' || it.id === 'expmap');
+      if (mainAt >= 0) {
+        const total = pinned.length + (rest.length ? 1 : 0), mid = Math.min(Math.floor(total / 2), pinned.length - 1);
+        const [m] = pinned.splice(mainAt, 1); pinned.splice(mid, 0, m);
+      }
       const slots = pinned.map(make);
       if (rest.length) {
         const badges = rest.map((it) => (it.badge ? it.badge() : '')).filter(Boolean);

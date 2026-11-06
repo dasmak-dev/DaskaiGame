@@ -21,13 +21,19 @@
 
   /** Libera un daskai (con confirmación). Devuelve true si se liberó. */
   async function release(d) {
+    if (d.locked) { toast(t('lock.cantRelease', { name: DK.daskai.name(d) }), { icon: 'lock', kind: 'bad' }); return false; }
     const r = DK.daskai.releaseReward(d);
     const list = Object.entries(r.items).map(([id, n]) => `${D.items[id].name} x${n}`).join(', ');
     if (DK.settings.get('confirmRelease') && !(await DK.ui.confirm(t('release.title', { name: DK.daskai.name(d) }), t('release.text', { coins: r.coins, items: list }), { okLabel: t('detail.release'), okIcon: 'trash', danger: true }))) return false;
     const name = DK.daskai.name(d);
     if (!DK.party.release(d.uid)) { toast(t('release.cant'), { icon: 'alert', kind: 'bad' }); return false; }
     DK.audio.sfx('coin');
-    toast(t('release.done', { name, coins: r.coins }), { icon: 'trash', kind: 'good' });
+    // v4.57: «Deshacer» en el propio aviso
+    toast(t('release.done', { name, coins: r.coins }), { icon: 'trash', kind: 'good', action: { label: t('release.undo'), icon: 'undo', onClick: () => {
+      const back = DK.party.unrelease();
+      if (back) { DK.audio.sfx('swap'); toast(t('release.undone', { name }), { icon: 'undo', kind: 'good' }); DK.router.refresh(); }
+      else toast(t('release.undoFail'), { icon: 'alert', kind: 'bad' });
+    } } });
     return true;
   }
   V.releaseDaskai = release;
@@ -51,7 +57,8 @@
       // Mover a otra caja (fuera de las expediciones, que las cajas se quedan en el campamento)
       !DK.expedition.active() && DK.boxes ? { icon: 'grid', label: active ? t('box.storeIn') : t('box.moveTo'), disabled: active && DK.party.active().length <= 1, onClick: () => V.moveToBox(d, onChange) } : false,
       null,
-      { icon: 'trash', label: t('detail.release'), danger: true, disabled: DK.party.all().length <= 1, onClick: async () => { if (await release(d)) onChange(); } },
+      { icon: 'lock', label: d.locked ? t('lock.off') : t('lock.on'), onClick: () => { DK.daskai.setLocked(d, !d.locked); DK.audio.sfx('select'); onChange(); } },
+      { icon: 'trash', label: d.locked ? t('lock.locked') : t('detail.release'), danger: true, disabled: DK.party.all().length <= 1 || !!d.locked, onClick: async () => { if (await release(d)) onChange(); } },
     ].filter((x) => x !== false); // null = separador
   };
 
@@ -83,6 +90,7 @@
   /** Panel completo de un daskai. */
   V.daskaiPanel = (d, { state = {}, onChange = () => {}, onRemoved = () => {}, onNav } = {}) => {
     const sp = DK.daskai.species(d);
+    if (d.isNew) setTimeout(() => DK.daskai.seen(d), 0); // al abrir su ficha deja de ser «Nuevo»
     const active = DK.party.isActive(d.uid);
     const isLeader = DK.store.state.team[0] === d.uid;
     const changed = () => onChange();
@@ -91,18 +99,21 @@
     /* ---- Nombre (con apodo editable en línea) ---- */
     let nameEl;
     if (state.open === 'rename') {
-      const input = h('input', { class: 'input input-sm', value: d.nickname || '', placeholder: sp.name, maxlength: 16, 'aria-label': t('detail.renameTitle') });
+      const input = h('input', { class: 'input input-sm', value: d.nickname || '', placeholder: (DK.names.of(d) || sp.name), maxlength: 16, 'aria-label': t('detail.renameTitle') });
       const save = () => { DK.daskai.rename(d, input.value.trim()); state.open = null; changed(); };
       input.addEventListener('keydown', (e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') { e.stopPropagation(); state.open = null; changed(); } });
       setTimeout(() => input.focus(), 20);
       nameEl = h('div', { class: 'row gap-s wrap' }, input, btn({ icon: 'check', label: t('common.accept'), size: 'sm', variant: 'primary', onClick: save }), btn({ icon: 'x', label: t('common.cancel'), size: 'sm', variant: 'ghost', onClick: () => toggle('rename') }));
     } else {
-      nameEl = h('div', { class: 'row gap-s wrap' }, h('h2', null, DK.daskai.name(d)),
+      // v4.60b: nombre (con apodo y especie) en una línea; nivel, casa, rasgo y estados juntos en la siguiente
+      nameEl = h('div', { class: 'dp-title' }, h('div', { class: 'dp-name-row' }, h('h2', null, DK.daskai.name(d)),
         h('button', { class: 'icon-btn dp-rename', type: 'button', tip: t('detail.rename'), 'aria-label': t('detail.rename'), onClick: () => toggle('rename') }, DK.icon('edit', 14)),
-        d.nickname ? h('span', { class: 'muted' }, `(${sp.name})`) : null,
-        V.level(d.level), V.houseBadge(sp.house), V.roleBadge(d, { neutral: true }), V.shinyTag(d), V.tempTag(d), V.statusTag(d.status),
+        DK.daskai.name(d) !== DK.daskai.speciesName(d) ? h('span', { class: 'dk-species', tip: t('detail.speciesTip') }, DK.daskai.speciesName(d)) : null),
+        h('div', { class: 'dp-badges' },
+        V.level(d.level), h('span', { class: 'dp-kind' }, V.houseBadge(sp.house), V.roleBadge(d, { neutral: true })), V.shinyTag(d), V.tempTag(d), V.statusTag(d.status),
+        d.locked ? h('span', { class: 'badge lock', tip: t('lock.locked') }, DK.icon('lock', 12)) : null,
         DK.daskai.isFainted(d) ? h('span', { class: 'badge bad' }, DK.icon('skull', 13), t('common.fainted')) : null,
-        active ? h('span', { class: 'badge good' }, DK.icon('check', 13), isLeader ? t('detail.teamLeader') : t('team.inTeam')) : null);
+        active ? h('span', { class: 'badge good' }, DK.icon('check', 13), isLeader ? t('detail.teamLeader') : t('team.inTeam')) : null));
     }
 
     /* ---- Acciones: la principal con texto; el resto, iconos con su nombre al pasar ---- */
@@ -128,7 +139,8 @@
       active ? tool('minus', t('detail.removeTeam'), () => { if (DK.party.removeFromTeam(d.uid)) { DK.audio.sfx('swap'); changed(); } }, { disabled: DK.party.active().length <= 1, tip: DK.party.active().length <= 1 ? t('team.needOne') : null, cls: 'dp-out' }) : null,
       tool('flask', t('detail.useItem'), () => toggle('items'), { on: state.open === 'items', cls: 'dp-items' }),
       tool('heart', t('heal.button'), async () => { if (await V.healDialog([d])) changed(); }, { cls: 'dp-heal' }),
-      tool('trash', t('detail.release'), async () => { if (await release(d)) onRemoved(); }, { disabled: DK.party.all().length <= 1, danger: true, cls: 'dp-release' }),
+      tool('lock', d.locked ? t('lock.off') : t('lock.on'), () => { DK.daskai.setLocked(d, !d.locked); DK.audio.sfx('select'); toast(d.locked ? t('lock.done', { name: DK.daskai.name(d) }) : t('lock.undone', { name: DK.daskai.name(d) }), { icon: 'lock' }); changed(); }, { on: !!d.locked, tip: d.locked ? t('lock.offTip') : t('lock.onTip'), cls: 'dp-lock' }),
+      tool('trash', t('detail.release'), async () => { if (await release(d)) onRemoved(); }, { disabled: DK.party.all().length <= 1 || !!d.locked, tip: d.locked ? t('lock.locked') : null, danger: true, cls: 'dp-release' }),
     ];
     const actions = [h('div', { class: 'dp-main' }, main), h('div', { class: 'dp-tools', role: 'toolbar', 'aria-label': t('detail.actions') }, tools)];
 
@@ -154,7 +166,8 @@
     }
 
     const head = h('div', { class: 'panel-head-card', style: { '--c': D.houseColor(sp.house) } },
-      h('div', { class: 'detail-sprite' }, V.dSprite(d, { size: 130, cls: 'float' })),
+      // v4.56: pulsar el dibujo lo enseña en grande con una animación al azar
+      h('button', { class: 'detail-sprite sc-open', type: 'button', tip: t('detail.viewBig'), 'aria-label': t('detail.viewBig'), onClick: () => V.showcase(d) }, V.dSprite(d, { size: 130, cls: 'float' }), h('span', { class: 'sc-open-hint' }, DK.icon('maximize', 14))),
       h('div', { class: 'detail-info' }, nameEl,
         V.vitals(d, { exp: true }),
         h('p', { class: 'small muted' }, d.level >= DK.config.maxLevel ? t('detail.maxLevel') : t('detail.toNext', { n: DK.daskai.expToNext(d) - d.exp, level: d.level + 1 }))));

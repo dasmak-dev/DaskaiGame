@@ -357,6 +357,93 @@ Se carga la última y sólo sobrescribe: paleta (piedra oscura, bronce, oro `--g
 - **Expedición:** al entrar en el mapa, el equipo, la mochila o un combate durante una expedición, `#zone-backdrop` (creado en `screens/expedition.js` con `screen:enter`) pinta detrás de todo la escena de la zona actual, oscurecida; `body.in-exp`.
 - **Combate:** la arena usa la escena de la zona (`components/scenes.js`, ahora con árboles muertos, ruinas, tumbas, cristales o tentáculos según la zona) y los **jefes tienen su propio fondo**: `DK.scenes.bossScene(zona, secreto)` → `boss_<escena>` (menhires bajo luna roja, bosque muerto, naufragio con tormenta, bosque de cristales, forja de lava, santuario con estatua, fauces del abismo, ruinas entre rayos) y `boss_secret` (cripta) para los jefes ocultos.
 
+### Cambios de la v4.62 — Más rasgos, brazos, nombres; reglas discretas; punto de «nuevo»; barras que no se llenan
+
+- **Sin las 3 estrellitas del variocolor** (`looks.js`, `draw`): en pixel art parecían puntos flotando. El variocolor se distingue por su color y su etiqueta.
+- **Rasgos de la v4.62 (tablas `*4`, marca `NEW4_TAG` = 0xa6 en la semilla).** Los aspectos nuevos (`rollLook`) tienen además los de la v4.56; los ya creados no cambian. Con `NEW4_CHANCE` (35 %):
+  - Cuerpos: ancho, torre, cabezón, burbujas, grumoso. Ojos: pupila en cruz, lloroso, de robot, con pestañas, pupila de rombo. Bocas: colmillitos, cremallera, de gato con bigotes, labios, enfurruñada. Patas (`LEGS4`): de palo, palmeadas, muelles, pies grandes, zancos.
+  - **Brazos (`ind.arms`, nueva categoría `arms`, la mitad de los nuevos):** cortitos, largos, de fideo, pinzas, manoplas (`armSvg`).
+  - **Adornos finales (`FINALS4`):** capa, corona de flores, pañuelo, gafas de aviador, collar de pinchos.
+  - El Códice tiene la categoría «Brazos» (10 categorías de rasgos).
+- **Nombres (`systems/names.js`).** Más inicios por casa, sílabas de los rasgos nuevos y, con azar aparte (los nombres de antes no cambian), un **sufijo de la casa** a veces («-ix», «-ina», «-ok»…) y un **prefijo** por brazos o adorno pocas veces («Kra-», «Sir-», «Flor-»…).
+- **Reglas de la aventura** sin título ni rojo: panel oscuro con un filo dorado a la izquierda (más vivo si hay alguna activa) y la regla activa con borde dorado.
+- **«Recién conseguido»:** punto verde que late (`V.newDot(d)`) en las casillas del equipo y de las cajas (también los reclutas de la expedición); se va al abrir su ficha.
+- **Barras de atributos (`V.statBar`)** con escala curva: con ~el valor de referencia ocupan ~60 % y nunca pasan del 94 %.
+- **Entrenamiento fuera de la barra de abajo** (`dock: false` en su opción de menú; `renderNav` las filtra). Se entra por el muñeco del campamento, «Qué hacer ahora» y la paleta de comandos.
+
+### Cambios de la v4.61 — Reglas de la aventura, mochila más clara, ficha ordenada y tienda sin avisos encima
+
+- **Arreglo:** el bloque de Abismo / Corrupción / Pesadilla se veía roto porque la tabla de subidas de la evolución (v4.59) reutilizaba las clases `.eg-*`. Las de la evolución pasan a `.evg-*`.
+- **«Reglas de la aventura» (`endgameBox`, `screens/zones.js`).** Panel de advertencia (rojo oscuro con franjas) con una fila por regla: icono, nombre, qué hace y su control a la derecha (segmentado del Abismo, niveles I–V de Corrupción, interruptor de Pesadilla). La regla activa y el panel brillan; con Corrupción se ve «Más difícil» y «Premios» por separado. Clases `.egx-*`.
+- **Mochila en la preparación.** Cada objeto en su ficha (icono, nombre, ×N; «−» para quitar uno) y una ficha «+» que abre el editor (`.pk-tile.add`, sustituye a `.bt-pack-btn`). Debajo, «Sugerir», «Repetir la última» y «Vaciar» con su texto (`.pk-tools`); el contador «6/10» arriba.
+- **Ficha del daskai:** el nombre (y la especie) en una fila y nivel, casa + rasgo (juntos en `.dp-kind`, sin separarse) y estados en la siguiente (`.dp-title`, `.dp-badges`).
+- **Códice del campamento** un poco más pequeño (base 24).
+- **Tienda de la expedición:** comprar o vender ya no saca avisos flotantes: la confirmación sale dentro de la tienda (`.mr-flash`) y la fila comprada parpadea en verde. Además, en la pantalla de la expedición todos los avisos salen arriba, no encima de los botones.
+
+### Cambios de la v4.60 — Botín visual al ganar y paneles de la expedición más sutiles
+
+- **Botín del panel final del combate (`rewardsView(r)`, `screens/battle.js`).** En vez de píldoras: dos casillas grandes (experiencia y monedas —o «monedas al botín» en una expedición—, más emblemas si los hay) y una tarjetita por objeto, runa o reliquia por elegir, con su icono, color de rareza y «×N» si se repite; entran una a una. En el móvil todo se compacta para caber en la arena. Las acciones de después (siguiente combate, curar, salir, continuar/cobrar) ya no se estiran hasta llenar el hueco.
+- **Paneles de la expedición (`screens/expedition.js`, `css/grim.css` «v4.60»).** Cabecera con icono pequeño; las opciones van en una fila compacta (`opts(...)` → `.exp-opts`) con su descripción en pequeño (`btn({ showDesc: true })`, nuevo en `DK.ui.btn`), sin botones enormes: atajo, cueva, cueva del jefe oculto y sucesos. El botón de seguir (`cont`, «Combatir», «Abrir el cofre», «Seguir sin…») es normal y va a la derecha (`.exp-cont`).
+  - Atajo: coste, pisos que te saltas y adónde llegas en una sola línea (`.exp-facts`); la explicación sale al pasar el ratón.
+  - Santuario: fichas pequeñas del equipo (dibujo, nombre, nivel, vida); pulsar una la bendice (`.exp-picks`).
+  - Cofre, hoguera y reclutar: iconos y dibujos más pequeños; la leyenda de mochila/botín del cofre, en el tooltip.
+
+### Cambios de la v4.59 — Aprender ataques, subidas al evolucionar, automático tras la cortinilla y niveles del banquillo
+
+- **Aprender un ataque (`V.learnMovePrompt`, `components/daskaiViews.js`).** A la izquierda el ataque nuevo destacado; a la derecha los 4 que conoce en una cuadrícula de 2×2 (una columna en el móvil). Cada uno dice cuánto daño ganas o pierdes si lo cambias (o si es de apoyo). Primero se marca cuál olvidar y luego «Aprender y olvidar X»; «Guardar en reserva» sigue igual. La promesa devuelve lo mismo que antes (true si lo aprendió).
+- **Evolución (`V.evolveDialog`, `components/celebrations.js`).** Las subidas salen en una tabla ordenada (icono, atributo, barra con lo que tenía y lo que gana, antes → después, +subida) en dos columnas, fila a fila con animación, y el total arriba.
+- **Automático y cortinilla (`screens/battle.js`).** La entrada del combate (animaciones, mensajes y el modo automático) espera a que no quede ninguna `.curtain` (jefe, mini jefe, zona).
+- **Niveles del banquillo.** `V.levelFeed(list)` saca tarjetitas (dibujo, nombre, Nv. antes → después y si puede evolucionar) abajo a la izquierda (arriba en el móvil) que se van solas y no se pueden pulsar. El panel final del combate añade la experiencia de cada uno con su barrita (`.team-exp`).
+
+### Cambios de la v4.58 — Resumen rápido, campamento recolocado, esencias cómodas y dibujos centrados
+
+- **Resumen rápido de un daskai (`V.quickStats(d)`, `components/daskaiViews.js`).** Pulsar un daskai en «Tu equipo» del Inicio ya no te lleva al equipo: abre una ventana compacta con su dibujo (pulsarlo = vista en grande), especie, nivel, casa, rasgo, estado, PV/PM/EXP, los 7 atributos, naturaleza y pasiva (descripción al pasar el ratón), ataques y avisos (evolución, talento, entrenando). Abajo, «Hacer líder» y «Ficha completa».
+- **Campamento recolocado (`components/camp.js`).** Nuevas posiciones (`x/y`, `xm/ym`, `xs/ys`) para que tienda, tablón, portal, códice, yunque y muñeco no se toquen; la hoguera usa también `xm/ym`. Los daskai junto al fuego son más grandes (96 px; 66 en el móvil) y van más separados.
+- **Barra de expedición:** «Empezar expedición» brilla suavemente; «Combate libre» y «Batalla» son botones fantasma pequeños.
+- **Esencias de los caídos (modo difícil, `screens/team.js`).** Cada esencia es una tarjeta que se pulsa y abre un selector (`.essence-pick`) con todos tus daskai: ves cuánto sube el atributo («76 → 78») y al elegir se hereda. Ya no hace falta tener un daskai seleccionado (en el móvil la ficha tapaba la lista). Las esencias guardan el aspecto del caído (`look`).
+- **«Nuevo» más discreto:** punto verde y texto diminuto, sin relleno.
+- **Dibujos centrados (`looks.js`, `draw`).** El encuadre se centra en lo que ocupa el daskai (antes iba pegado abajo y las formas pequeñas se veían bajas). `V.sprite` pone `--feet` (altura de los pies, 0–1) y en combate los dibujos llevan `grounded` para seguir apoyados en la plataforma.
+
+### Cambios de la v4.57 — Calidad de vida: proteger, deshacer, curar todo, «Nuevo», rareza y tamaño de interfaz
+
+- **Proteger un daskai (`d.locked`).** `DK.daskai.setLocked(d, v)`; `DK.party.release` lo rechaza. Botón de candado en la ficha (`.dp-lock`), opción en el menú contextual y etiqueta de candado en filas, tarjetas y cabecera de la ficha.
+- **Deshacer al liberar.** `DK.party.release` guarda una copia (`_lastRelease`) y `DK.party.unrelease()` devuelve el daskai a su sitio (y al equipo si cabe) retirando monedas, piezas y lo que llevaba equipado; si ya lo gastaste, no se puede. `DK.ui.toast(text, { action: { label, icon, onClick } })` añade un botón al aviso (y lo deja más tiempo).
+- **Curar a todo el equipo** desde «Tu equipo» en el Inicio (`.hs-heal`, sólo si alguien lo necesita): usa `V.healDialog(team)`, que ya elige los objetos justos y los enseña antes.
+- **Marca «Nuevo».** `DK.party.add` pone `d.isNew` (menos al primero); se quita al abrir su ficha (`DK.daskai.seen`). Se ve en el Inicio, en las filas y en las tarjetas de las cajas. En el Códice, los rasgos recién descubiertos (`looks.fresh`) brillan y la pestaña «Rasgos» lleva el número hasta que la abres.
+- **Ordenar las cajas por rareza** (`DK.looks.rarityScore`: rasgos raros, alas, brillo y variante).
+- **Tamaño de la interfaz** (ajuste `uiScale`: 90/100/110/125 %, con `zoom` en `<html>`), además del tamaño del texto que ya había.
+- **Vista en grande:** sin botones en el pie; «×» discreto arriba a la derecha (`modal({ closeX: true })`) y una animación nueva cada 2,6–4,2 s mientras está abierta (pulsar el dibujo adelanta la siguiente).
+- **Brazo de detrás (`looks.js`, `armSvg`)** sale del borde del cuerpo: en cuerpos grandes la mano ya no queda tapada.
+- **Fichas emparejadas del mismo alto** (naturaleza y pasiva al elegir daskai y en la ficha: `.st-traits`, `.info-grid`).
+
+### Cambios de la v4.56 — Corona de líder, vista en grande, nombres en el inicio y 35 rasgos nuevos
+
+- **Líder en un clic (`screens/hub.js`).** Cada fila de «Tu equipo» es un `div.hs-mon` con dos botones: `.hs-open` (abre su ficha; clic derecho / pulsación larga = menú de acciones) y `.hs-star` a la derecha del todo (corona: dorada en el líder, tenue en el resto; pulsarla lo hace líder, con aviso y una pequeña animación `just-lead`).
+- **Vista en grande (`V.showcase(d)`, `components/daskaiViews.js`).** Pulsar el dibujo de la ficha (`.detail-sprite.sc-open`) abre un escenario con su luz de casa y una animación al azar de 9 (salto, giro, aplastarse, balanceo, voltereta, temblor, baile, flotar, rugido), con partículas a juego; pulsarlo o «Otra» repite con otra (nunca la misma dos veces seguidas). Respeta «Reducir animaciones».
+- **Elegir tu primer daskai (`screens/newGame.js`)** muestra su nombre propio (y la especie en pequeño) en el título, el botón y las miniaturas.
+- **35 rasgos nuevos (`systems/looks.js`, tablas `*3`).** Cuerpos: calabaza, rombo, peludo, campana, trébol (`PRESET` admite `waist`). Ojos: con destellos, pupila de luna, apretados, de insecto, hipnóticos. Bocas: cosida, dientes apretados, mellada, babeando, silbando. Cabeza: orejas de hoja, pluma, cuernecillos, lazo, cristales. Marcas: rayo, galones, anillo, flor, tres puntos. Pelo: moño, afro, tupé ladeado, trenzas, copete. Patas (`LEGS3`): pezuñas, ancas de rana, garras de rapaz, raíces, nubecitas (`LIFT` ampliado).
+  - **Los daskai que ya tenías no cambian:** sólo los aspectos nuevos llevan la marca `NEW3_TAG` (0xa5) en el byte bajo de la semilla (`rollLook`), y sólo esos sortean (con `NEW3_CHANCE`) los rasgos nuevos con un azar aparte.
+  - Nombres en `lang` (`look.*`) y sílabas en `systems/names.js`.
+
+### Cambios de la v4.55 — Etiquetas ligeras, barra igualada y líder desde el Inicio
+
+- **Etiquetas del campamento más ligeras (`css/grim.css`).** Fuera las píldoras: sólo texto en mayúsculas espaciadas con sombra, un icono pequeño y una línea fina dorada que se alarga al pasar el ratón. Expediciones va en dorado-naranja con un brillo que late.
+- **Escena redistribuida en PC** (posiciones `xm`/`ym` de `components/camp.js`, que usa el Inicio en columna): tienda más a la izquierda, tablón más arriba y centrado, portal y yunque desplazados, antorchas recolocadas y el equipo junto a la hoguera sin tapar etiquetas. En móvil se ven 4 daskai junto al fuego.
+- **Barra de abajo igualada (`core/app.js`, `css/grim.css`).** Todos los botones miden lo mismo (rejilla de columnas iguales) y el principal (Batalla, o Mapa en expedición) se coloca siempre en el centro, también con «Más» en el móvil.
+- **Cambiar de líder desde el Inicio (`screens/hub.js`).** Pulsar un daskai de «Tu equipo» abre un menú rápido con «Hacer líder» primero, «Ver ficha» y el resto de acciones. `DK.ui.contextMenu` ya no se cierra por el desplazamiento que hace el navegador justo al abrirlo (350 ms de gracia).
+- **Barra de expedición:** los botones bajo «Empezar expedición» (Combate libre y Batalla) van en `.hx-sub`, a partes iguales y con el mismo estilo.
+
+### Cambios de la v4.54 — Inicio en dos columnas, nombres propios y campamento renovado
+
+- **Inicio rediseñado (`screens/hub.js`, `css/grim.css` «v4.54»).** Dos columnas: a la izquierda la escena del campamento y, justo debajo, la **barra de la próxima expedición** (`playBar`: mapa, nombre, chips, avisos en una línea —si alguno se cura con objetos, al pulsarla se abre la cura— y «Empezar expedición»). A la derecha, **Tu equipo** en filas compactas (`teamRow`: dibujo con formas, corona del líder, nombre, nivel, barras de PV/PM y avisos de evolución, talento, entrenamiento, estado o debilitado; clic derecho = menú del daskai), **Qué hacer ahora** (más compacto en `.hub-side`) y las **Misiones de hoy** en una línea cada una (`missionLine`, con «Cobrar»). Por debajo de 1100 px todo va en una columna (lateral en dos columnas); en móvil el equipo va en una cuadrícula de 2.
+- **La escena en columna** usa los dibujos y posiciones de pantalla mediana: `V.campScene({ compact: true })`.
+- **Nombres propios (`systems/names.js`, `DK.names`).** Cada daskai tiene un nombre sacado de su aspecto: sílaba de su casa + sílaba de un rasgo llamativo (los raros salen siempre) + final de su cuerpo; pequeñitos acaban en «-ín» y enormes en «-ón». Es estable (semilla del aspecto, no cambia al evolucionar) y se guarda en `d.gname`. `DK.daskai.name(d)` = apodo → nombre propio → especie; los jefes siguen con el de su especie. La especie se ve en pequeño junto al nombre (`V.speciesSub` en las filas, en la ficha y al pasar el ratón en las tarjetas).
+- **Campamento renovado (`components/campArt.js`, `components/camp.js`):**
+  - Hoguera más grande (base 30) con llamas procedurales en 8 fotogramas, troncos cruzados, lecho de brasas, chispas y un resplandor que late en el suelo.
+  - Tablón nuevo: tejadillo de tejas con musgo, notas con sello de lacre y mapa, una nota al viento y un farol que se mece y titila (6 fotogramas).
+  - Códice nuevo: grimorio que flota sobre un pedestal de runas, pasa página, motas de luz y círculo mágico que gira en el suelo (8 fotogramas).
+  - Etiquetas modernas: píldoras de cristal con el icono de su sección (sin marcos de hierro); Expediciones en degradado rojo que late. `motion.css` tiene ya los ciclos `n6` y `n8`.
+
 ### Cambios de la v4.53 — Sin descripciones de especie e indicador de formas
 
 - **Descripciones fuera**: el texto de cada especie describía un animal concreto («un zorrito…», «salamandra…») y ya no casa con el aspecto al azar. Se quita de «Elige tu daskai» (`.st-desc`), de la ficha del daskai y de la ficha del Códice. (El texto sigue en `data/species.json` por si se reutiliza.)

@@ -24,6 +24,9 @@
     // mientras se genera y luego se cambia por la imagen pixelada.
     const toImg = (url) => { const im = document.createElement('img'); im.className = 'sprite-px'; im.alt = sp.name; im.draggable = false; im.src = url; el.replaceChildren(im); };
     if (img) { el.innerHTML = DK.sprites.svg(sp, { flip, shiny }); return el; }
+    // v4.58: el dibujo va centrado en su recuadro; --feet = a qué altura (0–1) quedan los pies, para
+    // las escenas que lo quieren apoyado en el suelo (combate: clase «grounded»)
+    { const vb = /viewBox="([-\d.]+) ([-\d.]+) ([-\d.]+) ([-\d.]+)"/.exec(DK.looks.svg(speciesId, look, { shiny }) || ''); if (vb) el.style.setProperty('--feet', Math.min(1, (116 - +vb[2]) / +vb[4]).toFixed(3)); }
     const cached = pixel && DK.looks.pixelCached(speciesId, look, { shiny });
     if (cached) toImg(cached);
     else {
@@ -54,6 +57,84 @@
    * @param {Object} d
    * @param {Object} [o] {onClick, tags, selected, compact, draggable, actions}
    */
+  /**
+   * Vista en grande de un daskai (v4.56): al pulsar su dibujo en la ficha. Cada vez hace una
+   * animación distinta al azar (salto, giro, baile…) con sus partículas y luego otra cada pocos
+   * segundos (nunca la misma dos veces seguidas); pulsar el dibujo adelanta la siguiente. Cerrar: «×» arriba.
+   */
+  const SHOW_ANIMS = [
+    { id: 'hop', fx: 'sparkles' }, { id: 'spin', fx: 'star' }, { id: 'squash', fx: 'heart' }, { id: 'sway', fx: 'music' },
+    { id: 'flip', fx: 'sparkles' }, { id: 'shake', fx: 'bolt' }, { id: 'dance', fx: 'music' }, { id: 'float', fx: 'heart' }, { id: 'roar', fx: 'bolt' },
+  ];
+  let lastShow = '';
+  V.showcase = (d) => {
+    const sp = DK.daskai.species(d);
+    const stage = h('div', { class: 'sc-stage', style: { '--c': D.houseColor(sp.house) } });
+    const mon = h('button', { class: 'sc-mon', type: 'button', tip: t('detail.showAgain'), 'aria-label': t('detail.showAgain') }, V.dSprite(d, { size: 260 }));
+    const fx = h('div', { class: 'sc-fx', 'aria-hidden': 'true' });
+    stage.append(h('span', { class: 'sc-glow' }), h('span', { class: 'sc-floor' }), mon, fx);
+    const play = () => {
+      const pool = SHOW_ANIMS.filter((a) => a.id !== lastShow), a = pool[Math.floor(Math.random() * pool.length)];
+      lastShow = a.id;
+      mon.className = 'sc-mon'; void mon.offsetWidth; mon.classList.add('a-' + a.id);
+      fx.replaceChildren(...Array.from({ length: 9 }, (_, i) => h('i', { style: { '--x': (Math.random() * 80 - 40).toFixed(0) + '%', '--d': (i * 0.09).toFixed(2) + 's', '--r': (Math.random() * 60 - 30).toFixed(0) + 'deg' } }, DK.icon(a.fx, 14 + Math.round(Math.random() * 10)))));
+      DK.audio.sfx(a.id === 'roar' ? 'hit' : 'select');
+    };
+    mon.addEventListener('click', () => { play(); loop(); });
+    // v4.57: siempre en movimiento: una animación nueva cada pocos segundos
+    let timer = 0;
+    const loop = () => { clearTimeout(timer); timer = setTimeout(() => { if (!stage.isConnected) return; play(); loop(); }, 2600 + Math.random() * 1600); };
+    const f = DK.daskai.formsOf(d);
+    const m = DK.ui.modal({ title: DK.daskai.name(d), icon: 'maximize', cls: 'showcase-modal', closeX: true, content: () => h('div', { class: 'showcase' }, stage,
+      h('div', { class: 'sc-meta' }, h('span', { class: 'dk-species' }, DK.daskai.speciesName(d)), V.level(d.level), V.houseBadge(sp.house), V.formPips(d), V.shinyTag(d),
+        h('span', { class: 'muted small' }, f.total === 1 ? t('evo.single') : t('evo.formsTip', { n: f.now + 1, total: f.total })))) });
+    m.promise.then(() => clearTimeout(timer));
+    setTimeout(() => { play(); loop(); }, 180);
+  };
+
+  /**
+   * Resumen rápido de un daskai (v4.58, al pulsarlo en el Inicio): de un vistazo cómo está
+   * —vida, maná y experiencia, atributos, naturaleza, pasiva, ataques y avisos— sin salir.
+   * «Ficha completa» lleva a la pantalla de equipo.
+   */
+  V.quickStats = (d, { onChange = () => DK.router.refresh() } = {}) => {
+    const sp = DK.daskai.species(d), st = DK.daskai.stats(d);
+    const n = D.natures[d.nature], ps = D.passives[d.passive];
+    const lead = DK.party.leader() && DK.party.leader().uid === d.uid;
+    const notes = [
+      DK.daskai.canEvolve(d) ? h('span', { class: 'qs-note evo' }, DK.icon('evolve', 13), t('evo.ready')) : null,
+      DK.daskai.talentsPending(d).length ? h('span', { class: 'qs-note talent' }, DK.icon('star', 13), t('talent.pendingTip')) : null,
+      DK.training && DK.training.isTraining(d.uid) ? h('span', { class: 'qs-note' }, DK.icon('dumbbell', 13), t('train.inTraining')) : null,
+    ].filter(Boolean);
+    let m;
+    const go = () => { m.close(true); DK.router.reset('team', { uid: d.uid }); };
+    m = DK.ui.modal({ title: DK.daskai.name(d), icon: lead ? 'crown' : 'paw', cls: 'qs-modal', closeX: true, content: () => h('div', { class: 'qs', style: { '--c': D.houseColor(sp.house) } },
+      h('div', { class: 'qs-top' },
+        h('button', { class: 'qs-art', type: 'button', tip: t('detail.viewBig'), 'aria-label': t('detail.viewBig'), onClick: () => V.showcase(d) }, V.dSprite(d, { size: 84 }), V.formPips(d)),
+        h('div', { class: 'qs-id' },
+          h('div', { class: 'qs-tags' }, h('span', { class: 'dk-species' }, DK.daskai.speciesName(d)), V.level(d.level), V.houseBadge(sp.house), V.roleBadge(d, { neutral: true }), V.shinyTag(d), V.statusTag(d.status),
+            DK.daskai.isFainted(d) ? h('span', { class: 'badge bad' }, DK.icon('skull', 12), t('common.fainted')) : null),
+          V.vitals(d, { exp: true }))),
+      h('div', { class: 'qs-stats' }, D.statKeys.map((k) => h('div', { class: 'qs-stat', tip: DK.tr('stats', D.stats[k], 'desc') || DK.tr('stats', D.stats[k]) },
+        DK.icon(D.stats[k].icon, 14), h('span', null, DK.tr('stats', D.stats[k], 'short')), h('b', null, st[k])))),
+      h('div', { class: 'qs-lines' },
+        h('div', { class: 'qs-line', tip: `${t('common.nature')}: ${DK.tr('natures', n, 'desc')}` }, DK.icon('leaf', 14), h('b', null, DK.tr('natures', n))),
+        h('div', { class: 'qs-line', tip: `${t('common.passive')}: ${DK.tr('passives', ps, 'desc')}` }, DK.icon('sparkles', 14), h('b', null, DK.tr('passives', ps)))),
+      h('div', { class: 'qs-moves' }, (d.moves || []).map((id) => { const mv = D.moves[id]; return mv ? h('span', { class: 'qs-move', style: mv.house ? { '--mc': D.houseColor(mv.house) } : null, tip: mv.power ? `${mv.power} · ${mv.kind === 'fisico' ? t('move.free') : mv.mp + ' ' + t('common.mpShort')}` : null }, DK.icon(mv.kind === 'fisico' ? 'sword' : 'wand', 12), mv.name) : null; })),
+      notes.length ? h('div', { class: 'qs-notes' }, notes) : null,
+      h('div', { class: 'qs-foot' },
+        !lead && DK.party.isActive(d.uid) ? btn({ icon: 'crown', label: t('detail.makeLeader'), size: 'sm', variant: 'ghost', onClick: () => { DK.party.setLeader(d.uid); DK.audio.sfx('swap'); m.close(true); onChange(); } }) : null,
+        h('span', { class: 'grow' }),
+        btn({ icon: 'next', label: t('home.fullSheet'), size: 'sm', variant: 'tone', onClick: go }))) });
+    return m;
+  };
+
+  /** Punto verde de «recién conseguido» (v4.62) en las casillas de equipo y cajas; se va al abrir su ficha. */
+  V.newDot = (d) => (d && d.isNew ? h('span', { class: 'new-dot', tip: t('newMark.tip'), 'aria-label': t('newMark.label') }) : null);
+
+  /** Especie en pequeño junto al nombre propio (v4.54), si no coinciden. */
+  V.speciesSub = (d) => { const s = DK.daskai.speciesName(d); return DK.daskai.name(d) !== s ? h('span', { class: 'dk-species' }, s) : null; };
+
   V.daskaiRow = (d, { onClick, tags = [], selected = false, compact = false, draggable = false, actions } = {}) => {
     const sp = DK.daskai.species(d);
     const fainted = DK.daskai.isFainted(d);
@@ -65,7 +146,7 @@
       draggable ? h('span', { class: 'drag-handle', tip: t('team.dragTip') }, DK.icon('grip', 16)) : null,
       h('div', { class: 'dk-row-sprite', style: { '--c': D.houseColor(sp.house) } }, V.dSprite(d, { size: compact ? 44 : 56 }), V.formPips(d)),
       h('div', { class: 'dk-row-main' },
-        h('div', { class: 'dk-row-title' }, h('span', { class: 'dk-name' }, DK.daskai.name(d)), V.level(d.level)),
+        h('div', { class: 'dk-row-title' }, h('span', { class: 'dk-name' }, DK.daskai.name(d)), V.speciesSub(d), V.level(d.level)),
         h('div', { class: 'dk-row-tags' }, V.houseBadge(sp.house), V.roleBadge(d), V.shinyTag(d), V.tempTag(d), V.statusTag(d.status),
           fainted ? h('span', { class: 'badge bad' }, DK.icon('skull', 13), t('common.fainted')) : null,
           DK.daskai.canEvolve(d) ? h('span', { class: 'badge evo', tip: t('evo.readyTip') }, DK.icon('evolve', 13), t('evo.ready')) : null, ...V.extraTags(d), ...tags),
@@ -96,6 +177,8 @@
 
   /** Marcas extra de un daskai: entrenando y talento por elegir. */
   V.extraTags = (d) => [
+    d.isNew ? h('span', { class: 'badge new', tip: t('newMark.tip') }, t('newMark.label')) : null,
+    d.locked ? h('span', { class: 'badge lock', tip: t('lock.locked') }, DK.icon('lock', 12)) : null,
     DK.training && DK.training.isTraining(d.uid) ? h('span', { class: 'badge train', tip: t('train.inTraining') }, DK.icon('dumbbell', 12), t('train.short')) : null,
     DK.daskai.talentsPending(d).length ? h('span', { class: 'badge talent', tip: t('talent.pendingTip') }, DK.icon('star', 12)) : null,
   ].filter(Boolean);
@@ -114,7 +197,8 @@
       corner ? h('div', { class: 'dk-tile-corner' }, corner) : null,
       h('div', { class: 'dk-tile-art' }, V.dSprite(d, { size: big ? 76 : 58 }), V.formPips(d),
         h('span', { class: 'dk-tile-house', tip: DK.tr('houses', D.houses[sp.house]) }, DK.icon(D.houses[sp.house].icon, 12))),
-      h('div', { class: 'dk-tile-name' }, h('b', null, DK.daskai.name(d)), h('span', { class: 'muted small' }, `${t('common.lvl')} ${d.level}`)),
+      d.isNew ? h('span', { class: 'dk-new-dot', tip: t('newMark.tip'), 'aria-label': t('newMark.label') }, t('newMark.label')) : null,
+      h('div', { class: 'dk-tile-name' }, d.locked ? h('span', { class: 'dk-lock', tip: t('lock.locked') }, DK.icon('lock', 11)) : null, h('b', { tip: DK.daskai.speciesName(d) }, DK.daskai.name(d)), h('span', { class: 'muted small' }, `${t('common.lvl')} ${d.level}`)),
       h('div', { class: 'dk-tile-bars' },
         h('span', { class: 'mini-bar hp' + (hpPct < 25 ? ' low' : hpPct < 50 ? ' mid' : ''), tip: `${d.cur.hp}/${s.hp} ${t('common.hpShort')}` }, h('span', { style: { width: hpPct + '%' } })),
         h('span', { class: 'mini-bar mp', tip: `${d.cur.mp}/${s.mp} ${t('common.mpShort')}` }, h('span', { style: { width: Math.round((d.cur.mp / s.mp) * 100) + '%' } }))),
@@ -236,7 +320,9 @@
     const pos = SEGMENTS.map((sg) => ({ ...sg, n: Math.max(0, b[sg.key]) })).filter((sg) => sg.n > 0);
     const neg = SEGMENTS.reduce((sum, sg) => sum + Math.max(0, -b[sg.key]), 0);
     const posTotal = pos.reduce((sum, sg) => sum + sg.n, 0);
-    const scale = Math.max(ref, posTotal);
+    // v4.62: escala que se curva (nunca llena la barra): con ~ref ocupa ~60%; por mucho que suba no pasa del 94%
+    const fill = 94 * (1 - Math.exp(-posTotal / (ref * 1.1)));
+    const scale = posTotal > 0 ? posTotal / (fill / 100) : ref;
     const pct = (n) => (n / scale) * 100 + '%';
     const label = (key) => t('stats.legend.' + key);
     const negParts = SEGMENTS.filter((sg) => b[sg.key] < 0).map((sg) => `${label(sg.key)} ${b[sg.key]}`).join(' · ');
@@ -320,15 +406,41 @@
   };
 
   /** Decidir si aprender un ataque nuevo cuando ya tiene el máximo (config.maxMoves). Devuelve promesa (true si lo aprende). */
-  V.learnMovePrompt = (d, moveId) => modal({
-    title: t('learn.title', { name: DK.daskai.name(d), move: D.moves[moveId].name }), icon: 'sparkles', dismissable: false, size: 'wide',
-    content: (close) => h('div', null,
-      h('p', { class: 'muted' }, t('learn.text', { n: DK.config.maxMoves })),
-      V.moveCard(moveId, { d }),
-      h('h4', { class: 'mt' }, t('learn.replace')),
-      h('div', { class: 'move-grid' }, d.moves.map((mid, i) => V.moveCard(mid, { d, compact: true, onClick: () => { DK.daskai.setMove(d, moveId, i); DK.store.save(); close(true); } })))),
-    actions: [{ label: t('learn.skip'), icon: 'x', variant: 'ghost', value: false }],
-  }).promise;
+  /**
+   * Aprender un ataque (v4.59): a la izquierda el nuevo destacado; a la derecha los 4 que ya
+   * conoce en una cuadrícula de 2×2, cada uno con cuánto gana o pierde si lo cambias. Primero
+   * eliges cuál olvidar (queda marcado) y luego confirmas; o lo guardas en la reserva.
+   */
+  V.learnMovePrompt = (d, moveId) => {
+    const avg = (x) => (Array.isArray(x) ? (x[0] + x[1]) / 2 : x || 0);
+    const nm = D.moves[moveId], newDmg = avg(V.approxDamage(d, moveId));
+    let pick = -1;
+    const confirmBtn = btn({ icon: 'check', label: t('learn.pickFirst'), variant: 'primary', disabled: true, onClick: () => { if (pick < 0) return; DK.daskai.setMove(d, moveId, pick); DK.store.save(); m.close(true); } });
+    const cards = d.moves.map((mid, i) => {
+      const om = D.moves[mid], oldDmg = avg(V.approxDamage(d, mid));
+      const diff = nm.power && om.power ? Math.round(newDmg - oldDmg) : null;
+      const delta = diff == null ? (om.power ? h('span', { class: 'lm-delta warn', tip: t('learn.losesDamage') }, DK.icon('swords', 12), t('learn.attack')) : h('span', { class: 'lm-delta', tip: t('learn.support') }, DK.icon('sparkles', 12), t('learn.supportShort')))
+        : h('span', { class: 'lm-delta ' + (diff > 0 ? 'up' : diff < 0 ? 'down' : ''), tip: t('learn.deltaTip') }, diff > 0 ? '+' + diff : diff === 0 ? '=' : String(diff), ' ', t('learn.dmg'));
+      const card = h('button', { class: 'lm-old', type: 'button', 'aria-pressed': 'false', onClick: () => {
+        pick = i; DK.audio.sfx('select');
+        cards.forEach((c, j) => { c.classList.toggle('on', j === i); c.setAttribute('aria-pressed', String(j === i)); });
+        confirmBtn.disabled = false;
+        const lbl = confirmBtn.querySelector('.btn-label'); if (lbl) lbl.textContent = t('learn.confirm', { old: om.name });
+      } }, V.moveCard(mid, { d, compact: true }), h('span', { class: 'lm-foot' }, delta, h('span', { class: 'lm-forget' }, DK.icon('x', 12), t('learn.forget'))));
+      return card;
+    });
+    const m = modal({
+      title: t('learn.title', { name: DK.daskai.name(d), move: nm.name }), icon: 'sparkles', dismissable: false, size: 'wide', cls: 'learn-modal',
+      content: () => h('div', { class: 'lm' },
+        h('div', { class: 'lm-new' }, h('span', { class: 'lm-kicker' }, DK.icon('sparkles', 13), t('learn.newMove')), V.moveCard(moveId, { d }),
+          h('p', { class: 'muted small' }, t('learn.text', { n: DK.config.maxMoves }))),
+        h('div', { class: 'lm-olds' }, h('span', { class: 'lm-kicker' }, t('learn.replace')), h('div', { class: 'lm-grid' }, cards))),
+      actions: [{ label: t('learn.skip'), icon: 'pouch', variant: 'ghost', value: false }],
+    });
+    // el botón de confirmar va en el pie, junto a «Guardar en reserva»
+    const foot = m.el.querySelector('.modal-actions'); if (foot) foot.append(confirmBtn);
+    return m.promise;
+  };
 
   /** Comparador de dos daskai lado a lado. */
   V.compare = (a, b) => modal({
