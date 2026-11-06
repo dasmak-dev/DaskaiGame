@@ -120,7 +120,7 @@
           const hp = DK.util.percent(d.cur.hp, s.hp), mp = DK.util.percent(d.cur.mp, s.mp);
           inner = h('div', { class: 'party-mon' + (picked(d) ? ' selected' : '') + (DK.daskai.isFainted(d) ? ' fainted' : ''), role: 'button', tabindex: '0', 'data-drag': params.compare ? null : '1', dataset: { uid: d.uid }, style: { '--c': D.houseColor(sp.house) },
             tip: `${DK.daskai.name(d)} · ${sp.name}`, onClick: (e) => { if (!e.target.closest('.party-out')) select(d); }, onKeydown: (e) => { if (e.key === 'Enter') select(d); } },
-            h('span', { class: 'party-art' }, V.dSprite(d, { size: 64 }), i === 0 ? h('span', { class: 'party-crown', tip: t('team.leaderHint') }, DK.icon('crown', 14)) : null),
+            h('span', { class: 'party-art' }, V.dSprite(d, { size: 64 }), V.formPips(d), i === 0 ? h('span', { class: 'party-crown', tip: t('team.leaderHint') }, DK.icon('crown', 14)) : null),
             h('span', { class: 'party-info' },
               h('span', { class: 'party-name' }, h('b', null, DK.daskai.name(d)), h('span', { class: 'party-lv' }, `${t('common.lvl')} ${d.level}`)),
               h('span', { class: 'party-tags' }, V.houseBadge(sp.house), V.roleBadge(d), V.shinyTag(d), V.tempTag(d), V.statusTag(d.status), DK.daskai.canEvolve(d) ? h('span', { class: 'badge evo', tip: t('evo.readyTip') }, DK.icon('evolve', 12)) : null),
@@ -153,7 +153,7 @@
             role: 'button', tabindex: '0', 'data-drag': params.compare || training || !usable ? null : '1', dataset: { uid: d.uid }, style: { '--c': D.houseColor(sp.house) },
             tip: `${DK.daskai.name(d)} · ${sp.name} · ${t('common.lvl')} ${d.level}${training ? ' · ' + t('train.title') : ''}${!usable && !training ? ' · ' + t('box.atHome') : ''}`,
             onClick: () => select(d), onKeydown: (e) => { if (e.key === 'Enter') select(d); } },
-            V.dSprite(d, { size: 56 }),
+            V.dSprite(d, { size: 56 }), V.formPips(d),
             h('span', { class: 'pc-lv' }, d.level),
             h('span', { class: 'pc-house' }, DK.icon(D.houses[sp.house].icon, 11)),
             d.shiny ? h('span', { class: 'pc-flag shiny' }, DK.icon('sparkles', 11)) : training ? h('span', { class: 'pc-flag train' }, DK.icon('dumbbell', 11)) : DK.daskai.canEvolve(d) ? h('span', { class: 'pc-flag evo' }, DK.icon('evolve', 11)) : null);
@@ -250,7 +250,7 @@
           const sp = DK.daskai.species(d);
           const mon = h('div', { class: 'pc-mon' + (picked(d) ? ' selected' : ''), role: 'button', tabindex: '0', 'data-drag': params.compare ? null : '1', dataset: { uid: d.uid }, style: { '--c': D.houseColor(sp.house) },
             tip: `${DK.daskai.name(d)} · ${sp.name} · ${t('common.lvl')} ${d.level}`, onClick: () => select(d), onKeydown: (e) => { if (e.key === 'Enter') select(d); } },
-            V.dSprite(d, { size: 56 }), h('span', { class: 'pc-lv' }, d.level), h('span', { class: 'pc-house' }, DK.icon(D.houses[sp.house].icon, 11)),
+            V.dSprite(d, { size: 56 }), V.formPips(d), h('span', { class: 'pc-lv' }, d.level), h('span', { class: 'pc-house' }, DK.icon(D.houses[sp.house].icon, 11)),
             d.temp ? h('span', { class: 'pc-flag evo', tip: t('exp.tempRule') }, DK.icon('paw', 11)) : null);
           ctx(mon, d);
           return h('div', { class: 'pc-slot' }, mon);

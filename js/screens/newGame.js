@@ -109,7 +109,6 @@
 
     const info = h('div', { class: 'st-info' },
       h('div', { class: 'st-title' }, h('h2', null, sp.name), V.houseBadge(sp.house)),
-      h('p', { class: 'st-desc' }, sp.desc),
       h('div', { class: 'chips' },
         h('span', { class: 'chip pos' }, DK.icon('swords', 13), t('newGame.strong', { house: DK.tr('houses', D.houses[hs.strongVs]) })),
         h('span', { class: 'chip neg' }, DK.icon('shield', 13), t('newGame.weak', { house: DK.tr('houses', V.weakAgainst(sp.house)) })),

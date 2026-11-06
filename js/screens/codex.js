@@ -76,7 +76,8 @@
         h('div', { class: 'stack-s' }, h('h2', null, sp.name),
           h('div', { class: 'row gap-s wrap' }, V.houseBadge(sp.house, { known: fought }), h('span', { class: 'badge cx-st st-' + info.status }, t('codex.status.' + info.status))),
           DK.settings.get('showTraits') ? V.lookStrip(sid, look, { house: true }) : null,
-          h('p', { class: 'muted' }, sp.desc))),
+          // (v4.53: sin la descripción de la especie: describía un animal concreto y cada daskai es distinto)
+          null)),
       variants,
       h('div', { class: 'cx-stats' },
         [['eye', t('codex.seenL'), info.seen], ['swords', t('codex.foughtL'), info.fought], ['trophy', t('codex.defeatedL'), info.defeated], ['orb', t('codex.capturedL'), info.captured + (info.owned.length && !info.captured ? info.owned.length : 0)]]

@@ -156,7 +156,6 @@
     const head = h('div', { class: 'panel-head-card', style: { '--c': D.houseColor(sp.house) } },
       h('div', { class: 'detail-sprite' }, V.dSprite(d, { size: 130, cls: 'float' })),
       h('div', { class: 'detail-info' }, nameEl,
-        h('p', { class: 'muted small' }, sp.desc),
         V.vitals(d, { exp: true }),
         h('p', { class: 'small muted' }, d.level >= DK.config.maxLevel ? t('detail.maxLevel') : t('detail.toNext', { n: DK.daskai.expToNext(d) - d.exp, level: d.level + 1 }))));
 

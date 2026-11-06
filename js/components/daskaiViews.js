@@ -63,7 +63,7 @@
       role: onClick ? 'button' : null, tabindex: onClick ? '0' : null, draggable: draggable ? 'true' : null, dataset: { uid: d.uid },
     },
       draggable ? h('span', { class: 'drag-handle', tip: t('team.dragTip') }, DK.icon('grip', 16)) : null,
-      h('div', { class: 'dk-row-sprite', style: { '--c': D.houseColor(sp.house) } }, V.dSprite(d, { size: compact ? 44 : 56 })),
+      h('div', { class: 'dk-row-sprite', style: { '--c': D.houseColor(sp.house) } }, V.dSprite(d, { size: compact ? 44 : 56 }), V.formPips(d)),
       h('div', { class: 'dk-row-main' },
         h('div', { class: 'dk-row-title' }, h('span', { class: 'dk-name' }, DK.daskai.name(d)), V.level(d.level)),
         h('div', { class: 'dk-row-tags' }, V.houseBadge(sp.house), V.roleBadge(d), V.shinyTag(d), V.tempTag(d), V.statusTag(d.status),
@@ -84,6 +84,16 @@
    * @param {Object} d
    * @param {Object} [o] {onClick, selected, draggable, corner (nodo en la esquina), badges, big}
    */
+  /**
+   * Formas del daskai como puntitos discretos (v4.53): uno por forma, rellenos hasta la actual.
+   * Con 1 forma, un único rombo («No evoluciona»). El detalle sale al pasar el ratón.
+   */
+  V.formPips = (d) => {
+    const f = DK.daskai.formsOf(d);
+    const tip = f.total === 1 ? t('evo.single') : t('evo.formsTip', { n: f.now + 1, total: f.total });
+    return h('span', { class: 'fpips' + (f.total === 1 ? ' single' : ''), tip, 'aria-label': tip }, Array.from({ length: f.total }, (_, i) => h('i', { class: i <= f.now ? 'on' : '' })));
+  };
+
   /** Marcas extra de un daskai: entrenando y talento por elegir. */
   V.extraTags = (d) => [
     DK.training && DK.training.isTraining(d.uid) ? h('span', { class: 'badge train', tip: t('train.inTraining') }, DK.icon('dumbbell', 12), t('train.short')) : null,
@@ -102,7 +112,7 @@
       dataset: { uid: d.uid }, style: { '--c': D.houseColor(sp.house) }, tip: `${DK.daskai.name(d)} · ${sp.name}`,
     },
       corner ? h('div', { class: 'dk-tile-corner' }, corner) : null,
-      h('div', { class: 'dk-tile-art' }, V.dSprite(d, { size: big ? 76 : 58 }),
+      h('div', { class: 'dk-tile-art' }, V.dSprite(d, { size: big ? 76 : 58 }), V.formPips(d),
         h('span', { class: 'dk-tile-house', tip: DK.tr('houses', D.houses[sp.house]) }, DK.icon(D.houses[sp.house].icon, 12))),
       h('div', { class: 'dk-tile-name' }, h('b', null, DK.daskai.name(d)), h('span', { class: 'muted small' }, `${t('common.lvl')} ${d.level}`)),
       h('div', { class: 'dk-tile-bars' },

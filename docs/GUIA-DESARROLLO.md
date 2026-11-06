@@ -357,6 +357,11 @@ Se carga la última y sólo sobrescribe: paleta (piedra oscura, bronce, oro `--g
 - **Expedición:** al entrar en el mapa, el equipo, la mochila o un combate durante una expedición, `#zone-backdrop` (creado en `screens/expedition.js` con `screen:enter`) pinta detrás de todo la escena de la zona actual, oscurecida; `body.in-exp`.
 - **Combate:** la arena usa la escena de la zona (`components/scenes.js`, ahora con árboles muertos, ruinas, tumbas, cristales o tentáculos según la zona) y los **jefes tienen su propio fondo**: `DK.scenes.bossScene(zona, secreto)` → `boss_<escena>` (menhires bajo luna roja, bosque muerto, naufragio con tormenta, bosque de cristales, forja de lava, santuario con estatua, fauces del abismo, ruinas entre rayos) y `boss_secret` (cripta) para los jefes ocultos.
 
+### Cambios de la v4.53 — Sin descripciones de especie e indicador de formas
+
+- **Descripciones fuera**: el texto de cada especie describía un animal concreto («un zorrito…», «salamandra…») y ya no casa con el aspecto al azar. Se quita de «Elige tu daskai» (`.st-desc`), de la ficha del daskai y de la ficha del Códice. (El texto sigue en `data/species.json` por si se reutiliza.)
+- **Indicador de formas** (`V.formPips(d)` en `components/daskaiViews.js`, CSS `.fpips` en `css/grim.css`): puntitos diminutos (uno por forma, rellenos hasta la actual) sobre el dibujo, medio transparentes; con 1 forma, un único rombo lila. Al pasar el ratón: «Forma 2 de 3» o «No evoluciona». Sale en las cajas (arriba a la izquierda de cada casilla), en «Tu equipo», en las tarjetas (`V.daskaiTile`) y en las filas de listas (`V.daskaiRow`). Usa `DK.daskai.formsOf(d)`, así que los daskai antiguos muestran las formas de su línea.
+
 ### Cambios de la v4.52 — Comparador de talentos y mucha más variedad de aspectos
 
 - **Elegir talento** (`components/talentViews.js`, `V.talentCompare`): la ventana muestra al daskai (dibujo, nivel, naturaleza) y una tabla con sus atributos **ahora**, **con el talento A** y **con el talento B** (lo que sube en verde, lo que baja en rojo y la mejor opción de cada atributo resaltada). Se calcula con una copia del daskai con el talento puesto. CSS `.tc-*`. Texto `talent.now`.
