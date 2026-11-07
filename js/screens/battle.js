@@ -103,7 +103,7 @@
       // Marcas de las fases del jefe sobre su barra de vida
       (st.phases || []).forEach((p) => ui.eHp.querySelector('.bar-track').append(h('i', { class: 'phase-mark', style: { left: p.at * 100 + '%' }, tip: t('phase.name.' + p.type) })));
       enemyHud.replaceChildren(
-        h('div', { class: 'hud-title' }, h('b', null, st.boss ? (st.bossInfo || zone.boss).title : sp.name), V.level(e.level)),
+        h('div', { class: 'hud-title' }, h('b', null, st.boss ? (st.bossInfo || zone.boss).title : DK.daskai.name(e)), V.level(e.level)),
         h('div', { class: 'hud-tags' }, st.boss ? h('span', { class: 'badge leader' }, DK.icon('crown', 13), t('battle.boss')) : null, V.houseBadge(sp.house, { known: st.known }), V.roleBadge(e), V.shinyTag(e), ui.eStatus, ui.ePhase),
         ui.eHp, ui.eMp, ui.eBreak, ui.intent);
       updateBreak();
@@ -134,7 +134,7 @@
       const a = B().ally(st), o = B().turnOrder(st);
       const order = moveId ? B().orderFor(st, moveId) : B().orderFor(st, 'placaje');
       const you = h('span', { class: 'tl-step ally' }, DK.icon('user', 12), DK.daskai.name(a));
-      const rival = (x2) => h('span', { class: 'tl-step enemy' }, DK.icon('skull', 12), D.species[st.enemy.species].name, x2 ? h('em', null, ' ×2') : null);
+      const rival = (x2) => h('span', { class: 'tl-step enemy' }, DK.icon('skull', 12), DK.daskai.name(st.enemy), x2 ? h('em', null, ' ×2') : null);
       const twice = st.frenzy && (st.turn + 1) % 2 === 0;
       const steps = order.first === 'enemy' ? [rival(false), you] : [you, rival(false)];
       if (twice) steps.push(rival(true));
@@ -593,7 +593,7 @@
         return h('div', { class: 'bs-fighter ' + side },
           h('div', { class: 'bs-portrait' }, V.sprite(d.species, { look: DK.looks.of(d), size: 52, flip: side === 'ally', shiny: d.shiny })),
           h('div', { class: 'bs-who' },
-            h('b', { class: 'bs-name' }, side === 'ally' ? DK.daskai.name(d) : st.boss ? (st.bossInfo || zone.boss).title : sp.name),
+            h('b', { class: 'bs-name' }, side === 'ally' || !st.boss ? DK.daskai.name(d) : (st.bossInfo || zone.boss).title),
             h('div', { class: 'bs-tags' }, V.level(d.level), V.houseBadge(sp.house, { known: side === 'ally' || st.known }), V.statusTag(d.status)),
             bar({ value: d.cur.hp, max: s.hp, kind: 'hp', icon: 'heart' }),
             bar({ value: d.cur.mp, max: s.mp, kind: 'mp', icon: 'sparkle' })));
@@ -828,9 +828,18 @@
         // En una expedición se vuelve al mapa para elegir el siguiente paso
         const toMap = () => { if (params._nextUid) expNow.leader = params._nextUid; DK.store.save(); DK.router.reset('expedition'); };
         keys[1] = toMap; keys.Enter = toMap;
-        cont = btn({ icon: 'map', label: t('exp.backToMap'), size: 'lg', variant: 'primary', hotkey: '1', disabled: !alive.length, desc: t('exp.lootNow', { items: DK.expedition.lootCount(), coins: expNow.loot.coins }), onClick: toMap });
-        // (Ya no se puede abandonar en cualquier momento: sólo en las hogueras del mapa)
-        third = null;
+        // v4.63: barra propia y compacta. Sin el desplegable «Luchará» (en el mapa se elige el siguiente paso):
+        // a la izquierda el botín que llevas, a la derecha curar y volver al mapa.
+        const hurt = DK.party.active().filter((d) => !DK.daskai.isFainted(d) && DK.daskai.hpPct(d) < 1).length;
+        const back = btn({ icon: 'map', label: t('exp.backToMap'), variant: 'primary', hotkey: '1', disabled: !alive.length, onClick: toMap });
+        const healBtn = btn({ icon: 'flask', label: t('heal.short'), variant: 'tone', hotkey: '2', tip: t('battle.healDesc'), onClick: () => heal.click() });
+        if (hurt) healBtn.append(h('span', { class: 'ee-hurt', tip: t('battle.hurtTip', { n: hurt }) }, DK.icon('heart', 11), hurt));
+        actionsEl.replaceChildren(h('div', { class: 'end-exp' },
+          h('div', { class: 'ee-loot' }, h('span', { class: 'ee-lbl' }, t('exp.lootLabel')),
+            h('span', { class: 'ee-chip' }, DK.icon('gift', 14), h('b', null, DK.expedition.lootCount())),
+            h('span', { class: 'ee-chip gold' }, DK.icon('coin', 14), h('b', null, expNow.loot.coins))),
+          h('div', { class: 'ee-btns' }, healBtn, back)));
+        drawToolbar(); bindKeys(keys); return;
       } else {
         cont = btn({ icon: 'swords', label: t('battle.nextFight'), size: 'lg', variant: 'primary', hotkey: '1', disabled: !alive.length, desc: alive.length ? t('battle.continueDesc') : t('battle.noneStanding'), onClick: next });
         third = exit;
@@ -856,8 +865,8 @@
         anim(ui.eSprite, 'enter-enemy', 700); anim(ui.aSprite, 'enter', 700);
         const sp = D.species[st.enemy.species];
         if (st.boss) { log(t('battle.bossAppears', { title: (st.bossInfo || zone.boss).title, name: sp.name, n: st.enemy.level }), 'warn'); DK.vibrate([80, 40, 80]); }
-        else if (st.elite) { log(t('battle.eliteAppears', { name: sp.name, n: st.enemy.level }), 'warn'); DK.vibrate([60, 30, 60]); }
-        else log(t('battle.appears', { name: sp.name, n: st.enemy.level, zone: zone.name }));
+        else if (st.elite) { log(t('battle.eliteAppears', { name: DK.daskai.name(st.enemy), n: st.enemy.level }), 'warn'); DK.vibrate([60, 30, 60]); }
+        else log(t('battle.appears', { name: DK.daskai.name(st.enemy), n: st.enemy.level, zone: zone.name }));
         if (st.enemy.shiny) { log(t('battle.shinyAppears'), 'level'); DK.audio.sfx('shiny'); }
         const exp = DK.expedition.active();
         if (exp) log(t('exp.fightN', { step: Math.min(exp.step, exp.total), total: exp.total }), 'muted');

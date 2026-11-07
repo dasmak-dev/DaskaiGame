@@ -357,6 +357,23 @@ Se carga la última y sólo sobrescribe: paleta (piedra oscura, bronce, oro `--g
 - **Expedición:** al entrar en el mapa, el equipo, la mochila o un combate durante una expedición, `#zone-backdrop` (creado en `screens/expedition.js` con `screen:enter`) pinta detrás de todo la escena de la zona actual, oscurecida; `body.in-exp`.
 - **Combate:** la arena usa la escena de la zona (`components/scenes.js`, ahora con árboles muertos, ruinas, tumbas, cristales o tentáculos según la zona) y los **jefes tienen su propio fondo**: `DK.scenes.bossScene(zona, secreto)` → `boss_<escena>` (menhires bajo luna roja, bosque muerto, naufragio con tormenta, bosque de cristales, forja de lava, santuario con estatua, fauces del abismo, ruinas entre rayos) y `boss_secret` (cripta) para los jefes ocultos.
 
+### Cambios de la v4.64 — Botón de expedición más discreto, reclutas con la vida llena y candidatos en filas equilibradas
+
+- **Botón «Empezar expedición» del Inicio** (`css/grim.css`, `.hub-exp .play-btn`): fuera el resplandor que latía (`playGlow`). Se mantiene el brillo que cruza el botón y el icono da un pequeño empujón cada ~5 s (`playNudge`). Con movimiento reducido no se anima.
+- **Quien se une llega curado** (`DK.party.add`): al vincular, reclutar o adoptar en un suceso, el daskai entra con el 100 % de vida y maná y sin estados (`fullHeal` tras quitar `wild`).
+  - Corregido de paso: la caché de atributos (`statKey`) no tenía en cuenta `wild`, `boss` ni `elite`, así que un daskai recién vinculado seguía con los atributos de salvaje en caché (y la vida «llena» se quedaba por debajo del máximo real).
+- **Candidatos a reclutar** (`.recruit-grid`, `--n` = número de candidatos): flex centrado con columnas según el ancho (5 en PC; 4, 3 o 2 según se estrecha). Con 5 en PC salen todos en una fila; si no caben, la última fila queda centrada (3+2, 2+2+1) en vez de quedarse uno suelto a la izquierda.
+
+### Cambios de la v4.63 — Marca del variocolor, «Nuevo» que caduca, fin de combate, personajes, vista al reclutar y nombres de todos
+
+- **Marca del variocolor** (`systems/looks.js`, `shinyMarkSvg`): cada variocolor lleva una marca propia pegada al cuerpo (encima del brazo cercano). Forma (destello, estrella, rombo, luna, corazón, rayo, anillo, constelación, flor, cometa), color, sitio, tamaño y giro salen de su semilla (`seed ^ 0x5b1e7`), así que no hay dos iguales. Lleva un halo suave y un brillo que va y viene (`<animate>`). No sale en los iconos de rasgos (`o.focus`) ni en las siluetas de personaje.
+- **«Nuevo» caduca a los 5 minutos** (`DK.daskai.isNew(d)`): `d.isNew` guarda ahora la hora (`Date.now()`); las marcas antiguas (`true`) empiezan a contar al verlas. Todas las vistas (`V.newDot`, `V.extraTags`, ficha, Inicio) usan `isNew`. Abrir la ficha la quita como antes (`seen`).
+- **Fin de combate en expedición** (`screens/battle.js`, `.end-exp`): sin el desplegable «Luchará» (se elige en el mapa); una barra compacta con el botín (objetos y monedas) a la izquierda y «Curar» (con cuántos heridos hay) + «Volver al mapa» a la derecha. En móvil, botín arriba y los dos botones en fila. Fuera de expedición sigue igual.
+- **Personajes de los sucesos** (`V.npc(key, {color, icon})`, `screens/expedition.js` `head(..., npc)`): viajera, ermitaño, herrera, cartógrafo, bandidos, tramposo, entrenador, coleccionista y el mercader muestran un medallón pequeño con la silueta de un daskai (sombra con contorno de color, respira, rayos que giran y un bocadillo con el icono). La figura sale de `suceso|semilla|nodo`: cada encuentro tiene la suya. Colores en `NPC_COLOR`.
+- **Vista en grande al reclutar**: pulsar el dibujo de un candidato abre `V.showcase(c, { bare: true })` (sólo el dibujo y su nombre, sin datos). La vista ganó 6 animaciones (`wiggle`, `bounce3`, `twirl`, `peek`, `stretch`, `nod`) con partículas dibujadas (`showFx`: confeti, burbujas, onda, motas, estrellas fugaces, notas) y un fondo con motas que suben (`.sc-amb`).
+- **Nombres para todos**: los rivales (cabecera, ficha de combate, línea de turnos y registro) y los candidatos a reclutar usan `DK.daskai.name` (nombre propio aleatorio); en la tarjeta de recluta sale la especie debajo, en pequeño. Los jefes siguen con su título (`names.of` devuelve null con `d.boss`).
+- Textos nuevos: `heal.short`, `battle.hurtTip`, `exp.lootLabel`.
+
 ### Cambios de la v4.62 — Más rasgos, brazos, nombres; reglas discretas; punto de «nuevo»; barras que no se llenan
 
 - **Sin las 3 estrellitas del variocolor** (`looks.js`, `draw`): en pixel art parecían puntos flotando. El variocolor se distingue por su color y su etiqueta.

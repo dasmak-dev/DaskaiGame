@@ -35,6 +35,20 @@
     }
     return el;
   };
+  /**
+   * v4.63: silueta grande de un daskai que hace de personaje (viajera, ermitaño, mercader...).
+   * Sale de una clave (suceso + semilla): cada encuentro tiene su propia figura, siempre la misma
+   * para ese encuentro. Silueta oscura con contorno de color, ojos que brillan y un bocadillo.
+   */
+  V.npc = (key, { color = '#f59e0b', icon = 'user', size = 100 } = {}) => {
+    let x = 2166136261; for (const c of String(key)) { x ^= c.charCodeAt(0); x = Math.imul(x, 16777619) >>> 0; }
+    const pool = Object.keys(D.species).filter((id) => !D.species[id].from && !(D.species[id].sprite && D.species[id].sprite.img));
+    const sid = pool[x % pool.length];
+    const look = { s: ((((x >>> 3) & 0xffffff) << 8) | 0xa6) >>> 0 };
+    return h('div', { class: 'npc', style: { '--npc': color }, 'aria-hidden': 'true' },
+      h('span', { class: 'npc-frame' }, h('span', { class: 'npc-glow' }), h('span', { class: 'npc-rays' }), V.sprite(sid, { look, size, cls: 'npc-sil' })),
+      h('span', { class: 'npc-bubble' }, DK.icon(icon, 12)));
+  };
   /** Sprite de un daskai concreto (su aspecto, variocolor y forma alternativa). */
   V.dSprite = (d, o = {}) => V.sprite(d.species, Object.assign({ shiny: !!d.shiny, look: DK.looks.of(d) }, o, d.variant ? { cls: ((o.cls || '') + ' variant-' + d.variant).trim() } : null));
 
@@ -65,19 +79,42 @@
   const SHOW_ANIMS = [
     { id: 'hop', fx: 'sparkles' }, { id: 'spin', fx: 'star' }, { id: 'squash', fx: 'heart' }, { id: 'sway', fx: 'music' },
     { id: 'flip', fx: 'sparkles' }, { id: 'shake', fx: 'bolt' }, { id: 'dance', fx: 'music' }, { id: 'float', fx: 'heart' }, { id: 'roar', fx: 'bolt' },
+    // v4.63: más animaciones, con partículas propias (confeti, burbujas, onda, motas de su casa, estrellas fugaces)
+    { id: 'wiggle', fx: 'confetti' }, { id: 'bounce3', fx: 'bubbles' }, { id: 'twirl', fx: 'ring' }, { id: 'peek', fx: 'motes' },
+    { id: 'stretch', fx: 'comets' }, { id: 'nod', fx: 'notes' },
   ];
+  const CONFETTI = ['#f87171', '#fbbf24', '#34d399', '#60a5fa', '#c084fc', '#f472b6'];
+  /** Partículas de una animación: iconos (las de siempre) o formas dibujadas (v4.63). */
+  function showFx(kind) {
+    const R = (a, b) => a + Math.random() * (b - a), pc = (n) => n.toFixed(0) + '%';
+    switch (kind) {
+      case 'confetti': return Array.from({ length: 22 }, (_, i) => h('b', { class: 'p-confetti', style: { '--x': pc(R(-46, 46)), '--y': pc(R(-10, 30)), '--d': (i * 0.03).toFixed(2) + 's', '--r': R(-540, 540).toFixed(0) + 'deg', background: CONFETTI[i % CONFETTI.length] } }));
+      case 'bubbles': return Array.from({ length: 12 }, (_, i) => h('b', { class: 'p-bubble', style: { '--x': pc(R(-34, 34)), '--d': (i * 0.12).toFixed(2) + 's', '--s': R(8, 22).toFixed(0) + 'px' } }));
+      case 'ring': return [0, 0.18, 0.36].map((d) => h('b', { class: 'p-ring', style: { '--d': d + 's' } }));
+      case 'motes': return Array.from({ length: 18 }, (_, i) => { const a = (i / 18) * Math.PI * 2; return h('b', { class: 'p-mote', style: { '--tx': (Math.cos(a) * R(80, 140)).toFixed(0) + 'px', '--ty': (Math.sin(a) * R(60, 110)).toFixed(0) + 'px', '--d': (R(0, 0.25)).toFixed(2) + 's' } }); });
+      case 'comets': return Array.from({ length: 5 }, (_, i) => h('b', { class: 'p-comet', style: { '--y': pc(R(8, 50)), '--d': (i * 0.16).toFixed(2) + 's' } }));
+      case 'notes': return Array.from({ length: 7 }, (_, i) => h('i', { class: 'p-note', style: { '--x': pc(R(-40, 40)), '--d': (i * 0.14).toFixed(2) + 's', '--r': R(-30, 30).toFixed(0) + 'deg' } }, DK.icon('music', 14 + Math.round(R(0, 10)))));
+      default: return Array.from({ length: 9 }, (_, i) => h('i', { style: { '--x': (Math.random() * 80 - 40).toFixed(0) + '%', '--d': (i * 0.09).toFixed(2) + 's', '--r': (Math.random() * 60 - 30).toFixed(0) + 'deg' } }, DK.icon(kind, 14 + Math.round(Math.random() * 10))));
+    }
+  }
   let lastShow = '';
-  V.showcase = (d) => {
+  /**
+   * @param {Object} d daskai
+   * @param {Object} [o] { bare: sólo el dibujo y su nombre, sin datos (v4.63: al reclutar) }
+   */
+  V.showcase = (d, { bare = false } = {}) => {
     const sp = DK.daskai.species(d);
-    const stage = h('div', { class: 'sc-stage', style: { '--c': D.houseColor(sp.house) } });
+    const stage = h('div', { class: 'sc-stage' + (bare ? ' bare' : ''), style: { '--c': D.houseColor(sp.house) } });
     const mon = h('button', { class: 'sc-mon', type: 'button', tip: t('detail.showAgain'), 'aria-label': t('detail.showAgain') }, V.dSprite(d, { size: 260 }));
     const fx = h('div', { class: 'sc-fx', 'aria-hidden': 'true' });
-    stage.append(h('span', { class: 'sc-glow' }), h('span', { class: 'sc-floor' }), mon, fx);
+    // Fondo vivo: motas que suben despacio todo el rato
+    const amb = h('div', { class: 'sc-amb', 'aria-hidden': 'true' }, Array.from({ length: 14 }, (_, i) => h('b', { style: { left: (4 + Math.random() * 92).toFixed(0) + '%', '--d': (-Math.random() * 8).toFixed(1) + 's', '--t': (6 + Math.random() * 5).toFixed(1) + 's', '--s': (3 + Math.random() * 4).toFixed(0) + 'px' } })));
+    stage.append(amb, h('span', { class: 'sc-glow' }), h('span', { class: 'sc-floor' }), mon, fx);
     const play = () => {
       const pool = SHOW_ANIMS.filter((a) => a.id !== lastShow), a = pool[Math.floor(Math.random() * pool.length)];
       lastShow = a.id;
       mon.className = 'sc-mon'; void mon.offsetWidth; mon.classList.add('a-' + a.id);
-      fx.replaceChildren(...Array.from({ length: 9 }, (_, i) => h('i', { style: { '--x': (Math.random() * 80 - 40).toFixed(0) + '%', '--d': (i * 0.09).toFixed(2) + 's', '--r': (Math.random() * 60 - 30).toFixed(0) + 'deg' } }, DK.icon(a.fx, 14 + Math.round(Math.random() * 10)))));
+      fx.replaceChildren(...showFx(a.fx));
       DK.audio.sfx(a.id === 'roar' ? 'hit' : 'select');
     };
     mon.addEventListener('click', () => { play(); loop(); });
@@ -85,8 +122,8 @@
     let timer = 0;
     const loop = () => { clearTimeout(timer); timer = setTimeout(() => { if (!stage.isConnected) return; play(); loop(); }, 2600 + Math.random() * 1600); };
     const f = DK.daskai.formsOf(d);
-    const m = DK.ui.modal({ title: DK.daskai.name(d), icon: 'maximize', cls: 'showcase-modal', closeX: true, content: () => h('div', { class: 'showcase' }, stage,
-      h('div', { class: 'sc-meta' }, h('span', { class: 'dk-species' }, DK.daskai.speciesName(d)), V.level(d.level), V.houseBadge(sp.house), V.formPips(d), V.shinyTag(d),
+    const m = DK.ui.modal({ title: DK.daskai.name(d), icon: 'maximize', cls: 'showcase-modal' + (bare ? ' bare' : ''), closeX: true, content: () => h('div', { class: 'showcase' }, stage,
+      bare ? null : h('div', { class: 'sc-meta' }, h('span', { class: 'dk-species' }, DK.daskai.speciesName(d)), V.level(d.level), V.houseBadge(sp.house), V.formPips(d), V.shinyTag(d),
         h('span', { class: 'muted small' }, f.total === 1 ? t('evo.single') : t('evo.formsTip', { n: f.now + 1, total: f.total })))) });
     m.promise.then(() => clearTimeout(timer));
     setTimeout(() => { play(); loop(); }, 180);
@@ -130,7 +167,7 @@
   };
 
   /** Punto verde de «recién conseguido» (v4.62) en las casillas de equipo y cajas; se va al abrir su ficha. */
-  V.newDot = (d) => (d && d.isNew ? h('span', { class: 'new-dot', tip: t('newMark.tip'), 'aria-label': t('newMark.label') }) : null);
+  V.newDot = (d) => (DK.daskai.isNew(d) ? h('span', { class: 'new-dot', tip: t('newMark.tip'), 'aria-label': t('newMark.label') }) : null);
 
   /** Especie en pequeño junto al nombre propio (v4.54), si no coinciden. */
   V.speciesSub = (d) => { const s = DK.daskai.speciesName(d); return DK.daskai.name(d) !== s ? h('span', { class: 'dk-species' }, s) : null; };
@@ -177,7 +214,7 @@
 
   /** Marcas extra de un daskai: entrenando y talento por elegir. */
   V.extraTags = (d) => [
-    d.isNew ? h('span', { class: 'badge new', tip: t('newMark.tip') }, t('newMark.label')) : null,
+    DK.daskai.isNew(d) ? h('span', { class: 'badge new', tip: t('newMark.tip') }, t('newMark.label')) : null,
     d.locked ? h('span', { class: 'badge lock', tip: t('lock.locked') }, DK.icon('lock', 12)) : null,
     DK.training && DK.training.isTraining(d.uid) ? h('span', { class: 'badge train', tip: t('train.inTraining') }, DK.icon('dumbbell', 12), t('train.short')) : null,
     DK.daskai.talentsPending(d).length ? h('span', { class: 'badge talent', tip: t('talent.pendingTip') }, DK.icon('star', 12)) : null,
@@ -197,7 +234,7 @@
       corner ? h('div', { class: 'dk-tile-corner' }, corner) : null,
       h('div', { class: 'dk-tile-art' }, V.dSprite(d, { size: big ? 76 : 58 }), V.formPips(d),
         h('span', { class: 'dk-tile-house', tip: DK.tr('houses', D.houses[sp.house]) }, DK.icon(D.houses[sp.house].icon, 12))),
-      d.isNew ? h('span', { class: 'dk-new-dot', tip: t('newMark.tip'), 'aria-label': t('newMark.label') }, t('newMark.label')) : null,
+      DK.daskai.isNew(d) ? h('span', { class: 'dk-new-dot', tip: t('newMark.tip'), 'aria-label': t('newMark.label') }, t('newMark.label')) : null,
       h('div', { class: 'dk-tile-name' }, d.locked ? h('span', { class: 'dk-lock', tip: t('lock.locked') }, DK.icon('lock', 11)) : null, h('b', { tip: DK.daskai.speciesName(d) }, DK.daskai.name(d)), h('span', { class: 'muted small' }, `${t('common.lvl')} ${d.level}`)),
       h('div', { class: 'dk-tile-bars' },
         h('span', { class: 'mini-bar hp' + (hpPct < 25 ? ' low' : hpPct < 50 ? ' mid' : ''), tip: `${d.cur.hp}/${s.hp} ${t('common.hpShort')}` }, h('span', { style: { width: hpPct + '%' } })),

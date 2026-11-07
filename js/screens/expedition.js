@@ -418,8 +418,12 @@
   const cont = (refresh) => btn({ icon: 'next', label: t('exp.continuePath'), variant: 'primary', hotkey: '↵', cls: 'exp-cont', onClick: () => { E().completeNode(); refresh(); } });
   // v4.60: opciones del suceso en una fila compacta (antes, botones grandes uno debajo de otro)
   const opts = (...b) => h('div', { class: 'exp-opts' }, b.flat().filter(Boolean));
-  const head = (type, title, text) => h('div', { class: 'exp-node-head t-' + type },
-    h('span', { class: 'exp-node-big t-' + type }, DK.icon(E().TYPES[type].icon, 28)), h('div', null, h('h3', null, title), text ? h('p', { class: 'muted small' }, text) : null));
+  // v4.63: los sucesos con personaje llevan su silueta (npc = { key, color, icon })
+  const head = (type, title, text, npc) => h('div', { class: 'exp-node-head t-' + type + (npc ? ' has-npc' : '') },
+    npc ? null : h('span', { class: 'exp-node-big t-' + type }, DK.icon(E().TYPES[type].icon, 28)), h('div', { class: 'enh-txt' }, h('h3', null, title), text ? h('p', { class: 'muted small' }, text) : null),
+    npc ? V.npc(npc.key, npc) : null);
+  const NPC_COLOR = { traveler: '#f59e0b', hermit: '#a78bfa', smith: '#fb923c', cartographer: '#38bdf8', bandits: '#ef4444', gamble: '#4ade80', trainer: '#f472b6', collector: '#facc15' };
+  const npcOf = (e, id, icon) => (NPC_COLOR[id] ? { key: id + '|' + e.seed + '|' + e.pending, color: NPC_COLOR[id], icon } : null);
 
   function nodePanel(n, refresh) {
     const e = E().active();
@@ -552,12 +556,12 @@
       if (e.result) {
         const r = e.result;
         if (r.fight) DK.keys.on('Enter', () => fight(r.fight)); else enterCont();
-        return h('div', { class: 'card stack-s' }, head('event', T('title')),
+        return h('div', { class: 'card stack-s' }, head('event', T('title'), null, npcOf(e, ev.id, ev.icon)),
           h('div', { class: 'warning ' + (r.fight ? 'warn' : 'good') }, DK.icon(r.fight ? 'skull' : ev.icon, 18), h('span', null, T('results.' + r.key, r.vars))),
           r.fight ? btn({ icon: 'swords', label: t('exp.fightNow'), variant: 'primary', hotkey: '↵', cls: 'exp-cont', onClick: () => fight(r.fight) }) : cont(refresh));
       }
       const ctx = E().ctx();
-      return h('div', { class: 'card stack-s' }, head('event', T('title'), T('text')),
+      return h('div', { class: 'card stack-s' }, head('event', T('title'), T('text'), npcOf(e, ev.id, ev.icon)),
         h('div', { class: 'exp-opts' }, ev.choices.map((c, i) => {
           const ok = !c.req || c.req(ctx);
           const pick = () => { if (E().resolveEvent(c.id)) { DK.audio.sfx('select'); DK.app.renderNav(); refresh(); } };
@@ -626,7 +630,7 @@
         h('button', { class: 'mr-tab' + (shopUi.mode === id ? ' on' : ''), type: 'button', role: 'tab', 'aria-selected': String(shopUi.mode === id), onClick: () => { shopUi.mode = id; DK.audio.sfx('select'); draw(); } }, DK.icon(ic, 15), label)));
       card.replaceChildren(
         // «Seguir el camino» también arriba: no hace falta bajar si no quieres comprar
-        h('div', { class: 'mr-top' }, head('shop', t('exp.node.shop'), t('exp.shopText2')),
+        h('div', { class: 'mr-top' }, head('shop', t('exp.node.shop'), t('exp.shopText2'), { key: 'shop|' + e.seed + '|' + e.pending, color: '#fbbf24', icon: 'coin' }),
           btn({ icon: 'next', label: t('exp.continuePath'), variant: 'tone', size: 'sm', cls: 'mr-skip', onClick: () => { E().completeNode(); refresh(); } })),
         h('div', { class: 'mr-bar' }, tabs,
           shopUi.flash ? h('span', { class: 'mr-flash', role: 'status' }, DK.icon('check', 13), DK.icon(shopUi.flash.icon, 13), h('span', null, shopUi.flash.text)) : null,
@@ -784,14 +788,15 @@
     }
     const cands = e.candidates || [];
     return h('div', { class: 'card stack-s' }, headEl,
-      h('div', { class: 'recruit-grid' }, cands.map((c, i) => {
+      h('div', { class: 'recruit-grid', style: { '--n': Math.max(1, cands.length) } }, cands.map((c, i) => {
         const sp = D.species[c.species];
         const pick = () => { if (E().recruit(i)) { DK.audio.sfx('levelup'); DK.app.renderNav(); refresh(); } };
         DK.keys.on(String(i + 1), pick);
         const s = DK.daskai.stats(Object.assign({}, c, { wild: false }));
         return h('div', { class: 'recruit-card', style: { '--c': D.houseColor(sp.house) } },
-          h('div', { class: 'recruit-art' }, V.dSprite(c, { size: 64, cls: 'float' })),
-          h('div', { class: 'row gap-s wrap' }, h('b', null, sp.name), V.level(c.level), V.shinyTag(c)),
+          h('button', { type: 'button', class: 'recruit-art sc-open', tip: t('detail.viewBig'), 'aria-label': t('detail.viewBig'), onClick: (ev) => { ev.stopPropagation(); V.showcase(c, { bare: true }); } }, V.dSprite(c, { size: 64, cls: 'float' }), h('span', { class: 'sc-open-hint' }, DK.icon('maximize', 12))),
+          h('div', { class: 'row gap-s wrap' }, h('b', null, DK.daskai.name(c)), V.level(c.level), V.shinyTag(c)),
+          h('span', { class: 'muted small rc-sp' }, sp.name),
           h('div', { class: 'row gap-s wrap' }, V.houseBadge(sp.house), V.roleBadge(c)),
           h('div', { class: 'chips' },
             h('span', { class: 'chip', tip: DK.tr('natures', D.natures[c.nature], 'desc') }, DK.icon('leaf', 13), DK.tr('natures', D.natures[c.nature])),

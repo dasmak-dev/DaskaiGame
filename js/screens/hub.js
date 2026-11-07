@@ -29,7 +29,7 @@
     const hp = DK.util.percent(d.cur.hp, s.hp), mp = DK.util.percent(d.cur.mp, s.mp), fainted = DK.daskai.isFainted(d);
     const st = d.status && D.statuses[d.status];
     const flags = [
-      d.isNew ? h('span', { class: 'hs-flag new', tip: t('newMark.tip') }, t('newMark.label')) : null,
+      DK.daskai.isNew(d) ? h('span', { class: 'hs-flag new', tip: t('newMark.tip') }, t('newMark.label')) : null,
       DK.daskai.canEvolve(d) ? h('span', { class: 'hs-flag evo', tip: t('evo.readyTip') }, DK.icon('evolve', 12)) : null,
       DK.daskai.talentsPending(d).length ? h('span', { class: 'hs-flag talent', tip: t('talent.pendingTip') }, DK.icon('star', 12)) : null,
       DK.training && DK.training.isTraining(d.uid) ? h('span', { class: 'hs-flag train', tip: t('train.inTraining') }, DK.icon('dumbbell', 12)) : null,

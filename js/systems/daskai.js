@@ -244,6 +244,13 @@
     setLocked(d, v) { if (v) d.locked = true; else delete d.locked; DK.store.save(); },
     /** Lo marca como visto (quita «Nuevo»). */
     seen(d) { if (d && d.isNew) { delete d.isNew; DK.store.save(); } },
+    /** v4.63: ¿sigue siendo «Nuevo»? La marca caduca a los 5 minutos aunque no abras su ficha. */
+    isNew(d) {
+      if (!d || !d.isNew) return false;
+      if (d.isNew === true) d.isNew = Date.now(); // marcas antiguas: cuentan desde ahora
+      if (Date.now() - d.isNew > 5 * 60 * 1000) { delete d.isNew; return false; }
+      return true;
+    },
     /** Cambia el apodo ('' lo elimina). */
     rename(d, nick) { d.nickname = nick ? nick.slice(0, 16) : undefined; DK.store.save(); },
 
@@ -312,7 +319,7 @@
   function statKey(d) {
     const st = DK.store.state, e = st && st.expedition;
     const eq = d.equip || [];
-    return rev + '|' + d.level + '|' + d.species + '|' + d.passive + '|' + eq[0] + '|' + eq[1] + '|' + (e ? 'x' + (e.relics || []).length + '|' + (e.corruption || 0) + (e.zone || '') + (e.depth || 1) : '-') + '|' + (st ? st.difficulty : '') + '|' + (d.stars || 0) + (d.variant || '') + '|' + (d.form || 0) + '/' + (d.forms || 0);
+    return rev + '|' + d.level + '|' + d.species + '|' + d.passive + '|' + eq[0] + '|' + eq[1] + '|' + (e ? 'x' + (e.relics || []).length + '|' + (e.corruption || 0) + (e.zone || '') + (e.depth || 1) : '-') + '|' + (st ? st.difficulty : '') + '|' + (d.stars || 0) + (d.variant || '') + '|' + (d.form || 0) + '/' + (d.forms || 0) + (d.wild ? 'w' : '') + (d.boss ? 'b' : '') + (d.elite ? 'e' : '');
   }
   api.touch = () => { rev++; };
 
@@ -516,7 +523,9 @@
 
     /** Añade un daskai a la colección (y al equipo si hay hueco). */
     add(d) {
-      if (this.all().length) d.isNew = true; // v4.57: marca «Nuevo» hasta que abras su ficha
+      // v4.64: quien se une (captura, recluta, suceso...) llega con toda su vida y maná, sin estados
+      if (d.cur) { delete d.wild; api.fullHeal(d); }
+      if (this.all().length) d.isNew = Date.now(); // v4.57: marca «Nuevo» hasta que abras su ficha
       this.all().push(d);
       if (DK.looks) DK.looks.see(d);
       if (this.st().team.length < DK.config.maxTeam) this.st().team.push(d.uid);

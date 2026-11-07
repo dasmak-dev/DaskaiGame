@@ -527,6 +527,37 @@
    * Dibuja un individuo en una etapa visual (0..3).
    * o: { tail, final (¿forma final?), flip, shiny, focus ('eyes'|'mouth'|'ears'|'legs'|'mark'|'full'), plain (sin pelo/brazos/cola) }
    */
+  /** v4.63: distintivo del variocolor. Cada uno lleva una marca propia pegada al cuerpo:
+   * la forma, el color, el sitio, el tamaño y el giro salen de su semilla (no hay dos iguales). */
+  const SHINY_COLORS = ['#fde047', '#f8fafc', '#67e8f9', '#f9a8d4', '#bef264', '#c4b5fd', '#fdba74'];
+  const SHINY_SHAPES = ['sparkle', 'star', 'diamond', 'crescent', 'heart', 'bolt', 'ring', 'constellation', 'flower', 'comet'];
+  function shinyMarkSvg(ind, P) {
+    const R = rng(((ind.seed >>> 0) ^ 0x5b1e7) || 7);
+    const shape = SHINY_SHAPES[Math.floor(R() * SHINY_SHAPES.length)], col = SHINY_COLORS[Math.floor(R() * SHINY_COLORS.length)];
+    const { cx, cy, W, H, dk } = P;
+    const x = cx + W * (0.14 + R() * 0.3), y = cy + H * (-0.25 + R() * 0.45), r = clamp(W * (0.27 + R() * 0.1), 5.5, 12.5), rot = Math.round(R() * 70 - 35);
+    const st = `stroke="${dk}" stroke-width="1.4" stroke-linejoin="round"`;
+    const sp4 = (X, Y, q) => `<path d="M ${f(X)} ${f(Y - q)} Q ${f(X + q * 0.18)} ${f(Y - q * 0.18)} ${f(X + q)} ${f(Y)} Q ${f(X + q * 0.18)} ${f(Y + q * 0.18)} ${f(X)} ${f(Y + q)} Q ${f(X - q * 0.18)} ${f(Y + q * 0.18)} ${f(X - q)} ${f(Y)} Q ${f(X - q * 0.18)} ${f(Y - q * 0.18)} ${f(X)} ${f(Y - q)} Z" fill="${col}" ${st}/>`;
+    let g;
+    switch (shape) {
+      case 'sparkle': g = sp4(x, y, r * 1.15); break;
+      case 'star': g = star(x, y, r, r * 0.45, col).replace('/>', ` ${st}/>`); break;
+      case 'diamond': g = `<path d="M ${f(x)} ${f(y - r * 1.1)} L ${f(x + r * 0.7)} ${f(y)} L ${f(x)} ${f(y + r * 1.1)} L ${f(x - r * 0.7)} ${f(y)} Z" fill="${col}" ${st}/><path d="M ${f(x - r * 0.7)} ${f(y)} L ${f(x + r * 0.7)} ${f(y)}" stroke="#fff" stroke-width=".8" opacity=".7"/>`; break;
+      case 'crescent': g = `<path d="M ${f(x + r * 0.3)} ${f(y - r)} A ${f(r)} ${f(r)} 0 1 0 ${f(x + r * 0.3)} ${f(y + r)} A ${f(r * 0.75)} ${f(r * 0.75)} 0 1 1 ${f(x + r * 0.3)} ${f(y - r)} Z" fill="${col}" ${st}/>`; break;
+      case 'heart': g = `<path d="M ${f(x)} ${f(y + r * 0.9)} C ${f(x - r * 1.4)} ${f(y - r * 0.1)} ${f(x - r * 0.7)} ${f(y - r * 1.2)} ${f(x)} ${f(y - r * 0.4)} C ${f(x + r * 0.7)} ${f(y - r * 1.2)} ${f(x + r * 1.4)} ${f(y - r * 0.1)} ${f(x)} ${f(y + r * 0.9)} Z" fill="${col}" ${st}/>`; break;
+      case 'bolt': g = `<path d="M ${f(x + r * 0.2)} ${f(y - r * 1.1)} L ${f(x - r * 0.55)} ${f(y + r * 0.1)} L ${f(x)} ${f(y + r * 0.1)} L ${f(x - r * 0.25)} ${f(y + r * 1.1)} L ${f(x + r * 0.6)} ${f(y - r * 0.2)} L ${f(x + r * 0.05)} ${f(y - r * 0.2)} Z" fill="${col}" ${st}/>`; break;
+      case 'ring': g = `<circle cx="${f(x)}" cy="${f(y)}" r="${f(r * 0.8)}" fill="none" stroke="${dk}" stroke-width="${f(r * 0.5)}"/><circle cx="${f(x)}" cy="${f(y)}" r="${f(r * 0.8)}" fill="none" stroke="${col}" stroke-width="${f(r * 0.3)}"/>`; break;
+      case 'constellation': { const pts = [[0, 0], [r * 1.1, -r * 0.6], [r * 0.4, r * 0.9]].map(([a, b]) => [x - r * 0.4 + a, y + b]);
+        g = `<path d="M ${pts.map((p) => f(p[0]) + ' ' + f(p[1])).join(' L ')}" fill="none" stroke="${col}" stroke-width=".8" opacity=".75"/>` + pts.map((p, i) => sp4(p[0], p[1], r * (i ? 0.48 : 0.7))).join(''); break; }
+      case 'flower': g = [0, 72, 144, 216, 288].map((a) => `<ellipse cx="${f(x)}" cy="${f(y - r * 0.55)}" rx="${f(r * 0.36)}" ry="${f(r * 0.55)}" fill="${col}" ${st} transform="rotate(${a} ${f(x)} ${f(y)})"/>`).join('') + `<circle cx="${f(x)}" cy="${f(y)}" r="${f(r * 0.3)}" fill="#fff" ${st}/>`; break;
+      default: g = `<path d="M ${f(x + r * 0.3)} ${f(y - r * 0.3)} Q ${f(x - r * 0.9)} ${f(y + r * 0.2)} ${f(x - r * 1.5)} ${f(y + r * 1.1)} Q ${f(x - r * 0.4)} ${f(y + r * 0.7)} ${f(x + r * 0.6)} ${f(y + r * 0.3)} Z" fill="${col}" opacity=".7"/>` + star(x + r * 0.4, y - r * 0.2, r * 0.8, r * 0.36, col).replace('/>', ` ${st}/>`);
+    }
+    // Un brillo que va y viene sobre la marca
+    const glint = `<circle cx="${f(x - r * 0.25)}" cy="${f(y - r * 0.3)}" r="${f(r * 0.22)}" fill="#fff"><animate attributeName="opacity" values="0;.95;0" dur="${(2.2 + R() * 1.6).toFixed(1)}s" repeatCount="indefinite"/></circle>`;
+    const halo = `<circle cx="${f(x)}" cy="${f(y)}" r="${f(r * 1.45)}" fill="${col}" opacity=".22"/>`;
+    return `<g class="shiny-mark" transform="rotate(${rot} ${f(x)} ${f(y)})">${halo}${g}${glint}</g>`;
+  }
+
   function draw(ind, st, o = {}) {
     const id = 'lk' + (++SEQ), H_ = HOUSES[ind.house] || HOUSES.luz;
     const grow = GROWTH[st] * ind.size * (st === 0 ? ind.baby : 1), s = clamp(0.85 + (grow - 1) * 0.55, 0.62, 1.25);
@@ -572,8 +603,8 @@
       }
     }
     const flip = o.flip ? `transform="translate(${f(vb[0] * 2 + vb[2])} 0) scale(-1 1)"` : '';
-    // v4.62: sin las 3 estrellitas sueltas del variocolor (en pixel art parecían puntos flotando); se distingue por su color y su etiqueta
-    const sparkles = '';
+    // v4.62 quitó las 3 estrellitas sueltas (parecían puntos flotando); v4.63: una marca propia pegada al cuerpo
+    const shinyMark = o.shiny && !o.focus ? shinyMarkSvg(ind, P) : '';
     return `<svg viewBox="${vb.map(f).join(' ')}" xmlns="http://www.w3.org/2000/svg" role="img">` +
       `<defs><radialGradient id="b${id}" cx="34%" cy="26%" r="85%"><stop offset="0%" stop-color="${shade(skin, 0.42)}"/><stop offset="50%" stop-color="${skin}"/><stop offset="100%" stop-color="${shade(skin, -0.3)}"/></radialGradient>` +
       `<linearGradient id="ao${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="55%" stop-color="#000" stop-opacity="0"/><stop offset="100%" stop-color="#000" stop-opacity=".28"/></linearGradient>` +
@@ -589,9 +620,9 @@
       `<path d="${body}" fill="url(#b${id})"/>` +
       `<g clip-path="url(#c${id})">${belly}${fur.clip}${markSvg(ind, P)}<path d="${body}" fill="url(#ao${id})"/><ellipse cx="${f(cx - W * 0.35)}" cy="${f(cy - H * 0.55)}" rx="${f(W * 0.42)}" ry="${f(H * 0.28)}" fill="url(#hl${id})"/></g>` +
       `<path d="${body}" fill="none" ${STROKE(dk, 2.4)}/>` +
-      legsSvg(legKind, P, 'near') + (plain ? '' : armSvg(ind, P, 'near')) + earsSvg(ind, P, true) +
+      legsSvg(legKind, P, 'near') + (plain ? '' : armSvg(ind, P, 'near')) + shinyMark + earsSvg(ind, P, true) +
       hairSvg(ind, P, 'front') + eyesSvg(ind, P) + cheeks + mouthSvg(ind, P) + (isFinal ? finalSvg(ind, P, 'front') : '') +
-      `</g></g></g>${sparkles}</svg>`;
+      `</g></g></g></svg>`;
   }
 
   /* ======================= API del juego ======================= */

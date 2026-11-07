@@ -1345,9 +1345,11 @@ button.hx-warn { cursor: pointer; } button.hx-warn:hover { filter: brightness(1.
 .hx-sub .btn, .hx-sub .btn.btn-tone { min-height: 0; padding: 4px 8px; font-size: .74rem; background: transparent; border-color: rgba(255, 255, 255, .1); box-shadow: none; color: var(--muted); }
 .hx-sub .btn:hover { color: var(--text); border-color: rgba(231, 194, 122, .45); background: rgba(255, 255, 255, .04); }
 .hx-sub .btn .icon svg { width: 13px; height: 13px; }
-.hub-exp .play-btn { box-shadow: 0 0 0 1px rgba(253, 186, 116, .25), 0 8px 22px -6px rgba(220, 38, 38, .7); animation: playGlow 2.8s ease-in-out infinite; }
-@keyframes playGlow { 50% { box-shadow: 0 0 0 1px rgba(253, 186, 116, .45), 0 8px 30px -4px rgba(249, 115, 22, .85); } }
-:root[data-motion="reduced"] .hub-exp .play-btn { animation: none; }
+/* v4.64: sin el resplandor que latía; sólo un leve empujón del icono de vez en cuando (el brillo que cruza sigue) */
+.hub-exp .play-btn { box-shadow: 0 0 0 1px rgba(253, 186, 116, .25), 0 6px 16px -8px rgba(0, 0, 0, .6); }
+.hub-exp .play-btn > .icon { animation: playNudge 4.8s ease-in-out infinite; }
+@keyframes playNudge { 0%, 82%, 100% { transform: none; } 87% { transform: translateX(3px); } 92% { transform: translateX(-1px); } 96% { transform: translateX(1px); } }
+:root[data-motion="reduced"] .hub-exp .play-btn, :root[data-motion="reduced"] .hub-exp .play-btn > .icon { animation: none; }
 /* v4.58 · Dibujos centrados en su recuadro; en combate se bajan para apoyar los pies en la plataforma */
 .sprite.grounded > svg, .sprite.grounded > img { translate: 0 calc((1 - var(--feet, 1)) * 100%); }
 /* v4.59 · Aprender un ataque: nuevo a la izquierda, los 4 que conoce en 2×2 a la derecha */
@@ -1557,3 +1559,95 @@ body[data-screen="expedition"] .toast-host, body[data-nav="on"][data-screen="exp
 .party-art, .pc-mon { position: relative; }
 .pc-mon .new-dot { top: 3px; right: auto; left: 3px; }
 :root[data-motion="reduced"] .new-dot { animation: none; }
+
+/* v4.63 — Fin de combate en expedición: barra compacta (botín · curar · volver al mapa) */
+.end-exp { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 10px 12px 10px 16px;
+  border: 1px solid color-mix(in srgb, var(--gold, #d4a24c) 28%, transparent); border-radius: 14px;
+  background: linear-gradient(180deg, rgba(255,255,255,.035), rgba(0,0,0,.18)); align-self: start; width: 100%; box-sizing: border-box; grid-column: 1 / -1; animation: ee-in .35s ease both; }
+@keyframes ee-in { from { opacity: 0; transform: translateY(6px); } }
+.ee-loot { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ee-lbl { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.ee-chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; background: rgba(255,255,255,.06); font-size: 13px; }
+.ee-chip.gold { color: #fcd34d; }
+.ee-chip b { font-variant-numeric: tabular-nums; }
+.ee-btns { display: flex; gap: 8px; flex: 0 0 auto; }
+.ee-btns > .btn { min-height: 44px; padding: 8px 16px; white-space: nowrap; position: relative; }
+.ee-btns > .btn-primary { min-width: 180px; }
+.ee-hurt { display: inline-flex; align-items: center; gap: 2px; margin-left: 6px; padding: 1px 6px; border-radius: 999px; font-size: 11px; font-weight: 700; background: rgba(239,68,68,.18); color: #fca5a5; }
+@media (max-width: 640px) {
+  .end-exp { flex-direction: column; align-items: stretch; gap: 8px; padding: 10px; }
+  .ee-loot { justify-content: center; }
+  .ee-btns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); }
+  .ee-btns > .btn-primary { min-width: 0; }
+}
+
+/* v4.63 — Personajes de los sucesos: silueta de un daskai que hace de viajera, ermitaño, mercader...
+   Un medallón pequeño a la derecha de la cabecera (no ocupa más alto que el texto). */
+.exp-node-head.has-npc { align-items: center; }
+.exp-node-head .enh-txt { min-width: 0; flex: 1; }
+.npc { position: relative; flex: 0 0 auto; width: 74px; height: 74px; margin: -4px 2px -4px auto; pointer-events: none; }
+.npc-frame { position: absolute; inset: 0; border-radius: 18px; overflow: hidden; border: 1px solid color-mix(in srgb, var(--npc) 55%, transparent);
+  background: radial-gradient(120% 90% at 50% 100%, color-mix(in srgb, var(--npc) 34%, #120d08), #120d08 70%);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.04), 0 4px 14px rgba(0,0,0,.35); }
+.npc-glow { position: absolute; left: 10%; right: 10%; bottom: -30%; height: 90%; border-radius: 50%; background: radial-gradient(closest-side, color-mix(in srgb, var(--npc) 60%, transparent), transparent); animation: npc-pulse 3.6s ease-in-out infinite; }
+.npc-rays { position: absolute; inset: -40%; background: conic-gradient(from 0deg, transparent 0 20deg, color-mix(in srgb, var(--npc) 14%, transparent) 30deg, transparent 40deg 110deg, color-mix(in srgb, var(--npc) 12%, transparent) 125deg, transparent 140deg 220deg, color-mix(in srgb, var(--npc) 14%, transparent) 235deg, transparent 250deg); animation: npc-spin 22s linear infinite; }
+.npc .sprite.npc-sil { position: absolute; left: 50%; bottom: -2px; width: 70px !important; height: 70px !important; margin-left: -35px; animation: npc-idle 3.4s ease-in-out infinite; transform-origin: 50% 85%;
+  filter: grayscale(1) brightness(.32) drop-shadow(0 0 1px var(--npc)) drop-shadow(0 0 4px color-mix(in srgb, var(--npc) 70%, transparent)); }
+.npc .sprite.npc-sil svg .shiny-mark { display: none; }
+.npc-bubble { position: absolute; left: -7px; top: -3px; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50% 50% 50% 4px;
+  background: var(--npc); color: #1a1208; box-shadow: 0 2px 0 rgba(0,0,0,.35); animation: npc-bubble 3.4s ease-in-out infinite; z-index: 1; }
+.npc-bubble .icon svg { width: 12px; height: 12px; }
+@keyframes npc-idle { 0%, 100% { transform: translateY(0) scale(1, 1); } 45% { transform: translateY(-3px) scale(1.02, .98); } 75% { transform: translateY(0) rotate(-3deg); } }
+@keyframes npc-pulse { 0%, 100% { opacity: .55; transform: scale(.94); } 50% { opacity: 1; transform: scale(1.06); } }
+@keyframes npc-spin { to { transform: rotate(360deg); } }
+@keyframes npc-bubble { 0%, 60%, 100% { transform: translateY(0) scale(1); } 70% { transform: translateY(-3px) scale(1.12); } 80% { transform: translateY(0) scale(1); } }
+@media (max-width: 520px) { .npc { width: 62px; height: 62px; } .npc .sprite.npc-sil { width: 60px !important; height: 60px !important; margin-left: -30px; bottom: -2px; } }
+@media (prefers-reduced-motion: reduce) { .npc *, .npc { animation: none !important; } }
+
+/* v4.63 — Vista en grande: nuevas animaciones y partículas; modo «bare» al reclutar */
+.recruit-art.sc-open { position: relative; width: 100%; border: 0; padding: 0; font: inherit; color: inherit; cursor: zoom-in; border-radius: 12px; }
+.recruit-art.sc-open:hover .sc-open-hint, .recruit-art.sc-open:focus-visible .sc-open-hint { opacity: 1; }
+.recruit-art.sc-open .sc-open-hint { width: 20px; height: 20px; right: 0; bottom: 0; }
+.recruit-art.sc-open:focus-visible { outline: 2px solid var(--gold, #d9b46a); outline-offset: 2px; }
+.showcase-modal.bare .sc-stage { height: 380px; }
+.sc-stage.bare { background: radial-gradient(ellipse at 50% 70%, color-mix(in srgb, var(--c) 22%, #15100b), #0d0a07 75%); }
+.sc-mon.a-wiggle { animation: scWiggle 1.2s ease-in-out; }
+.sc-mon.a-bounce3 { animation: scBounce3 1.4s ease-out; }
+.sc-mon.a-twirl { animation: scTwirl 1.2s ease-in-out; }
+.sc-mon.a-peek { animation: scPeek 1.3s ease-in-out; }
+.sc-mon.a-stretch { animation: scStretch 1.2s ease-in-out; }
+.sc-mon.a-nod { animation: scNod 1.2s ease-in-out; }
+@keyframes scWiggle { 0%, 100% { transform: none; } 15% { transform: skewX(10deg); } 30% { transform: skewX(-10deg); } 45% { transform: skewX(7deg) scale(1.04); } 60% { transform: skewX(-5deg); } 75% { transform: skewX(2deg); } }
+@keyframes scBounce3 { 0%, 100% { transform: none; } 10% { transform: translateY(-50px); } 22% { transform: scale(1.12, .88); } 34% { transform: translateY(-32px); } 46% { transform: scale(1.08, .92); } 58% { transform: translateY(-16px); } 70% { transform: scale(1.04, .96); } }
+@keyframes scTwirl { 0%, 100% { transform: none; } 25% { transform: scaleX(-1) translateY(-12px); } 50% { transform: scaleX(1) translateY(-20px); } 75% { transform: scaleX(-1) translateY(-12px); } }
+@keyframes scPeek { 0%, 100% { transform: none; } 25% { transform: scale(.4) translateY(60px); opacity: .5; } 45% { transform: scale(.4) translateY(60px); opacity: .5; } 65% { transform: scale(1.18) translateY(-10px); opacity: 1; } 82% { transform: scale(.96); } }
+@keyframes scStretch { 0%, 100% { transform: none; } 30% { transform: scale(.88, 1.22); } 55% { transform: scale(.9, 1.24) rotate(-4deg); } 75% { transform: scale(1.1, .9); } }
+@keyframes scNod { 0%, 100% { transform: none; } 15%, 45% { transform: rotate(-8deg) translateY(4px); } 30%, 60% { transform: rotate(8deg) translateY(4px); } 80% { transform: translateY(-8px); } }
+/* Partículas dibujadas */
+.sc-fx b { position: absolute; display: block; opacity: 0; pointer-events: none; }
+.sc-fx .p-confetti { left: calc(50% + var(--x)); top: 30%; width: 7px; height: 11px; border-radius: 2px; animation: pConfetti 1.6s cubic-bezier(.2, .6, .4, 1) var(--d) forwards; }
+@keyframes pConfetti { 0% { opacity: 0; transform: translateY(40px) scale(.4); } 15% { opacity: 1; transform: translateY(-60px) rotate(0); } 100% { opacity: 0; transform: translateY(calc(140px + var(--y))) rotate(var(--r)); } }
+.sc-fx .p-bubble { left: calc(50% + var(--x)); bottom: 18%; width: var(--s); height: var(--s); border-radius: 50%; border: 1.5px solid color-mix(in srgb, var(--c) 50%, #fff);
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.7) 0 18%, color-mix(in srgb, var(--c) 18%, transparent) 40%, transparent 70%); animation: pBubble 1.8s ease-out var(--d) forwards; }
+@keyframes pBubble { 0% { opacity: 0; transform: translateY(0) scale(.5); } 20% { opacity: .95; } 80% { opacity: .8; transform: translateY(-190px) translateX(10px) scale(1); } 100% { opacity: 0; transform: translateY(-210px) scale(1.5); } }
+.sc-fx .p-ring { left: 50%; top: 58%; width: 60px; height: 22px; margin: -11px 0 0 -30px; border-radius: 50%; border: 3px solid color-mix(in srgb, var(--c) 70%, #fff); animation: pRing 1.1s ease-out var(--d) forwards; }
+@keyframes pRing { 0% { opacity: .9; transform: scale(.4); } 100% { opacity: 0; transform: scale(5); } }
+.sc-fx .p-mote { left: 50%; top: 52%; width: 7px; height: 7px; border-radius: 50%; background: color-mix(in srgb, var(--c) 60%, #fff); box-shadow: 0 0 10px var(--c); animation: pMote 1.3s ease-out var(--d) forwards; }
+@keyframes pMote { 0% { opacity: 0; transform: translate(0, 0) scale(.3); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(1); } }
+.sc-fx .p-comet { left: -10%; top: var(--y); width: 70px; height: 3px; border-radius: 3px; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--c) 60%, #fff)); filter: drop-shadow(0 0 4px #fff); animation: pComet 1s ease-in var(--d) forwards; }
+@keyframes pComet { 0% { opacity: 0; transform: translateX(0) rotate(14deg); } 15% { opacity: 1; } 100% { opacity: 0; transform: translateX(560px) translateY(120px) rotate(14deg); } }
+.sc-fx .p-note { animation-duration: 1.8s; color: color-mix(in srgb, var(--c) 40%, #fff); }
+/* Fondo vivo: motas que suben */
+.sc-amb { position: absolute; inset: 0; pointer-events: none; }
+.sc-amb b { position: absolute; bottom: -10px; width: var(--s); height: var(--s); border-radius: 50%; background: color-mix(in srgb, var(--c) 55%, #fff); opacity: 0; filter: blur(.5px); animation: scAmb var(--t) linear var(--d) infinite; }
+@keyframes scAmb { 0% { opacity: 0; transform: translateY(0); } 15% { opacity: .5; } 85% { opacity: .35; } 100% { opacity: 0; transform: translateY(-400px) translateX(20px); } }
+:root[data-motion="reduced"] .sc-fx b, :root[data-motion="reduced"] .sc-amb b { animation: none !important; display: none; }
+@media (prefers-reduced-motion: reduce) { .sc-fx b, .sc-amb b { animation: none !important; display: none; } }
+@media (max-width: 600px) { .showcase-modal.bare .sc-stage { height: 320px; } }
+
+/* v4.64 — Candidatos a reclutar: filas equilibradas y centradas (5 → una fila en PC; 3+2 o 2+2+1 centrados si no cabe) */
+.recruit-grid, .exp-focus .recruit-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; --cols: min(var(--n, 3), 5); }
+.recruit-grid > .recruit-card { flex: 0 1 calc((100% - (var(--cols) - 1) * 10px) / var(--cols)); min-width: 0; max-width: 340px; box-sizing: border-box; }
+@media (max-width: 1100px) { .recruit-grid, .exp-focus .recruit-grid { --cols: min(var(--n, 3), 4); } }
+@media (max-width: 900px) { .recruit-grid, .exp-focus .recruit-grid { --cols: min(var(--n, 3), 3); } }
+@media (max-width: 560px) { .recruit-grid, .exp-focus .recruit-grid { --cols: min(var(--n, 2), 2); } }
