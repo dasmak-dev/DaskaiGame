@@ -254,9 +254,14 @@
       const s = DK.daskai.stats(d), hp = DK.util.percent(d.cur.hp, s.hp);
       return h('button', { class: 'bt-mon' + (DK.daskai.isFainted(d) ? ' ko' : ''), type: 'button', tip: `${DK.daskai.name(d)} · ${t('common.lvl')} ${d.level} · ${d.cur.hp}/${s.hp}`, onClick: () => DK.router.go('team', { uid: d.uid }) },
         i === 0 ? h('span', { class: 'bt-mon-lead' }, DK.icon('crown', 10)) : null,
-        V.dSprite(d, { size: 40 }), h('span', { class: 'bt-mon-lv' }, d.level),
-        h('span', { class: 'bt-mon-hp' + (hp < 30 ? ' crit' : hp < 60 ? ' mid' : '') }, h('i', { style: { width: hp + '%' } })));
+        // v4.70: ficha más grande que llena el hueco (dibujo, nombre, nivel y vida con números)
+        h('span', { class: 'bt-mon-spr' }, V.dSprite(d, { size: 56 })),
+        h('span', { class: 'bt-mon-info' },
+          h('span', { class: 'bt-mon-name' }, h('b', null, DK.daskai.name(d)), h('small', { class: 'bt-mon-lv' }, `${t('common.lvl')} ${d.level}`)),
+          h('span', { class: 'bt-mon-hp' + (hp < 30 ? ' crit' : hp < 60 ? ' mid' : '') }, h('i', { style: { width: hp + '%' } })),
+          h('small', { class: 'bt-mon-num' }, `${d.cur.hp}/${s.hp}`)));
     }));
+    teamStrip.style.setProperty('--n', team.length);
 
     // Mochila (v4.60b): cada objeto en su ficha (icono, nombre, ×N y «−» para quitar uno) y una
     // ficha «+» que abre el editor completo; debajo, sugerir / repetir la última con su texto.

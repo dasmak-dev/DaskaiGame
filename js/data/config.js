@@ -17,10 +17,16 @@
     // natureBonus: puntos extra si la naturaleza lo potencia (▲) → total 2-5
     // naturePenalty: puntos que quita si la naturaleza lo reduce (▼)
     // Puntos por nivel: [mín, máx] × ritmo (decimales al azar). Rango estrecho para que el ritmo (▲▲ / ▼▼) se note de verdad
-    growth: { level: [2, 3], natureBonus: [1, 2], naturePenalty: [0, 1] },
+    // v4.69: crecimiento más contenido. Cada nivel da entre 0 y 5 puntos por atributo (media ≈ 2):
+    //   puntos = azar(level) × ritmo (especie y pasivas, growthBias) ± naturaleza, limitado a [min, max].
+    //   Llegar a 5 sólo pasa con un atributo muy favorecido (especie fuerte en él + pasivas + naturaleza).
+    // v4.71: daskai de doble casa. Los iniciales siempre; los jefes siempre (cada uno con su segunda casa fija);
+    // en sitios especiales a menudo (élite, reclutas) y casi nunca en un combate normal. En total ≈ 1 de cada 10.
+    dual: { wild: 0.04, elite: 0.5, recruit: 0.15, secret: 1, boss: 1 },
+    growth: { level: [1, 3], natureBonus: [0, 1], naturePenalty: [0, 1], min: 0, max: 5 },
     // Ritmo de crecimiento de cada atributo al subir de nivel (systems/daskai.js → growthWeight):
     //   especie (sus atributos fuertes crecen más) + pasivas (+/-) → multiplica los puntos por nivel
-    growthBias: { species: 0.8, passive: 1.5, min: 0.45, max: 2 },
+    growthBias: { species: 0.7, passive: 1.5, min: 0.5, max: 1.6 },
     // Formas (v4.51): cada daskai sortea al nacer cuántas formas tendrá (1-4); el inicial siempre 4.
     //   levels: niveles para pasar a la forma siguiente · power: fuerza base de cada forma respecto a la
     //   primera de su línea (todas acaban igual; con menos formas empiezas más fuerte) · vis: etapa del dibujo.

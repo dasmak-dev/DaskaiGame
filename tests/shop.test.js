@@ -42,11 +42,11 @@ module.exports = {
       });
       await sleep(900);
       await p.evaluate(() => { window.__panel = document.querySelector('.rest-panel'); });
-      await p.click('.rest-pick >> nth=2'); await sleep(200);
-      const r = await p.evaluate(() => ({ same: window.__panel === document.querySelector('.rest-panel'), on: [...document.querySelectorAll('.rest-pick')].findIndex((b) => b.classList.contains('on')), uid: DK.expedition.active().trainUid, want: DK.party.active()[2].uid, label: document.querySelector('.rest-train-btn').textContent }));
+      await p.click('.rt-row >> nth=2'); await sleep(200);
+      const r = await p.evaluate(() => ({ same: window.__panel === document.querySelector('.rest-panel'), on: [...document.querySelectorAll('.rt-row')].findIndex((b) => b.classList.contains('on')), uid: DK.expedition.active().trainUid, want: DK.party.active()[2].uid, label: document.querySelector('.rt-who').textContent }));
       check(r.same, 'elegir a quién entrenar repinta la hoguera (parpadea)');
       check(r.on === 2 && r.uid === r.want, 'no se marca el elegido');
-      check(r.label.includes(await p.evaluate(() => DK.daskai.name(DK.party.active()[2]))), 'el botón de entrenar no cambia de nombre');
+      check(r.label.includes(await p.evaluate(() => DK.daskai.name(DK.party.active()[2]))), 'no cambia a quién se va a entrenar (v4.70: línea «rt-who» sobre el botón)');
       const lv = await p.evaluate(() => DK.party.active()[2].level);
       await p.click('.rest-train-btn'); await sleep(600);
       await p.evaluate(async () => { for (let i = 0; i < 6; i++) { const b = document.querySelector('.modal .btn-primary, .modal-actions .btn'); if (b) b.click(); await new Promise((r) => setTimeout(r, 200)); } });

@@ -23,6 +23,20 @@
     return h('span', { class: 'badge house', style: { '--c': D.houseColor(house) }, tip }, DK.icon(hs.icon, 13), DK.tr('houses', hs));
   };
 
+  /**
+   * v4.71: casas de un daskai concreto. Con una casa, la insignia de siempre; con dos, una sola insignia
+   * partida en dos colores con los dos iconos y «Luz · Agua» (tip con fuertes y débiles de ambas).
+   */
+  V.housesBadge = (d, { known = true } = {}) => {
+    if (!d) return null;
+    const hs = DK.daskai.houses(d);
+    if (hs.length < 2 || !known) return V.houseBadge(hs[0], { known });
+    const [a, b] = hs.map((x) => D.houses[x]);
+    const tip = hs.map((x) => `${DK.tr('houses', D.houses[x])}: ${t('tips.house', { strong: DK.tr('houses', D.houses[D.houses[x].strongVs]), weak: DK.tr('houses', V.weakAgainst(x)) })}`).join('\n') + '\n' + t('tips.dualHouse');
+    return h('span', { class: 'badge house dual', style: { '--c': D.houseColor(hs[0]), '--c2': D.houseColor(hs[1]) }, tip },
+      DK.icon(a.icon, 13), DK.icon(b.icon, 13), `${DK.tr('houses', a)} · ${DK.tr('houses', b)}`);
+  };
+
   /** Insignia del RASGO de un daskai (D.roles). Sin rasgo no se muestra (null) salvo con { neutral: true }. */
   V.roleBadge = (d, { neutral = false } = {}) => {
     if (!d || !DK.daskai.roleOf) return null;

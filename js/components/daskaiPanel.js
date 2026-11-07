@@ -110,7 +110,7 @@
         h('button', { class: 'icon-btn dp-rename', type: 'button', tip: t('detail.rename'), 'aria-label': t('detail.rename'), onClick: () => toggle('rename') }, DK.icon('edit', 14)),
         DK.daskai.name(d) !== DK.daskai.speciesName(d) ? h('span', { class: 'dk-species', tip: t('detail.speciesTip') }, DK.daskai.speciesName(d)) : null),
         h('div', { class: 'dp-badges' },
-        V.level(d.level), h('span', { class: 'dp-kind' }, V.houseBadge(sp.house), V.roleBadge(d, { neutral: true })), V.shinyTag(d), V.tempTag(d), V.statusTag(d.status),
+        V.level(d.level), h('span', { class: 'dp-kind' }, V.housesBadge(d), V.roleBadge(d, { neutral: true })), V.shinyTag(d), V.tempTag(d), V.statusTag(d.status),
         d.locked ? h('span', { class: 'badge lock', tip: t('lock.locked') }, DK.icon('lock', 12)) : null,
         DK.daskai.isFainted(d) ? h('span', { class: 'badge bad' }, DK.icon('skull', 13), t('common.fainted')) : null,
         active ? h('span', { class: 'badge good' }, DK.icon('check', 13), isLeader ? t('detail.teamLeader') : t('team.inTeam')) : null));
@@ -264,7 +264,7 @@
         h('div', { class: 'grow' }, h('b', null, d.level >= nf.level ? t('evo.readyLong', { into: evoName }) : t('evo.at', { n: nf.level })),
           h('p', { class: 'muted small' }, pips, ' ', t('evo.formsTip', { n: fo.now + 1, total: fo.total }), ' · ', t('evo.info'))),
         DK.daskai.canEvolve(d) ? btn({ icon: 'evolve', label: t('evo.button'), variant: 'primary', onClick: async () => { if (await V.evolveDialog(d)) changed(); } }) : null) : null,
-      h('div', { class: 'learn-list' }, sp.learn.map(([lv, mid]) => {
+      h('div', { class: 'learn-list' }, DK.daskai.learnset(d).map(([lv, mid]) => {
         const m = D.moves[mid];
         const known = d.learned.includes(mid);
         return h('div', { class: 'learn-row ' + (known ? 'known' : lv <= d.level ? '' : 'locked') },

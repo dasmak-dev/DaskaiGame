@@ -8,7 +8,7 @@
  *   DK.avatars.fromFile(file)           → Promise<dataURL> recortada a 160 px
  *
  * player.avatar puede ser:
- *   null                                   → el líder del equipo
+ *   null                                   → el líder del equipo (tal cual: su aspecto y colores)
  *   { kind: 'daskai', species, shiny }     → un daskai que hayas visto
  *   { kind: 'icon', icon, color }          → icono sobre color
  *   { kind: 'image', src }                 → foto propia (dataURL, se guarda en la partida)
@@ -77,6 +77,20 @@
       return [...set].filter((s) => D.species[s]);
     },
     /**
+     * v4.73: qué daskai sale en la foto: { species, look, shiny } o null.
+     *   · un daskai elegido de la lista → su forma típica (como hasta ahora)
+     *   · sin foto (el líder) → el líder tal cual es (su aspecto, sus dos casas, su forma)
+     * @param {Object|null} av  player.avatar
+     * @param {Object} [leader] líder ya resuelto (otra ranura); si no, el de la partida activa
+     */
+    subject(av, leader) {
+      if (av && av.kind === 'daskai') return D.species[av.species] ? { species: av.species, look: null, shiny: !!av.shiny } : null;
+      if (av && av.kind) return null;
+      if (leader) return D.species[leader.species] ? leader : null;
+      const d = DK.store.state ? (DK.party.leader() || DK.party.all()[0]) : null;
+      return d ? { species: d.species, look: DK.looks.of(d), shiny: !!d.shiny } : null;
+    },
+    /**
      * Lee una imagen del ordenador y la recorta en un cuadrado de 160 px (JPEG).
      * @param {File} file
      * @returns {Promise<string>} dataURL
@@ -105,19 +119,20 @@
   /**
    * Foto de perfil con su marco.
    * @param {Object} p  st.player (o un objeto con avatar/frame)
-   * @param {Object} [o] {size = 48, avatar, frame} (avatar/frame para previsualizar)
+   * @param {Object} [o] {size = 48, avatar, frame, leader} (avatar/frame para previsualizar; leader = el
+   *   líder de otra ranura, { species, look, shiny }, para las partidas guardadas)
    */
-  V.avatar = (p, { size = 48, avatar, frame } = {}) => {
+  V.avatar = (p, { size = 48, avatar, frame, leader } = {}) => {
     const av = avatar !== undefined ? avatar : p && p.avatar;
     const fr = DK.avatars.frame(frame !== undefined ? frame : p && p.frame);
     let inner;
     if (av && av.kind === 'image') inner = h('img', { src: av.src, alt: '' });
     else if (av && av.kind === 'icon') inner = h('span', { class: 'avatar-icon', style: { background: av.color } }, DK.icon(av.icon, Math.round(size * 0.5)));
     else {
-      const sp = av && av.kind === 'daskai' ? av.species : DK.store.state ? (DK.party.leader() || DK.party.all()[0] || {}).species : null;
-      const house = sp && D.species[sp] ? D.species[sp].house : 'luz';
+      const who = DK.avatars.subject(av, leader);
+      const house = who && D.species[who.species] ? D.species[who.species].house : 'luz';
       inner = h('span', { class: 'avatar-daskai', style: { '--c': D.houseColor(house) } },
-        sp ? V.sprite(sp, { size: Math.round(size * 0.9), shiny: !!(av && av.shiny) }) : DK.icon('user', Math.round(size * 0.5)));
+        who ? V.sprite(who.species, { size: Math.round(size * 0.9), look: who.look, shiny: who.shiny }) : DK.icon('user', Math.round(size * 0.5)));
     }
     return h('span', { class: 'avatar-pic frame-' + fr.id, style: { width: size + 'px', height: size + 'px', '--frame': fr.css }, 'aria-hidden': 'true' }, inner);
   };

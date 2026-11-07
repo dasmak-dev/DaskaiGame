@@ -52,8 +52,10 @@
       let nat = 0;
       if (eff > 0) nat = U.rand(G.natureBonus[0], G.natureBonus[1]);
       if (eff < 0) nat = -Math.min(lvl, U.rand(G.naturePenalty[0], G.naturePenalty[1]));
-      total[k] = lvl + nat;
-      nature[k] = nat;
+      // v4.69: nunca menos de 0 ni más de 5 en una subida
+      const sum = U.clamp(lvl + nat, G.min != null ? G.min : 0, G.max != null ? G.max : 99);
+      total[k] = sum;
+      nature[k] = sum - lvl;
     }
     return { total, nature };
   }
@@ -67,10 +69,44 @@
   }
 
   /** Ataques que la especie conoce hasta cierto nivel (en orden). */
-  function movesUpTo(speciesId, level) {
+  function movesUpTo(speciesId, level, house2) {
     const out = [];
-    for (const [lv, m] of D.species[speciesId].learn) if (lv <= level && !out.includes(m)) out.push(m);
+    for (const [lv, m] of learnList(speciesId, house2)) if (lv <= level && !out.includes(m)) out.push(m);
     return out;
+  }
+
+  /* ---------- v4.71: segunda casa (daskai de doble casa) ----------
+   * d.house2 = casa secundaria (o nada). La especie da la primera. Un daskai de doble casa:
+   *   · se defiende con las dos (systems/battle.js houseMult multiplica ambas) y tiene «misma casa» con las dos;
+   *   · aprende además algunos ataques de su segunda casa (H2_LEVELS) y puede nacer con una pasiva de ella;
+   *   · se dibuja con los colores de ambas (systems/looks.js, look.h2). Lo conserva al evolucionar.
+   */
+  const H2_LEVELS = [1, 9, 17, 27, 38];
+  const h2Cache = {};
+  /** Ataques de una casa que aprende un daskai que la tiene de segunda: [[nivel, ataque]]. */
+  function house2Learn(house) {
+    if (!house) return [];
+    if (h2Cache[house]) return h2Cache[house];
+    const min = {};
+    Object.values(D.species).forEach((sp) => sp.learn.forEach(([lv, m]) => { const mv = D.moves[m]; if (mv && mv.house === house) min[m] = Math.min(min[m] == null ? 99 : min[m], lv); }));
+    // los de daño primero en su nivel, en orden de nivel; uno de cada en los niveles de H2_LEVELS
+    const list = Object.keys(min).sort((a, b) => min[a] - min[b] || (D.moves[b].power || 0) - (D.moves[a].power || 0));
+    const step = Math.max(1, list.length / H2_LEVELS.length);
+    h2Cache[house] = H2_LEVELS.map((lv, i) => [lv, list[Math.min(list.length - 1, Math.floor(i * step))]]).filter(([, m], i, arr) => m && arr.findIndex((x) => x[1] === m) === i);
+    return h2Cache[house];
+  }
+  /** Lista de aprendizaje completa (especie + segunda casa), ordenada por nivel. */
+  function learnList(speciesId, house2) {
+    const base = D.species[speciesId].learn;
+    if (!house2 || house2 === D.species[speciesId].house) return base;
+    return base.concat(house2Learn(house2)).sort((a, b) => a[0] - b[0]);
+  }
+  /** Pasivas típicas de una casa (las de sus especies). */
+  const passivesOfHouse = (house) => [...new Set(Object.values(D.species).filter((sp) => sp.house === house).flatMap((sp) => sp.passives || []))].filter((id) => D.passives[id]);
+  /** Una casa distinta de `not` (al azar o, con semilla, siempre la misma). */
+  function otherHouse(not, seed) {
+    const hs = Object.keys(D.houses).filter((h) => h !== not);
+    return hs[seed != null ? (seed >>> 0) % hs.length : Math.floor(Math.random() * hs.length)];
   }
 
   const api = {
@@ -96,6 +132,10 @@
       };
       const look = DK.looks ? DK.looks.rollLook(speciesId, o) : null; // aspecto propio (los jefes: el típico)
       if (look) d.look = look;
+      // v4.71: segunda casa. o.house2 = una casa concreta · o.dual = true → al azar (los jefes: siempre la misma para cada jefe)
+      if (o.house2 && D.houses[o.house2] && o.house2 !== sp.house) d.house2 = o.house2;
+      else if (o.dual || o.starter) d.house2 = otherHouse(sp.house, o.boss ? DK.looks.hash('boss2:' + speciesId) : null); // los iniciales siempre: su casa + otra al azar
+      if (d.house2 && U.chance(0.5)) { const pool = passivesOfHouse(d.house2); if (pool.length) d.passive = U.pick(pool); }
       // Formas (v4.51): cuántas tendrá (1-4, el inicial 4); los jefes y las especies sin línea siguen como antes
       if (!o.boss && api.lineOf(speciesId).length > 1) d.forms = o.starter ? 4 : +U.weightedKey(DK.config.forms.weights, Math.random, '3');
       if (o.wild) d.wild = true;
@@ -105,7 +145,7 @@
       for (let l = 2; l <= level; l++) applyGrowth(d);
       d.level = Math.min(level, DK.config.maxLevel);
       if (d.forms) d.form = Math.min(d.forms - 1, DK.config.forms.levels[d.forms].filter((lv) => lv <= d.level).length);
-      d.learned = movesUpTo(speciesId, d.level);
+      d.learned = movesUpTo(speciesId, d.level, d.house2);
       d.moves = d.learned.slice(-DK.config.maxMoves);
       api.fullHeal(d);
       return d;
@@ -186,7 +226,7 @@
       const G = DK.config.growth, eff = D.natureEffect(d.nature, k);
       const lvl = ((G.level[0] + G.level[1]) / 2) * growthWeight(d, k);
       const nat = eff > 0 ? (G.natureBonus[0] + G.natureBonus[1]) / 2 : eff < 0 ? -(G.naturePenalty[0] + G.naturePenalty[1]) / 2 : 0;
-      return Math.max(0, lvl + nat);
+      return U.clamp(lvl + nat, G.min || 0, G.max || 99);
     },
     growthRate(d, k) {
       const G = DK.config.growth, normal = (G.level[0] + G.level[1]) / 2;
@@ -244,6 +284,24 @@
     setLocked(d, v) { if (v) d.locked = true; else delete d.locked; DK.store.save(); },
     /** Lo marca como visto (quita «Nuevo»). */
     seen(d) { if (d && d.isNew) { delete d.isNew; DK.store.save(); } },
+    /**
+     * v4.68: guarda el % de vida y maná de tu colección y luego lo vuelve a aplicar con los máximos nuevos.
+     * Al empezar una expedición (Vigor del campamento, reliquias grabadas...) o al ganar una reliquia de +PV,
+     * el máximo sube: antes la vida se quedaba igual y todos parecían heridos (p. ej. 77/85).
+     */
+    snapPct() {
+      const m = new Map();
+      DK.party.all().forEach((d) => { if (!d.cur) return; const s = api.stats(d); m.set(d, [s.hp ? d.cur.hp / s.hp : 1, s.mp ? d.cur.mp / s.mp : 1]); });
+      return m;
+    },
+    applyPct(m) {
+      api.touch(); // los máximos se recalculan con lo nuevo
+      m.forEach(([hp, mp], d) => {
+        if (!d.cur) return; const s = api.stats(d);
+        d.cur.hp = d.cur.hp <= 0 ? 0 : Math.max(1, Math.min(s.hp, Math.round(hp * s.hp)));
+        d.cur.mp = Math.max(0, Math.min(s.mp, Math.round(mp * s.mp)));
+      });
+    },
     /** v4.63: ¿sigue siendo «Nuevo»? La marca caduca a los 5 minutos aunque no abras su ficha. */
     isNew(d) {
       if (!d || !d.isNew) return false;
@@ -444,7 +502,7 @@
 
     /** Aprende los ataques de la especie para un nivel concreto. */
     learnAt(d, level, res) {
-      for (const [lv, m] of D.species[d.species].learn) {
+      for (const [lv, m] of learnList(d.species, d.house2)) {
         if (lv !== level || d.learned.includes(m)) continue;
         d.learned.push(m);
         if (d.moves.length < DK.config.maxMoves) { d.moves.push(m); res && res.learned.push(m); } else res && res.pending.push(m);
@@ -467,7 +525,7 @@
       d.species = next.into;
       if (d.forms) { d.form = (d.form || 0) + 1; if (next.extra) d.extra = (d.extra || 0) + 1; }
       const sp = D.species[d.species];
-      if (!sp.passives.includes(d.passive) && sp.passives.length) d.passive = d.passive || sp.passives[0];
+      if (!sp.passives.includes(d.passive) && sp.passives.length && !(d.house2 && passivesOfHouse(d.house2).includes(d.passive))) d.passive = d.passive || sp.passives[0];
       // Además de la base de la nueva especie, evolucionar da puntos extra (más cuanto más nivel)
       const scale = 1 + d.level / 30, bonus = {};
       KEYS().forEach((k) => { bonus[k] = Math.round(DK.config.evolveBonus[k] * scale); d.growth[k] += bonus[k]; });
@@ -478,7 +536,7 @@
       d.cur.mp = Math.round(s.mp * ratioMp);
       const res = { from, to: d.species, extra: !!next.extra, learned: [], pending: [], before, after: s, bonus };
       // ataques que la nueva forma ya debería conocer
-      for (const [lv] of sp.learn) if (lv <= d.level) api.learnAt(d, lv, res);
+      for (const [lv] of learnList(d.species, d.house2)) if (lv <= d.level) api.learnAt(d, lv, res);
       DK.store.state.stats.evolutions++;
       DK.emit('evolved', { d, from, to: d.species });
       DK.store.save();
@@ -497,7 +555,14 @@
     removeMove(d, index) { if (d.moves.length > 1) d.moves.splice(index, 1); },
 
     /** Próximos ataques que aprenderá: [[nivel, ataque]] */
-    upcoming(d) { return D.species[d.species].learn.filter(([lv]) => lv > d.level); },
+    upcoming(d) { return learnList(d.species, d.house2).filter(([lv]) => lv > d.level); },
+    /** v4.71: casas del daskai (1 o 2): [principal, segunda]. */
+    houses(d) { const h1 = D.species[d.species].house; return d.house2 && d.house2 !== h1 ? [h1, d.house2] : [h1]; },
+    /** ¿Es de doble casa? */
+    isDual(d) { return !!(d && d.house2 && d.house2 !== D.species[d.species].house); },
+    /** Lista de aprendizaje completa (especie + segunda casa). */
+    learnset(d) { return learnList(d.species, d.house2); },
+    house2Learn, otherHouse,
 
     /** Recompensa por liberar un daskai: piezas según su casa + monedas. */
     releaseReward(d) {
@@ -640,7 +705,7 @@
       (d.equip || []).forEach((id) => id && DK.bag.add(id));
       st.graveyard = st.graveyard || [];
       if (!d.temp && DK.legacy) DK.legacy.create(d); // deja su esencia para heredar
-      if (!d.temp) st.graveyard.unshift({ name: api.name(d), species: d.species, level: d.level, shiny: !!d.shiny, look: d.look, zone: zoneId, at: Date.now() });
+      if (!d.temp) st.graveyard.unshift({ name: api.name(d), species: d.species, level: d.level, shiny: !!d.shiny, look: DK.looks.of(d), zone: zoneId, at: Date.now() });
       st.party = this.all().filter((x) => x.uid !== uid);
       st.team = st.team.filter((x) => x !== uid);
       delete st.stats.usage[uid];

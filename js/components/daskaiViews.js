@@ -125,7 +125,7 @@
     const loop = () => { clearTimeout(timer); timer = setTimeout(() => { if (!stage.isConnected) return; play(); loop(); }, 2600 + Math.random() * 1600); };
     const f = DK.daskai.formsOf(d);
     const m = DK.ui.modal({ title: DK.daskai.name(d), icon: 'maximize', cls: 'showcase-modal' + (bare ? ' bare' : ''), closeX: true, content: () => h('div', { class: 'showcase' }, stage,
-      bare ? null : h('div', { class: 'sc-meta' }, h('span', { class: 'dk-species' }, DK.daskai.speciesName(d)), V.level(d.level), V.houseBadge(sp.house), V.formPips(d), V.shinyTag(d),
+      bare ? null : h('div', { class: 'sc-meta' }, h('span', { class: 'dk-species' }, DK.daskai.speciesName(d)), V.level(d.level), V.housesBadge(d), V.formPips(d), V.shinyTag(d),
         h('span', { class: 'muted small' }, f.total === 1 ? t('evo.single') : t('evo.formsTip', { n: f.now + 1, total: f.total })))) });
     m.promise.then(() => clearTimeout(timer));
     setTimeout(() => { play(); loop(); }, 180);
@@ -151,7 +151,7 @@
       h('div', { class: 'qs-top' },
         h('button', { class: 'qs-art', type: 'button', tip: t('detail.viewBig'), 'aria-label': t('detail.viewBig'), onClick: () => V.showcase(d) }, V.dSprite(d, { size: 84 }), V.formPips(d)),
         h('div', { class: 'qs-id' },
-          h('div', { class: 'qs-tags' }, h('span', { class: 'dk-species' }, DK.daskai.speciesName(d)), V.level(d.level), V.houseBadge(sp.house), V.roleBadge(d, { neutral: true }), V.shinyTag(d), V.statusTag(d.status),
+          h('div', { class: 'qs-tags' }, h('span', { class: 'dk-species' }, DK.daskai.speciesName(d)), V.level(d.level), V.housesBadge(d), V.roleBadge(d, { neutral: true }), V.shinyTag(d), V.statusTag(d.status),
             DK.daskai.isFainted(d) ? h('span', { class: 'badge bad' }, DK.icon('skull', 12), t('common.fainted')) : null),
           V.vitals(d, { exp: true }))),
       h('div', { class: 'qs-stats' }, D.statKeys.map((k) => h('div', { class: 'qs-stat', tip: DK.tr('stats', D.stats[k], 'desc') || DK.tr('stats', D.stats[k]) },
@@ -186,7 +186,7 @@
       h('div', { class: 'dk-row-sprite', style: { '--c': D.houseColor(sp.house) } }, V.dSprite(d, { size: compact ? 44 : 56 }), V.formPips(d)),
       h('div', { class: 'dk-row-main' },
         h('div', { class: 'dk-row-title' }, h('span', { class: 'dk-name' }, DK.daskai.name(d)), V.speciesSub(d), V.level(d.level)),
-        h('div', { class: 'dk-row-tags' }, V.houseBadge(sp.house), V.roleBadge(d), V.shinyTag(d), V.tempTag(d), V.statusTag(d.status),
+        h('div', { class: 'dk-row-tags' }, V.housesBadge(d), V.roleBadge(d), V.shinyTag(d), V.tempTag(d), V.statusTag(d.status),
           fainted ? h('span', { class: 'badge bad' }, DK.icon('skull', 13), t('common.fainted')) : null,
           DK.daskai.canEvolve(d) ? h('span', { class: 'badge evo', tip: t('evo.readyTip') }, DK.icon('evolve', 13), t('evo.ready')) : null, ...V.extraTags(d), ...tags),
         V.vitals(d)),

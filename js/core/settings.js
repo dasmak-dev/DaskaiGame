@@ -14,8 +14,8 @@
     lang: 'es',
     textSize: 'md',         // 'sm' | 'md' | 'lg' | 'xl'
     uiScale: 1,             // v4.57: tamaño de toda la interfaz (0.9 | 1 | 1.1 | 1.25), con CSS zoom
-    uiStyle: 'exile',       // 'exile' (Exilio: limpio + css/exile.css) | 'clean' (limpio, css/clean.css) | 'classic' (el de antes)
-    styleV: 2,              // v4.36: las partidas con el estilo limpio por defecto pasan a «Exilio» una vez
+    uiStyle: 'clean',       // v4.69: limpio por defecto · 'clean' (limpio, css/clean.css) | 'exile' (Exilio: limpio + css/exile.css) | 'classic' (el de antes)
+    styleV: 3,              // v4.69: versión de la migración de estilo (3 = el limpio pasa a ser el de por defecto, una vez)
     highContrast: false,
     colorblind: false,
     reduceMotion: false,
@@ -42,7 +42,9 @@
   function read() {
     try {
       const raw = JSON.parse(localStorage.getItem(KEY) || '{}');
-      if (!raw.styleV) { if (!raw.uiStyle || raw.uiStyle === 'clean') raw.uiStyle = 'exile'; raw.styleV = 2; }
+      if (!raw.styleV) raw.styleV = 2;
+      // v4.69: el estilo limpio pasa a ser el de por defecto (una vez; luego se respeta lo que elijas)
+      if (raw.styleV < 3) { if (!raw.uiStyle || raw.uiStyle === 'exile') raw.uiStyle = 'clean'; raw.styleV = 3; }
       return Object.assign({}, DEFAULTS, raw);
     } catch (e) { return Object.assign({}, DEFAULTS); }
   }

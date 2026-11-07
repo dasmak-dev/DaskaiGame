@@ -84,7 +84,7 @@
         h('span', { class: 'save-num' }, t('saves.slotN', { n })),
         last ? h('span', { class: 'save-last' }, DK.icon('check', 12), t('saves.lastPlayed')) : null),
       h('div', { class: 'save-head' },
-        m.exists ? h('div', { class: 'save-portrait' }, m.avatar ? V.avatar(m, { size: 64 }) : m.bestSpecies ? V.sprite(m.bestSpecies, { size: 64, cls: last ? 'float' : '' }) : DK.icon('skull', 26))
+        m.exists ? h('div', { class: 'save-portrait' }, m.avatar ? V.avatar(m, { size: 64, leader: m.leader }) : m.leader ? V.sprite(m.leader.species, { size: 64, look: m.leader.look, shiny: m.leader.shiny, cls: last ? 'float' : '' }) : m.bestSpecies ? V.sprite(m.bestSpecies, { size: 64, cls: last ? 'float' : '' }) : DK.icon('skull', 26))
           : h('div', { class: 'save-empty-icon' }, DK.icon('plus', 26)),
         h('div', { class: 'save-title' },
           h('h3', null, m.exists ? m.name : t('saves.empty')),

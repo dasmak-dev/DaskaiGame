@@ -357,6 +357,110 @@ Se carga la última y sólo sobrescribe: paleta (piedra oscura, bronce, oro `--g
 - **Expedición:** al entrar en el mapa, el equipo, la mochila o un combate durante una expedición, `#zone-backdrop` (creado en `screens/expedition.js` con `screen:enter`) pinta detrás de todo la escena de la zona actual, oscurecida; `body.in-exp`.
 - **Combate:** la arena usa la escena de la zona (`components/scenes.js`, ahora con árboles muertos, ruinas, tumbas, cristales o tentáculos según la zona) y los **jefes tienen su propio fondo**: `DK.scenes.bossScene(zona, secreto)` → `boss_<escena>` (menhires bajo luna roja, bosque muerto, naufragio con tormenta, bosque de cristales, forja de lava, santuario con estatua, fauces del abismo, ruinas entre rayos) y `boss_secret` (cripta) para los jefes ocultos.
 
+### Cambios de la v4.73 — Iconos de daskai, retrato del líder y tarjeta para compartir
+
+- **Favicon al azar** (`DK.app.favicon()`, al arrancar): en cada visita la pestaña muestra un daskai distinto (especie y aspecto al azar; un 30 % con dos casas). Se pinta en un canvas de 64 px y se pone como PNG. Si falla, queda el fijo `icons/icon.svg`. Safari suele ignorar los favicons cambiados por JS.
+- **Icono de la app instalada** (fijo; no puede ser al azar porque el sistema lo guarda al instalar): generado con `node tools/make-icons.js [especie] [semilla] [casa2]` (Playwright). Ahora es Draconyx sobre fondo morado con el resplandor de su casa. Escribe en `icons/`:
+  - `icon.svg`, `icon-192.png` e `icon-512.png`;
+  - `icon-maskable-512.png` (Android adaptativo; el daskai cabe en la zona segura del 80 %);
+  - `apple-touch-icon.png` (180 px, iPhone).
+- **Que el móvil vea el icono nuevo**: el manifiesto, `index.html` y la lista de `sw.js` piden los iconos con `?v=473`. Al cambiar la URL, Chrome Android actualiza el icono de la app instalada en su siguiente comprobación del manifiesto (puede tardar un día o pedir confirmación). iOS no actualiza iconos: hay que quitarla y volver a añadirla. **Si regeneras los iconos, sube ese `?v=`** en los tres sitios.
+- **`DK.looks.image(sid, look, { shiny, pixel })` y `DK.looks.paint(ctx, pic, x, y, w, h, { foot })`**: el dibujo de un daskai listo para un `<canvas>`.
+  - Es igual que en pantalla: pixel art si el ajuste `pixelArt` está activo, o vectorial si no; también se puede forzar.
+  - Viene recortado a lo que ocupa de verdad, porque el SVG trae margen para todas sus formas.
+  - `paint` lo encaja sin deformar y sin suavizar el pixel art.
+- **Foto de perfil = el líder tal cual**:
+  - `DK.avatars.subject(av, leader)` decide qué daskai sale. Sin foto (el líder) sale el líder con su aspecto, sus dos casas y su forma; un daskai elegido de la lista sale con la forma típica de su especie, como hasta ahora.
+  - `V.avatar` lo usa y admite `leader` para otras ranuras.
+  - `DK.store.slotMeta(n).leader = { species, look, shiny }` del primero del equipo de esa ranura. El retrato de las partidas guardadas lo usa: es el mismo daskai que el de tu perfil.
+- **Tarjeta para compartir** (`components/shareCard.js`):
+  - Los daskai (foto y favorito) se dibujan con `DK.looks.image`, igual que en el juego: con su aspecto, colores y forma, y en pixel art o no según tu ajuste. Antes usaba el sistema de sprites antiguo (`DK.sprites`) y salían distintos.
+  - Con doble casa, el fondo de la foto se tiñe también con la segunda casa.
+  - Hay una línea discreta bajo el nombre con expediciones, jefes vencidos, especies vistas y golpe máximo; cada dato solo sale si lo tienes. Textos nuevos en `share.expeditions`, `bosses`, `species` y `biggestHit` (es/en).
+
+### Cambios de la v4.72 — Los dos colores también al elegir el inicial
+
+- **Fallo corregido**: en «Elige tu daskai» los iniciales (que siempre son de doble casa) se veían con los colores de una sola casa, tanto el daskai como su línea de evolución. Al elegirlo ya salía bien. La causa era que la pantalla pasaba al dibujo `d.look`, que no lleva la segunda casa. Ahora usa `DK.looks.of(d)`, y en la línea de evolución `{ ...d.look, h2: d.house2 }` (la etapa sale de cada especie).
+- **Mismo fallo en los registros guardados**: el cementerio (`daskai.js`), las esencias (`rules.js`) y el historial de combates (`battle.js`, `enemy.look`) guardan ahora `DK.looks.of(d)`, con la segunda casa. Los registros antiguos se siguen viendo como antes.
+- **«Fuerte contra» y «Débil contra» del inicial**: cuentan las dos casas con la misma eficacia que en combate (`houseMult` multiplicada) y pueden listar varias casas («Oscuridad · Agua»).
+- **Regla para el futuro**: para dibujar un daskai concreto, usa siempre `DK.looks.of(d)` o `V.dSprite(d)` y nunca `d.look` a secas, o se pierde la segunda casa (y la etapa de las formas).
+
+### Cambios de la v4.71 — Daskai de doble casa y más formas (cuerpos, patas, bocas, cuernos)
+
+- **Doble casa** (`d.house2`; la casa principal sigue siendo la de la especie):
+  - **API** (`systems/daskai.js`): `DK.daskai.houses(d)` → `[principal, segunda]`, `isDual(d)`, `learnset(d)` (especie + segunda casa), `house2Learn(casa)` y `otherHouse(no, semilla)`. `create(sp, lv, { house2: 'agua' })` fija la segunda casa y `{ dual: true }` la sortea. Los jefes, con `boss`, siempre tienen la misma para cada especie (`hash('boss2:' + especie)`).
+  - **Quién la tiene** (`config.dual`): los **iniciales siempre** (`starter` → su casa + otra al azar). Los **jefes** y jefes ocultos siempre (`boss: 1`, `secret: 1`). Los rivales de **élite** el 50 %, los **reclutas** el 15 % y un combate normal el 4 %. En total ≈ 1 de cada 10; el 90 % son de una sola casa. Al vincularlos la conservan, y al evolucionar también.
+  - **Combate** (`systems/battle.js`):
+    - `houseMult(att, def)` acepta una lista de casas del defensor y multiplica las dos. Si una te favorece y otra te resiste, se compensan (×1,5 × 0,75).
+    - `isStab`: «misma casa» con ataques de cualquiera de sus casas.
+    - `bestHouseMult(A, B)`: lo mejor de cada uno, usado en «ventaja/desventaja» del banquillo y en la ficha de combate.
+    - Las reliquias de daño por casa suman las dos casas. Los botones de ataque calculan la eficacia contra las dos.
+  - **Ataques y pasivas**: aprende 5 ataques de su segunda casa a los niveles 1, 9, 17, 27 y 38 (`H2_LEVELS`; los de esa casa por orden de nivel en el que los aprenden sus especies). La pestaña «Aprende» los muestra junto a los de la especie. Nace con una pasiva de la segunda casa la mitad de las veces (`passivesOfHouse`) y la conserva al evolucionar.
+  - **Aspecto** (`systems/looks.js`, `withHouse2`; el aspecto lleva `h2`: `lookOf` lo añade, y también va en las claves de caché `ind`/`pxKey`):
+    - La mitad trasera del cuerpo pasa en degradado al color de la segunda casa (`skin2`, `split` 0,42–0,62).
+    - También toman ese color la cola y los segmentos, los cuernos (`horn` de la segunda casa), las manos y, a menudo, el pelo.
+    - A veces llevan las orejas u ojos típicos de la segunda casa (`HOUSE_BIAS`).
+    - Los jefes de doble casa usan su aspecto típico con los dos colores (`lookOf` → `{ h2 }`).
+  - **Interfaz**: `V.housesBadge(d)`, una insignia partida en dos colores con los dos iconos («Luz · Oscuridad»). Su tip explica las dos casas y la doble casa. Se usa en el detalle, el resumen rápido, filas, equipo, combate (cabecera, ficha y banquillo), reclutas, la vista en grande y el inicial.
+- **Más formas** (semilla nueva `NEW6_TAG` 0xa8; los aspectos que ya existían no cambian):
+  - **Cuerpos** (`BODIES6`): silla de montar, cápsula, erizado, bellota y patata.
+  - **Patas** (`LEGS6`): ruedas, de cangrejo, con botas, aletas planas y de insecto.
+  - **Bocas** (`MOUTHS6`): pico de rapaz, trompa, mandíbulas, relamiéndose y hocico de perro.
+  - **Cuernos/orejas** (`EARS6`): cuernos curvos, cuernecitos, antenas largas, cresta de abanico y orejas de zorro.
+  - Con sus sílabas y finales de nombre y sus textos en es/en.
+- **Tests**:
+  - Nuevo «Doble casa: iniciales, jefes, eficacia combinada, misma casa y ataques de la segunda».
+  - «Un combate completo» usa el primer ataque que hace daño (el inicial ahora puede tener ataques de apoyo de su segunda casa).
+
+### Cambios de la v4.70 — Hoguera rediseñada y «Tu equipo» más grande en la preparación
+
+- **Hoguera de la expedición** (`screens/expedition.js`, rama `rest`; `.rest2`): antes se veía el equipo dos veces (en pequeño en «Descansar» y en una cuadrícula de 4 + 2 en «Entrenar»). Ahora:
+  - A la izquierda, el equipo una sola vez, uno debajo de otro (`.rt-row`, `role="radio"`). Cada fila lleva el dibujo, nombre, nivel (con «→ nivel siguiente» en el elegido), la barra de vida con una franja clara que late (lo que curaría descansar), números y «+PV».
+  - Pulsar una fila elige a quién entrenar, sin repintar el panel.
+  - A la derecha (fija al bajar en PC), dos tarjetas: **Descansar** (% real con Hoguera del campamento y corrupción, y «+N PV para el equipo» o «ya está al máximo») y **Entrenar** (a quién y su nivel siguiente, `.rt-who`).
+  - «Volver a casa» sigue abajo. En móvil, una columna: equipo y luego acciones.
+  - Funciona igual con 1 a 6 daskai (siempre filas, nada descentrado).
+  - Test de la tienda actualizado (`.rt-row`, `.rt-who`). Textos nuevos: `exp.restGain`, `exp.restFull`.
+- **Preparación de la expedición, «Tu equipo»** (`screens/zones.js`, `.bt-prep .bt-team`): fichas grandes (dibujo de 56 px, nombre, nivel, barra y números) en una cuadrícula que llena la columna.
+  - Con 4 o más, las fichas se estiran a lo alto cuando la mochila crece (`grid-auto-rows: minmax(64px, 1fr)`).
+  - Con 1 a 3, altura natural y dibujo más grande (72 px).
+  - En PC, una columna (o dos si cabe); en móvil, dos.
+
+### Cambios de la v4.69 — Sin «Luchará», estilo limpio por defecto, crecimiento más contenido y más rasgos
+
+- **Fin del combate libre**: sin el desplegable «Luchará». Sigue luchando el mismo (o el primero en pie) y a la izquierda se ve quién es; para cambiarlo, el banquillo.
+- **Estilo limpio por defecto** (`core/settings.js`): `uiStyle: 'clean'`. Migración `styleV: 3`: las partidas que estaban en «Exilio» (era el de por defecto) pasan una vez al limpio; luego se respeta lo que elijas en Ajustes.
+- **Crecimiento por nivel** (`config.growth`, `rollGrowth`):
+  - Cada subida da entre **0 y 5** puntos por atributo (`min`/`max`), con una media de unos 2 (antes ≈ 2,9 y hasta 8).
+  - Fórmula: `azar(level [1, 3]) × ritmo (growthBias: especie 0,7 + pasivas 1,5, entre 0,5 y 1,6) ± naturaleza ([0, 1])`.
+  - El 5 sólo sale con un atributo muy favorecido (especie fuerte en él, pasivas y naturaleza a favor): ≈ 0,5 % de las subidas.
+  - Los rivales y reclutas se generan con la misma regla (`create` aplica `applyGrowth` nivel a nivel), así que un nivel 50 tiene los atributos que le tocan con esa media, más sus pasivas, rasgo, forma y dificultad.
+  - `growthAvg` también se limita a 0–5.
+  - **Partidas existentes**: migración `growthV: 2` (`store.migrate`). Lo ganado por nivel de tus daskai se multiplica una vez por 0,72 (la misma proporción) y la vida se ajusta al nuevo máximo. El equipo, los tónicos y la herencia no cambian. Las partidas nuevas nacen con `growthV: 2`.
+  - Medido a nivel 50 (60 daskai): ataque ≈ 124 (antes 175), vida ≈ 204 (antes 251).
+- **Más rasgos** (`systems/looks.js`, etiqueta de semilla nueva `NEW5_TAG` 0xa7; los aspectos que ya existían no cambian):
+  - **Brazos**: 7 nuevos (`ARMS5`): sin brazos, tentáculo, de hoja, aletas de plumas, saludando, garras largas y de cristal (color por casa). Ahora el 85 % de los nuevos daskai lleva un tipo de brazo propio o ninguno; antes la mayoría tenía el brazo corto por defecto con la mano de su casa.
+  - **Ojos** (`EYES5`): gafas de sol, monóculo, en equis, en blanco y ojeras.
+  - **Bocas** (`MOUTHS5`): hocico, chicle, dientes apretados, máscara y besito.
+  - **Accesorios finales** (`FINALS5`): chistera, sombrero de mago, auriculares, pajarita y gorro de lana. El encuadre deja sitio a los sombreros altos (`extraTop`).
+  - Nombres: prefijos para los brazos y accesorios nuevos, y sílabas para los ojos y bocas nuevos. Textos en `look.*` (es y en).
+
+### Cambios de la v4.68 — Vida al empezar expedición, el mapa no se mueve, recorrido con la página, fin de combate libre y cofres
+
+- **Vida al empezar una expedición** (era un fallo, no la dificultad): durante la expedición tus daskai tienen bonus de vida máxima (Vigor del campamento y reliquias de PV, `daskai.stats`: `relics.statPct` + `camp.value('vigor')`). El máximo subía, pero la vida actual no, y todos empezaban «heridos» (con Vigor 3, 80/100).
+  - Nuevo `DK.daskai.snapPct()` / `applyPct(m)`: guarda el % de vida y maná de la colección y lo vuelve a aplicar con los máximos nuevos.
+  - Se usa al empezar la expedición (`expedition.start`), al ganar una reliquia (`relics.give`) y al terminarla (las 4 salidas que ponen `st().expedition = null`), para que el máximo baje sin dejar vida de sobra.
+- **El mapa no se mueve al volver de un piso o combate** (`screens/expedition.js`, `mapMem`):
+  - Se apunta dónde estabas (caja del mapa, página y `.screen-host`) al entrar en un nodo (`go` → `rememberMap`) y mientras te mueves por el mapa (scroll, con una pausa de 0,5–0,6 s tras pintar para no apuntar el «subir arriba» de la app).
+  - Al volver se recupera tal cual, sin recentrar. Se guarda por mapa (`seed|depth`).
+- **Recorrido de entrada con la página** (`flyIn`): la página baja a la vez que la caja del mapa y llega al final justo cuando acaba la animación. Busca el elemento que se desplaza (`.screen-host` o el documento). Cualquier rueda, toque o tecla en la ventana lo corta.
+- **Fin del combate libre** (`screens/battle.js`): usa la misma barra compacta que la expedición (`.end-exp.free`).
+  - A la izquierda, quién luchará: desplegable si hay varios en pie; si no, su miniatura, nombre y % de vida.
+  - A la derecha, «Salir» (3), «Curar» (2, con cuántos heridos hay) y «Siguiente combate» (1).
+  - En móvil las teclas rápidas no se muestran en esta barra.
+- **Botín del cofre** (`.chest-panel .loot-grid`, `--n` = número de tarjetas): flex centrado con columnas según el ancho (5 en PC; 4, 3 o 2 al estrecharse). Nunca queda una tarjeta suelta a la izquierda.
+- Prueba interna v1: la cueva se crea si el mapa aleatorio no tenía ninguna libre (antes fallaba con algunos mapas).
+
 ### Cambios de la v4.67 — Daskai de la hoguera, avisos arriba, mercader, cabecera del mapa y recorrido de entrada
 
 - **Daskai junto a la hoguera** (`components/camp.js`): pulsarlos abre el mismo resumen rápido que «Tu equipo» (`V.quickStats`), en vez de ir a la pantalla de equipo. `V.campScene({ onChange })` repinta el Inicio si cambias algo desde ahí.

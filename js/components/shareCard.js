@@ -6,7 +6,8 @@
  *                            Descargar · Copiar imagen · Compartir
  *
  * Se dibuja en un <canvas> (sin librerías): foto con su marco, nombre,
- * título, lema, 6 estadísticas, daskai favorito y victorias por casa.
+ * título, una línea con más datos, 6 estadísticas, daskai favorito y victorias
+ * por casa. Los daskai salen como en el juego (DK.looks.image: pixel art o no).
  * Para cambiar el diseño edita draw(); los textos están en lang → share.
  * ============================================================= */
 (function () {
@@ -67,13 +68,20 @@
       const img = await svgImage(iconSvg(av.icon, '#ffffff'));
       if (img) ctx.drawImage(img, cx - r * 0.5, cy - r * 0.5, r, r);
     } else {
-      const leader = DK.party.leader() || DK.party.all()[0];
-      const sp = av && av.kind === 'daskai' ? av.species : leader && leader.species;
-      const col = sp ? D.houses[D.species[sp].house].color : '#6d5dfc';
+      // v4.73: el mismo daskai que la foto del perfil (el líder tal cual o la especie elegida),
+      // con el estilo de la partida: pixel art o dibujo vectorial según el ajuste
+      const who = DK.avatars.subject(av);
+      const col = who ? D.houseColor(D.species[who.species].house) : '#6d5dfc';
       const g = ctx.createRadialGradient(cx, cy + r * 0.4, 0, cx, cy, r * 1.2);
       g.addColorStop(0, col + 'aa'); g.addColorStop(1, '#1d2240');
       ctx.fillStyle = g; ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
-      if (sp) { const img = await svgImage(DK.sprites.svg(D.species[sp], { shiny: !!(av && av.shiny) })); if (img) ctx.drawImage(img, cx - r * 0.85, cy - r * 0.7, r * 1.7, r * 1.7); }
+      // Doble casa: la segunda tiñe el lado derecho del fondo
+      if (who && who.look && who.look.h2 && D.houses[who.look.h2]) {
+        const g2 = ctx.createLinearGradient(cx - r, cy, cx + r, cy);
+        g2.addColorStop(0.35, D.houseColor(who.look.h2) + '00'); g2.addColorStop(1, D.houseColor(who.look.h2) + '88');
+        ctx.fillStyle = g2; ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+      }
+      if (who) DK.looks.paint(ctx, await DK.looks.image(who.species, who.look, { shiny: who.shiny }), cx - r * 0.62, cy - r * 0.6, r * 1.24, r * 1.24);
     }
     ctx.restore();
   }
@@ -106,7 +114,14 @@
     const X = 430;
     ctx.fillStyle = '#a5b4fc'; ctx.font = `600 22px ${FONT}`; ctx.fillText(DK.avatars.titleText(p).toUpperCase(), X, 140);
     ctx.fillStyle = '#eceefb'; ctx.font = `800 64px ${FONT}`; ctx.fillText(p.name, X, 205);
-    // (el lema se quitó del perfil en la v4.28)
+    // v4.73: una línea discreta con algo más de su partida (sólo lo que tenga)
+    const lang = DK.i18n.lang, extra = [
+      s.expeditions ? t('share.expeditions', { n: s.expeditions.toLocaleString(lang) }) : null,
+      s.bossesDefeated ? t('share.bosses', { n: s.bossesDefeated.toLocaleString(lang) }) : null,
+      t('share.species', { n: DK.avatars.knownSpecies().length, total: Object.keys(D.species).length }),
+      s.biggestHit ? t('share.biggestHit', { n: s.biggestHit.toLocaleString(lang) }) : null,
+    ].filter(Boolean);
+    ctx.fillStyle = 'rgba(236,238,251,.55)'; ctx.font = `500 19px ${FONT}`; ctx.fillText(extra.join('   ·   '), X, 244);
 
     // Estadísticas (3 × 2)
     const decided = s.wins + s.losses;
@@ -128,8 +143,7 @@
     // Favorito
     const used = DK.party.mostUsed();
     if (used && used.d) {
-      const img = await svgImage(DK.sprites.svg(D.species[used.d.species], { shiny: !!used.d.shiny }));
-      if (img) ctx.drawImage(img, 70, 455, 110, 110);
+      DK.looks.paint(ctx, await DK.looks.image(used.d.species, DK.looks.of(used.d), { shiny: !!used.d.shiny }), 70, 455, 110, 110, { foot: true });
       ctx.fillStyle = 'rgba(236,238,251,.6)'; ctx.font = `600 17px ${FONT}`; ctx.fillText(t('share.favorite'), 190, 495);
       ctx.fillStyle = '#ffffff'; ctx.font = `700 28px ${FONT}`; ctx.fillText(`${DK.daskai.name(used.d)} · ${t('common.lvl')} ${used.d.level}`, 190, 530);
     }

@@ -26,6 +26,27 @@
   DK.menus.define('nav');
 
   DK.app = {
+    /**
+     * v4.73: el icono de la pestaña es un daskai al azar en cada visita (especie, aspecto y, a veces,
+     * dos casas). Se pinta en un <canvas> de 64 px y se pone como PNG; si algo falla se queda el
+     * icono fijo de icons/ (el mismo de la app instalada; ver tools/make-icons.js).
+     */
+    favicon() {
+      try {
+        const D = DK.data, ids = Object.keys(D.species).filter((id) => !D.species[id].sprite || !D.species[id].sprite.img);
+        const sid = ids[Math.floor(Math.random() * ids.length)], hs = Object.keys(D.houses);
+        const look = { s: (Math.random() * 0xffffffff) >>> 0 };
+        if (Math.random() < 0.3) look.h2 = hs[Math.floor(Math.random() * hs.length)];
+        DK.looks.image(sid, look, { pixel: false }).then((pic) => {
+          if (!pic) return;
+          const c = document.createElement('canvas'); c.width = c.height = 64;
+          DK.looks.paint(c.getContext('2d'), pic, 1, 1, 62, 62);
+          let link = document.querySelector('link[rel="icon"]');
+          if (!link) { link = document.createElement('link'); link.rel = 'icon'; document.head.append(link); }
+          link.type = 'image/png'; link.href = c.toDataURL('image/png');
+        });
+      } catch (e) { /* se queda el icono fijo */ }
+    },
     /** Arranca el juego: aplica ajustes, construye la carcasa y abre el menú principal. */
     init() {
       const { h } = DK.ui;
@@ -41,6 +62,7 @@
       root.append(h('a', { class: 'skip-link', href: '#main' }, DK.t('common.skipToContent')), topbar,
         h('div', { class: 'app-body' }, screenHost), dock);
       this.renderActions();
+      this.favicon();
 
       // Reconstruir textos cuando cambian idioma o tema
       DK.on('settings:changed', ({ key }) => {

@@ -104,7 +104,7 @@
       (st.phases || []).forEach((p) => ui.eHp.querySelector('.bar-track').append(h('i', { class: 'phase-mark', style: { left: p.at * 100 + '%' }, tip: t('phase.name.' + p.type) })));
       enemyHud.replaceChildren(
         h('div', { class: 'hud-title' }, h('b', null, st.boss ? (st.bossInfo || zone.boss).title : DK.daskai.name(e)), V.level(e.level)),
-        h('div', { class: 'hud-tags' }, st.boss ? h('span', { class: 'badge leader' }, DK.icon('crown', 13), t('battle.boss')) : null, V.houseBadge(sp.house, { known: st.known }), V.roleBadge(e), V.shinyTag(e), ui.eStatus, ui.ePhase),
+        h('div', { class: 'hud-tags' }, st.boss ? h('span', { class: 'badge leader' }, DK.icon('crown', 13), t('battle.boss')) : null, V.housesBadge(e, { known: st.known }), V.roleBadge(e), V.shinyTag(e), ui.eStatus, ui.ePhase),
         ui.eHp, ui.eMp, ui.eBreak, ui.intent);
       updateBreak();
       ui.eSprite = V.dSprite(e, { size: st.boss ? 210 : 180, cls: 'idle grounded' });
@@ -119,7 +119,7 @@
       ui.aLevel = h('span', null, V.level(a.level));
       allyHud.replaceChildren(
         h('div', { class: 'hud-title' }, h('b', null, DK.daskai.name(a)), ui.aLevel),
-        h('div', { class: 'hud-tags' }, V.houseBadge(sp.house), V.roleBadge(a), V.shinyTag(a), V.tempTag(a), ui.aStatus),
+        h('div', { class: 'hud-tags' }, V.housesBadge(a), V.roleBadge(a), V.shinyTag(a), V.tempTag(a), ui.aStatus),
         ui.aHp, ui.aMp, ui.aExp);
       ui.aSprite = V.dSprite(a, { size: 210, flip: true, cls: 'idle grounded' });
       allySlot.replaceChildren(ui.aSprite);
@@ -382,7 +382,7 @@
       const first = B().orderFor(st, mid).first;
       const knownWeak = m.power > 0 && B().weakKnown(st.enemy.species) && B().weakness(st.enemy.species) === m.kind;
       // --- v4.40: botón por capas (nombre y orden · eficacia · daño · datos) ---
-      const hm = pv && m.power ? B().houseMult(B().moveHouse(a, m), D.species[st.enemy.species].house).mult : 1;
+      const hm = pv && m.power ? B().houseMult(B().moveHouse(a, m), DK.daskai.houses(st.enemy)).mult : 1;
       const fmtX = (x) => '×' + (+x.toFixed(2)).toLocaleString(DK.i18n.lang);
       // Franja de eficacia: lo primero que se lee después del nombre
       const effStrip = !m.power ? h('span', { class: 'bm-eff sup' }, DK.icon('sparkle', 12), h('span', null, m.effect ? V.effectText(m) : t('move.support')))
@@ -434,9 +434,9 @@
      */
     function matchup(d) {
       if (!st.known) return { cls: 'unknown', text: t('battle.mUnknown') };
-      const mine = D.species[d.species].house, theirs = D.species[st.enemy.species].house;
-      const atk = B().houseMult(mine, theirs).eff;   // mi ataque contra él
-      const def = B().houseMult(theirs, mine).eff;   // su ataque contra mí
+      // v4.71: con doble casa cuenta lo mejor de cada uno
+      const atk = B().bestHouseMult(d, st.enemy).eff;   // mi ataque contra él
+      const def = B().bestHouseMult(st.enemy, d).eff;   // su ataque contra mí
       if (atk === 'strong' || def === 'weak') return { cls: 'good', text: t('battle.mGood') };
       if (def === 'strong' || atk === 'weak') return { cls: 'bad', text: t('battle.mBad') };
       return { cls: 'even', text: t('battle.mEven') };
@@ -594,7 +594,7 @@
           h('div', { class: 'bs-portrait' }, V.sprite(d.species, { look: DK.looks.of(d), size: 52, flip: side === 'ally', shiny: d.shiny })),
           h('div', { class: 'bs-who' },
             h('b', { class: 'bs-name' }, side === 'ally' || !st.boss ? DK.daskai.name(d) : (st.bossInfo || zone.boss).title),
-            h('div', { class: 'bs-tags' }, V.level(d.level), V.houseBadge(sp.house, { known: side === 'ally' || st.known }), V.statusTag(d.status)),
+            h('div', { class: 'bs-tags' }, V.level(d.level), V.housesBadge(d, { known: side === 'ally' || st.known }), V.statusTag(d.status)),
             bar({ value: d.cur.hp, max: s.hp, kind: 'hp', icon: 'heart' }),
             bar({ value: d.cur.mp, max: s.mp, kind: 'mp', icon: 'sparkle' })));
       };
@@ -614,8 +614,8 @@
       // Eficacia en los dos sentidos
       const effName = (eff) => (eff === 'strong' ? t('battle.effStrong') : eff === 'weak' ? t('battle.effWeak') : t('battle.effNormal'));
       const hk = st.known;
-      const mine = hk ? B().houseMult(asp.house, esp.house).eff : null;
-      const theirs = hk ? B().houseMult(esp.house, asp.house).eff : null;
+      const mine = hk ? B().bestHouseMult(a, e).eff : null;
+      const theirs = hk ? B().bestHouseMult(e, a).eff : null;
       const matchup = h('div', { class: 'bs-matchup' },
         h('div', { class: 'bs-eff ' + (mine || 'normal') }, h('small', null, t('battle.yourHits')), h('b', null, hk ? effName(mine) : '?')),
         h('div', { class: 'bs-eff ' + (theirs === 'strong' ? 'weak' : theirs === 'weak' ? 'strong' : 'normal') }, h('small', null, t('battle.theirHits')), h('b', null, hk ? effName(theirs) : '?')));
@@ -814,16 +814,13 @@
       // Quién lucha en el siguiente: por defecto el mismo (si sigue en pie)
       const cur = B().ally(st);
       if (!params._nextUid || !alive.some((d) => d.uid === params._nextUid)) params._nextUid = cur && !DK.daskai.isFainted(cur) ? cur.uid : alive[0] && alive[0].uid;
-      const who = alive.length > 1 ? h('label', { class: 'next-who' }, h('span', { class: 'muted small' }, t('battle.nextFighter')),
-        DK.ui.select({ label: t('battle.nextFighter'), value: params._nextUid, onChange: (v) => (params._nextUid = v),
-          options: alive.map((d) => ({ value: d.uid, label: `${DK.daskai.name(d)} · ${t('common.lvl')} ${d.level} · ${Math.round(DK.daskai.hpPct(d) * 100)}% ${t('common.hpShort')}` })) })) : null;
+      // (v4.69: ya no hay desplegable «Luchará» al acabar)
       const next = () => {
         if (!params._nextUid) return;
         DK.router.replace('battle', { zone: st.zoneId, leaderUid: params._nextUid, boss: DK.expedition.active() ? DK.expedition.isBossNext() : false });
       };
       const keys = { 1: next, Enter: next, 2: () => heal.click(), 3: goHub };
       const expNow = DK.expedition.active();
-      let cont, third, whoEl = who;
       if (expNow) {
         // En una expedición se vuelve al mapa para elegir el siguiente paso
         const toMap = () => { if (params._nextUid) expNow.leader = params._nextUid; DK.store.save(); DK.router.reset('expedition'); };
@@ -840,11 +837,19 @@
             h('span', { class: 'ee-chip gold' }, DK.icon('coin', 14), h('b', null, expNow.loot.coins))),
           h('div', { class: 'ee-btns' }, healBtn, back)));
         drawToolbar(); bindKeys(keys); return;
-      } else {
-        cont = btn({ icon: 'swords', label: t('battle.nextFight'), size: 'lg', variant: 'primary', hotkey: '1', disabled: !alive.length, desc: alive.length ? t('battle.continueDesc') : t('battle.noneStanding'), onClick: next });
-        third = exit;
       }
-      actionsEl.replaceChildren(h('div', { class: 'end-panel' }, h('div', { class: 'end-main' }, whoEl, cont), h('div', { class: 'end-side' }, heal, third)));
+      // v4.68: el combate libre usa la misma barra compacta que la expedición. A la izquierda quién lucha
+      // en el siguiente (desplegable si hay varios en pie); a la derecha salir, curar y siguiente combate.
+      const hurt = DK.party.active().filter((d) => !DK.daskai.isFainted(d) && DK.daskai.hpPct(d) < 1).length;
+      const nextBtn = btn({ icon: 'swords', label: t('battle.nextFight'), variant: 'primary', hotkey: '1', disabled: !alive.length, tip: alive.length ? t('battle.continueDesc') : t('battle.noneStanding'), onClick: next });
+      const healBtn = btn({ icon: 'flask', label: t('heal.short'), variant: 'tone', hotkey: '2', tip: t('battle.healDesc'), onClick: () => heal.click() });
+      if (hurt) healBtn.append(h('span', { class: 'ee-hurt', tip: t('battle.hurtTip', { n: hurt }) }, DK.icon('heart', 11), hurt));
+      const exitBtn = btn({ icon: 'home', label: t('battle.exit'), variant: 'ghost', hotkey: '3', tip: t('battle.exitDesc'), onClick: goHub });
+      const fighter = alive.find((d) => d.uid === params._nextUid);
+      // v4.69: sin el desplegable «Luchará»: sigue el mismo (o el primero en pie); se cambia desde el banquillo
+      const left = fighter ? h('div', { class: 'ee-loot' }, h('span', { class: 'ee-lbl' }, t('battle.nextFighter')), h('span', { class: 'ee-chip' }, V.dSprite(fighter, { size: 22 }), h('b', null, DK.daskai.name(fighter)), h('small', { class: 'muted' }, Math.round(DK.daskai.hpPct(fighter) * 100) + '%')))
+        : h('div', { class: 'ee-loot' }, h('span', { class: 'ee-lbl' }, t('battle.noneStanding')));
+      actionsEl.replaceChildren(h('div', { class: 'end-exp free' }, left, h('div', { class: 'ee-btns' }, exitBtn, healBtn, nextBtn)));
       drawToolbar();
       bindKeys(keys);
     }

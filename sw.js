@@ -6,7 +6,7 @@
  * sube el número de CACHE para que los jugadores reciban la versión
  * nueva. (Sólo funciona servido por http/https, no con file://).
  * ============================================================= */
-const CACHE = 'daskai-v4.67.0';
+const CACHE = 'daskai-v4.73.0';
 const FILES = [
     './',
     './css/base.css',
@@ -21,9 +21,12 @@ const FILES = [
     './css/clean.css',
     './css/exile.css',
     './css/motion.css',
-    './icons/icon-192.png',
-    './icons/icon-512.png',
-    './icons/icon.svg',
+    // v4.73: «?v=» cambia con cada icono nuevo para que el móvil instalado vea que ha cambiado
+    './icons/icon-192.png?v=473',
+    './icons/icon-512.png?v=473',
+    './icons/icon-maskable-512.png?v=473',
+    './icons/apple-touch-icon.png?v=473',
+    './icons/icon.svg?v=473',
     './index.html',
     './js/components/celebrations.js',
     './js/components/talentViews.js',

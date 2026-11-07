@@ -84,11 +84,11 @@
     const picker = h('div', { class: 'st-picker', role: 'radiogroup', 'aria-label': t('newGame.pickTitle') }, starters.map((s, i) =>
       h('button', { class: 'st-pick' + (s.id === params.pick ? ' on' : ''), type: 'button', role: 'radio', 'aria-checked': String(s.id === params.pick), 'aria-label': DK.daskai.name(params.rolls[s.id]),
         tip: `${DK.daskai.name(params.rolls[s.id])} · ${s.name} · ${DK.tr('houses', D.houses[s.house])}`, style: { '--c': D.houseColor(s.house) }, onClick: () => choose(s.id) },
-        V.sprite(s.id, { size: 52, look: params.rolls[s.id].look }), h('span', { class: 'st-pick-house' }, DK.icon(D.houses[s.house].icon, 12)), h('kbd', { class: 'hotkey' }, String(i + 1)))));
+        V.sprite(s.id, { size: 52, look: DK.looks.of(params.rolls[s.id]) }), h('span', { class: 'st-pick-house' }, DK.icon(D.houses[s.house].icon, 12)), h('kbd', { class: 'hotkey' }, String(i + 1)))));
 
     const stage = h('div', { class: 'st-stage', style: { '--c': D.houseColor(sp.house) } },
       h('button', { class: 'st-arrow prev', type: 'button', 'aria-label': t('detail.prev'), onClick: () => step(-1) }, DK.icon('back', 22)),
-      h('div', { class: 'st-hero' }, h('span', { class: 'st-pedestal', 'aria-hidden': 'true' }), V.sprite(sp.id, { size: 168, cls: 'float', look: params.rolls[sp.id].look })),
+      h('div', { class: 'st-hero' }, h('span', { class: 'st-pedestal', 'aria-hidden': 'true' }), V.sprite(sp.id, { size: 168, cls: 'float', look: DK.looks.of(params.rolls[sp.id]) })),
       h('button', { class: 'st-arrow next', type: 'button', 'aria-label': t('detail.next'), onClick: () => step(1) }, DK.icon('next', 22)));
     // Deslizar en el móvil
     let x0 = null;
@@ -109,17 +109,23 @@
 
     const info = h('div', { class: 'st-info' },
       // v4.56: su nombre propio (systems/names.js); la especie, al lado en pequeño
-      h('div', { class: 'st-title' }, h('h2', null, DK.daskai.name(dd)), h('span', { class: 'dk-species' }, sp.name), V.houseBadge(sp.house)),
+      h('div', { class: 'st-title' }, h('h2', null, DK.daskai.name(dd)), h('span', { class: 'dk-species' }, sp.name), V.housesBadge(dd)),
       h('div', { class: 'chips' },
-        h('span', { class: 'chip pos' }, DK.icon('swords', 13), t('newGame.strong', { house: DK.tr('houses', D.houses[hs.strongVs]) })),
-        h('span', { class: 'chip neg' }, DK.icon('shield', 13), t('newGame.weak', { house: DK.tr('houses', V.weakAgainst(sp.house)) })),
+        // v4.72: con doble casa cuentan las dos (eficacia multiplicada, como en combate)
+        ...(() => {
+          const mine = DK.daskai.houses(dd), all = Object.keys(D.houses), nm = (l) => l.map((x) => DK.tr('houses', D.houses[x])).join(' · ');
+          const strong = all.filter((x) => mine.some((m) => DK.battle.houseMult(m, [x]).mult > 1.001));
+          const weak = all.filter((x) => DK.battle.houseMult(x, mine).mult > 1.001);
+          return [strong.length ? h('span', { class: 'chip pos' }, DK.icon('swords', 13), t('newGame.strong', { house: nm(strong) })) : null,
+            weak.length ? h('span', { class: 'chip neg' }, DK.icon('shield', 13), t('newGame.weak', { house: nm(weak) })) : null];
+        })(),
         null),
       // Línea evolutiva completa (los iniciales tienen tres evoluciones)
       line.length > 1 ? h('div', { class: 'st-line', 'aria-label': t('newGame.lineTitle') }, line.map((x, i) => [
         i ? h('span', { class: 'st-line-step' }, DK.icon('next', 14), h('small', null, `${t('common.lvl')} ${line[i - 1].evolve.level}`)) : null,
         // v4.49: las 2 últimas evoluciones son un secreto (sólo silueta); al pasar el ratón (o tocar) se ven en grande
         (() => {
-          const secret = i > 0 && i >= line.length - 2, look = params.rolls[sp.id].look;
+          const secret = i > 0 && i >= line.length - 2, r0 = params.rolls[sp.id], look = r0.house2 ? Object.assign({}, r0.look, { h2: r0.house2 }) : r0.look; // v4.72: con su segunda casa (la etapa sale de cada especie)
           return h('span', { class: 'st-line-mon' + (i ? '' : ' on') + (secret ? ' secret' : ''), tabindex: '0', 'aria-label': secret ? t('newGame.secretEvo') : x.name },
             V.sprite(x.id, { size: 44, look, silhouette: secret }), h('small', null, secret ? '???' : x.name),
             h('span', { class: 'st-line-peek', 'aria-hidden': 'true' }, V.sprite(x.id, { size: 132, look, silhouette: secret }),

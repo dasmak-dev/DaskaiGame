@@ -54,6 +54,32 @@ module.exports = {
       check(r.timed > 0, 'un efecto temporal no puede dejar el atributo a 0 o negativo: ' + r.timed);
     }),
   }, {
+    name: 'Doble casa: iniciales, jefes, eficacia combinada, misma casa y ataques de la segunda',
+    run: (browser, view) => play(browser, view, async (p) => {
+      const r = await p.evaluate(() => {
+        const B = DK.battle, D = DK.data;
+        const st0 = DK.daskai.create('lumino', 5, { starter: true });
+        const w = Array.from({ length: 300 }, () => DK.daskai.create('lumino', 10, { wild: true, dual: Math.random() < DK.config.dual.wild })).filter((d) => DK.daskai.isDual(d)).length;
+        const zb = Object.values(D.zones)[0].boss, b1 = DK.daskai.create(zb.species, 20, { boss: true, dual: true }), b2 = DK.daskai.create(zb.species, 20, { boss: true, dual: true });
+        const d = DK.daskai.create('lumino', 30, { house2: 'agua' });
+        const h1 = D.species.lumino.house, strongVs = D.houses.fuego.strongVs;
+        const mul = B.houseMult('fuego', [strongVs, strongVs === 'luz' ? 'agua' : 'luz']).mult;
+        const single = B.houseMult('fuego', strongVs).mult;
+        const waterMove = Object.values(D.moves).find((m) => m.house === 'agua' && m.power);
+        return { starterDual: DK.daskai.isDual(st0), starter2: st0.house2 !== D.species.lumino.house, wildPct: w / 300, boss2: b1.house2 === b2.house2 && !!b1.house2,
+          houses: DK.daskai.houses(d), stab: B.isStab(d, waterMove), learns: DK.daskai.learnset(d).some(([, m]) => D.moves[m].house === 'agua'), knows: d.learned.some((m) => D.moves[m].house === 'agua'),
+          mulOk: Math.abs(mul - single * B.houseMult('fuego', strongVs === 'luz' ? 'agua' : 'luz').mult) < 1e-9, look: !!(DK.looks.of(d) || {}).h2, h1 };
+      });
+      check(r.starterDual && r.starter2, 'el inicial debería ser de doble casa (con otra casa distinta): ' + JSON.stringify(r));
+      check(r.wildPct < 0.15, 'demasiados salvajes de doble casa: ' + r.wildPct);
+      check(r.boss2, 'cada jefe debería tener siempre la misma segunda casa');
+      check(r.houses.length === 2 && r.houses[1] === 'agua', 'houses() no devuelve las dos casas: ' + r.houses);
+      check(r.stab, 'un ataque de su segunda casa debería tener el bonus de misma casa');
+      check(r.learns && r.knows, 'debería aprender (y conocer) ataques de su segunda casa');
+      check(r.mulOk, 'la eficacia contra doble casa debería multiplicar las dos');
+      check(r.look, 'el aspecto debería llevar la segunda casa (h2)');
+    }),
+  }, {
     name: 'La eficacia usa la casa del ataque y la misma casa da bonus',
     run: (browser, view) => play(browser, view, async (p) => {
       const r = await p.evaluate(() => {
@@ -117,8 +143,10 @@ module.exports = {
       await sleep(600);
       await p.evaluate(() => { DK.router.current().params.state.enemy.cur.hp = 1; });
       for (let i = 0; i < 20 && !(await p.$('.end-panel, .end-exp')); i++) {
-        const b = await p.$('.bmove:not([disabled])');
-        if (b) { if (view.touch) await b.tap(); else await p.keyboard.press('1'); }
+        // el primer ataque que haga daño (desde la v4.71 el inicial también tiene ataques de apoyo de su segunda casa)
+        const k = await p.evaluate(() => { const a = DK.battle.ally(DK.router.current().params.state); const i = a.moves.findIndex((m) => DK.data.moves[m].power > 0); return Math.max(0, i); });
+        const b = (await p.$$('.bmove'))[k];
+        if (b && !(await b.evaluate((x) => x.disabled))) { if (view.touch) await b.tap(); else await p.keyboard.press(String(k + 1)); }
         await sleep(500);
         const m = await p.$('.modal .btn-primary'); if (m) { await m.click().catch(() => {}); await sleep(200); }
       }

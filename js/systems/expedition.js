@@ -448,6 +448,7 @@
      * @param {Object} [pack] objetos de casa que te llevas { id: n }
      */
     start(pack = {}) {
+      const pct = DK.daskai.snapPct(); // v4.68: los bonus de la expedición (Vigor, reliquias) suben el máximo; la vida sube con él
       const n = this.nextStart();
       // Mochila: sólo lo que tienes, lo que se puede llevar y lo que cabe
       const home = DK.bag.home(), chosen = {};
@@ -499,6 +500,7 @@
         st().consolation = null;
       }
       DK.store.save();
+      DK.daskai.applyPct(pct);
       return st().expedition;
     },
 
@@ -961,7 +963,7 @@
       return species.map((sp) => {
         // Variocolor: más probable que en combate (y aún más en una expedición de captura)
         const shiny = U.chance(cfg().recruitShinyChance + (this.kindDef().shiny || 0) + DK.endgame.shiny(sp) + DK.runes.bonus('shiny'));
-        const d = DK.daskai.create(sp, U.clamp(lv + U.rand(-1, 1), 1, DK.config.maxLevel), { wild: true, shiny });
+        const d = DK.daskai.create(sp, U.clamp(lv + U.rand(-1, 1), 1, DK.config.maxLevel), { wild: true, shiny, dual: U.chance(DK.config.dual.recruit) });
         DK.daskai.fullHeal(d);
         return d;
       });
@@ -1026,7 +1028,7 @@
       const pack = Object.assign({}, e.pack || {});
       const summary = { items: e.loot.items, coins, zone: e.zone, recruits, keptRecruits: bonus, mult, pack };
       this.snapshot(bonus ? 'completed' : 'retreat', { coins, items: e.loot.items, recruits, mult, packBack: pack });
-      st().expedition = null;
+      { const pct = DK.daskai.snapPct(); st().expedition = null; DK.daskai.applyPct(pct); } // v4.68: sin bonus de la expedición, el máximo baja y la vida con él
       // Ya fuera de la expedición: botín y mochila vuelven a la bolsa de casa
       DK.bag.addHome(e.loot.items);
       DK.bag.addHome(pack);
@@ -1110,7 +1112,7 @@
       const kept = this.settleRecruits(true);
       const recruits = e.log.kept.concat(kept).map((x) => Object.assign({}, x, { kept: true }));
       this.snapshot('campfire', { coins, items: keptLoot, lostItems: lostLoot, lostCoins: e.loot.coins - coins, recruits, packBack, lostPack, keepPct: Math.round(keep * 100) });
-      st().expedition = null;
+      { const pct = DK.daskai.snapPct(); st().expedition = null; DK.daskai.applyPct(pct); } // v4.68: sin bonus de la expedición, el máximo baja y la vida con él
       this.afterEnd();
       DK.bag.addHome(keptLoot); DK.bag.addHome(packBack); DK.wallet.add(coins);
       DK.emit('expedition:end', { campfire: true });
@@ -1178,7 +1180,7 @@
       const recruits = e.log.kept.map((x) => Object.assign({}, x, { kept: true })).concat(lost.recruits.map((x) => Object.assign({}, x, { kept: false })));
       const [packBack, lostPack] = this.packOnDefeat();
       this.snapshot('lost', { coins: 0, items: {}, lostItems: e.loot.items, lostCoins: e.loot.coins, recruits, packBack, lostPack, keepPack: DK.rules.keepPack() });
-      st().expedition = null;
+      { const pct = DK.daskai.snapPct(); st().expedition = null; DK.daskai.applyPct(pct); } // v4.68: sin bonus de la expedición, el máximo baja y la vida con él
       this.afterEnd({ defeat: true });
       DK.bag.addHome(packBack);
       DK.store.save();
@@ -1198,7 +1200,7 @@
       const recruits = e.log.kept.map((x) => Object.assign({}, x, { kept: true })).concat(left.map((x) => Object.assign({}, x, { kept: false })));
       this.snapshot('lostBoss', { coins, items: keptLoot, lostItems: lostLoot, lostCoins: e.loot.coins - coins, recruits, packBack: keptPack, lostPack, keepPack: DK.rules.keepPack() });
       st().consolation = { zone: e.zone, depth: e.depth || 1 };
-      st().expedition = null;
+      { const pct = DK.daskai.snapPct(); st().expedition = null; DK.daskai.applyPct(pct); } // v4.68: sin bonus de la expedición, el máximo baja y la vida con él
       this.afterEnd({ defeat: true });
       DK.bag.addHome(keptLoot); DK.bag.addHome(keptPack); DK.wallet.add(coins);
       DK.store.save();
@@ -1257,7 +1259,7 @@
     give(id) {
       const e = DK.expedition.active(); if (!e || !id) return null;
       e.relics = e.relics || [];
-      if (!e.relics.includes(id)) e.relics.push(id);
+      if (!e.relics.includes(id)) { const pct = DK.daskai.snapPct(); e.relics.push(id); DK.daskai.applyPct(pct); } // una reliquia de +PV no deja a nadie «herido»
       DK.store.save();
       return id;
     },

@@ -47,14 +47,14 @@
       const secret = o.secret && D.secretBosses ? D.secretBosses[zoneId] : null;
       const bossInfo = secret || (o.boss ? zone.boss : null);
       if (o.boss && bossInfo) {
-        enemy = DK.daskai.create(bossInfo.species, lv(bossInfo.level), { boss: true, shiny: false });
+        enemy = DK.daskai.create(bossInfo.species, lv(bossInfo.level), { boss: true, shiny: false, dual: U.chance(secret ? C().dual.secret : C().dual.boss) });
       } else if (o.elite) {
         const pick = U.weighted(zone.enemies);
-        enemy = DK.daskai.create(pick.species, lv(zone.levels[1] + C().eliteLevelBonus), { wild: true, elite: true });
+        enemy = DK.daskai.create(pick.species, lv(zone.levels[1] + C().eliteLevelBonus), { wild: true, elite: true, dual: U.chance(C().dual.elite) });
       } else {
         const pick = U.weighted(zone.enemies);
         // Variocolor: la probabilidad base + el rastreo de esa especie (DK.tracking) y la corrupción
-        enemy = DK.daskai.create(pick.species, lv(U.rand(zone.levels[0], zone.levels[1])), { wild: true, shiny: U.chance(DK.config.shinyChance + (DK.endgame ? DK.endgame.shiny(pick.species) : 0)) });
+        enemy = DK.daskai.create(pick.species, lv(U.rand(zone.levels[0], zone.levels[1])), { wild: true, dual: U.chance(C().dual.wild), shiny: U.chance(DK.config.shinyChance + (DK.endgame ? DK.endgame.shiny(pick.species) : 0)) });
       }
       DK.daskai.fullHeal(enemy);
       const known = DK.codex.fought(zoneId, enemy.species) > 0; // ¿hemos peleado antes contra él?
@@ -195,11 +195,22 @@
 
     /** Multiplicador por casas: atacante fuerte x1.5, defensor fuerte -25%. */
     houseMult(attHouse, defHouse) {
+      // v4.71: el defensor puede tener dos casas (lista): se multiplican las dos. Si una te favorece y
+      // la otra te resiste, se compensan (×1,5 × 0,75 ≈ ×1,13 → «fuerte» por poco).
+      if (Array.isArray(defHouse)) {
+        const parts = defHouse.map((hh) => this.houseMult(attHouse, hh));
+        const mult = parts.reduce((m, x) => m * x.mult, 1);
+        return { mult, eff: mult > 1.001 ? 'strong' : mult < 0.999 ? 'weak' : null };
+      }
       const H = D.houses;
       if (H[attHouse] && H[attHouse].strongVs === defHouse) return { mult: C().house.strongDamage, eff: 'strong' };
       if (H[defHouse] && H[defHouse].strongVs === attHouse) return { mult: 1 - C().house.weakDefense, eff: 'weak' };
       return { mult: 1, eff: null };
     },
+    /** v4.71: casas de un daskai en combate (1 o 2). */
+    housesOf(d) { return DK.daskai.houses(d); },
+    /** v4.71: lo mejor que puede hacer A (con cualquiera de sus casas) contra todas las casas de B. */
+    bestHouseMult(A, Bd) { return DK.daskai.houses(A).map((hh) => this.houseMult(hh, DK.daskai.houses(Bd))).sort((x, y) => y.mult - x.mult)[0]; },
 
     /**
      * Casa de un ataque: la suya si la tiene; los ataques sin casa (Placaje…)
@@ -207,13 +218,13 @@
      */
     moveHouse(d, move) { return (move && move.house) || D.species[d.species].house; },
     /** ¿Misma casa que el daskai? (+stab de daño; sólo ataques con casa propia) */
-    isStab(d, move) { return !!(move && move.house && move.house === D.species[d.species].house); },
+    isStab(d, move) { return !!(move && move.house && DK.daskai.houses(d).includes(move.house)); }, // v4.71: cualquiera de sus casas
 
     /** Eficacia de un ataque del aliado contra el enemigo (null si aún no se conoce su casa). */
     effOf(st, moveId) {
       if (!st.known) return null;
       const a = this.ally(st), m = moveId ? D.moves[moveId] : null;
-      return this.houseMult(this.moveHouse(a, m), D.species[st.enemy.species].house).eff;
+      return this.houseMult(this.moveHouse(a, m), DK.daskai.houses(st.enemy)).eff;
     },
 
     /** Fórmula de daño (también se usa fuera de combate para estimaciones). */
@@ -239,13 +250,13 @@
       const phys = move.kind === 'fisico';
       // Casas: la del ATAQUE contra la del que recibe, y bonus si es de la misma casa que quien lo lanza
       const atkHouse = this.moveHouse(A, move);
-      const h = ignoreHouse ? { mult: 1, eff: null } : this.houseMult(atkHouse, D.species[T.species].house);
+      const h = ignoreHouse ? { mult: 1, eff: null } : this.houseMult(atkHouse, DK.daskai.houses(T));
       const stab = this.isStab(A, move) ? C().stab : 1;
       const broken = side === 'ally' && st.broken && T === st.enemy ? C().breakGauge.dmg : 1; // rival roto
       // Reliquias y Mejoras de expedición: más daño para ti, menos daño recibido
       let bonus = 1, critP = C().critChance;
       if (st.expedition) {
-        if (side === 'ally') { bonus *= 1 + DK.relics.sum('dmg') + DK.relics.houseDmg(D.species[A.species].house) + DK.camp.value('fuerza'); critP += DK.relics.sum('crit'); }
+        if (side === 'ally') { bonus *= 1 + DK.relics.sum('dmg') + DK.daskai.houses(A).reduce((a, hh) => a + DK.relics.houseDmg(hh), 0) + DK.camp.value('fuerza'); critP += DK.relics.sum('crit'); }
         else bonus *= Math.max(0.3, 1 - DK.relics.sum('defense') - DK.camp.value('coraza'));
       }
       // Punto débil de la especie (ver weakness): más daño de ese tipo de ataque
@@ -798,7 +809,7 @@
       const ally = this.ally(st);
       DK.emit('battle:end', {
         outcome: st.outcome, zone: st.zoneId, turns: st.turn, boss: st.boss, elite: !!st.elite,
-        enemy: { species: st.enemy.species, level: st.enemy.level, shiny: !!st.enemy.shiny, look: st.enemy.look || undefined },
+        enemy: { species: st.enemy.species, level: st.enemy.level, shiny: !!st.enemy.shiny, look: DK.looks.of(st.enemy) || undefined },
         ally: ally ? { uid: ally.uid, species: ally.species, level: ally.level } : null,
       });
     },

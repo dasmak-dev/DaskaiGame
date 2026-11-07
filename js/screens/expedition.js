@@ -95,7 +95,25 @@
   }
 
   /** Va a un nodo del mapa. */
+  /** v4.68: dónde estabas mirando el mapa (página y caja del mapa) al entrar en un piso; al volver se recupera. */
+  let mapMem = null;
+  const memKey = (e) => `${e.seed}|${e.depth || 1}`;
+  // Mover la página también cuenta (sólo mientras se ve el mapa completo)
+  let memBound = false, memQuiet = 0; // memQuiet: tras pintar el mapa, un momento sin apuntar (la app sube la página al cambiar de pantalla)
+  function bindMem() {
+    if (memBound) return; memBound = true;
+    const onScroll = () => { if (Date.now() > memQuiet && DK.router.current().id === 'expedition' && document.querySelector('.exp-map-card .exp-scroll:not(.flying)') && !document.querySelector('.exp-focus')) rememberMap(); };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    document.addEventListener('scroll', onScroll, { passive: true, capture: true });
+  }
+  function rememberMap() {
+    const e = E().active(), box = document.querySelector('.exp-map-card .exp-scroll');
+    if (!e || !box) return;
+    const host = document.querySelector('.screen-host') || document.scrollingElement;
+    mapMem = { key: memKey(e), box: box.scrollTop, win: window.scrollY, host: host ? host.scrollTop : 0 };
+  }
   function go(id, refresh) {
+    rememberMap();
     const n = E().choose(id);
     if (!n) return;
     DK.audio.sfx('select');
@@ -221,7 +239,7 @@
     box.classList.add('flying');
     let stop = false;
     const cancel = () => { stop = true; };
-    ['wheel', 'touchstart', 'pointerdown', 'keydown'].forEach((ev) => box.addEventListener(ev, cancel, { once: true, passive: true }));
+    ['wheel', 'touchstart', 'pointerdown', 'keydown'].forEach((ev) => window.addEventListener(ev, cancel, { once: true, passive: true }));
     const end = () => { box.classList.remove('flying'); if (boss) boss.classList.remove('fly-focus'); };
     (async () => {
       for (let i = 0; i < 60 && document.querySelector('.curtain'); i++) await DK.util.sleep(80);
@@ -230,10 +248,15 @@
       await DK.util.sleep(900);
       const from = box.scrollTop, dist = target - from, dur = Math.min(2600, 900 + Math.abs(dist) * 1.1), t0 = performance.now();
       const ease = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+      // v4.68: la página baja a la vez y llega al fondo justo al acabar (en PC la caja bajaba pero la página no)
+      const host = document.querySelector('.screen-host');
+      const pageEl = host && host.scrollHeight > host.clientHeight + 4 && /(auto|scroll)/.test(getComputedStyle(host).overflowY) ? host : document.scrollingElement || document.documentElement;
+      const pFrom = pageEl.scrollTop, pTo = Math.max(0, pageEl.scrollHeight - pageEl.clientHeight);
       const step = (now) => {
         if (stop || !box.isConnected) { end(); return; }
         const k = Math.min(1, (now - t0) / dur);
         box.scrollTop = from + dist * ease(k);
+        if (pTo > pFrom) pageEl.scrollTop = pFrom + (pTo - pFrom) * ease(k);
         if (k < 1) requestAnimationFrame(step); else end();
       };
       if (boss) setTimeout(() => boss.classList.remove('fly-focus'), 600);
@@ -243,6 +266,7 @@
 
   function mapView(refresh, src, readonly, { compact = false } = {}) {
     const e = src || E().active();
+    if (!readonly && !compact) memQuiet = Date.now() + 600;
     const ROW_H = compact ? ROW_COMPACT : ROW_FULL;
     const rows = e.map.rows, H = rows.length * ROW_H;
     const avail = readonly ? [] : E().available();
@@ -333,6 +357,16 @@
       if (!readonly && keepScroll != null) { box.scrollTop = keepScroll; return; }
       const el = map.querySelector('.s-open, .s-pending, .s-lost, .here');
       const target = el ? Math.max(0, el.offsetTop - box.clientHeight / 2) : 0;
+      // v4.68: volviendo de un piso o de un combate, todo queda como lo dejaste (sin recentrar)
+      if (!readonly && !compact) { bindMem(); memQuiet = Date.now() + 500; }
+      if (!readonly && !compact && mapMem && mapMem.key === memKey(e)) {
+        const m = mapMem;
+        box.scrollTop = m.box;
+        const host = document.querySelector('.screen-host');
+        const restore = () => { if (host) host.scrollTop = m.host; window.scrollTo(0, m.win); };
+        restore(); requestAnimationFrame(restore); setTimeout(restore, 120);
+        return;
+      }
       // v4.67: la primera vez que ves un mapa nuevo (tras prepararte), la vista baja desde el jefe hasta el inicio
       const flyKey = `${e.depth || 1}|${e.seed}`;
       if (!readonly && !compact && !e.cleared.length && !e.pos && e.flyShown !== flyKey && box.scrollHeight > box.clientHeight + 40) {
@@ -341,7 +375,7 @@
       } else if (el) box.scrollTop = target;
     }, 30);
     // Mientras se dibuja, se conserva la posición del mapa entre repintados
-    if (!readonly) setTimeout(() => { const box = map.parentElement; if (box) box.addEventListener('scroll', () => { if (draw.on) keepScroll = box.scrollTop; }, { passive: true }); }, 40);
+    if (!readonly) setTimeout(() => { const box = map.parentElement; if (box) box.addEventListener('scroll', () => { if (draw.on) keepScroll = box.scrollTop; if (!compact && !box.classList.contains('flying') && Date.now() > memQuiet) rememberMap(); }, { passive: true }); }, 400);
     if (!readonly && !draw.on) keepScroll = null;
     const terrain = { backgroundImage: `url(${DK.pix.terrain(zone.colors, e.zone)})`, '--z1': zone.colors[0], '--z2': zone.colors[1] };
     if (compact) return h('div', { class: 'exp-map-compact' }, h('div', { class: 'exp-scroll terrain', style: terrain }, map), legend());
@@ -517,7 +551,7 @@
       ];
       return h('div', { class: 'card stack chest-panel' }, head('treasure', t('exp.node.treasure'), t('exp.chestOpened')),
         h('div', { class: 'chest-big open', 'aria-hidden': 'true' }, DK.icon('gift', 48), h('span', { class: 'chest-glow' })),
-        h('div', { class: 'loot-grid' }, cards),
+        h('div', { class: 'loot-grid', style: { '--n': cards.filter(Boolean).length || 1 } }, cards), // v4.68: filas equilibradas y centradas
         h('p', { class: 'muted small chest-legend', tip: t('exp.destBagHelp') + ' · ' + t('exp.destLootHelp') }, h('span', { class: 'loot-dest bag' }, DK.icon('bag', 11), t('exp.destBag')), ' ', h('span', { class: 'loot-dest loot' }, DK.icon('gift', 11), t('exp.destLoot')), ' ', DK.icon('info', 12)),
         cont(refresh));
     }
@@ -562,35 +596,43 @@
           btn({ icon: 'home', label: t('exp.campExit'), desc: t('exp.campExitDesc', { pct: pv.pct, coins: pv.coins }), variant: 'ghost', showDesc: true, hotkey: '3', onClick: goHome }),
           pv.recruits.length ? h('p', { class: 'small good-text' }, DK.icon('paw', 12), ' ', t('exp.campExitKeeps', { names: pv.recruits.join(', ') })) : null)
         : h('p', { class: 'muted small' }, DK.icon('lock', 12), ' ', t('exp.noRetreat'));
-      // Dos opciones grandes: descansar (todo el equipo) o entrenar (eliges a quién: sube 1 nivel)
-      const who = DK.party.get(e.trainUid);
-      const trainBtn = (d) => btn({ icon: 'star', label: d ? t('exp.trainBtn', { name: DK.daskai.name(d), n: d.level + 1 }) : t('exp.train'), variant: 'tone', hotkey: '2', cls: 'rest-train-btn', disabled: !d || d.level >= DK.config.maxLevel, onClick: train });
-      let tBtn = trainBtn(who);
+      // v4.70: rediseño. A la izquierda tu equipo UNA vez, uno debajo de otro: vida actual, lo que curaría
+      // descansar (franja clara) y nivel. Pulsar una fila elige a quién entrenar. A la derecha, las dos acciones.
+      const restPct = Math.min(1, DK.config.expedition.restHeal + DK.camp.value('hoguera')) * (DK.corruption && DK.corruption.has('restHalf') ? D.endgame.corruption.restMult : 1);
+      let gain = 0;
+      const rows = team.map((d) => {
+        const s = DK.daskai.stats(d), hp = DK.util.percent(d.cur.hp, s.hp), to = Math.min(s.hp, d.cur.hp + Math.ceil(s.hp * restPct)), maxed = d.level >= DK.config.maxLevel;
+        gain += to - d.cur.hp;
+        return { d, el: h('button', { class: 'rt-row' + (d.uid === e.trainUid ? ' on' : ''), type: 'button', role: 'radio', 'aria-checked': String(d.uid === e.trainUid), disabled: maxed,
+          tip: `${DK.daskai.name(d)} · ${d.cur.hp}/${s.hp} ${t('common.hpShort')}`, onClick: (ev) => pick(d, ev.currentTarget) },
+          h('span', { class: 'rt-spr' }, V.dSprite(d, { size: 44 })),
+          h('span', { class: 'rt-main' },
+            h('span', { class: 'rt-top' }, h('b', null, DK.daskai.name(d)), h('small', { class: 'rt-lv' }, `${t('common.lvl')} ${d.level}`, h('span', { class: 'rt-up' }, ` → ${d.level + 1}`))),
+            h('span', { class: 'rt-hp' }, h('i', { class: 'heal', style: { width: DK.util.percent(to, s.hp) + '%' } }), h('i', { class: 'cur', style: { width: hp + '%' } })),
+            h('small', { class: 'rt-num' }, `${d.cur.hp}/${s.hp}`, to > d.cur.hp ? h('span', { class: 'rt-plus' }, ` +${to - d.cur.hp}`) : null)),
+          h('span', { class: 'rt-check' }, DK.icon('star', 13))) };
+      });
+      const whoLine = h('p', { class: 'rt-who' });
+      const setWho = (d) => whoLine.replaceChildren(d ? h('span', null, V.dSprite(d, { size: 22 }), h('b', null, DK.daskai.name(d)), ` ${t('common.lvl')} ${d.level} → ${d.level + 1}`) : '');
+      const trainBtn = (d) => btn({ icon: 'star', label: t('exp.train'), variant: 'tone', hotkey: '2', cls: 'rest-train-btn', disabled: !d || d.level >= DK.config.maxLevel, onClick: train });
+      let tBtn = trainBtn(DK.party.get(e.trainUid));
       const pick = (d, el) => {
         e.trainUid = d.uid; DK.audio.sfx('select');
-        el.parentElement.querySelectorAll('.rest-pick').forEach((b) => { const on = b === el; b.classList.toggle('on', on); b.setAttribute('aria-checked', String(on)); });
-        const nb = trainBtn(d); tBtn.replaceWith(nb); tBtn = nb;
+        el.parentElement.querySelectorAll('.rt-row').forEach((b) => { const on = b === el; b.classList.toggle('on', on); b.setAttribute('aria-checked', String(on)); });
+        const nb = trainBtn(d); tBtn.replaceWith(nb); tBtn = nb; setWho(d);
       };
-      const picks = h('div', { class: 'rest-picks', role: 'radiogroup', 'aria-label': t('exp.trainWho') }, team.map((d) => {
-        const s = DK.daskai.stats(d), hp = DK.util.percent(d.cur.hp, s.hp), on = d.uid === e.trainUid, maxed = d.level >= DK.config.maxLevel;
-        return h('button', { class: 'rest-pick' + (on ? ' on' : ''), type: 'button', role: 'radio', 'aria-checked': String(on), disabled: maxed, tip: `${DK.daskai.name(d)} · ${t('common.lvl')} ${d.level}`,
-          onClick: (ev) => pick(d, ev.currentTarget) },
-          V.dSprite(d, { size: 52 }), h('b', null, DK.daskai.name(d)),
-          h('small', null, `${t('common.lvl')} ${d.level}`, h('span', { class: 'rest-up' }, ` → ${d.level + 1}`)),
-          h('span', { class: 'rest-hp' }, h('i', { style: { width: hp + '%' } })));
-      }));
-      return h('div', { class: 'card stack rest-panel' }, head('rest', t('exp.node.rest'), t('exp.restText')),
-        h('div', { class: 'rest-options' },
-          h('section', { class: 'rest-opt' },
-            h('span', { class: 'rest-opt-icon heal' }, DK.icon('bed', 28)),
-            h('b', null, t('exp.restHeal')), h('p', { class: 'muted small' }, t('exp.restHealDesc', { n: Math.round(DK.config.expedition.restHeal * 100) })),
-            h('div', { class: 'rest-team' }, team.map((d) => { const s = DK.daskai.stats(d); return h('span', { class: 'rest-mini', tip: `${DK.daskai.name(d)} ${d.cur.hp}/${s.hp}` }, V.dSprite(d, { size: 34 }), h('span', { class: 'rest-hp' }, h('i', { style: { width: DK.util.percent(d.cur.hp, s.hp) + '%' } }))); })),
-            btn({ icon: 'bed', label: t('exp.restHeal'), variant: 'primary', hotkey: '1', onClick: rest })),
-          h('section', { class: 'rest-opt' },
-            h('span', { class: 'rest-opt-icon train' }, DK.icon('star', 28)),
-            h('b', null, t('exp.train')), h('p', { class: 'muted small' }, t('exp.trainDescLevel')),
-            picks,
-            tBtn)),
+      setWho(DK.party.get(e.trainUid));
+      return h('div', { class: 'card stack rest-panel rest2' }, head('rest', t('exp.node.rest'), t('exp.restText')),
+        h('div', { class: 'rt-grid' },
+          h('div', { class: 'rt-team', role: 'radiogroup', 'aria-label': t('exp.trainWho') }, h('span', { class: 'rt-lbl' }, t('exp.trainWho')), rows.map((r) => r.el)),
+          h('div', { class: 'rt-acts' },
+            h('section', { class: 'rt-act heal' },
+              h('div', { class: 'rt-act-h' }, h('span', { class: 'rest-opt-icon heal' }, DK.icon('bed', 22)), h('div', null, h('b', null, t('exp.restHeal')), h('p', { class: 'muted small' }, t('exp.restHealDesc', { n: Math.round(restPct * 100) })))),
+              gain ? h('p', { class: 'rt-gain' }, DK.icon('heart', 13), t('exp.restGain', { n: gain })) : h('p', { class: 'rt-gain full' }, DK.icon('check', 13), t('exp.restFull')),
+              btn({ icon: 'bed', label: t('exp.restHeal'), variant: 'primary', hotkey: '1', onClick: rest })),
+            h('section', { class: 'rt-act train' },
+              h('div', { class: 'rt-act-h' }, h('span', { class: 'rest-opt-icon train' }, DK.icon('star', 22)), h('div', null, h('b', null, t('exp.train')), h('p', { class: 'muted small' }, t('exp.trainDescLevel')))),
+              whoLine, tBtn))),
         exitBox);
     }
 
@@ -791,7 +833,7 @@
       h('span', { class: 'rj-art', style: { '--c': D.houseColor(DK.daskai.species(x).house) } }, V.dSprite(x, { size: extra ? 72 : 46 })),
       h('div', { class: 'grow stack-xs' },
         h('div', { class: 'row gap-s wrap' }, h('b', null, DK.daskai.name(x)), V.level(x.level), V.shinyTag(x)),
-        h('div', { class: 'row gap-s wrap' }, V.houseBadge(DK.daskai.species(x).house), V.roleBadge(x), extra ? V.tempTag(x) : null)));
+        h('div', { class: 'row gap-s wrap' }, V.housesBadge(x), V.roleBadge(x), extra ? V.tempTag(x) : null)));
     const statRows = (st, ref) => h('div', { class: 'rj-stats' }, keys.map((k) => {
       const diff = ref ? ns[k] - st[k] : 0;
       return h('div', { class: 'rj-stat k-' + k, tip: DK.tr('stats', D.stats[k]) },
@@ -849,7 +891,7 @@
           h('button', { type: 'button', class: 'recruit-art sc-open', tip: t('detail.viewBig'), 'aria-label': t('detail.viewBig'), onClick: (ev) => { ev.stopPropagation(); V.showcase(c, { bare: true }); } }, V.dSprite(c, { size: 64, cls: 'float' }), h('span', { class: 'sc-open-hint' }, DK.icon('maximize', 12))),
           h('div', { class: 'row gap-s wrap' }, h('b', null, DK.daskai.name(c)), V.level(c.level), V.shinyTag(c)),
           h('span', { class: 'muted small rc-sp' }, sp.name),
-          h('div', { class: 'row gap-s wrap' }, V.houseBadge(sp.house), V.roleBadge(c)),
+          h('div', { class: 'row gap-s wrap' }, V.housesBadge(c), V.roleBadge(c)),
           h('div', { class: 'chips' },
             h('span', { class: 'chip', tip: DK.tr('natures', D.natures[c.nature], 'desc') }, DK.icon('leaf', 13), DK.tr('natures', D.natures[c.nature])),
             h('span', { class: 'chip', tip: DK.tr('passives', D.passives[c.passive], 'desc') }, DK.icon('sparkle', 13), DK.tr('passives', D.passives[c.passive])),

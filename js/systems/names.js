@@ -29,14 +29,14 @@
     tierra: ['Te', 'Ro', 'Gle', 'Mu', 'Ba', 'Tu', 'Gra', 'Bo', 'Gea', 'Rupi', 'Musgo', 'Tro'],
   };
   // v4.62: prefijos que a veces van delante (por un rasgo de carácter) y sufijos que a veces cierran el nombre
-  const PREFIX = { arms: { pincer: 'Kra', long: 'Lan', noodle: 'Fi', mitten: 'Pom', stubby: 'Pi' }, final: { cape: 'Sir', flowercrown: 'Flor', goggles: 'Avi', collar: 'Bru', bandana: 'Ban', crown: 'Rey', halo: 'Sa' } };
+  const PREFIX = { arms: { pincer: 'Kra', long: 'Lan', noodle: 'Fi', mitten: 'Pom', stubby: 'Pi', tentacle: 'Pul', leaf: 'Ho', wingarm: 'Ala', talon: 'Gar', crystal: 'Cris' }, final: { cape: 'Sir', flowercrown: 'Flor', goggles: 'Avi', collar: 'Bru', bandana: 'Ban', crown: 'Rey', halo: 'Sa', tophat: 'Don', wizard: 'Mago', headphones: 'Dj', beanie: 'Go' } };
   const SUFFIX = { luz: ['el', 'ia', 'ino'], oscuridad: ['ix', 'os', 'ra'], fuego: ['ax', 'or', 'ito'], agua: ['ina', 'eo', 'is'], tierra: ['ok', 'ur', 'ote'] };
   // Sílaba de un rasgo (empiezan por consonante)
   const TRAIT = {
-    eyes: { big: 'mi', sharp: 'ri', slit: 'si', sleepy: 'mu', happy: 'pi', glow: 'lu', dot: 'ti', angry: 'gru', star: 'ste', button: 'bo', uneven: 'tu', cyclops: 'mon', three: 'tri', visor: 'vi', spiral: 'gi', heart: 'cor', wink: 'gui', anime: 'ki', halflid: 'pa', sparkle: 'chis', crescent: 'lu', squint: 'gui', bug: 'zum', ringed: 'ri', crosseye: 'cru', teary: 'la', robot: 'tron', lashes: 'pes', diamond: 'dia' },
-    ears: { cat: 'mi', bunny: 'co', bear: 'bo', droopy: 'do', horns: 'cor', unicorn: 'ni', antenna: 'te', crest: 'cre', sprout: 'bro', fins: 'ma', spikes: 'pu', tuft: 'pe', antlers: 'cer', ram: 'ca', mushroom: 'se', flower: 'flo', mohawk: 'cres', elf: 'le', mouse: 'ra', headwings: 've', trihorn: 'tri', lynx: 'lin', leafy: 'fo', plume: 'plu', devil: 'dia', bow: 'la', crystals: 'cris' },
+    eyes: { big: 'mi', sharp: 'ri', slit: 'si', sleepy: 'mu', happy: 'pi', glow: 'lu', dot: 'ti', angry: 'gru', star: 'ste', button: 'bo', uneven: 'tu', cyclops: 'mon', three: 'tri', visor: 'vi', spiral: 'gi', heart: 'cor', wink: 'gui', anime: 'ki', halflid: 'pa', sparkle: 'chis', crescent: 'lu', squint: 'gui', bug: 'zum', ringed: 'ri', crosseye: 'cru', teary: 'la', robot: 'tron', lashes: 'pes', diamond: 'dia', shades: 'gu', monocle: 'mon', xeyes: 'ka', blank: 'ni', bags: 'mo' },
+    ears: { cat: 'mi', bunny: 'co', bear: 'bo', droopy: 'do', horns: 'cor', unicorn: 'ni', antenna: 'te', crest: 'cre', sprout: 'bro', fins: 'ma', spikes: 'pu', tuft: 'pe', antlers: 'cer', ram: 'ca', mushroom: 'se', flower: 'flo', mohawk: 'cres', elf: 'le', mouse: 'ra', headwings: 've', trihorn: 'tri', lynx: 'lin', leafy: 'fo', plume: 'plu', devil: 'dia', bow: 'la', crystals: 'cris', curved: 'cur', nubs: 'nu', feelers: 'an', fan: 'aba', fox: 'zo' },
     mark: { star: 'sta', moon: 'lu', heart: 'co', spots: 'pin', stripes: 'ra', zigzag: 'zi', gem: 'ge', freckles: 'pe', patch: 'pa', band: 'ba', swirl: 'ri', blaze: 'fla', bolt: 'zas', chevron: 'ga', ring: 'ro', bloom: 'flo', triad: 'tri' },
-    mouth: { fangs: 'dra', tusks: 'co', beak: 'pi', tongue: 'le', mustache: 'bi', sabre: 'sa', grin: 'ri', jagged: 'cra', bubble: 'bu', buck: 'ro', oh: 'lo', biggrin: 'ji', stitch: 'co', toothy: 'dien', gaptooth: 'me', drool: 'ba', whistle: 'fi', vampire: 'vam', zipper: 'zip', catmouth: 'mia', lips: 'bes', frown: 'gru' },
+    mouth: { fangs: 'dra', tusks: 'co', beak: 'pi', tongue: 'le', mustache: 'bi', sabre: 'sa', grin: 'ri', jagged: 'cra', bubble: 'bu', buck: 'ro', oh: 'lo', biggrin: 'ji', stitch: 'co', toothy: 'dien', gaptooth: 'me', drool: 'ba', whistle: 'fi', vampire: 'vam', zipper: 'zip', catmouth: 'mia', lips: 'bes', frown: 'gru', snout: 'chan', gum: 'chi', grit: 'gra', mask: 'nin', kiss: 'mua', hook: 'rap', trunk: 'trom', mandible: 'man', lick: 'lam', muzzle: 'gua' },
     hair: { spiky: 'pu', curl: 'ri', beard: 'bar', ponytail: 'co', fringe: 'fle', cheektufts: 'pe', bun: 'mo', afro: 'fro', swoop: 'tu', braids: 'tren', quiff: 'co' },
   };
   // Final según la forma del cuerpo (dos opciones)
@@ -45,6 +45,7 @@
     blob: ['gel', 'lup'], drop: ['gu', 'dro'], squat: ['tuk', 'pa'], ghost: ['mbra', 'fan'], long: ['sio', 'lio'],
     cloud: ['nim', 'fu'], pear: ['pe', 'ra'], mound: ['mon', 'du'],
     wide: ['plas', 'ancho'], tower: ['lon', 'tor'], topheavy: ['gor', 'cabo'], bubble: ['bur', 'pop'], lumpy: ['gru', 'mo'],
+    saddle: ['sel', 'mon'], pill: ['pil', 'cap'], spiky: ['pin', 'riz'], acorn: ['bel', 'yo'], potato: ['pa', 'tu'],
     gourd: ['ba', 'zo'], gem: ['dax', 'tis'], puff: ['fus', 'mi'], bell: ['lin', 'dan'], bulb: ['bul', 'tre'],
   };
   const RARE = { eyes: ['star', 'button', 'uneven', 'cyclops', 'three', 'visor', 'spiral'], ears: ['unicorn', 'mushroom'], mouth: ['beak', 'sabre', 'bubble', 'stitch'], mark: [], hair: [] };

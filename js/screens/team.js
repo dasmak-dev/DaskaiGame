@@ -124,7 +124,7 @@
             h('span', { class: 'party-art' }, V.dSprite(d, { size: 64 }), V.formPips(d), V.newDot(d), i === 0 ? h('span', { class: 'party-crown', tip: t('team.leaderHint') }, DK.icon('crown', 14)) : null),
             h('span', { class: 'party-info' },
               h('span', { class: 'party-name' }, h('b', null, DK.daskai.name(d)), h('span', { class: 'party-lv' }, `${t('common.lvl')} ${d.level}`)),
-              h('span', { class: 'party-tags' }, V.houseBadge(sp.house), V.roleBadge(d), V.shinyTag(d), V.tempTag(d), V.statusTag(d.status), DK.daskai.canEvolve(d) ? h('span', { class: 'badge evo', tip: t('evo.readyTip') }, DK.icon('evolve', 12)) : null),
+              h('span', { class: 'party-tags' }, V.housesBadge(d), V.roleBadge(d), V.shinyTag(d), V.tempTag(d), V.statusTag(d.status), DK.daskai.canEvolve(d) ? h('span', { class: 'badge evo', tip: t('evo.readyTip') }, DK.icon('evolve', 12)) : null),
               h('span', { class: 'party-bar hp' + (hp < 25 ? ' crit' : hp < 50 ? ' mid' : '') }, h('i', { style: { width: hp + '%' } }), h('em', null, `${d.cur.hp}/${s.hp}`)),
               h('span', { class: 'party-bar mp' }, h('i', { style: { width: mp + '%' } }))),
             active.length > 1 && !params.compare ? h('button', { class: 'party-out', type: 'button', tip: t(inExp ? 'party.toReserve' : 'party.toBox'), 'aria-label': t(inExp ? 'party.toReserve' : 'party.toBox'),
