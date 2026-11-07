@@ -210,10 +210,10 @@
    * xs, ys: posición en pantallas estrechas (móvil); xm, ym: en las medianas (< 1100 px), si hace falta. */
   // v4.58: recolocados para que nada se toque (fila del fondo: tienda, tablón, portal; delante: códice, hoguera, yunque, muñeco)
   const SPOTS = [
-    { id: 'path', sprite: 'portal', screen: 'zones', nav: 'battle', x: 66, y: 54, xm: 66, ym: 53, xs: 73, ys: 43, label: () => t('scene.path'), main: true },
-    { id: 'board', sprite: 'board', screen: 'progress', nav: 'progress', x: 40, y: 50, xm: 39, ym: 48, xs: 29, ys: 37, label: () => t('scene.board') },
+    { id: 'path', sprite: 'portal', screen: 'zones', nav: 'battle', x: 66, y: 54, xm: 66, ym: 53, xs: 72, ys: 54, label: () => t('scene.path'), main: true },
+    { id: 'board', sprite: 'board', screen: 'progress', nav: 'progress', x: 40, y: 50, xm: 39, ym: 48, xs: 28, ys: 51, label: () => t('scene.board') },
     { id: 'tent', sprite: 'tent', screen: 'inventory', nav: 'inventory', x: 16, y: 57, xm: 15, ym: 57, xs: 20, ys: 73, label: () => t('scene.tent') },
-    { id: 'anvil', sprite: 'anvil', screen: 'craft', nav: 'craft', x: 83, y: 71, xm: 84, ym: 71, xs: 84, ys: 63, label: () => t('scene.anvil') },
+    { id: 'anvil', sprite: 'anvil', screen: 'craft', nav: 'craft', x: 83, y: 71, xm: 84, ym: 71, xs: 84, ys: 74, label: () => t('scene.anvil') },
     { id: 'fire', sprite: 'fire', screen: 'team', nav: 'team', x: 49, y: 82, xm: 48, ym: 82, xs: 52, ys: 85, label: () => t('scene.fire'), fire: true },
     { id: 'lectern', sprite: 'lectern', screen: 'codex', nav: 'codex', x: 9, y: 94, xm: 11, ym: 95, xs: 13, ys: 95, label: () => t('scene.lectern') },
     { id: 'dummy', sprite: 'dummy', screen: 'training', nav: 'training', x: 92, y: 93, xm: 91, ym: 95, xs: 85, ys: 96, label: () => t('scene.dummy'), unlock: 'training' },
@@ -377,12 +377,13 @@
     const team = (o.team || []).slice(0, narrow ? 4 : 5).map((d, i) => h('button', {
       class: 'camp-mon', type: 'button', style: { left: fx + offs[i][0] + '%', top: fy + offs[i][1] + '%', animationDelay: (i * 0.4) + 's' },
       'aria-label': DK.daskai.name(d), tip: `${DK.daskai.name(d)} · ${t('common.lvl')} ${d.level}`,
-      onClick: () => { DK.audio.sfx('select'); DK.router.reset('team', { uid: d.uid }); },
+      // v4.67: el mismo resumen rápido que «Tu equipo» (antes llevaba a la pantalla de equipo)
+      onClick: () => { DK.audio.sfx('select'); DK.views.quickStats(d, { onChange: o.onChange || (() => DK.router.refresh()) }); },
     }, DK.views.sprite(d.species, { look: DK.looks.of(d), size: narrow ? 66 : 96, shiny: d.shiny, flip: offs[i][0] > 0 })));
     // Ascuas que suben de la hoguera, niebla baja y antorchas
     const embers = h('div', { class: 'camp-embers', 'aria-hidden': 'true', style: { left: fx + '%', top: fy + '%' } }, Array.from({ length: 16 }, (_, i) => h('i', { style: { '--dx': ((i * 37) % 60 - 30) + 'px', left: ((i * 13) % 40 - 20) + 'px', animationDelay: (i * 0.35) + 's', animationDuration: (2.6 + (i % 5) * 0.5) + 's' } })));
     const fog = h('div', { class: 'camp-fog', 'aria-hidden': 'true' }, h('i'), h('i'));
-    const torches = (narrow ? [[38, 64], [95, 58]] : mid ? [[29, 56], [79, 52], [3, 78], [97, 78]] : [[31, 62], [74, 62], [3, 78], [97, 78]]).map(([x, y], i) =>
+    const torches = (narrow ? [[40, 62], [96, 64]] : mid ? [[29, 56], [79, 52], [3, 78], [97, 78]] : [[31, 62], [74, 62], [3, 78], [97, 78]]).map(([x, y], i) =>
       h('span', { class: 'camp-torch', 'aria-hidden': 'true', style: { left: x + '%', top: y + '%' } }, animArt('torch', scale * 0.8, i * 0.13) || pixSvg(SPRITES.torch(0), scale * 0.8)));
     return h('section', { class: 'camp-scene grim tod-' + tod, 'aria-label': t('scene.title') },
       backdrop(tod, narrow), fog, ...torches, embers,

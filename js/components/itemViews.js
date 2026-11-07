@@ -67,55 +67,6 @@
   };
 
   /**
-   * Tarjeta de producto de tienda (comprar o vender).
-   * @param {string} itemId
-   * @param {Object} o
-   *   price      precio unitario
-   *   oldPrice   precio sin descuento (se tacha si es mayor)
-   *   mode       'buy' | 'sell'
-   *   qty        cantidad elegida (muestra el selector si hay onQty)
-   *   max        máximo del selector
-   *   onQty(n)   cambia la cantidad
-   *   onBuy()    acción principal (comprar / vender)
-   *   onAll()    vender todo (sólo en modo venta)
-   *   sold       ya comprado (mercader de expedición)
-   *   badges     nodos extra (oferta, "para receta favorita"...)
-   *   hotkey
-   */
-  V.shopCard = (itemId, { price, oldPrice, mode = 'buy', qty = 1, max = 99, onQty, onBuy, onAll, sold = false, badges = [], hotkey } = {}) => {
-    const it = D.items[itemId];
-    const owned = DK.store.state ? DK.bag.count(itemId) : 0;
-    const total = price * qty;
-    const wallet = DK.store.state ? DK.wallet.get() : 0;
-    const short = mode === 'buy' && !sold ? Math.max(0, total - wallet) : 0;
-    const stepper = onQty ? h('div', { class: 'qty-stepper', role: 'group', 'aria-label': t('shop.qty') },
-      h('button', { type: 'button', class: 'qty-btn', 'aria-label': '-', disabled: qty <= 1, onClick: () => onQty(Math.max(1, qty - 1)) }, DK.icon('minus', 14)),
-      h('span', { class: 'qty-val' }, qty),
-      h('button', { type: 'button', class: 'qty-btn', 'aria-label': '+', disabled: qty >= max, onClick: () => onQty(Math.min(max, qty + 1)) }, DK.icon('plus', 14))) : null;
-    const action = sold
-      ? h('span', { class: 'badge good' }, DK.icon('check', 13), t('exp.sold'))
-      : DK.ui.btn({ icon: mode === 'buy' ? 'bag' : 'coin', label: mode === 'buy' ? t('shop.buyFor', { n: total.toLocaleString(DK.i18n.lang) }) : t('shop.sellFor', { n: total.toLocaleString(DK.i18n.lang) }),
-        variant: 'tone', size: 'sm', hotkey, disabled: short > 0 || (mode === 'sell' && owned < qty),
-        tip: short > 0 ? t('shop.missing', { n: short }) : null, onClick: onBuy });
-    return h('div', { class: `shop-card r-${it.rarity}` + (sold ? ' sold' : '') + (oldPrice > price ? ' discounted' : ''), style: { '--c': it.color || 'var(--primary)' }, tip: it.desc },
-      h('div', { class: 'shop-card-top' },
-        V.itemIcon(it, 30),
-        h('div', { class: 'shop-card-badges' }, V.rarity(it.rarity), ...badges)),
-      h('div', { class: 'shop-card-body' },
-        h('b', { class: 'shop-card-name' }, it.name),
-        h('span', { class: 'muted small shop-card-effect' }, V.useText(it) || it.desc),
-        h('span', { class: 'small shop-card-owned' + (owned ? '' : ' muted') }, DK.icon('bag', 12), ' ', t('item.owned', { n: owned }))),
-      h('div', { class: 'shop-card-price' },
-        h('span', { class: 'shop-price' }, DK.icon('coin', 16), h('b', null, price.toLocaleString(DK.i18n.lang)),
-          oldPrice > price ? h('s', { class: 'muted small' }, oldPrice.toLocaleString(DK.i18n.lang)) : null,
-          mode === 'sell' ? h('span', { class: 'muted small' }, t('shop.each')) : null),
-        stepper),
-      h('div', { class: 'shop-card-foot' }, action,
-        onAll && owned > 1 ? DK.ui.btn({ icon: 'coin', label: t('shop.sellAll', { n: owned }), variant: 'ghost', size: 'sm', onClick: onAll }) : null,
-        short > 0 ? h('span', { class: 'small shop-short' }, t('shop.missing', { n: short })) : null));
-  };
-
-  /**
    * Tras dar experiencia fuera de combate: subida de nivel, ataques nuevos y evolución.
    * @param {Object} d
    * @param {Object} info  resultado de DK.daskai.gainExp
@@ -153,17 +104,6 @@
     if (u.resetPerm) eff.push(t('item.resetPerm'));
     return eff.join(' · ');
   };
-
-  /**
-   * Botones grandes para filtrar objetos por tipo (bolsa, mochila, preparar).
-   * @param {Array} cats   [{ id, icon, label, count }]
-   * @param {string} value id elegido
-   * @param {Function} onChange (id) => {}
-   */
-  V.catButtons = (cats, value, onChange) => h('div', { class: 'cat-buttons', role: 'tablist' }, cats.map((c) =>
-    h('button', { class: 'cat-btn' + (value === c.id ? ' on' : ''), type: 'button', role: 'tab', 'aria-selected': value === c.id, onClick: () => onChange(c.id) },
-      h('span', { class: 'cat-btn-icon' }, DK.icon(c.icon, 20)), h('span', { class: 'cat-btn-label' }, c.label),
-      c.count != null ? h('b', { class: 'cat-btn-count' }, String(c.count)) : null)));
 
   /** Contenido detallado de un objeto (bolsa, tienda y códice). */
   V.itemDetail = (itemId) => {

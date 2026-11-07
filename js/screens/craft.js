@@ -153,8 +153,7 @@
 
     // Qué hace
     const what = [];
-    if (it.grants && it.grants.move) what.push(V.moveCard(it.grants.move, { compact: true }));
-    if (it.grants && it.grants.passive) what.push(V.passiveBox(it.grants.passive));
+    what.push(...V.itemGrants(it));
     const eff = it.stats ? Object.entries(it.stats).map(([k, v]) => h('span', { class: 'wb-eff' + (v < 0 ? ' neg' : '') }, `${DK.tr('stats', D.stats[k])} ${v > 0 ? '+' : ''}${v}`)) : [];
     if (it.use) eff.push(h('span', { class: 'wb-eff' }, V.useText(it)));
 

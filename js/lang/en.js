@@ -353,7 +353,7 @@ DK.i18n.register('en', {
     next: 'Next battle ({step}/{total})', fightBoss: 'Face the boss!', lootNow: 'Loot: {items} items · {coins} coins',
     fightN: 'Expedition: floor {step} of {total}.', completed: 'Expedition complete! Loot delivered:',
     title: 'Expedition: {zone}', titleNone: 'Expedition', none: 'No expedition in progress', noneText: 'Start one from Battle by picking a zone.',
-    openMap: 'View map', backToMap: 'Back to map', lootLabel: 'Loot', floor: 'Floor {step} of {total}', continuePath: 'Continue', fightNow: 'Fight!',
+    openMap: 'View map', backToMap: 'Back to map', relicsShort: 'relics', relicsMore: 'Show', relicsLess: 'Hide', shopLeaveHint: 'Whatever you don\'t buy stays here.', lootLabel: 'Loot', floor: 'Floor {step} of {total}', continuePath: 'Continue', fightNow: 'Fight!',
     loot: 'Expedition loot', lootEmpty: 'Nothing found yet.', toLoot: 'Added to the expedition loot.',
     lootRule: 'Beat the boss to keep it all (+{n}% coins). Lose and you lose it.',
     pickFighter: 'Tap a daskai to choose who starts the next battle.',

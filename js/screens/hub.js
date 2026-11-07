@@ -137,7 +137,7 @@
       const extraRow = extra.length ? h('div', { class: 'row gap-s wrap' }, extra.map((it) => btn({ icon: it.icon, label: typeof it.label === 'function' ? it.label() : it.label, variant: it.variant || 'tone', tip: typeof it.desc === 'function' ? it.desc() : it.desc, onClick: () => DK.menus.activate(it) }))) : null;
 
       return h('div', { class: 'screen hub camp-screen hub-v3' },
-        h('div', { class: 'hub-main' }, V.campScene({ team, compact: true }), playBar(refresh), extraRow),
+        h('div', { class: 'hub-main' }, V.campScene({ team, compact: true, onChange: refresh }), playBar(refresh), extraRow),
         h('aside', { class: 'hub-side' }, teamCard, V.todoCard(refresh, params.todo), missionsCard));
     },
   });

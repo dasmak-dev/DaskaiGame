@@ -26,7 +26,8 @@ module.exports = {
       check(r.loot === 10 && r.wallet === w0, 'debería pagarse con el botín (100 − 90) y no con el monedero: ' + JSON.stringify(r));
       check(!r.tooMuch, 'no debería poder comprar sin monedas en el botín');
       check((await overflowX(p)) <= 1, 'el mercader se sale por la derecha');
-      check(await p.evaluate(() => document.querySelectorAll('.merchant button.mr-skip').length === 1), 'el mercader debería tener «Seguir» también arriba');
+      // v4.67: «Seguir el camino» va en la barra de abajo, pegada al borde (ya no hay botón arriba)
+      check(await p.evaluate(() => !document.querySelector('.merchant .mr-skip') && document.querySelectorAll('.merchant .mr-foot .exp-cont').length === 1 && getComputedStyle(document.querySelector('.merchant .mr-foot')).position === 'sticky'), 'el mercader debería tener «Seguir» en la barra fija de abajo (y no arriba)');
     }),
   }, {
     name: 'Hoguera: elegir a quién entrenar no repinta la pantalla',

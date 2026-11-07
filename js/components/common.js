@@ -96,6 +96,10 @@
   };
 
   /** Ficha de una pasiva por id (la que da un objeto de Crafteo). */
+  /** Lo que da un objeto al equiparlo: su ataque y su pasiva (inventario y forja). */
+  V.itemGrants = (it) => [
+    it.grants && it.grants.move ? V.moveCard(it.grants.move, { compact: true }) : null,
+    it.grants && it.grants.passive ? V.passiveBox(it.grants.passive) : null].filter(Boolean);
   V.passiveBox = (id) => {
     const p = D.passives[id];
     return h('div', { class: 'info-chip' }, DK.icon('shield', 18), h('div', null, h('span', { class: 'muted small' }, t('craft.givesPassive')), h('b', null, DK.tr('passives', p)), h('span', { class: 'small' }, DK.tr('passives', p, 'desc'))));

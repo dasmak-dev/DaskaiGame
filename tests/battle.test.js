@@ -27,6 +27,33 @@ module.exports = {
       check(Math.abs(r.spd - 1.25) < 0.02, 'arranque no sube la velocidad: ' + r.spd);
     }),
   }, {
+    name: 'La fórmula de daño es coherente (sin NaN, crítico, defensa, defenderse y estimación)',
+    run: (browser, view) => play(browser, view, async (p) => {
+      const r = await p.evaluate(() => {
+        const B = DK.battle, raw = (o) => B.rawDamage(Object.assign({ power: 50, kind: 'fisico', attLevel: 10, atk: 40, def: 40 }, o));
+        const a = DK.party.active()[0], st = B.start('pradera', a.uid, {});
+        const mv = DK.data.moves[DK.daskai.battleMoves(a).find((m) => DK.data.moves[m].power > 0)];
+        const plain = B.damage(st, 'enemy', mv, { random: false }).dmg; st.guarding = true;
+        const guarded = B.damage(st, 'enemy', mv, { random: false }).dmg; st.guarding = false;
+        const est = B.estimate(st, mv.id), max = B.damage(st, 'ally', mv, { random: false, ignoreHouse: !st.known, hideWeak: true }).dmg;
+        const rolls = Array.from({ length: 200 }, () => B.damage(st, 'ally', mv, { ignoreHouse: !st.known, hideWeak: true }));
+        const noCrit = rolls.filter((x) => !x.crit).map((x) => x.dmg);
+        return {
+          zero: raw({ atk: 0, def: 0 }), nan: raw({ atk: NaN, def: undefined }),
+          crit: raw({ crit: true }) > raw({}), def: raw({ def: 80 }) < raw({ def: 20 }), power: raw({ power: 100 }) > raw({ power: 50 }),
+          burn: raw({ burned: true }) < raw({}), burnMagic: raw({ kind: 'magico', burned: true }) === raw({ kind: 'magico' }),
+          guard: guarded < plain, est, max, inRange: noCrit.every((x) => x >= est[0] - 1 && x <= est[1]),
+          timed: (st.timed.enemy.push({ stat: 'atk', pct: -2, left: 3 }), B.timedMult(st, 'enemy', 'atk')),
+        };
+      });
+      check(r.zero >= 1 && r.nan >= 1, 'el daño no puede ser NaN ni 0: ' + JSON.stringify(r));
+      check(r.crit && r.def && r.power, 'crítico, defensa o potencia no influyen como deberían: ' + JSON.stringify(r));
+      check(r.burn && r.burnMagic, 'la quemadura sólo debe bajar el daño físico: ' + JSON.stringify(r));
+      check(r.guard, 'defenderse debería reducir el daño recibido');
+      check(r.est[1] === r.max && r.inRange, 'la estimación no coincide con el daño real: ' + JSON.stringify(r));
+      check(r.timed > 0, 'un efecto temporal no puede dejar el atributo a 0 o negativo: ' + r.timed);
+    }),
+  }, {
     name: 'La eficacia usa la casa del ataque y la misma casa da bonus',
     run: (browser, view) => play(browser, view, async (p) => {
       const r = await p.evaluate(() => {
@@ -73,10 +100,14 @@ module.exports = {
         DK.bag.add('pocion', 2); DK.bag.add('superpocion', 1);
         const st = DK.battle.start('pradera', DK.party.active()[0].uid, {});
         const a = DK.battle.ally(st); a.cur.hp = Math.floor(DK.daskai.stats(a).hp * 0.28);
-        return { should: DK.battle.autoShouldHeal(st), item: DK.battle.autoHealItem(st) };
+        // Lo esperado depende de su vida máxima (aleatoria): la Poción si cubre al menos la mitad de lo
+        // que falta; si no, la Superpoción (antes daba por hecho la Poción y fallaba con inicial de mucha vida)
+        const missing = DK.daskai.stats(a).hp - a.cur.hp;
+        const expected = DK.bag.potency('pocion', a).hp >= missing * 0.5 ? 'pocion' : 'superpocion';
+        return { should: DK.battle.autoShouldHeal(st), item: DK.battle.autoHealItem(st), expected };
       });
       check(r.should, 'debería querer curarse por debajo del umbral');
-      check(r.item === 'pocion', `debería usar el objeto más barato que sirva (usa ${r.item})`);
+      check(r.item === r.expected, `debería usar el objeto más barato que sirva (usa ${r.item}, tocaba ${r.expected})`);
     }),
   }, {
     name: 'Un combate completo con el teclado o el dedo',
@@ -85,13 +116,13 @@ module.exports = {
       await p.evaluate(() => DK.router.go('battle', { zone: 'pradera', leaderUid: DK.party.active()[0].uid }));
       await sleep(600);
       await p.evaluate(() => { DK.router.current().params.state.enemy.cur.hp = 1; });
-      for (let i = 0; i < 20 && !(await p.$('.end-panel')); i++) {
+      for (let i = 0; i < 20 && !(await p.$('.end-panel, .end-exp')); i++) {
         const b = await p.$('.bmove:not([disabled])');
         if (b) { if (view.touch) await b.tap(); else await p.keyboard.press('1'); }
         await sleep(500);
         const m = await p.$('.modal .btn-primary'); if (m) { await m.click().catch(() => {}); await sleep(200); }
       }
-      check(await p.$('.end-panel'), 'el combate no ha terminado');
+      check(await p.$('.end-panel, .end-exp'), 'el combate no ha terminado');
     }),
   }],
 };

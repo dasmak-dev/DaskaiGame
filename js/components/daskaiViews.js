@@ -105,7 +105,9 @@
   V.showcase = (d, { bare = false } = {}) => {
     const sp = DK.daskai.species(d);
     const stage = h('div', { class: 'sc-stage' + (bare ? ' bare' : ''), style: { '--c': D.houseColor(sp.house) } });
-    const mon = h('button', { class: 'sc-mon', type: 'button', tip: t('detail.showAgain'), 'aria-label': t('detail.showAgain') }, V.dSprite(d, { size: 260 }));
+    // v4.65: en pantallas táctiles sin «tip» (salía al tocar) ni marco al pulsar
+    const touch = window.matchMedia && window.matchMedia('(hover: none)').matches;
+    const mon = h('button', { class: 'sc-mon', type: 'button', tip: touch ? null : t('detail.showAgain'), 'aria-label': t('detail.showAgain') }, V.dSprite(d, { size: 260 }));
     const fx = h('div', { class: 'sc-fx', 'aria-hidden': 'true' });
     // Fondo vivo: motas que suben despacio todo el rato
     const amb = h('div', { class: 'sc-amb', 'aria-hidden': 'true' }, Array.from({ length: 14 }, (_, i) => h('b', { style: { left: (4 + Math.random() * 92).toFixed(0) + '%', '--d': (-Math.random() * 8).toFixed(1) + 's', '--t': (6 + Math.random() * 5).toFixed(1) + 's', '--s': (3 + Math.random() * 4).toFixed(0) + 'px' } })));
@@ -117,7 +119,7 @@
       fx.replaceChildren(...showFx(a.fx));
       DK.audio.sfx(a.id === 'roar' ? 'hit' : 'select');
     };
-    mon.addEventListener('click', () => { play(); loop(); });
+    mon.addEventListener('click', () => { play(); loop(); if (touch) mon.blur(); });
     // v4.57: siempre en movimiento: una animación nueva cada pocos segundos
     let timer = 0;
     const loop = () => { clearTimeout(timer); timer = setTimeout(() => { if (!stage.isConnected) return; play(); loop(); }, 2600 + Math.random() * 1600); };
@@ -219,35 +221,6 @@
     DK.training && DK.training.isTraining(d.uid) ? h('span', { class: 'badge train', tip: t('train.inTraining') }, DK.icon('dumbbell', 12), t('train.short')) : null,
     DK.daskai.talentsPending(d).length ? h('span', { class: 'badge talent', tip: t('talent.pendingTip') }, DK.icon('star', 12)) : null,
   ].filter(Boolean);
-
-  V.daskaiTile = (d, { onClick, selected = false, draggable = false, corner, badges = [], big = false } = {}) => {
-    badges = badges.concat(V.extraTags(d));
-    const sp = DK.daskai.species(d);
-    const fainted = DK.daskai.isFainted(d);
-    const s = DK.daskai.stats(d);
-    const hpPct = Math.round((d.cur.hp / s.hp) * 100);
-    const el = h('div', {
-      class: `dk-tile ${big ? 'big' : ''} ${selected ? 'selected' : ''} ${fainted ? 'fainted' : ''} ${onClick ? 'clickable' : ''}`,
-      role: onClick ? 'button' : null, tabindex: onClick ? '0' : null, 'data-drag': draggable ? '1' : null,
-      dataset: { uid: d.uid }, style: { '--c': D.houseColor(sp.house) }, tip: `${DK.daskai.name(d)} · ${sp.name}`,
-    },
-      corner ? h('div', { class: 'dk-tile-corner' }, corner) : null,
-      h('div', { class: 'dk-tile-art' }, V.dSprite(d, { size: big ? 76 : 58 }), V.formPips(d),
-        h('span', { class: 'dk-tile-house', tip: DK.tr('houses', D.houses[sp.house]) }, DK.icon(D.houses[sp.house].icon, 12))),
-      DK.daskai.isNew(d) ? h('span', { class: 'dk-new-dot', tip: t('newMark.tip'), 'aria-label': t('newMark.label') }, t('newMark.label')) : null,
-      h('div', { class: 'dk-tile-name' }, d.locked ? h('span', { class: 'dk-lock', tip: t('lock.locked') }, DK.icon('lock', 11)) : null, h('b', { tip: DK.daskai.speciesName(d) }, DK.daskai.name(d)), h('span', { class: 'muted small' }, `${t('common.lvl')} ${d.level}`)),
-      h('div', { class: 'dk-tile-bars' },
-        h('span', { class: 'mini-bar hp' + (hpPct < 25 ? ' low' : hpPct < 50 ? ' mid' : ''), tip: `${d.cur.hp}/${s.hp} ${t('common.hpShort')}` }, h('span', { style: { width: hpPct + '%' } })),
-        h('span', { class: 'mini-bar mp', tip: `${d.cur.mp}/${s.mp} ${t('common.mpShort')}` }, h('span', { style: { width: Math.round((d.cur.mp / s.mp) * 100) + '%' } }))),
-      (badges.length || d.shiny || d.temp || d.status || DK.daskai.canEvolve(d)) ? h('div', { class: 'dk-tile-badges' },
-        V.shinyTag(d), V.tempTag(d), V.statusTag(d.status),
-        DK.daskai.canEvolve(d) ? h('span', { class: 'badge evo', tip: t('evo.readyTip') }, DK.icon('evolve', 12)) : null, ...badges) : null);
-    if (onClick) {
-      el.addEventListener('click', (e) => { if (e.target.closest('.dk-tile-corner')) return; DK.audio.sfx('select'); onClick(e); });
-      el.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target === el) { e.preventDefault(); onClick(e); } });
-    }
-    return el;
-  };
 
   /** Texto del efecto de un ataque ("30% de provocar quemado"). */
   V.effectText = (m) => {

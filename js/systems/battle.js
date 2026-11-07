@@ -157,7 +157,7 @@
 
     /* ---------------- Pasivas «al entrar» (v4.40) ---------------- */
     /** Multiplicador de los efectos temporales activos en un lado para un atributo. */
-    timedMult(st, side, k) { return ((st.timed && st.timed[side]) || []).reduce((m, x) => (x.stat === k ? m * (1 + x.pct) : m), 1); },
+    timedMult(st, side, k) { return Math.max(0.1, ((st.timed && st.timed[side]) || []).reduce((m, x) => (x.stat === k ? m * (1 + x.pct) : m), 1)); }, // v4.66: nunca 0 ni negativo
     /** Efectos temporales activos de un lado: [{stat, pct, left, src}] */
     timedOf(st, side) { return (st.timed && st.timed[side]) || []; },
     /**
@@ -221,8 +221,10 @@
       if (!power) return 0;
       let a = atk;
       if (kind === 'fisico' && burned) a *= D.statuses.quemadura.atkMult;
+      // v4.66: sin NaN si ataque y defensa llegan a 0 (o vienen mal): se cuenta como 1
+      a = Math.max(1, +a || 0); def = Math.max(0, +def || 0);
       const dmg = power * (a / (a + def)) * (1 + attLevel / 100) * 1.15 * mult * roll * (crit ? C().critMult : 1);
-      return Math.max(1, Math.round(dmg));
+      return Number.isFinite(dmg) ? Math.max(1, Math.round(dmg)) : 1;
     },
 
     /** Calcula el daño de un ataque de `side` contra el otro. */

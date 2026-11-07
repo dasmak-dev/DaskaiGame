@@ -344,6 +344,8 @@
   function schedule(el) {
     clearTimeout(el._t1); clearTimeout(el._t2);
     const ms = toastMs() * (el._long ? 2.2 : 1);
+    const bar = el.querySelector('.toast-bar');
+    if (bar) { bar.style.animation = 'none'; void bar.offsetWidth; bar.style.animation = `toastLife ${ms}ms linear forwards`; }
     el._t1 = setTimeout(() => el.classList.add('out'), ms);
     el._t2 = setTimeout(() => { el.remove(); }, ms + 400);
   }
@@ -385,8 +387,10 @@
     const dismiss = () => { clearTimeout(el._t1); el.classList.add('out'); setTimeout(() => el.remove(), 300); };
     // v4.57: action = { label, icon, onClick } → botón dentro del aviso (p. ej. «Deshacer»); el aviso dura más
     const act = action ? h('button', { class: 'toast-action', type: 'button', onClick: (e) => { e.stopPropagation(); dismiss(); action.onClick(); } }, action.icon ? DK.icon(action.icon, 14) : null, action.label) : null;
+    // v4.67: icono en una pastilla de color, texto y una barrita que se vacía con el tiempo que le queda
+    const bar = h('i', { class: 'toast-bar', 'aria-hidden': 'true' });
     const el = h('div', { class: 'toast ' + kind + (action ? ' has-action' : ''), dataset: { text }, role: 'status', onClick: dismiss },
-      DK.icon(icon, 18), h('span', { class: 'grow' }, text), act);
+      h('span', { class: 'toast-ic' }, DK.icon(icon, 16)), h('span', { class: 'grow toast-txt' }, text), act, bar);
     if (action) el._long = true;
     if (moreEl) host.insertBefore(el, moreEl); else host.append(el);
     schedule(el);

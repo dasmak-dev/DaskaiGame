@@ -227,8 +227,7 @@
     const what = [];
     if (it.use) what.push(h('p', { class: 'inv-effect' }, DK.icon('flask', 16), h('b', null, V.useText(it))));
     if (it.stats) what.push(V.statChips(it.stats));
-    if (it.grants && it.grants.move) what.push(V.moveCard(it.grants.move, { compact: true }));
-    if (it.grants && it.grants.passive) what.push(V.passiveBox(it.grants.passive));
+    what.push(...V.itemGrants(it));
     if (what.length) blocks.push(h('section', { class: 'inv-block' }, h('h4', null, t('craft.whatDoes')), what));
 
     // Usar en… (v4.42): equipo arriba y reserva aparte (plegada), con una vista

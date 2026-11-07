@@ -401,13 +401,16 @@ body.in-exp { background: #0b0807 !important; }
 .compare-col .st2-sum { cursor: default; }
 /* Móvil: cabecera de la ficha más compacta y pestañas que caben */
 @media (max-width: 600px) {
-  .daskai-panel .panel-head-card { display: grid; grid-template-columns: 92px minmax(0, 1fr); align-items: center; gap: 8px 12px; padding: 10px; }
+  .daskai-panel .panel-head-card { display: grid; grid-template-columns: 122px minmax(0, 1fr); align-items: center; gap: 8px 12px; padding: 10px; }
   .daskai-panel .detail-info { display: contents; }
   .daskai-panel .detail-info > :not(:first-child) { grid-column: 1 / -1; }
   .daskai-panel .detail-info > .row:first-child { justify-content: flex-start; }
   .daskai-panel .detail-sprite { padding: 2px; }
-  .daskai-panel .detail-sprite > * { width: 88px !important; height: 88px !important; }
-  .daskai-panel .detail-sprite :is(svg, img, canvas) { width: 100% !important; height: 100% !important; }
+  /* v4.65: sólo el dibujo (antes también el icono de ampliar, que salía enorme) */
+  .daskai-panel .detail-sprite > .sprite { width: 118px !important; height: 118px !important; }
+  .daskai-panel .detail-sprite > .sprite :is(svg, img, canvas) { width: 100% !important; height: 100% !important; transform: scale(1.18); transform-origin: 50% 58%; }
+  .daskai-panel .detail-sprite .sc-open-hint { width: 20px; height: 20px; right: 6px; bottom: 6px; border-radius: 6px; opacity: .65; }
+  .daskai-panel .detail-sprite .sc-open-hint .icon svg { width: 11px; height: 11px; }
   .daskai-panel .tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .daskai-panel .tabs .tab { flex-direction: column; justify-content: center; gap: 2px; padding: 6px 2px; font-size: .78rem; min-width: 0; white-space: nowrap; }
   .daskai-panel .tabs .tab > span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
@@ -1246,7 +1249,10 @@ button.hx-warn { cursor: pointer; } button.hx-warn:hover { filter: brightness(1.
 @keyframes scGlow { 50% { opacity: .55; transform: scale(.92); } }
 .sc-floor { position: absolute; left: 22%; right: 22%; bottom: 13%; height: 18px; border-radius: 50%; background: radial-gradient(ellipse, rgba(0, 0, 0, .55), transparent 70%); }
 .sc-mon { position: relative; z-index: 1; border: 0; background: none; padding: 0; cursor: pointer; transform-origin: 50% 88%; margin-top: -14px; }
-.sc-mon:focus-visible { outline: 2px solid var(--gold, #d9b46a); border-radius: 12px; }
+.sc-mon { -webkit-tap-highlight-color: transparent; outline: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.sc-mon img, .sc-mon svg { -webkit-user-drag: none; pointer-events: none; }
+.sc-mon:focus, .sc-mon:active { outline: none; box-shadow: none; }
+.sc-mon:focus-visible { outline: none; }
 .sc-mon.a-hop { animation: scHop 1.1s cubic-bezier(.3, .7, .4, 1); }
 .sc-mon.a-spin { animation: scSpin 1s ease-in-out; }
 .sc-mon.a-squash { animation: scSquash 1s ease-in-out; }
@@ -1651,3 +1657,96 @@ body[data-screen="expedition"] .toast-host, body[data-nav="on"][data-screen="exp
 @media (max-width: 1100px) { .recruit-grid, .exp-focus .recruit-grid { --cols: min(var(--n, 3), 4); } }
 @media (max-width: 900px) { .recruit-grid, .exp-focus .recruit-grid { --cols: min(var(--n, 3), 3); } }
 @media (max-width: 560px) { .recruit-grid, .exp-focus .recruit-grid { --cols: min(var(--n, 2), 2); } }
+
+/* v4.67 — Avisos arriba (debajo de la cabecera) con un aspecto nuevo: pastilla de icono por tipo,
+   franja de color y barrita de tiempo. Gana a las reglas de cada estilo (clean/exile) y a las antiguas de abajo. */
+:root body .toast-host, :root body[data-nav="on"] .toast-host, :root body[data-screen] .toast-host {
+  top: calc(70px + env(safe-area-inset-top)) !important; bottom: auto !important; width: min(92vw, 420px); gap: 6px; }
+@media (max-width: 600px) { :root body .toast-host, :root body[data-nav="on"] .toast-host, :root body[data-screen] .toast-host { top: calc(58px + env(safe-area-inset-top)) !important; width: calc(100vw - 20px); } }
+:root:root:root:root:root body .toast-host > .toast {
+  --tk: var(--gold, #d4a24c); position: relative; overflow: hidden; width: 100%; box-sizing: border-box;
+  padding: 8px 12px 8px 8px; gap: 10px; border-radius: 14px; font-size: .86rem; font-weight: 500; line-height: 1.3;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--tk) 14%, rgba(22, 16, 12, .94)), rgba(22, 16, 12, .94) 45%);
+  border: 1px solid color-mix(in srgb, var(--tk) 32%, rgba(255, 255, 255, .06)); color: #f3e9da;
+  box-shadow: 0 10px 28px -10px rgba(0, 0, 0, .75), inset 0 1px 0 rgba(255, 255, 255, .05);
+  backdrop-filter: blur(8px); animation: toastDrop .32s cubic-bezier(.2, .9, .3, 1.2); }
+:root:root:root:root:root body .toast-host > .toast.good { --tk: #4ade80; }
+:root:root:root:root:root body .toast-host > .toast.bad { --tk: #f87171; }
+:root:root:root:root:root body .toast-host > .toast.warn { --tk: #fbbf24; }
+:root:root:root:root:root[data-theme="light"] body .toast-host > .toast { background: linear-gradient(90deg, color-mix(in srgb, var(--tk) 16%, #fffaf2), #fffaf2 45%); color: #2a1f16; }
+.toast-ic { flex: none; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 9px; color: #1a120b;
+  background: var(--tk); box-shadow: 0 0 12px -2px color-mix(in srgb, var(--tk) 70%, transparent); }
+.toast .toast-ic .icon { color: inherit !important; }
+.toast-txt { min-width: 0; }
+.toast-bar { position: absolute; left: 0; bottom: 0; height: 2px; width: 100%; background: var(--tk); opacity: .7; transform-origin: left; }
+@keyframes toastLife { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@keyframes toastDrop { from { opacity: 0; transform: translateY(-14px) scale(.96); } }
+:root:root:root:root:root body .toast-host > .toast.out { opacity: 0; transform: translateY(-10px) scale(.97); }
+:root:root:root:root:root body .toast-host > .toast.toast-more { width: auto; padding: 5px 12px; font-size: .78rem; border-radius: 999px; }
+.toast-more .icon { width: 14px; height: 14px; }
+:root[data-motion="reduced"] .toast-bar { animation: none !important; }
+
+/* v4.67 — Mercader: bolsa en la cabecera, pestañas con la nota al lado y barra inferior pegada con «Seguir el camino» */
+.merchant .mr-top { align-items: center; }
+.merchant .mr-top .mr-purse { flex-direction: column; align-items: flex-end; gap: 1px; padding: 6px 12px; }
+.merchant .mr-top .mr-purse small { display: inline-flex; align-items: center; gap: 4px; font-size: .66rem; letter-spacing: .06em; text-transform: uppercase; }
+.merchant .mr-bar { justify-content: flex-start; gap: 12px; }
+.merchant .mr-bar .mr-note { flex: 1; min-width: 180px; font-size: .74rem; }
+.merchant .mr-foot { position: sticky; bottom: 8px; z-index: 3; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  margin-top: 2px; padding: 8px 8px 8px 14px; border-radius: 14px; border: 1px solid rgba(251, 191, 36, .22);
+  background: linear-gradient(180deg, rgba(30, 22, 14, .92), rgba(18, 13, 9, .96)); backdrop-filter: blur(8px); box-shadow: 0 -8px 24px -12px rgba(0, 0, 0, .8); }
+.merchant .mr-foot .btn.exp-cont { align-self: auto; min-width: 190px; width: auto; flex: none; }
+.merchant .mr-foot-hint { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+:root[data-theme="light"] .merchant .mr-foot { background: rgba(255, 250, 240, .95); }
+@media (max-width: 600px) {
+  .merchant .mr-top { flex-direction: row; align-items: center; }
+  .merchant .mr-top .exp-node-head p { display: none; }
+  body[data-nav="on"] .merchant .mr-foot { bottom: calc(84px + env(safe-area-inset-bottom)); }
+  .merchant .mr-foot { padding: 6px 6px 6px 10px; }
+  .merchant .mr-foot .btn.exp-cont { min-width: 0; }
+  .merchant .mr-foot-hint { display: none; }
+  .merchant .mr-foot .mr-flash { flex: 1; }
+  .merchant .mr-foot:not(:has(.mr-flash)) { justify-content: flex-end; }
+}
+
+/* v4.67 — Cabecera del mapa de expedición: datos en una línea uniforme y reliquias en iconos */
+.exp-map-card .exp-head2 { margin-bottom: 0; }
+.exp-map-card .exp-head2 h3 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.exp-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 0; margin: -4px 0 2px; font-size: .76rem; }
+.exp-meta > .chip { background: none !important; border: 0 !important; box-shadow: none !important; padding: 2px 10px 2px 0; margin-right: 10px; font-size: .76rem !important; font-weight: 600;
+  border-radius: 0; position: relative; color: var(--muted); gap: 5px; }
+.exp-meta > .chip:not(:last-child)::after { content: ''; position: absolute; right: -1px; top: 50%; width: 3px; height: 3px; margin-top: -1.5px; border-radius: 50%; background: currentColor; opacity: .35; }
+.exp-meta > .chip .icon svg { width: 12px; height: 12px; }
+.exp-meta > .chip.neg { color: #fca5a5; } .exp-meta > .chip.pos { color: #86efac; }
+.exp-meta > .size-chip.s-xl { color: #fca5a5; } .exp-meta > .size-chip.s-medium { color: #fcd34d; } .exp-meta > .size-chip.s-small { color: #86efac; }
+.relic-bar.compact { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 6px 8px; border-radius: 12px; background: rgba(0, 0, 0, .18); border: 1px solid rgba(255, 255, 255, .05); }
+.relic-bar.compact .rb-lbl { display: inline-flex; align-items: center; gap: 4px; margin-right: 4px; font-size: .72rem; color: var(--muted); text-transform: lowercase; }
+.relic-bar.compact .rb-lbl b { color: var(--text); font-size: .8rem; }
+.relic-bar.compact .relic-chip { font-size: .72rem; padding: 2px 8px; }
+.relic-bar.compact .relic-chip.ico { width: 24px; height: 24px; padding: 0; justify-content: center; border-radius: 50%; background: color-mix(in srgb, var(--rc) 14%, transparent); border: 1.5px solid color-mix(in srgb, var(--rc) 60%, transparent); }
+.rb-toggle { margin-left: auto; display: inline-flex; align-items: center; gap: 3px; padding: 3px 8px; border-radius: 8px; border: 0; background: none; color: var(--muted); font: inherit; font-size: .72rem; cursor: pointer; }
+.rb-toggle:hover { color: var(--text); background: rgba(255, 255, 255, .05); }
+.relic-bar.compact.open .rb-toggle .icon { transform: rotate(180deg); }
+.exp-focus-bar .relic-bar.compact { background: none; border: 0; padding: 0; }
+@media (max-width: 600px) { .exp-meta { font-size: .72rem; } .exp-meta > .chip { margin-right: 8px; padding-right: 8px; } }
+
+/* v4.67 — Recorrido de entrada del mapa: el jefe se ilumina y la vista baja hasta la salida */
+.exp-scroll.flying { scroll-behavior: auto !important; }
+.exp-node.t-boss.fly-focus { animation: flyBoss 1.5s ease-out; z-index: 3; }
+@keyframes flyBoss { 0% { transform: translate(-50%, -50%) scale(1); filter: none; } 35% { transform: translate(-50%, -50%) scale(1.22); filter: drop-shadow(0 0 18px rgba(239, 68, 68, .9)) brightness(1.25); } 100% { transform: translate(-50%, -50%) scale(1); filter: none; } }
+/* v4.67 — ajustes del mercader: la barra inferior queda por encima del menú flotante; en móvil, bolsa en su propia fila */
+body[data-nav="on"] .merchant .mr-foot { bottom: calc(104px + env(safe-area-inset-bottom)); }
+@media (max-width: 600px) {
+  .merchant .mr-top { flex-wrap: wrap; }
+  .merchant .mr-top > .exp-node-head { flex: 1 1 100%; }
+  .merchant .mr-top .mr-purse { flex: 1 1 100%; flex-direction: row; justify-content: space-between; align-items: center; }
+  body[data-nav="on"] .merchant .mr-foot { bottom: calc(84px + env(safe-area-inset-bottom)); }
+  .merchant .mr-foot .btn.exp-cont .hotkey, .merchant .mr-foot .btn.exp-cont kbd { display: none; }
+  .merchant .mr-foot .mr-flash { min-width: 0; }
+}
+/* La barra del modo foco (mercader, sucesos...) con el mismo estilo sutil que la cabecera del mapa */
+.exp-focus-bar > .chip { background: none !important; border: 0 !important; box-shadow: none !important; padding: 2px 4px; font-size: .76rem !important; font-weight: 600; color: var(--muted); gap: 5px; }
+.exp-focus-bar > .chip .icon svg { width: 12px; height: 12px; }
+.exp-focus-bar > .chip.neg { color: #fca5a5; } .exp-focus-bar > .chip.pos, .exp-focus-bar > .quest-chip.good { color: #86efac; }
+.exp-focus-bar { gap: 4px 10px; padding: 8px 14px; }
+@media (max-width: 600px) { .merchant .mr-foot .mr-flash > span { white-space: normal; line-height: 1.2; font-size: .7rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; } .merchant .mr-foot .mr-flash { border-radius: 12px; } }

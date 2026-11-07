@@ -585,8 +585,7 @@
       (d.equip || []).forEach((id) => id && DK.bag.add(id));
       DK.wallet.add(r.coins, { silent: true });
       Object.entries(r.items).forEach(([id, n]) => DK.bag.add(id, n));
-      this.st().party = this.all().filter((x) => x.uid !== uid);
-      this.st().team = this.st().team.filter((x) => x !== uid);
+      this._drop(uid);
       this.st().stats.released++;
       snap.r = r; this._lastRelease = snap;
       DK.store.save();
@@ -616,12 +615,16 @@
      * Quita un daskai temporal (recluta de una expedición no completada).
      * Devuelve a la bolsa lo que llevara equipado.
      */
+    /** Saca a un daskai de la colección y del equipo (sin más efectos). */
+    _drop(uid) {
+      this.st().party = this.all().filter((x) => x.uid !== uid);
+      this.st().team = this.st().team.filter((x) => x !== uid);
+    },
     removeTemp(uid) {
       const d = this.get(uid);
       if (!d) return;
       (d.equip || []).forEach((id) => id && DK.bag.add(id));
-      this.st().party = this.all().filter((x) => x.uid !== uid);
-      this.st().team = this.st().team.filter((x) => x !== uid);
+      this._drop(uid);
       if (!this.st().team.length && this.all().length) this.st().team.push(this.all()[0].uid);
       delete this.st().stats.usage[uid];
       DK.store.save();

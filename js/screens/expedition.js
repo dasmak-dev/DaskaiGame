@@ -209,6 +209,38 @@
     return out;
   }
 
+  /**
+   * v4.67: recorrido de entrada del mapa. Empieza arriba del todo con el jefe resaltado, espera a que se
+   * vaya la cortinilla y baja suave hasta los nodos de salida. Tocar o mover la rueda lo corta.
+   */
+  function flyIn(box, map, target) {
+    const reduced = document.documentElement.dataset.motion === 'reduced' || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    if (reduced) { box.scrollTop = target; return; }
+    box.scrollTop = 0;
+    const boss = map.querySelector('.exp-node.t-boss');
+    box.classList.add('flying');
+    let stop = false;
+    const cancel = () => { stop = true; };
+    ['wheel', 'touchstart', 'pointerdown', 'keydown'].forEach((ev) => box.addEventListener(ev, cancel, { once: true, passive: true }));
+    const end = () => { box.classList.remove('flying'); if (boss) boss.classList.remove('fly-focus'); };
+    (async () => {
+      for (let i = 0; i < 60 && document.querySelector('.curtain'); i++) await DK.util.sleep(80);
+      if (stop || !box.isConnected) { end(); return; }
+      if (boss) boss.classList.add('fly-focus');
+      await DK.util.sleep(900);
+      const from = box.scrollTop, dist = target - from, dur = Math.min(2600, 900 + Math.abs(dist) * 1.1), t0 = performance.now();
+      const ease = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+      const step = (now) => {
+        if (stop || !box.isConnected) { end(); return; }
+        const k = Math.min(1, (now - t0) / dur);
+        box.scrollTop = from + dist * ease(k);
+        if (k < 1) requestAnimationFrame(step); else end();
+      };
+      if (boss) setTimeout(() => boss.classList.remove('fly-focus'), 600);
+      requestAnimationFrame(step);
+    })();
+  }
+
   function mapView(refresh, src, readonly, { compact = false } = {}) {
     const e = src || E().active();
     const ROW_H = compact ? ROW_COMPACT : ROW_FULL;
@@ -300,7 +332,13 @@
       const box = map.parentElement; if (!box) return;
       if (!readonly && keepScroll != null) { box.scrollTop = keepScroll; return; }
       const el = map.querySelector('.s-open, .s-pending, .s-lost, .here');
-      if (el) box.scrollTop = Math.max(0, el.offsetTop - box.clientHeight / 2);
+      const target = el ? Math.max(0, el.offsetTop - box.clientHeight / 2) : 0;
+      // v4.67: la primera vez que ves un mapa nuevo (tras prepararte), la vista baja desde el jefe hasta el inicio
+      const flyKey = `${e.depth || 1}|${e.seed}`;
+      if (!readonly && !compact && !e.cleared.length && !e.pos && e.flyShown !== flyKey && box.scrollHeight > box.clientHeight + 40) {
+        e.flyShown = flyKey; DK.store.save();
+        flyIn(box, map, target);
+      } else if (el) box.scrollTop = target;
     }, 30);
     // Mientras se dibuja, se conserva la posición del mapa entre repintados
     if (!readonly) setTimeout(() => { const box = map.parentElement; if (box) box.addEventListener('scroll', () => { if (draw.on) keepScroll = box.scrollTop; }, { passive: true }); }, 40);
@@ -308,13 +346,13 @@
     const terrain = { backgroundImage: `url(${DK.pix.terrain(zone.colors, e.zone)})`, '--z1': zone.colors[0], '--z2': zone.colors[1] };
     if (compact) return h('div', { class: 'exp-map-compact' }, h('div', { class: 'exp-scroll terrain', style: terrain }, map), legend());
     return h('div', { class: 'card exp-map-card' },
-      h('div', { class: 'panel-head' }, DK.icon(zone.icon, 18), h('h3', null, zone.name),
-        V.kindChip(e.kind || (e.map && e.map.kind)), V.sizeChip(e.size || (e.map && e.map.size)), V.modChip(e.mod || (e.map && e.map.mod)), V.endgameChips(e),
-        h('span', { class: 'chip', tip: t('exp.depthTip') }, DK.icon('compass', 13), t('exp.depth', { n: e.depth || 1 })),
-        h('span', { class: 'chip' }, DK.icon('flag', 13), t('exp.floor', { step: Math.min(e.step, e.total), total: e.total })),
+      // v4.67: cabecera sutil. Título y «Dibujar» arriba; debajo, una línea de datos del mapa todos del mismo
+      // tamaño (sin cajas) y las reliquias como iconos (pulsar «ver» las despliega con su nombre).
+      h('div', { class: 'panel-head exp-head2' }, DK.icon(zone.icon, 18), h('h3', null, zone.name),
         readonly ? null : h('span', { class: 'grow' }),
         readonly ? null : btn({ icon: 'edit', label: draw.on ? t('draw.stop') : t('draw.start'), size: 'sm', variant: draw.on ? 'primary' : 'ghost', tip: t('draw.tip'), onClick: () => { draw.on = !draw.on; draw.tool = 'pen'; refresh(); } })),
-      readonly ? null : relicBar(),
+      h('div', { class: 'exp-meta' }, V.kindChip(e.kind || (e.map && e.map.kind)), V.sizeChip(e.size || (e.map && e.map.size)), V.modChip(e.mod || (e.map && e.map.mod)), V.endgameChips(e), ...progressChips(e)),
+      readonly ? null : relicBar(undefined, { compact: true, refresh }),
       editing ? drawBar(refresh) : null,
       h('div', { class: 'exp-scroll terrain', style: terrain }, map),
       legend());
@@ -323,9 +361,18 @@
   DK.views.expMap = (src, opts) => mapView(() => {}, src, true, opts);
 
   /** Fila de reliquias activas (con su efecto en el tooltip). */
-  function relicBar(list = DK.relics.list()) {
+  // v4.67: { compact } → sólo iconos con un aro del color de su rareza (nombre y efecto en el «tip»);
+  // «Ver» las despliega con nombre (se recuerda mientras dure la partida abierta)
+  let relicsOpen = false;
+  function relicBar(list = DK.relics.list(), { compact = false, refresh } = {}) {
     if (!list.length) return null;
-    return h('div', { class: 'relic-bar' }, list.map((r) => h('span', { class: 'relic-chip r-' + r.rarity, tip: `${r.name} — ${relicText(r)}` }, DK.icon(r.icon, 15), h('span', null, r.name))));
+    const open = compact && relicsOpen;
+    const chips = list.map((r) => h('span', { class: 'relic-chip r-' + r.rarity + (compact && !open ? ' ico' : ''), tip: `${r.name} — ${relicText(r)}`, 'aria-label': r.name }, DK.icon(r.icon, compact && !open ? 14 : 15), compact && !open ? null : h('span', null, r.name)));
+    if (!compact) return h('div', { class: 'relic-bar' }, chips);
+    return h('div', { class: 'relic-bar compact' + (open ? ' open' : '') },
+      h('span', { class: 'rb-lbl' }, DK.icon('amulet', 13), h('b', null, list.length), t('exp.relicsShort')),
+      chips,
+      refresh ? h('button', { type: 'button', class: 'rb-toggle', onClick: () => { relicsOpen = !relicsOpen; DK.audio.sfx('click'); refresh(); } }, DK.icon('chevronDown', 12), open ? t('exp.relicsLess') : t('exp.relicsMore')) : null);
   }
   const relicText = (r) => t('relics.effect.' + r.effect.type, { n: Math.round((r.effect.pct || 0) * 100), add: r.effect.type === 'crit' || r.effect.type === 'capture' ? Math.round(r.effect.add * 100) : r.effect.add, house: r.effect.house ? DK.tr('houses', D.houses[r.effect.house]) : '', stat: r.effect.stat ? DK.tr('stats', D.stats[r.effect.stat]) : '' });
   DK.views.relicText = relicText;
@@ -413,6 +460,11 @@
     return h('div', { class: 'chart-legend exp-legend' }, Object.entries(E().TYPES).map(([k, ty]) =>
       h('span', { class: 'legend-item', tip: t('exp.nodeDesc.' + k) }, h('span', { class: 'exp-legend-icon t-' + k }, DK.icon(ty.icon, 13)), t('exp.node.' + k))));
   }
+
+  /** Fichas de profundidad y piso (barra del mapa y barra del modo foco). */
+  const progressChips = (e) => [
+    h('span', { class: 'chip', tip: t('exp.depthTip') }, DK.icon('compass', 13), t('exp.depth', { n: e.depth || 1 })),
+    h('span', { class: 'chip' }, DK.icon('flag', 13), t('exp.floor', { step: Math.min(e.step, e.total), total: e.total }))];
 
   /* ---------- Panel del nodo ---------- */
   const cont = (refresh) => btn({ icon: 'next', label: t('exp.continuePath'), variant: 'primary', hotkey: '↵', cls: 'exp-cont', onClick: () => { E().completeNode(); refresh(); } });
@@ -628,16 +680,16 @@
         : sellable.map(({ item, qty }) => row({ id: item.id, price: DK.shop.sellPrice(item.id), k: item.id, sell: true, owned: qty }));
       const tabs = h('div', { class: 'mr-tabs', role: 'tablist' }, [['buy', 'bag', t('shop.buy')], ['sell', 'coin', `${t('shop.sell')} (${sellable.length})`]].map(([id, ic, label]) =>
         h('button', { class: 'mr-tab' + (shopUi.mode === id ? ' on' : ''), type: 'button', role: 'tab', 'aria-selected': String(shopUi.mode === id), onClick: () => { shopUi.mode = id; DK.audio.sfx('select'); draw(); } }, DK.icon(ic, 15), label)));
+      // v4.67: sin el botón de seguir arriba. Cabecera con el mercader y tu bolsa de monedas; abajo, una
+      // barra que se queda pegada al borde (siempre a mano al bajar por la lista) con el aviso y «Seguir el camino».
       card.replaceChildren(
-        // «Seguir el camino» también arriba: no hace falta bajar si no quieres comprar
         h('div', { class: 'mr-top' }, head('shop', t('exp.node.shop'), t('exp.shopText2'), { key: 'shop|' + e.seed + '|' + e.pending, color: '#fbbf24', icon: 'coin' }),
-          btn({ icon: 'next', label: t('exp.continuePath'), variant: 'tone', size: 'sm', cls: 'mr-skip', onClick: () => { E().completeNode(); refresh(); } })),
-        h('div', { class: 'mr-bar' }, tabs,
-          shopUi.flash ? h('span', { class: 'mr-flash', role: 'status' }, DK.icon('check', 13), DK.icon(shopUi.flash.icon, 13), h('span', null, shopUi.flash.text)) : null,
-          h('span', { class: 'mr-purse', tip: t('exp.lootCoinsTip') }, DK.icon('gift', 15), h('small', null, t('exp.loot')), V.coins(coins))),
-        h('p', { class: 'muted small mr-note' }, shopUi.mode === 'buy' ? t('exp.payNoteLoot') : t('shop.sellHelpLoot', { n: Math.round(DK.config.sellRatio * 100) })),
+          h('span', { class: 'mr-purse', tip: t('exp.lootCoinsTip') }, h('small', null, DK.icon('gift', 13), t('exp.loot')), V.coins(coins))),
+        h('div', { class: 'mr-bar' }, tabs, h('p', { class: 'muted small mr-note' }, shopUi.mode === 'buy' ? t('exp.payNoteLoot') : t('shop.sellHelpLoot', { n: Math.round(DK.config.sellRatio * 100) }))),
         list.length ? h('div', { class: 'mr-list' }, list) : DK.ui.empty('coin', t('shop.nothingToSell'), ''),
-        cont(refresh));
+        h('div', { class: 'mr-foot' },
+          shopUi.flash ? h('span', { class: 'mr-flash', role: 'status' }, DK.icon('check', 13), DK.icon(shopUi.flash.icon, 13), h('span', null, shopUi.flash.text)) : h('span', { class: 'mr-foot-hint muted small' }, t('exp.shopLeaveHint')),
+          cont(refresh)));
     };
     draw();
     return card;
@@ -1043,10 +1095,9 @@
           h('div', { class: 'exp-focus-bar', style: { '--z1': zone.colors[0], '--z2': zone.colors[1] } },
             DK.icon(zone.icon, 18), h('b', null, zone.name),
             V.kindChip(e.kind), V.sizeChip(e.size), V.modChip(e.mod), e.awaitingChoice ? null : V.questChip(),
-            h('span', { class: 'chip', tip: t('exp.depthTip') }, DK.icon('compass', 13), t('exp.depth', { n: e.depth || 1 })),
-            h('span', { class: 'chip' }, DK.icon('flag', 13), t('exp.floor', { step: Math.min(e.step, e.total), total: e.total })),
+            ...progressChips(e),
             h('span', { class: 'chip', tip: t('exp.lootCoinsTip') }, DK.icon('gift', 13), h('span', { 'data-loot-coins': '1' }, t('exp.lootNow', { items: E().lootCount(), coins: e.loot.coins }))),
-            h('span', { class: 'grow' }), relicBar()),
+            h('span', { class: 'grow' }), relicBar(undefined, { compact: true })),
           h('div', { class: 'exp-focus-body' }, focus));
       }
       // Mapa a todo el ancho con la barra de estado encima (o el nodo pendiente al lado)

@@ -357,6 +357,49 @@ Se carga la última y sólo sobrescribe: paleta (piedra oscura, bronce, oro `--g
 - **Expedición:** al entrar en el mapa, el equipo, la mochila o un combate durante una expedición, `#zone-backdrop` (creado en `screens/expedition.js` con `screen:enter`) pinta detrás de todo la escena de la zona actual, oscurecida; `body.in-exp`.
 - **Combate:** la arena usa la escena de la zona (`components/scenes.js`, ahora con árboles muertos, ruinas, tumbas, cristales o tentáculos según la zona) y los **jefes tienen su propio fondo**: `DK.scenes.bossScene(zona, secreto)` → `boss_<escena>` (menhires bajo luna roja, bosque muerto, naufragio con tormenta, bosque de cristales, forja de lava, santuario con estatua, fauces del abismo, ruinas entre rayos) y `boss_secret` (cripta) para los jefes ocultos.
 
+### Cambios de la v4.67 — Daskai de la hoguera, avisos arriba, mercader, cabecera del mapa y recorrido de entrada
+
+- **Daskai junto a la hoguera** (`components/camp.js`): pulsarlos abre el mismo resumen rápido que «Tu equipo» (`V.quickStats`), en vez de ir a la pantalla de equipo. `V.campScene({ onChange })` repinta el Inicio si cambias algo desde ahí.
+- **Avisos (toasts) arriba** (`core/ui.js` `toast`, `css/grim.css`):
+  - Salen bajo la cabecera, en todas las pantallas.
+  - Cada aviso tiene una pastilla de icono con el color del tipo (`good`, `bad`, `warn` o el dorado por defecto), un degradado suave de ese color y una barrita inferior que se vacía con el tiempo que le queda (`toastLife`; se reinicia si el aviso se repite).
+  - Entran cayendo y salen hacia arriba.
+- **Mercader** (`merchantPanel`):
+  - Sin el botón «Seguir el camino» de arriba (`.mr-skip`).
+  - La bolsa de monedas va en la cabecera, junto al mercader, y la nota de pago al lado de las pestañas.
+  - Abajo hay una barra pegada (`.mr-foot`, `position: sticky`, por encima del menú flotante) con el aviso de compra o venta y «Seguir el camino». En móvil, la bolsa ocupa su propia fila y el aviso puede ocupar dos líneas.
+  - Test de la tienda actualizado.
+- **Cabecera del mapa de expedición**:
+  - Título y «Dibujar» en una fila.
+  - Debajo, los datos del mapa en una línea uniforme (`.exp-meta`: tipo, tamaño, modificador, corrupción, mapa y piso; todos del mismo tamaño, sin cajas, separados por puntos).
+  - Las reliquias, en iconos redondos con el aro del color de su rareza (`relicBar(list, { compact: true, refresh })`). El nombre y el efecto salen en el «tip» y «Ver» las despliega con nombre (`relicsOpen`).
+  - La barra del modo foco usa el mismo estilo sutil.
+- **Recorrido de entrada del mapa** (`flyIn`): la primera vez que ves un mapa nuevo (sin nodos hechos; se guarda en `e.flyShown`), la vista empieza arriba con el jefe resaltado (`.fly-focus`). Espera a que se vaya la cortinilla y baja suavemente hasta la salida (unos 2 s). Cualquier rueda, toque o tecla lo corta, y con movimiento reducido no se hace.
+- Textos nuevos: `exp.shopLeaveHint`, `exp.relicsShort`, `exp.relicsMore`, `exp.relicsLess`.
+
+### Cambios de la v4.66 — Revisión: tests estables, daño blindado, código duplicado y muerto
+
+- **Tests estables**:
+  - «El automático cura con un objeto en zona crítica» daba por hecho la Poción; con un inicial de mucha vida la regla (el más barato que cure al menos la mitad de lo que falta) elige la Superpoción. Ahora calcula lo esperado con la vida real.
+  - Los combates esperan `.end-panel` **o** `.end-exp` (la barra de fin de combate de la expedición desde la v4.63). Era la causa de que la prueba de expedición fallara en móvil: seguía pulsando «1» tras ganar.
+  - Nuevo test «La fórmula de daño es coherente»: sin NaN con ataque/defensa 0, crítico > normal, más defensa = menos daño, la quemadura sólo afecta al físico, defenderse reduce, la estimación [mín, máx] cubre el daño real y un efecto temporal no deja un atributo a 0.
+- **Daño revisado** (`systems/battle.js`): la fórmula y los multiplicadores (casa, misma casa, punto débil, ruptura, escudo, defenderse, cambio, mapa, reliquias, quemadura y crítico) se aplican bien y una sola vez.
+  - Blindajes: `rawDamage` ya no devuelve NaN si ataque y defensa llegan a 0 (mínimo 1).
+  - `timedMult` nunca baja de ×0,1, aunque se sumen varios efectos negativos.
+- **Código duplicado**:
+  - `V.itemGrants(it)` (ataque y pasiva que da un objeto) para el inventario y la forja.
+  - `progressChips(e)` (profundidad y piso) para las dos barras de la expedición.
+  - `DK.party._drop(uid)` para liberar y quitar temporales.
+  - `names.js` usa el generador de `DK.looks.rng` en vez de una copia (es el mismo algoritmo; no cambiarlo o cambiarían todos los nombres y aspectos).
+- **Código muerto eliminado**: `V.shopCard`, `V.catButtons` y `V.daskaiTile` (ya no se usaban en ningún sitio).
+
+### Cambios de la v4.65 — Campamento en móvil, dibujo de la ficha en móvil y toque en la vista en grande
+
+- **Campamento en móvil** (`components/camp.js`, `xs/ys` de `SPOTS`): el tablón de misiones (`ys` 37 → 51) y el portal de expediciones (43 → 54) quedaban por encima del horizonte, flotando en el cielo rojo; ahora se apoyan en el suelo. El yunque baja a 74 para dejarle sitio al portal y las antorchas se reubican (`[40, 62]`, `[96, 64]`).
+- **Ficha del daskai en móvil** (`css/grim.css`, `.daskai-panel .detail-sprite`): la regla que fijaba el tamaño se aplicaba a todos los hijos y al `svg` del icono de ampliar, que salía de 88 px. Ahora sólo afecta a `.sprite` (118 px, con el dibujo a ×1,18) y el icono de ampliar es una esquinita de 20 px, semitransparente.
+- **Vista en grande al tocar** (`V.showcase`): en pantallas táctiles (`hover: none`) el dibujo no lleva «tip» (salía un bocadillo en cada toque), se quita el foco tras tocar y no hay contorno, resaltado de toque ni selección (`-webkit-tap-highlight-color`, `user-select`, `-webkit-touch-callout`).
+- Nota de pruebas: «El automático cura con un objeto en zona crítica» puede fallar de vez en cuando por la vida aleatoria del inicial (pasa al repetirlo).
+
 ### Cambios de la v4.64 — Botón de expedición más discreto, reclutas con la vida llena y candidatos en filas equilibradas
 
 - **Botón «Empezar expedición» del Inicio** (`css/grim.css`, `.hub-exp .play-btn`): fuera el resplandor que latía (`playGlow`). Se mantiene el brillo que cruza el botón y el icono da un pequeño empujón cada ~5 s (`playNudge`). Con movimiento reducido no se anima.

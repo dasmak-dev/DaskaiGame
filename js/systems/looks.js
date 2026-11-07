@@ -799,7 +799,7 @@
   DK.looks = {
     rarityScore, isFresh, freshCount, clearFresh,
     svg, pixel, pixelCached, ind, stageOf, lineOf, rootOf, rollLook, of: lookOf, see, seenOf, traitSeen, collection, traits, icon, label,
-    typical: (sid) => ind(sid, null), houses: HOUSES, catIcon: CAT_ICON, allKeys, draw, hash,
+    typical: (sid) => ind(sid, null), houses: HOUSES, rng, catIcon: CAT_ICON, allKeys, draw, hash,
     /** Para pruebas: genera el aspecto de una casa con una semilla. */
     roll,
   };

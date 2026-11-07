@@ -354,7 +354,7 @@ DK.i18n.register('es', {
     next: 'Siguiente combate ({step}/{total})', fightBoss: '¡Enfrentarse al jefe!', lootNow: 'Botín: {items} objetos · {coins} monedas',
     fightN: 'Expedición: piso {step} de {total}.', completed: '¡Expedición completada! Botín entregado:',
     title: 'Expedición: {zone}', titleNone: 'Expedición', none: 'No hay ninguna expedición en curso', noneText: 'Empieza una desde Batalla eligiendo una zona.',
-    openMap: 'Ver mapa', backToMap: 'Volver al mapa', lootLabel: 'Botín', floor: 'Piso {step} de {total}', continuePath: 'Seguir el camino', fightNow: '¡Combatir!',
+    openMap: 'Ver mapa', backToMap: 'Volver al mapa', relicsShort: 'reliquias', relicsMore: 'Ver', relicsLess: 'Ocultar', shopLeaveHint: 'Lo que no compres se queda aquí.', lootLabel: 'Botín', floor: 'Piso {step} de {total}', continuePath: 'Seguir el camino', fightNow: '¡Combatir!',
     loot: 'Botín de la expedición', lootEmpty: 'Todavía no has conseguido nada.', toLoot: 'Se ha guardado en el botín de la expedición.',
     lootRule: 'Vence al jefe para llevártelo todo (+{n}% monedas). Si pierdes, lo pierdes.',
     pickFighter: 'Pulsa un daskai para elegir quién empieza el siguiente combate.',

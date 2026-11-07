@@ -50,7 +50,7 @@
   const RARE = { eyes: ['star', 'button', 'uneven', 'cyclops', 'three', 'visor', 'spiral'], ears: ['unicorn', 'mushroom'], mouth: ['beak', 'sabre', 'bubble', 'stitch'], mark: [], hair: [] };
   const VOW = /[aeiouyáéíóú]$/i;
 
-  function rng(seed) { let s = (seed >>> 0) || 1; return () => { s ^= s << 13; s >>>= 0; s ^= s >> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; }
+  const rng = (seed) => DK.looks.rng(seed); // el mismo generador que los aspectos (no cambiar: cambiaría los nombres)
   const pickOf = (arr, R) => arr[Math.floor(R() * arr.length)];
 
   /** Une dos trozos sin grupos de consonantes imposibles. */
