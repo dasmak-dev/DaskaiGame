@@ -44,7 +44,7 @@
       const s = DK.store.state;
       if (s.itemsSeen && s.itemsSeen[id]) return true;
       if ((s.bag && s.bag[id]) || (s.expedition && s.expedition.pack && s.expedition.pack[id])) return true;
-      if (DK.party.all().some((d) => (d.equip || []).includes(id))) return true;
+      if (DK.gear && DK.gear.isGear(id) && DK.gear.ownsBase(id)) return true;
       return Object.values(this.raw()).some((z) => (z.items || []).includes(id));
     },
     /**

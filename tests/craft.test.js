@@ -47,7 +47,7 @@ module.exports = {
     run: (browser, view) => play(browser, view, async (p) => {
       const r = await p.evaluate(async () => {
         const w = (ms) => new Promise((res) => setTimeout(res, ms));
-        ['pocion', 'eter', 'antidoto', 'cristal_sabio', 'garra_afilada', 'hilo', 'gota'].forEach((id) => DK.bag.addHome({ [id]: 2 }));
+        ['pocion', 'eter', 'antidoto', 'cristal_sabio', 'piedra_transmutacion', 'hilo', 'gota'].forEach((id) => DK.bag.addHome({ [id]: 2 }));
         const d = DK.party.active()[0]; d.cur.hp = 3;
         DK.router.reset('inventory'); await w(300);
         const heads = [...document.querySelectorAll('.inv-group-head')].map((x) => x.textContent);
@@ -72,8 +72,10 @@ module.exports = {
       await sleep(500);
       const r = await p.evaluate(() => {
         const tiles = [...document.querySelectorAll('.wb-tile')];
-        const st = tiles.map((x) => (x.classList.contains('s-ready') ? 0 : x.classList.contains('s-chain') ? 1 : 2));
-        return { tabs: document.querySelectorAll('.wb-tabbtn').length, n: tiles.length, mats: tiles.every((x) => x.querySelector('.wb-prog')), sorted: st.every((v, i) => !i || v >= st[i - 1]),
+        const stOf = (x) => (x.classList.contains('s-ready') ? 0 : x.classList.contains('s-chain') ? 1 : 2), st = tiles.map(stOf);
+        // v4.76: el equipo va por tipos; dentro de cada tipo, primero las listas
+        const grids = [...document.querySelectorAll('.wb-grid')].map((g) => [...g.querySelectorAll('.wb-tile')].map(stOf));
+        return { tabs: document.querySelectorAll('.wb-tabbtn').length, n: tiles.length, mats: tiles.every((x) => x.querySelector('.wb-prog')), sorted: grids.every((g) => g.every((v, i) => !i || v >= g[i - 1])),
           ready: st.filter((v) => v === 0).length, side: !!document.querySelector('.wb-side .wb-slot') };
       });
       check(r.tabs === 3 && r.n > 10 && r.mats, 'faltan pestañas o fichas con su barra de materiales: ' + JSON.stringify(r));
@@ -83,7 +85,8 @@ module.exports = {
       // Elegir una receta lista y forjarla
       await p.click('.wb-tile.s-ready >> nth=0'); await sleep(500);
       const before = await p.evaluate(() => { const sel = document.querySelector('.wb-detail h3').textContent; return { sel, n: Object.values(DK.data.items).filter((it) => it.name === sel).map((it) => DK.bag.count(it.id))[0] }; });
-      await p.click('.wb-forge'); await sleep(500);
+      // (en el móvil la hoja se desplaza con suavidad: se pulsa con el propio botón)
+      await p.evaluate(() => document.querySelector('.wb-forge').click()); await sleep(500);
       await p.evaluate(() => { const b = document.querySelector('.modal .btn-ghost'); if (b) b.click(); }); await sleep(300);
       const after = await p.evaluate((name) => Object.values(DK.data.items).filter((it) => it.name === name).map((it) => DK.bag.count(it.id))[0], before.sel);
       check(after === before.n + 1, 'forjar no da el objeto: ' + before.sel + ' ' + before.n + ' → ' + after);

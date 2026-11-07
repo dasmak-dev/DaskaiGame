@@ -147,7 +147,7 @@
     }
 
     /** Texto del desglose de daño de un ataque (lo que se ve al pasar por encima). */
-    const PART = { power: 'dmgPower', atkdef: 'dmgAtkDef', level: 'dmgLevel', house: 'dmgHouse', bonus: 'dmgBonus', weak: 'dmgWeak', guard: 'dmgGuard', switchIn: 'dmgSwitch', shield: 'dmgShield', burn: 'dmgBurn', weather: 'dmgWeather', stab: 'dmgStab', broken: 'dmgBroken' };
+    const PART = { power: 'dmgPower', atkdef: 'dmgAtkDef', level: 'dmgLevel', house: 'dmgHouse', bonus: 'dmgBonus', weak: 'dmgWeak', guard: 'dmgGuard', switchIn: 'dmgSwitch', shield: 'dmgShield', burn: 'dmgBurn', weather: 'dmgWeather', stab: 'dmgStab', broken: 'dmgBroken', gear: 'dmgGear' };
     function breakdown(side, mid, est) {
       const f = B().factors(st, side, D.moves[mid], { ignoreHouse: !st.known, hideWeak: side === 'ally' });
       const lines = f.parts.map((p) => `${t('battle.' + PART[p.k])}: ${typeof p.v === 'number' && p.k !== 'power' ? '×' + (Math.round(p.v * 100) / 100) : p.v}`);
@@ -702,7 +702,7 @@
       if (L.evolveReady && (await V.evolveDialog(a))) { buildAlly(); log(t('battle.evolved', { name: DK.daskai.name(a) }), 'level', 'reward'); }
       if (r.captured) log(t('battle.joined', { name: DK.daskai.name(st.enemy), team: DK.party.isActive(st.enemy.uid) ? t('battle.joinedTeam') : '' }), 'good', 'reward');
       if (r.temp) log(t('exp.tempNote', { name: DK.daskai.name(st.enemy) }), 'warn', 'reward');
-      for (const id of r.drops) { await wait(200); log((r.toLoot && !(r.toBag || []).includes(id) ? t('battle.lootItem') : t('battle.gotItem')) + ' ' + D.items[id].name, 'drop', 'reward'); }
+      for (const id of r.drops) { if (r.gear && DK.gear.isGear(id)) continue; await wait(200); log((r.toLoot && !(r.toBag || []).includes(id) ? t('battle.lootItem') : t('battle.gotItem')) + ' ' + D.items[id].name, 'drop', 'reward'); }
       for (const id of r.runes || []) { await wait(200); log(t('rune.got', { name: V.runeName(id) }) + ' · ' + V.runeTip(id).split(' · ').slice(1).join(' · '), 'level', 'reward'); DK.ui.toast(t('rune.got', { name: V.runeName(id) }), { icon: 'rune', kind: 'good' }); }
       (r.shared || []).forEach((x) => {
         log(t('battle.sharedExp', { name: x.name, n: x.exp }), 'muted', 'reward');
@@ -712,6 +712,7 @@
       V.levelFeed((r.shared || []).filter((x) => x.to > x.from));
       if (r.winHeal) { log(t('relics.winHealLog', { n: Math.round(r.winHeal * 100) }), 'good', 'reward'); const s2 = DK.daskai.stats(a); ui.aHp.update(a.cur.hp, s2.hp); }
       if (st.elite && st.expedition && DK.expedition.active() && DK.expedition.active().relicChoice) log(t('relics.eliteLog'), 'level', 'reward');
+      for (const p of r.gear || []) { await wait(200); log(t('battle.lootItem') + ' ' + DK.gear.name(p) + ' (' + t('gear.rarity.' + p.rarity) + ')', 'drop', 'reward'); }
       if (!r.captured && !r.drops.length && !(r.runes || []).length) log(t('battle.noDrop'), 'muted', 'reward');
       if (r.freeUnlocked) { log(t('battle.freeUnlocked', { zone: zone.name }), 'level', 'reward'); DK.ui.toast(t('battle.freeUnlocked', { zone: zone.name }), { icon: 'swords', kind: 'good' }); }
       if (r.emblems) { log(t('battle.emblemLog', { n: r.emblems }), 'level', 'reward'); DK.ui.toast(t('battle.emblemLog', { n: r.emblems }), { icon: 'emblem', kind: 'good' }); }
@@ -731,11 +732,14 @@
     function rewardsView(r) {
       let k = 0; const dl = () => ({ animationDelay: (0.15 + k++ * 0.09).toFixed(2) + 's' });
       const big = (icon, n, label, cls) => h('div', { class: 'rw-big ' + cls, style: dl() }, h('span', { class: 'rw-big-ico' }, DK.icon(icon, 22)), h('b', null, n), h('small', null, label));
-      const counts = {}; r.drops.forEach((id) => (counts[id] = (counts[id] || 0) + 1));
+      const counts = {}; r.drops.forEach((id) => { if (!(r.gear && DK.gear.isGear(id))) counts[id] = (counts[id] || 0) + 1; });
       const items = [
         ...Object.entries(counts).map(([id, n]) => { const it = D.items[id]; return h('div', { class: 'rw-item r-' + it.rarity, style: dl(), tip: it.desc || it.name },
           h('span', { class: 'rw-item-ico' }, V.itemIcon ? V.itemIcon(it, 30) : DK.icon(it.icon, 26), n > 1 ? h('span', { class: 'rw-n' }, '×' + n) : null), h('span', { class: 'rw-item-name' }, it.name),
           r.toLoot && !(r.toBag || []).includes(id) ? h('small', { class: 'rw-dest' }, DK.icon('gift', 10), t('exp.destLoot')) : null); }),
+        // v4.74: piezas de equipo con el color de su rareza
+        ...(r.gear || []).map((p) => h('div', { class: 'rw-item gear g-' + p.rarity, style: Object.assign(dl(), { '--g': D.gear.rarities[p.rarity].color }), tip: t('gear.rarity.' + p.rarity) },
+          h('span', { class: 'rw-item-ico' }, V.gearIcon(p, 30)), h('span', { class: 'rw-item-name' }, DK.gear.name(p)), h('small', { class: 'rw-dest' }, t('gear.rarity.' + p.rarity)))),
         ...(r.runes || []).map((id) => h('div', { class: 'rw-item rune ' + V.runeRarity(id), style: dl(), tip: V.runeTip(id) }, h('span', { class: 'rw-item-ico' }, V.runeGem(id, 30)), h('span', { class: 'rw-item-name' }, V.runeName(id)))),
         r.relicOffer ? h('div', { class: 'rw-item relic', style: dl() }, h('span', { class: 'rw-item-ico' }, DK.icon('amulet', 26)), h('span', { class: 'rw-item-name' }, t('relics.toChoose'))) : null,
       ].filter(Boolean);

@@ -6,6 +6,7 @@
  * mezclan girando despacio, como un remolino de pintura.
  *
  *   · Colores e intensidad desde CSS: --bgfx-a, --bgfx-b, --bgfx-c, --bgfx-op
+ *     (v4.77: el tono de a y b gira despacio cada pocos minutos; ver hueShift)
  *     (css/motion.css §6, cambian con el tema y el estilo).
  *   · Sólo en las pantallas de fuera de la expedición: se apaga en
  *     OFF_SCREENS y mientras haya una expedición en curso.
@@ -83,10 +84,29 @@ void main(){
     const w = Math.max(1, Math.ceil(innerWidth / PIXEL)), h = Math.max(1, Math.ceil(innerHeight / PIXEL));
     if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; gl.viewport(0, 0, w, h); }
   }
+  /**
+   * v4.77: el color va cambiando muy de vez en cuando y poco a poco: cada HUE_EVERY segundos
+   * el tono de los dos colores vivos gira hacia otro de HUES, en HUE_FADE segundos (suave).
+   * El fondo oscuro (--bgfx-c) no cambia.
+   */
+  const HUE_EVERY = 150, HUE_FADE = 45, HUES = [0, 40, -35, 80, -70, 130, 20, -110, 170, 60];
+  function hueShift(sec) {
+    const k = Math.floor(sec / HUE_EVERY), into = sec - k * HUE_EVERY;
+    const from = HUES[k % HUES.length], to = HUES[(k + 1) % HUES.length];
+    const x = Math.min(1, Math.max(0, (into - (HUE_EVERY - HUE_FADE)) / HUE_FADE)), e = x * x * (3 - 2 * x);
+    return from + (to - from) * e;
+  }
+  function rotate([r, g, b], deg) {
+    // giro de tono en RGB (matriz de rotación sobre el eje gris)
+    const a = (deg * Math.PI) / 180, c = Math.cos(a), s = Math.sin(a), k = (1 - c) / 3, q = Math.sqrt(1 / 3) * s;
+    const m = [c + k, k - q, k + q, k + q, c + k, k - q, k - q, k + q, c + k];
+    return [m[0] * r + m[1] * g + m[2] * b, m[3] * r + m[4] * g + m[5] * b, m[6] * r + m[7] * g + m[8] * b].map((v) => Math.min(1, Math.max(0, v)));
+  }
   function draw(now) {
     gl.uniform2f(U.uRes, canvas.width, canvas.height);
     gl.uniform1f(U.uT, (now - t0) / 1000);
-    gl.uniform3fv(U.uA, colors[0]); gl.uniform3fv(U.uB, colors[1]); gl.uniform3fv(U.uC, colors[2]);
+    const hs = still() ? 0 : hueShift((now - t0) / 1000);
+    gl.uniform3fv(U.uA, rotate(colors[0], hs)); gl.uniform3fv(U.uB, rotate(colors[1], hs)); gl.uniform3fv(U.uC, colors[2]);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   }
   function loop(now) {

@@ -182,6 +182,8 @@
       if (s.expedition && DK.expedition) { DK.expedition.ensureMap(); DK.expedition.ensureFields(); } // expediciones de versiones anteriores
       // Partidas que quedaron con todo el equipo debilitado tras una expedición (bug de la v3.7)
       if (!s.expedition && DK.expedition && s.party && s.party.length && (s.party || []).every((d) => d.cur && d.cur.hp <= 0)) setTimeout(() => { DK.expedition.afterEnd(); DK.store.save(); }, 0);
+      // v4.74: equipamiento con rareza (piezas en st.gear y en d.equip; ver systems/gear.js)
+      if (DK.gear) DK.gear.migrate(s);
       s.stats = Object.assign({
         battles: 0, wins: 0, losses: 0, flees: 0, captures: 0, crafts: 0, itemsUsed: 0,
         damageDealt: 0, damageTaken: 0, crits: 0, expeditions: 0, bossesDefeated: 0,

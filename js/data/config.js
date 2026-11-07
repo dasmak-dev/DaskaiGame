@@ -191,7 +191,7 @@
       shopDiscount: 0,     // descuento del mercader sobre data/shop.js (0 = precio normal)
       // Mochila: lo que te llevas al salir (screens/expPrepare.js)
       packCapacity: 10,    // unidades (más con la Mejora «Equipaje»)
-      packCategories: ['batalla', 'mejora', 'equipo'],
+      packCategories: ['batalla', 'mejora'], // v4.74: el equipo va puesto (las piezas sueltas se quedan en la armería)
       bossDeathLoss: 0.75, // si caes contra el jefe pierdes este % de las MONEDAS del botín (los objetos encontrados se pierden; la mochila, según difficulties.keepPack)
       // Tónicos (mejora permanente): probabilidad en cofres (sube con la profundidad), mini jefes y jefes
       tonicDrops: { chest: 0.04, chestPerDepth: 0.03, chestMax: 0.3, elite: 0.35, boss: 1, elixirBoss: 0.25 },

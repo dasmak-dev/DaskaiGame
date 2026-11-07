@@ -315,9 +315,11 @@
     /** Bonificaciones planas del equipo (objetos). */
     equipBonus(d, equip = d.equip) {
       const b = zeroStats(); b.regen = 0;
-      (equip || []).forEach((id) => {
-        const it = id && D.items[id];
-        if (it && it.stats) for (const [k, v] of Object.entries(it.stats)) b[k] = (b[k] || 0) + v;
+      // v4.74: piezas (DK.gear): sus atributos planos y la regeneración de sus sufijos
+      (equip || []).forEach((p) => {
+        if (!p) return;
+        for (const [k, v] of Object.entries(DK.gear.flat(p))) b[k] = (b[k] || 0) + v;
+        b.regen += DK.gear.fx(p).regen || 0;
       });
       return b;
     },
@@ -377,9 +379,12 @@
   function statKey(d) {
     const st = DK.store.state, e = st && st.expedition;
     const eq = d.equip || [];
-    return rev + '|' + d.level + '|' + d.species + '|' + d.passive + '|' + eq[0] + '|' + eq[1] + '|' + (e ? 'x' + (e.relics || []).length + '|' + (e.corruption || 0) + (e.zone || '') + (e.depth || 1) : '-') + '|' + (st ? st.difficulty : '') + '|' + (d.stars || 0) + (d.variant || '') + '|' + (d.form || 0) + '/' + (d.forms || 0) + (d.wild ? 'w' : '') + (d.boss ? 'b' : '') + (d.elite ? 'e' : '');
+    return rev + '|' + d.level + '|' + d.species + '|' + d.passive + '|' + DK.gear.key(eq[0]) + '|' + DK.gear.key(eq[1]) + '|' + (e ? 'x' + (e.relics || []).length + '|' + (e.corruption || 0) + (e.zone || '') + (e.depth || 1) : '-') + '|' + (st ? st.difficulty : '') + '|' + (d.stars || 0) + (d.variant || '') + '|' + (d.form || 0) + '/' + (d.forms || 0) + (d.wild ? 'w' : '') + (d.boss ? 'b' : '') + (d.elite ? 'e' : '');
   }
   api.touch = () => { rev++; };
+
+  /** Base (id de items.json) de lo que hay en una ranura: una pieza (v4.74) o un id antiguo. */
+  const slotBase = (p) => (!p ? null : typeof p === 'string' ? (D.items[p] ? p : null) : D.items[p.base] ? p.base : null);
 
   /** Cálculo completo de los atributos (sin caché). */
   function computeStats(d, equip) {
@@ -408,7 +413,11 @@
      */
     passives(d, equip) {
       const ids = [d.passive];
-      (equip || d.equip || []).forEach((id) => { const g = id && D.items[id] && D.items[id].grants; if (g && g.passive && !ids.includes(g.passive)) ids.push(g.passive); });
+      (equip || d.equip || []).forEach((p) => {
+        const g = slotBase(p) && D.items[slotBase(p)].grants;
+        if (g && g.passive && !ids.includes(g.passive)) ids.push(g.passive);
+        const lp = DK.gear.passive(p); if (lp && !ids.includes(lp)) ids.push(lp); // pasiva exclusiva (legendaria)
+      });
       return ids.filter((id) => D.passives[id]);
     },
     /** Suma de los modificadores de todas las pasivas activas: { mods: {k: %}, regen }. */
@@ -425,12 +434,14 @@
         Object.entries(tl.mods || {}).forEach(([k, v]) => (out.mods[k] = (out.mods[k] || 0) + v));
         out.regen += tl.regen || 0;
       });
+      // v4.74: prefijos de % de las piezas equipadas
+      (equip || d.equip || []).forEach((p) => Object.entries(DK.gear.pct(p)).forEach(([k, v]) => (out.mods[k] = (out.mods[k] || 0) + v)));
       return out;
     },
     /** Ataques extra que dan los objetos equipados (grants.move), sin repetir los que ya tiene. */
     grantedMoves(d) {
       const out = [];
-      (d.equip || []).forEach((id) => { const g = id && D.items[id] && D.items[id].grants; if (g && g.move && !d.moves.includes(g.move) && !out.includes(g.move)) out.push(g.move); });
+      (d.equip || []).forEach((p) => { const g = slotBase(p) && D.items[slotBase(p)].grants; if (g && g.move && !d.moves.includes(g.move) && !out.includes(g.move)) out.push(g.move); });
       return out;
     },
     /** Ataques disponibles en combate: los suyos (máx. 4) + los de sus objetos. */

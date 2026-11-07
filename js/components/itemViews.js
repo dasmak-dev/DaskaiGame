@@ -29,9 +29,48 @@
     return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * k).toString(16).padStart(2, '0')).join('');
   };
   let iiN = 0;
-  V.itemIcon = (it, size = 22) => {
+  /**
+   * v4.76: piedras de forja = gema HEXAGONAL oscura con su runa brillante dentro
+   * (como las runas de la preparación de expediciones). Runa de cada piedra en STONE_RUNE.
+   */
+  const STONE_RUNE = {
+    fragmento_forja: 'M9 4l7 4-2 12-7-4z M9 4l5 8', piedra_transmutacion: 'M12 3v18M6 8l6-5 6 5M6 16l6 5 6-5',
+    piedra_alteracion: 'M5 7h14M5 17h14M9 3L5 7l4 4M15 13l4 4-4 4', piedra_purga: 'M12 3c4 5 6 8 6 11a6 6 0 0 1-12 0c0-3 2-6 6-11zM9 15h6',
+    piedra_regia: 'M4 17l2-9 4 4 2-6 2 6 4-4 2 9zM6 21h12', piedra_caos: 'M12 3l2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5z',
+    piedra_divina: 'M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3l-5.5 2.9 1-6.2L3 9.6l6.2-.9z', esquirla_jefe: 'M12 2v5M12 17v5M2 12h5M17 12h5M12 9l3 3-3 3-3-3z',
+    corazon_jefe: 'M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10zM12 8v6M9 11h6', piedra_alquimia: 'M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3M8 15h8',
+    piedra_aumento: 'M12 4v16M4 12h16M8 8h8v8H8z', piedra_exaltacion: 'M12 21V4M5 11l7-7 7 7M8 21h8M9 15l3-3 3 3',
+    piedra_anulacion: 'M5 5l14 14M19 5L5 19M12 2v3M12 19v3', piedra_templado: 'M12 3c3 4 5 6 5 10a5 5 0 0 1-10 0c0-2 1-4 3-5 0 2 1 3 2 3 0-3-1-5 0-8z',
+    sello_forja: 'M7 11V8a5 5 0 0 1 10 0v3M6 11h12v9H6zM12 14v3', eco_legendario: 'M3 12c3-6 6-6 9 0s6 6 9 0M3 17c3-4 6-4 9 0s6 4 9 0M12 3v4',
+  };
+  const HEX = 'M24 2.5 43 13v22L24 45.5 5 35V13z';
+  function stoneIcon(it, size) {
+    const c = /^#[0-9a-f]{6}$/i.test(it.color || '') ? it.color : '#a78bfa', id = 'sg' + (++iiN), ring = RING[it.rarity];
+    const span = document.createElement('span');
+    span.className = 'item-icon ii stone-gem r-' + it.rarity + ' c-forja';
+    span.style.setProperty('--c', c);
+    span.innerHTML = `<svg viewBox="-2 -2 52 52" aria-hidden="true"><defs><radialGradient id="${id}" cx="40%" cy="35%" r="72%"><stop offset="0" stop-color="${c}" stop-opacity=".55"/><stop offset=".55" stop-color="#1a1220" stop-opacity=".96"/><stop offset="1" stop-color="#07050a"/></radialGradient>`
+      + `<filter id="${id}f" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`
+      + (ring ? `<path d="${HEX}" fill="none" stroke="${ring}" stroke-width="2.4" stroke-opacity=".9" transform="translate(24 24) scale(1.08) translate(-24 -24)"/>` : '')
+      + `<path d="${HEX}" fill="url(#${id})" stroke="${c}" stroke-opacity=".75" stroke-width="1.6"/>`
+      + `<path d="M24 8 37 15.5v17L24 40 11 32.5v-17z" fill="none" stroke="${c}" stroke-opacity=".22" stroke-width="1"/>`
+      + `<g transform="translate(11 11) scale(1.0833)" filter="url(#${id}f)" fill="none" stroke="${mix(c, '#ffffff', 0.35)}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${STONE_RUNE[it.id] || 'M12 4v16'}"/></g>`
+      + `<ellipse cx="18" cy="12" rx="7" ry="3" fill="#fff" opacity=".16"/></svg>`;
+    return span;
+  }
+
+  /** v4.76: icono de una pieza de equipo: el de su tipo (daga, corona…) con el aro de su rareza. */
+  V.gearIcon = (p, size = 22) => {
+    const el = V.itemIcon(D.items[p.base], size, { ring: p.rarity === 'normal' ? null : D.gear.rarities[p.rarity].color });
+    el.classList.add('gear-ico', 'g-' + p.rarity);
+    el.style.width = el.style.height = size + 'px'; // tamaño fijo (no el de la caja .item-icon)
+    return el;
+  };
+
+  V.itemIcon = (it, size = 22, o = {}) => {
+    if (it.category === 'forja') return stoneIcon(it, size);
     const c = /^#[0-9a-f]{6}$/i.test(it.color || '') ? it.color : '#c0392b';
-    const id = 'ii' + (++iiN), shape = SHAPES[it.category] || SHAPES.pieza, ring = RING[it.rarity];
+    const id = 'ii' + (++iiN), shape = SHAPES[it.category] || SHAPES.pieza, ring = o.ring !== undefined ? o.ring : it.category === 'equipo' ? null : RING[it.rarity];
     const light = mix(c, '#ffffff', 0.62), dark = mix(c, '#000000', 0.62), deep = mix(c, '#000000', 0.86);
     const fillShape = shape.replace('/>', ` fill="url(#${id})" stroke="${mix(c, '#ffffff', 0.25)}" stroke-opacity=".7" stroke-width="1.4"/>`);
     const ringShape = ring ? shape.replace('/>', ` fill="none" stroke="${ring}" stroke-width="2.4" stroke-opacity=".95" transform="translate(24 24) scale(1.07) translate(-24 -24)"/>`) : '';

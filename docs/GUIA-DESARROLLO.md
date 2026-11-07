@@ -357,6 +357,143 @@ Se carga la última y sólo sobrescribe: paleta (piedra oscura, bronce, oro `--g
 - **Expedición:** al entrar en el mapa, el equipo, la mochila o un combate durante una expedición, `#zone-backdrop` (creado en `screens/expedition.js` con `screen:enter`) pinta detrás de todo la escena de la zona actual, oscurecida; `body.in-exp`.
 - **Combate:** la arena usa la escena de la zona (`components/scenes.js`, ahora con árboles muertos, ruinas, tumbas, cristales o tentáculos según la zona) y los **jefes tienen su propio fondo**: `DK.scenes.bossScene(zona, secreto)` → `boss_<escena>` (menhires bajo luna roja, bosque muerto, naufragio con tormenta, bosque de cristales, forja de lava, santuario con estatua, fauces del abismo, ruinas entre rayos) y `boss_secret` (cripta) para los jefes ocultos.
 
+### Cambios de la v4.77 — Los 6 junto a la hoguera y fondo que cambia de color
+
+- **Hoguera del campamento** (`components/camp.js`): sólo había sitio para 5 daskai en escritorio y 4 en el móvil, así que con 6 en el equipo faltaban. Ahora `offs` tiene 6 sitios en los dos (dos filas a cada lado del fuego y dos delante), y los sprites son un poco más pequeños (92 px y 58 px en el móvil).
+- **Fondo animado** (`core/bgfx.js`): cada `HUE_EVERY` (150 s) el tono de los dos colores vivos (`--bgfx-a` y `--bgfx-b`) gira hacia el siguiente de `HUES` en `HUE_FADE` (45 s), con una transición suave (smoothstep). Se hace con una matriz de giro de tono en RGB. El color oscuro de fondo no cambia, y con «Reducir animaciones» no gira.
+
+### Cambios de la v4.76 — Iconos de equipo y piedras, nombres propios, forja compacta y Equipo por tipo
+
+- **Tipos de objeto** (`data/gear.js`):
+  - `G.typeOf` da el tipo de cada base. Hay 14: garra, daga, espada, martillo, báculo, orbe, escudo, coraza, yelmo, capa, botas, anillo, amuleto y corona.
+  - `G.types` da su icono. Hay tres iconos nuevos en `core/icons.js`: `helmet`, `boots` y `staff`.
+  - El `icon` de cada base en `items.json` es ya el de su tipo.
+  - `DK.gear.type(p|base)` y `typeName(p, many)` dan el tipo y su nombre; los textos están en `gear.type.<tipo>.one/many`.
+- **Nombres propios**:
+  - Cada pieza guarda `nn`, una semilla. `DK.gear.properName(p)` junta sílabas de `G.syl`; las piezas antiguas usan un hash de su uid.
+  - Normal: `gear.normalName` → «Daga de Velmir». Mágica: tipo + prefijo + sufijo («Botas veloz del zorro»). Rara: dos palabras. Legendaria: su pasiva.
+  - La base (p. ej. «Colmillo umbrío») sale como subtítulo: «Daga · Colmillo umbrío».
+- **Iconos** (`components/itemViews.js`):
+  - Las piedras de forja (categoría `forja`) son una gema **hexagonal** oscura con su runa brillante dentro (`STONE_RUNE`), como las runas de la preparación de expediciones. Se ven así en todas partes.
+  - `V.gearIcon(p, size)` es el icono del tipo con el aro del color de la rareza de la pieza y tamaño fijo en px; `V.itemIcon` acepta `{ ring }`. Lo usan la cuadrícula, la ficha, «Equipar en…» y el botín.
+  - El equipo ya no lleva el aro de rareza de la base.
+- **«Equipar en…»**: los iconos de lo equipado ya no se salen de su casilla (`.ep-mini` de 28 px con el icono a 22).
+- **Forja más compacta**: cada piedra es una fila (`.fs-row`) con la gema, el nombre corto («Transmutación»), su efecto, cuántas tienes y, en el tooltip, el motivo si no se puede usar. Ocupa una columna en escritorio, una cuadrícula en pantallas medias y 2 columnas en el móvil.
+- **Crafteo → Equipo** (icono de espada):
+  - Los filtros son por **tipo de objeto**, no por «con ataque/pasiva/atributos» (`sub: 'type:<tipo>'`). En «Todo», la lista sale agrupada por tipo, con su icono y título.
+  - Las fichas muestran el tipo.
+  - El detalle (`gearPreview`) dice qué pieza saldrá: tipo, Normal y nivel ~el de tu equipo, de 1 a 2 atributos (con los posibles), 1 prefijo o sufijo, la pasiva que tendría de legendaria y la escalera de la Forja.
+  - La cabecera ya no enseña la rareza antigua de la base, sino el tipo y cuántas tienes.
+- **Materiales**: ya no son una pestaña. Hay un enlace discreto «Ver materiales (n)» al final de las listas y, dentro, «Volver a las recetas»; `{ tab: 'materials' }` sigue funcionando. Los filtros de tipo se desplazan en su fila en el móvil.
+- **Tests**:
+  - La mesa de trabajo cuenta 3 pestañas, comprueba el orden dentro de cada tipo y pulsa «Forjar» con el propio botón (la hoja del móvil se desplaza con suavidad).
+  - La Forja usa `.fs-row`.
+
+### Cambios de la v4.75 — Forja en Crafteo, «Equipar en…» y nivel de objeto por origen
+
+- **Nivel de objeto**:
+  - `DK.gear.create` añade ±2 al nivel salvo `jitter: false`.
+  - En combate, `addLoot(…, { level })` usa el nivel del rival que lo suelta (`battle.rewards` pasa `e.level`).
+  - Si no hay rival (sucesos, cofres…) usa `DK.expedition.lootLevel()`: el nivel medio de la zona más `levelBonus()`. Los jefes suman +3.
+  - El equipo fabricado usa el nivel de tu equipo (`DK.gear.defaultIlvl()`) ±2. La ficha de la receta lo avisa (`gear.craftNote`) y lleva a la Forja.
+- **Piedras nuevas** (items.json, con recetas y precios):
+  - `piedra_alquimia`: normal → raro.
+  - `piedra_aumento`: añade un afijo a un mágico con hueco.
+  - `piedra_exaltacion`: lo mismo para raro y legendario.
+  - `piedra_anulacion`: quita uno al azar, nunca el sellado; exige al menos dos.
+  - `piedra_templado`: sube un tier el afijo elegido, si el nivel de objeto lo permite.
+  - `sello_forja`: sella el afijo elegido (`a.lock`). Sobrevive a la siguiente alteración, caos o anulación y ahí se gasta.
+  - `eco_legendario` (sólo jefes): cambia la pasiva de un legendario por otra legendaria (`p.lp`; `passive()` y `name()` la usan).
+  - La purga quita sellos y eco.
+- **Rarezas de los drops**:
+  - El caos sirve también en legendarios.
+  - Los legendarios sólo salen de jefes, un 3 %, y el `corazon_jefe`/`eco_legendario` de un jefe tiene un 3 %.
+  - `data/gear.js → drops` está rehecho con todas las piedras.
+  - El mercader ofrece siempre una piedra común (transmutación, alteración, aumento, purga o fragmentos) y un 35 % de las veces una regia, de alquimia o de anulación. También están en `shopStock`.
+- **`DK.gear`**:
+  - `groups` agrupa las piedras: rarity, reroll, affix y legend. `stones` las lista todas.
+  - `targeted` son las que necesitan `o.affix` (esquirla, templado y sello); `forge` sin afijo devuelve `gear.why.pickAffix`.
+  - `slots(p)` da los huecos de prefijo y sufijo y `hasRoom(p)` si cabe otro.
+  - `affixPool(p)` da los afijos que pueden salir, con su probabilidad dentro de su tipo y el rango del mejor tier posible. `tierChances(p)` da la probabilidad de cada tier a su nivel.
+  - `p.hist` guarda las últimas 12 forjas: piedra, fecha, nombre antes y después, y rareza.
+  - Motivos nuevos en `gear.why`: full, tooFew, locked, maxTier, lowIlvl, needLegend y pickAffix.
+- **Crafteo → Forja** (`components/forgeBench.js` → `V.forgeBench`; es la pestaña por defecto si tienes piezas; params `fp`, `fsel`, `fgr`, `fq`):
+  - Tres columnas:
+    - **Tus piezas**: la armería y lo que llevan tus daskai, con filtro de rareza y buscador si hay más de 6.
+    - **Mesa**: quién la lleva; la barra de huecos (P y S con casillas llenas y vacías, total y nivel de objeto con su explicación); la carta con afijos **seleccionables** (`V.gearTip(p, { sel, onSelect })`, con candado si está sellado); el afijo elegido; el «Último cambio» con la carta de antes plegada; «Equipar en…»; los afijos posibles (con sus % y las probabilidades de tier) y el historial.
+    - **Piedras**: por grupos, con cantidad y motivo si no se puede (las de un afijo piden elegirlo).
+  - En el móvil va todo en una columna: las piezas en una tira horizontal y las piedras justo bajo la pieza.
+- **«Equipar en…»** (`V.equipPicker(uid)` en `gearViews.js`): una ventana con buscador y secciones «En tu equipo», «Entrenando» (`DK.training.isTraining`) y una por caja (`DK.boxes`, tras `sync()`), plegadas.
+  - Cada fila muestra lo que lleva en cada hueco. Al abrirla se ve, por hueco, qué tiene y cómo cambian los atributos, con «Equipar aquí» o «Cambiar».
+  - En una expedición sólo sale el equipo. `V.equipChooser` (tras fabricar) ya usa esta ventana.
+- **Inventario → Equipamiento**: la ficha de una pieza ya no forja. Tiene «Equipar en…» (la ventana), «Mejorar en la forja» (`craft`, `{ tab: 'forge', fp }`), quién la lleva y desguazar. La barra de piedras pasa a ser un acceso a la Forja con el total de piedras.
+- **Tests**:
+  - `gear.test.js`: las piedras nuevas y el nivel de objeto; «Equipar en…» con sus secciones (escritorio y móvil); y la Forja (huecos, afijos posibles, el templado pide afijo y se aplica al elegido, historial).
+  - La prueba de la mesa de trabajo cuenta 4 pestañas.
+
+### Cambios de la v4.74 — Equipamiento con rareza, afijos y forja (estilo Path of Exile)
+
+**Idea.** El equipo deja de ser un objeto contado de la bolsa: cada unidad es una **pieza** única. Tiene rareza, atributos, prefijos y sufijos, y se mejora en la forja con piedras. Los objetos «equipo» de `items.json` pasan a ser **bases** que dan el icono, el nombre, el pool de atributos, el ataque o pasiva que conceden (`grants`) y la calidad (`rarity` de la base → `gear.baseTier`).
+
+- **Datos** (`js/data/gear.js` → `D.gear`):
+  - **`rarities`**: normal, mágico, raro y legendario. Cada una define:
+    - cuántos atributos (`attrs`: 1-2, 2-4, 4-5, 4-5) y cuántos afijos (`affixes`: 1, 1-2, 2-4, 2-4);
+    - el tope de prefijos y de sufijos (`maxP`/`maxS`);
+    - la potencia (`power`), los fragmentos al desguazar (`salvage`) y el peso al salir de un combate (`drop`: fight, elite o boss). Las legendarias sólo salen de jefes, un 10 %.
+  - **Atributos**:
+    - `units` es el valor base de cada atributo plano. Se escala con el nivel del objeto: `× (1 + ilvl / ilvlScale)`.
+    - El pool de cada base son sus atributos positivos más los afines (`affinity`), hasta `poolSize`, que es 6.
+    - La regeneración no escala: da de 1 a 3.
+  - **Afijos** (`affixes`), 16 en total, cada uno con 5 tiers. Un tier sólo puede salir si el objeto alcanza su nivel (`tiers.ilvl`: 0/10/25/45/65); los altos son menos probables.
+    - Prefijos: % a un atributo (`pct`) y % de daño (`p_dmg`).
+    - Sufijos: crítico, daño crítico, robo de vida, reducción de daño, esquiva, espinas, maná al golpear y regeneración (`fx`).
+    - `caps` limita la suma de los efectos de combate.
+  - **`legendary`**: la pasiva exclusiva de cada una de las 34 bases. Se registra en `D.passives` como `leg_<base>` con `legendary: true`, para que no salga en sorteos ni en filtros. Funciona como una pasiva (`mods`, `regen`, `entry`) y suma `fx` como un sufijo.
+  - **`drops`**: piedras de forja al ganar combates de expedición (fight, elite y boss).
+- **Objetos nuevos** (categoría `forja`):
+  - `fragmento_forja` sale al desguazar y sirve para fabricar las demás.
+  - Piedras: `piedra_transmutacion` (normal → mágico), `piedra_alteracion` (re-tira los afijos de un mágico), `piedra_regia` (mágico → raro), `piedra_caos` (re-tira los afijos de un raro), `piedra_divina` (re-tira valores) y `piedra_purga` (vuelve a normal).
+  - Exclusivas de jefe: `esquirla_jefe` (re-tira **un** afijo elegido, por otro del mismo tipo) y `corazon_jefe` (raro → legendario).
+  - Tienen recetas en `recipes.js`, menos las de jefe, y precios en `shop.js`.
+- **Sistema** (`js/systems/gear.js` → `DK.gear`):
+  - Una pieza tiene esta forma: `{ uid, base, rarity, ilvl, attrs: [{k, r}], affixes: [{id, t, r}], nm, v }`. Los valores se calculan a partir de la tirada `r`, así que subir la rareza mejora los atributos. `nm` da el nombre de las raras y `v` es la versión, que va en la clave de caché.
+  - Para crearlas: `create`, o `gain`, que la guarda en `e.loot.gear` dentro de una expedición y en `st.gear` en casa.
+  - Para consultarlas: `list`, `home`, `found`, `equipped` y `find(uid)`.
+  - Para equiparlas: `equip`, `unequip` y `preview`.
+  - Forja: `forge(uid, piedra, { affix })`, que devuelve `before` para resaltar lo que cambió, y `cannotForge`, que da el motivo de por qué no se puede.
+  - Desguace: `salvage` y `salvageValue`.
+  - Lo que da una pieza: `flat`, `pct`, `fx` y `fxOf(d)`, este último con los topes aplicados. `passive` da su pasiva y `name` su nombre: mágica = base + prefijo + sufijo; rara = dos palabras de `gear.rareA`/`rareB`; legendaria = el nombre de su pasiva.
+  - `migrate(s)` convierte las partidas antiguas: común/raro → normal, épico → mágico, legendario → raro. Cubre la bolsa, `d.equip`, la mochila y el botín de una expedición en curso. Se llama desde `store.migrate` y marca `s.gearV = 1`.
+- **Integración**:
+  - **Bolsa** (`systems/inventory.js`):
+    - `DK.bag.add` y `addHome` con un id de equipo crean una pieza normal. Así funcionan sin tocarlos el crafteo, los sucesos (`c.equip`) y los botines.
+    - `count`/`remove` de una base cuentan o quitan piezas normales sin equipar, y la fusión en cadena las usa de ingrediente.
+    - `DK.bag.equip`/`unequip` delegan en `DK.gear`.
+  - **Atributos** (`systems/daskai.js`):
+    - `equipBonus` suma `flat` más la regeneración de los sufijos. `passiveMods` suma los % de los prefijos y `passives` añade la pasiva legendaria.
+    - `grantedMoves` y las pasivas concedidas salen de la base de la pieza. `statKey` usa `DK.gear.key`.
+  - **Combate** (`systems/battle.js`):
+    - En `factors`: daño y reducción de daño (parte «Equipamiento» en el desglose) y probabilidad de crítico. El daño crítico extra se aplica en `damage`.
+    - En `act`: esquiva, robo de vida, maná al golpear y espinas. Las espinas nunca dejan a 0. Textos nuevos: `battle.dodged`, `leech`, `thorns` y `dmgGear`.
+  - **Expedición**:
+    - `addLoot(items, coins, { src })` convierte el equipo en pieza con la rareza de su fuente. El jefe usa `src: 'boss'` y los combates pasan fight, elite o boss.
+    - Las recompensas del combate añaden piedras (`battleDrops`) y `out.gear`, que el panel final muestra con el color de su rareza.
+    - Lo encontrado va a `e.loot.gear` y se puede **equipar ya**, pero no forjar ni desguazar fuera de casa.
+    - Al terminar: cobrar o retirarse → todo a la armería; hoguera → cada pieza se queda con la probabilidad del botín; derrota → se pierde (lo equipado sigue puesto). El resumen lo muestra (`lastExpedition.gear`/`lostGear`).
+    - El equipo ya no se mete en la mochila (`packCategories`).
+- **Pantallas**:
+  - **Inventario** con dos pestañas (`params.tab: 'items' | 'gear'`):
+    - En **Objetos**, el grupo «Forja» sustituye al de equipo, y la ficha de una piedra lleva a la forja.
+    - **Equipamiento**: barra de piedras (en casa), filtros por rareza, «Sin equipar», orden (rareza, nivel o nombre) y desguazar todas las normales. La cuadrícula usa `V.gearTile`, con el nivel y la cara de quien la lleva.
+    - Ficha de una pieza (lateral, o una hoja en el móvil): carta estilo PoE (`V.gearTip`), forja, «Equipar en…», «Equipado» y desguazar.
+      - Forja: a la vista, las piedras que valen; plegadas, las demás. La esquirla de jefe pone una diana en cada afijo para elegir cuál re-tirar. Lo que cambia se resalta (`.fresh`).
+  - **Ficha del daskai → Equipamiento**: las ranuras muestran la carta compacta y el botón «Forja». El selector lista las piezas, ordenadas por rareza y nivel, con su vista previa.
+  - **Crafteo**: nueva sección «Forja» (tipo `forge`). `V.equipChooser` acepta un uid o una base.
+  - **Componentes**: `components/gearViews.js` (`V.gearTip`, `V.gearTile`, `V.gearLine` y `V.gearRarity`). Los estilos están al final de `css/grim.css`.
+- **Tests**:
+  - `tests/gear.test.js`: reglas de cada rareza y base; la escalera de forja, la esquirla, el corazón y el desguace; equipar con sus efectos y la migración; y la pantalla en escritorio y móvil.
+  - La prueba de la bolsa usa una piedra en lugar de una garra.
+
 ### Cambios de la v4.73 — Iconos de daskai, retrato del líder y tarjeta para compartir
 
 - **Favicon al azar** (`DK.app.favicon()`, al arrancar): en cada visita la pestaña muestra un daskai distinto (especie y aspecto al azar; un 30 % con dos casas). Se pinta en un canvas de 64 px y se pone como PNG. Si falla, queda el fijo `icons/icon.svg`. Safari suele ignorar los favicons cambiados por JS.

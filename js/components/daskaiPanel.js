@@ -223,31 +223,31 @@
       reserve.length ? h('div', null, h('h4', { class: 'mt' }, DK.icon('list', 16), ' ', t('detail.reserve')), h('div', { class: 'move-grid' }, reserveCards)) : null);
   }
 
-  /* ---------- Equipamiento: elegir en línea con vista previa ---------- */
+  /* ---------- Equipamiento: elegir en línea con vista previa (v4.74: piezas con rareza) ---------- */
   function equipTab(d, state, changed) {
     const slots = [];
     for (let i = 0; i < DK.config.maxEquip; i++) {
-      const id = d.equip[i];
+      const p = d.equip[i];
       const choosing = state.open === 'equip' + i;
-      const head = id
+      const head = p && typeof p === 'object'
         ? h('div', { class: 'equip-slot filled card' + (choosing ? ' choosing' : '') },
-          h('div', { class: 'row gap-s' }, V.itemIcon(D.items[id], 26), h('div', { class: 'grow' }, h('b', null, D.items[id].name), h('div', null, V.rarity(D.items[id].rarity)))),
-          V.statChips(D.items[id].stats),
-          D.items[id].grants ? h('span', { class: 'grants-text small' }, DK.icon('sparkles', 13), ' ', V.grantsText(D.items[id])) : null,
+          V.gearTip(p, { compact: true }),
           h('div', { class: 'row gap-s wrap' },
             btn({ icon: 'swap', label: choosing ? t('common.cancel') : t('equip.change'), size: 'sm', variant: 'ghost', onClick: () => { state.open = choosing ? null : 'equip' + i; changed(); } }),
-            btn({ icon: 'x', label: t('equip.remove'), size: 'sm', variant: 'ghost', onClick: () => { DK.bag.unequip(d, i); changed(); } })))
+            btn({ icon: 'x', label: t('equip.remove'), size: 'sm', variant: 'ghost', onClick: () => { DK.gear.unequip(d, i); changed(); } }),
+            DK.store.state.expedition ? null : btn({ icon: 'anvil', label: t('gear.toForge'), size: 'sm', variant: 'ghost', onClick: () => { DK.ui.closeAll && DK.ui.closeAll(); DK.router.reset('inventory', { tab: 'gear', gear: p.uid }); } })))
         : h('button', { class: 'equip-slot empty' + (choosing ? ' choosing' : ''), type: 'button', onClick: () => { state.open = choosing ? null : 'equip' + i; changed(); } },
           DK.icon(choosing ? 'x' : 'plus', 22), h('b', null, choosing ? t('common.cancel') : t('equip.freeSlot', { n: i + 1 })), h('span', { class: 'muted small' }, t('equip.freeSlotHint')));
       slots.push(head);
     }
     const choosingSlot = state.open && state.open.startsWith('equip') ? parseInt(state.open.slice(5), 10) : null;
-    const items = DK.bag.list('equipo');
+    // Las mejores primero (rareza y nivel)
+    const items = DK.gear.list().slice().sort((a, b) => D.gear.rarities[b.rarity].order - D.gear.rarities[a.rarity].order || b.ilvl - a.ilvl);
     const chooser = choosingSlot != null ? h('div', { class: 'inline-panel' }, h('p', { class: 'small' }, DK.icon('gem', 14), ' ', t('equip.choose')),
-      items.length ? h('div', { class: 'inline-items' }, items.map(({ item, qty }) => h('div', { class: 'inline-item' }, V.itemIcon(item, 18),
-        h('div', { class: 'grow' }, h('b', null, `${item.name} `), h('span', { class: 'muted small' }, 'x' + qty), item.grants ? h('div', { class: 'grants-text small' }, DK.icon('sparkles', 12), ' ', V.grantsText(item)) : null, V.diffChips(DK.bag.equipPreview(d, choosingSlot, item.id))),
-        btn({ icon: 'gem', label: t('inv.equip'), size: 'sm', variant: 'primary', onClick: () => { DK.bag.equip(d, choosingSlot, item.id); DK.audio.sfx('select'); toast(t('equip.done', { name: DK.daskai.name(d), item: item.name }), { icon: 'gem', kind: 'good' }); state.open = null; changed(); } }))))
-        : h('p', { class: 'muted small' }, t('equip.noneText'))) : null;
+      items.length ? h('div', { class: 'inline-items gear-choose' }, items.map((p) => h('div', { class: 'inline-item' },
+        h('div', { class: 'grow' }, V.gearTile(p, { compact: true }), V.diffChips(DK.gear.preview(d, choosingSlot, p.uid))),
+        btn({ icon: 'gem', label: t('inv.equip'), size: 'sm', variant: 'primary', onClick: () => { const nm = DK.gear.name(p); DK.gear.equip(d, choosingSlot, p.uid); DK.audio.sfx('select'); toast(t('equip.done', { name: DK.daskai.name(d), item: nm }), { icon: 'gem', kind: 'good' }); state.open = null; changed(); } }))))
+        : h('p', { class: 'muted small' }, DK.store.state.expedition ? t('gear.noneFound') : t('equip.noneText'))) : null;
     return h('div', null, h('div', { class: 'equip-grid' }, slots), chooser);
   }
 

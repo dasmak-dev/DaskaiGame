@@ -22,6 +22,9 @@
     ascua_eterna: 900, caracola_marea: 900, prisma_juicio: 900, martillo_tierra: 950,
     corazon_musgo: 280, emblema_furia: 280, caparazon_viejo: 280, pluma_ligera: 280, cristal_vital: 280,
     pendiente_arcano: 900, sello_equilibrio: 900, brasero_vivo: 900,
+    // Forja (v4.74)
+    fragmento_forja: 15, piedra_transmutacion: 60, piedra_alteracion: 50, piedra_purga: 50, piedra_regia: 400, piedra_caos: 520, piedra_divina: 1600,
+    piedra_aumento: 80, piedra_alquimia: 700, piedra_anulacion: 320, piedra_templado: 950, sello_forja: 750, piedra_exaltacion: 3500,
     // Piezas
     pelaje: 12, fragmento_garra: 12, escama: 12, pluma: 12, hilo: 12, gota: 12, brasa: 12, coral: 12,
     polvo_brillante: 45, esencia_sombria: 45, piedra_runica: 45, obsidiana: 60, nucleo_arcano: 220, lagrima_estelar: 700,
@@ -32,6 +35,7 @@
   DK.data.shopStock = [
     'pocion', 'superpocion', 'hiperpocion', 'eter', 'supereter', 'antidoto', 'balsamo', 'panacea',
     'cristal_vinculo', 'cristal_mayor', 'baya_saber', 'tonico_exp',
+    'piedra_transmutacion', 'piedra_alteracion', 'piedra_aumento', 'piedra_purga', 'fragmento_forja',
     'pelaje', 'gota', 'hilo', 'fragmento_garra', 'escama', 'pluma', 'brasa', 'coral', 'polvo_brillante', 'piedra_runica',
   ];
 })();

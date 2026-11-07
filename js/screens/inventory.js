@@ -30,7 +30,7 @@
     { id: 'mana', icon: 'droplet', test: (it) => it.category === 'batalla' && it.use && (it.use.mana || it.use.manaPct) },
     { id: 'status', icon: 'pill', test: (it) => it.category === 'batalla' && it.use && it.use.cure },
     { id: 'boost', icon: 'star', test: (it) => it.category === 'mejora' },
-    { id: 'gear', icon: 'gem', test: (it) => it.category === 'equipo' },
+    { id: 'forge', icon: 'anvil', test: (it) => it.category === 'forja' },
     { id: 'other', icon: 'layers', test: () => true },
   ];
 
@@ -39,6 +39,16 @@
     render(params) {
       const refresh = () => DK.router.refresh();
       const exp = DK.bag.inPack() && DK.expedition.active();
+      // v4.74: dos pestañas: Objetos y Equipamiento (armería y forja)
+      params.tab = params.tab === 'gear' || params.gear ? 'gear' : 'items';
+      const nGear = DK.gear.list().length + DK.gear.equipped().filter((x) => !exp || DK.party.isActive(x.d.uid)).length;
+      const nItems = DK.bag.list(null).filter(({ item }) => item.category !== 'pieza').reduce((a, x) => a + x.qty, 0);
+      const mainTabs = h('div', { class: 'inv-main-tabs', role: 'tablist' },
+        [['items', 'bag', t('inv.tabItems'), nItems], ['gear', 'anvil', exp ? t('inv.tabGearExp') : t('inv.tabGear'), nGear]].map(([id, icon, label, n]) =>
+          h('button', { class: 'inv-main-tab' + (params.tab === id ? ' on' : ''), type: 'button', role: 'tab', 'aria-selected': params.tab === id,
+            onClick: () => { params.tab = id; if (id === 'items') params.gear = null; else params.item = null; refresh(); } },
+            DK.icon(icon, 18), h('span', null, label), h('b', null, String(n)))));
+      if (params.tab === 'gear') return h('div', { class: 'screen inv-screen gear-screen' }, exp ? packHead(exp) : null, mainTabs, gearView(params, refresh, exp));
       params.cat = params.cat || 'all';
       const q = (params.q || '').trim().toLowerCase();
       const narrow = DK.ui.isNarrow();
@@ -113,6 +123,7 @@
 
       return h('div', { class: 'screen inv-screen' },
         exp ? packHead(exp) : null,
+        mainTabs,
         bar,
         h('div', { class: 'inv-main' + (detail ? ' has-detail' : '') }, h('div', { class: 'inv-list-wrap' }, list), detail));
     },
@@ -134,7 +145,8 @@
       h('div', { class: 'row gap' }, h('span', { class: 'pack-head-icon' }, DK.icon('bag', 22)),
         h('div', { class: 'grow' }, h('b', null, t('nav.pack')), h('p', { class: 'muted small' }, t('pack.inExp')))),
       h('div', { class: 'pack-loot' }, h('span', { class: 'muted small' }, DK.icon('gift', 13), ' ', t('pack.loot')), V.coins(e.loot.coins),
-        items.length ? h('div', { class: 'chips' }, items.map(([id, n]) => h('span', { class: 'chip', tip: t('pack.lootTip') }, DK.icon(D.items[id].icon, 13), `${D.items[id].name} x${n}`))) : h('span', { class: 'muted small' }, t('exp.lootEmpty'))));
+        items.length || (e.loot.gear || []).length ? h('div', { class: 'chips' }, items.map(([id, n]) => h('span', { class: 'chip', tip: t('pack.lootTip') }, DK.icon(D.items[id].icon, 13), `${D.items[id].name} x${n}`)),
+          (e.loot.gear || []).map((p) => h('span', { class: 'chip gear-chip', style: { '--g': D.gear.rarities[p.rarity].color }, tip: t('gear.rarity.' + p.rarity) }, DK.icon(D.items[p.base].icon, 13), DK.gear.name(p)))) : h('span', { class: 'muted small' }, t('exp.lootEmpty'))));
   }
 
   /**
@@ -180,28 +192,15 @@
   }
 
   /** Usa o equipa un objeto sobre un daskai. */
-  function applyItemTo(itemId, d, refresh, slot) {
+  function applyItemTo(itemId, d, refresh) {
     const it = D.items[itemId];
     if (it.category === 'batalla' || it.category === 'mejora') {
       const r = DK.bag.use(itemId, d);
       DK.audio.sfx(!r.ok ? 'error' : r.levelInfo ? 'levelup' : 'heal');
       toast(r.msg, { icon: r.levelInfo ? 'star' : 'flask', kind: r.ok ? 'good' : 'bad' });
       if (r.levelInfo) { refresh(); V.afterLevel(d, r.levelInfo).then(refresh); return; }
-    } else if (it.category === 'equipo') {
-      let s = slot;
-      if (s == null) { s = d.equip.findIndex((x) => !x); if (s < 0) s = 0; }
-      DK.bag.equip(d, s, itemId);
-      DK.audio.sfx('select');
-      toast(t('equip.done', { name: DK.daskai.name(d), item: it.name }), { icon: 'gem', kind: 'good' });
     } else { toast(t('inv.cantUsePiece'), { icon: 'cube' }); return; }
     refresh();
-  }
-
-  /** Huecos a ofrecer: los ocupados y sólo el primer hueco libre. */
-  function slotsFor(d) {
-    const all = [...Array(DK.config.maxEquip).keys()];
-    const free = all.find((i) => !d.equip[i]);
-    return all.filter((i) => d.equip[i] || i === free);
   }
 
   /**
@@ -256,17 +255,10 @@
     }
     if (it.use && it.use.capture) blocks.push(h('div', { class: 'warning' }, DK.icon('info', 16), h('span', null, t('bag.onlyInBattle'))));
 
-    // Equipar en…
-    if (it.category === 'equipo') {
-      blocks.push(h('section', { class: 'inv-block' }, h('h4', null, t('inv.equipOn')),
-        h('div', { class: 'inv-targets' }, party.map((d) => h('div', { class: 'inv-target equip' },
-          V.dSprite(d, { size: 42 }),
-          h('div', { class: 'inv-target-main' }, h('b', null, DK.daskai.name(d), ' ', h('span', { class: 'muted small' }, `${t('common.lvl')} ${d.level}`)),
-            h('div', { class: 'inv-slots' }, slotsFor(d).map((slot) => h('div', { class: 'inv-slot' },
-              h('span', { class: 'small' }, d.equip[slot] ? t('craft.replaces', { item: D.items[d.equip[slot]].name }) : t('craft.freeSlot')),
-              V.diffChips(DK.bag.equipPreview(d, slot, itemId)),
-              btn({ icon: 'gem', label: d.equip[slot] ? t('craft.swap') : t('inv.equip'), size: 'sm', variant: d.equip[slot] ? 'ghost' : 'primary', onClick: () => applyItemTo(itemId, d, refresh, slot) }))))))))));
-    }
+    // Piedra de forja: se usa en la pestaña Equipamiento
+    if (it.category === 'forja' && itemId !== 'fragmento_forja') blocks.push(h('section', { class: 'inv-block' }, h('h4', null, t('gear.forgeTitle')),
+      h('p', { class: 'small muted' }, t('gear.stoneHow')),
+      btn({ icon: 'anvil', label: t('gear.toForge'), variant: 'primary', size: 'sm', disabled: DK.bag.inPack(), onClick: () => DK.router.reset('inventory', { tab: 'gear' }) })));
 
     // Recetas en las que se usa
     const uses = DK.crafting.usesOf(itemId);
@@ -277,5 +269,124 @@
     // Venta
     if (DK.shop.canSell(itemId)) blocks.push(h('p', { class: 'muted small inv-sell' }, DK.icon('shop', 14), ' ', t('inv.sellAtMerchant', { n: DK.shop.sellPrice(itemId) })));
     return h('div', { class: 'inv-detail-body' }, ...blocks);
+  }
+
+  /* =================== v4.74: Equipamiento (armería y forja) =================== */
+  const GR = () => D.gear.rarities;
+  const rOrder = (p) => GR()[p.rarity].order;
+
+  /**
+   * Pestaña Equipamiento:
+   *   · arriba, tus piedras de forja (en casa) o qué hacer con lo encontrado (en expedición)
+   *   · filtros por rareza, «sin equipar» y orden
+   *   · cuadrícula de piezas (las equipadas llevan la cara de quien las lleva)
+   *   · al elegir una: su ficha, la forja (piedras), equipar en… y desguazar
+   * params: { gear (uid elegido), gr (rareza), free (sólo sin equipar), gsort }
+   */
+  function gearView(params, refresh, exp) {
+    const narrow = DK.ui.isNarrow();
+    params.gr = params.gr || 'all'; params.gsort = params.gsort || 'rarity';
+    const loose = DK.gear.list().map((p) => ({ p, d: null }));
+    const worn = DK.gear.equipped().filter((x) => !exp || DK.party.isActive(x.d.uid)).map((x) => ({ p: x.p, d: x.d }));
+    const all = params.free ? loose : loose.concat(worn);
+    const counts = {}; all.forEach(({ p }) => (counts[p.rarity] = (counts[p.rarity] || 0) + 1));
+    const sorter = params.gsort === 'ilvl' ? (a, b) => b.p.ilvl - a.p.ilvl || rOrder(b.p) - rOrder(a.p)
+      : params.gsort === 'name' ? (a, b) => DK.gear.name(a.p).localeCompare(DK.gear.name(b.p))
+        : (a, b) => rOrder(b.p) - rOrder(a.p) || b.p.ilvl - a.p.ilvl;
+    const shown = all.filter(({ p }) => params.gr === 'all' || p.rarity === params.gr).sort(sorter);
+    if (params.gear && !DK.gear.find(params.gear)) params.gear = null;
+
+    // En casa: acceso a la forja (Crafteo) con cuántas piedras tienes; en expedición, qué se puede hacer
+    const nStones = DK.gear.stones.reduce((a, id) => a + (DK.bag.home()[id] || 0), 0);
+    const stones = exp ? h('div', { class: 'card gear-exp-note' }, DK.icon('info', 16), h('span', null, t('gear.expNote')))
+      : h('button', { class: 'forge-link', type: 'button', onClick: () => DK.router.reset('craft', { tab: 'forge' }) },
+        DK.icon('anvil', 18), h('span', { class: 'grow' }, h('b', null, t('gear.goForge')), h('small', null, t('gear.bench.emptyText'))), h('span', { class: 'forge-link-n' }, DK.icon('gem', 13), String(nStones)), DK.icon('next', 16));
+
+    // Filtros
+    const chip = (id, label, n) => h('button', { class: 'gear-filter' + (params.gr === id ? ' on' : ''), type: 'button', style: id !== 'all' ? { '--g': GR()[id].color } : null,
+      onClick: () => { params.gr = id; refresh(); } }, id !== 'all' ? h('i', { class: 'gear-dot' }) : null, label, h('b', null, String(n)));
+    const SORTS = ['rarity', 'ilvl', 'name'];
+    const filters = h('div', { class: 'gear-filters' },
+      chip('all', t('gear.all'), all.length),
+      D.gear.rarityOrder.filter((r) => counts[r]).map((r) => chip(r, t('gear.rarity.' + r), counts[r])),
+      h('span', { class: 'grow' }),
+      h('label', { class: 'gear-free' }, h('input', { type: 'checkbox', checked: !!params.free, onChange: (e) => { params.free = e.target.checked; refresh(); } }), t('gear.onlyFree')),
+      btn({ icon: 'sortArrows', label: t('inv.sortBy', { s: t('gear.sort.' + params.gsort) }), iconOnly: true, size: 'sm', variant: 'ghost',
+        onClick: () => { params.gsort = SORTS[(SORTS.indexOf(params.gsort) + 1) % SORTS.length]; toast(t('inv.sortBy', { s: t('gear.sort.' + params.gsort) }), { icon: 'sortArrows' }); refresh(); } }),
+      exp ? null : btn({ icon: 'hammer', label: t('gear.salvageNormals'), iconOnly: true, size: 'sm', variant: 'ghost', onClick: () => salvageNormals(refresh) }));
+
+    const open = (uid) => {
+      if (!narrow && params.gear === uid) { params.gear = null; refresh(); return; }
+      params.gear = uid; params._changed = null;
+      if (!narrow) { refresh(); return; }
+      const holder = h('div');
+      const draw = () => { const x = DK.gear.find(uid); holder.replaceChildren(x ? gearPanel(x.p, params, () => { draw(); refresh(); }, exp) : DK.ui.empty('gem', t('gear.gone'), '')); };
+      draw();
+      DK.ui.drawer({ title: DK.gear.name(DK.gear.find(uid).p), icon: 'anvil', size: 'wide', cls: 'inv-sheet gear-sheet', content: holder });
+    };
+    const grid = shown.length ? h('div', { class: 'gear-grid' }, shown.map(({ p }) => V.gearTile(p, { selected: params.gear === p.uid && !narrow, onClick: () => open(p.uid) })))
+      : DK.ui.empty('gem', exp ? t('gear.noneFound') : t('gear.none'), exp ? '' : t('gear.noneText'));
+
+    const freshSide = params.gear !== params._shownG; params._shownG = !narrow ? params.gear || null : null;
+    const x = !narrow && params.gear && DK.gear.find(params.gear);
+    const detail = x ? h('aside', { class: 'card inv-side gear-side' + (freshSide ? ' fresh' : '') },
+      h('button', { class: 'icon-btn inv-side-x', type: 'button', tip: t('common.close'), 'aria-label': t('common.close'), onClick: () => { params.gear = null; refresh(); } }, DK.icon('x', 16)),
+      gearPanel(x.p, params, refresh, exp)) : null;
+    // En el móvil, si se entra con una pieza elegida (desde la ficha del daskai), se abre su hoja
+    if (narrow && params.gear && !params._sheet) { params._sheet = true; const uid = params.gear; params.gear = null; setTimeout(() => open(uid), 0); }
+
+    return h('div', { class: 'gear-wrap' }, stones, filters,
+      h('div', { class: 'inv-main' + (detail ? ' has-detail' : '') }, h('div', { class: 'inv-list-wrap' }, grid), detail));
+  }
+
+  /** Desguazar de golpe todas las piezas normales sin equipar. */
+  async function salvageNormals(refresh) {
+    const list = DK.gear.home().filter((p) => p.rarity === 'normal');
+    if (!list.length) { toast(t('gear.noNormals'), { icon: 'hammer' }); return; }
+    const n = list.reduce((a, p) => a + DK.gear.salvageValue(p).fragmento_forja, 0);
+    if (!(await DK.ui.confirm(t('gear.salvageAllQ', { n: list.length }), t('gear.salvageAllText', { n: list.length, f: n }), { okLabel: t('gear.salvage'), okIcon: 'hammer', danger: true }))) return;
+    list.forEach((p) => DK.gear.salvage(p.uid));
+    DK.audio.sfx('craft');
+    toast(t('gear.salvagedAll', { n: list.length, f: n }), { icon: 'hammer', kind: 'good' });
+    refresh();
+  }
+
+  /** Qué cambió al forjar (para resaltarlo en la ficha): Set de 'a<i>', 'x<i>', 'leg'. */
+  V.gearDiffKeys = (b, p) => diffKeys(b, p);
+  function diffKeys(before, p) {
+    const out = new Set();
+    p.attrs.forEach((a, i) => { const b = before.attrs[i]; if (!b || b.k !== a.k || b.r !== a.r || before.rarity !== p.rarity) out.add('a' + i); });
+    p.affixes.forEach((a, i) => { const b = before.affixes[i]; if (!b || b.id !== a.id || b.t !== a.t || b.r !== a.r) out.add('x' + i); });
+    if (p.rarity === 'legendario' && before.rarity !== 'legendario') out.add('leg');
+    return out;
+  }
+
+  /**
+   * Ficha de una pieza (v4.75): su carta, «Equipar en…» (ventana con equipo, entrenando y cajas),
+   * «Mejorar en la forja» (Crafteo → Forja), quién la lleva y desguazar.
+   */
+  function gearPanel(p, params, refresh, exp) {
+    const x = DK.gear.find(p.uid), wornBy = x && x.where === 'equip' ? x.d : null;
+    const blocks = [V.gearTip(p)];
+    blocks.push(h('div', { class: 'gear-actions' },
+      btn({ icon: 'gem', label: t('gear.equipOnBtn'), variant: 'primary', onClick: async () => { if (await V.equipPicker(p.uid)) refresh(); } }),
+      exp ? null : btn({ icon: 'anvil', label: t('gear.toForgeLong'), variant: 'tone', onClick: () => DK.router.reset('craft', { tab: 'forge', fp: p.uid }) })));
+    if (wornBy) {
+      blocks.push(h('section', { class: 'inv-block' }, h('h4', null, t('gear.wornTitle')),
+        h('div', { class: 'inv-target equip' }, V.dSprite(wornBy, { size: 42 }), h('div', { class: 'inv-target-main' }, h('b', null, DK.daskai.name(wornBy)), h('span', { class: 'muted small' }, `${t('common.lvl')} ${wornBy.level}`)),
+          btn({ icon: 'x', label: t('equip.remove'), size: 'sm', variant: 'ghost', onClick: () => { DK.gear.unequip(wornBy, x.slot); DK.audio.sfx('select'); refresh(); } }))));
+    }
+    // Desguazar (en casa y sin equipar)
+    if (!exp && !wornBy) {
+      const got = DK.gear.salvageValue(p);
+      blocks.push(h('div', { class: 'gear-salvage' }, DK.icon('hammer', 15), h('span', { class: 'grow small muted' }, t('gear.salvageText', { n: got.fragmento_forja })),
+        btn({ icon: 'hammer', label: t('gear.salvage'), size: 'sm', variant: 'ghost', onClick: async () => {
+          if (p.rarity !== 'normal' && !(await DK.ui.confirm(t('gear.salvageQ', { name: DK.gear.name(p) }), t('gear.salvageQText', { n: got.fragmento_forja }), { okLabel: t('gear.salvage'), okIcon: 'hammer', danger: true }))) return;
+          const r = DK.gear.salvage(p.uid);
+          DK.audio.sfx('craft'); toast(r.msg, { icon: 'hammer', kind: 'good' });
+          params.gear = null; DK.ui.closeAll(); refresh();
+        } })));
+    }
+    return h('div', { class: 'inv-detail-body gear-body' }, ...blocks);
   }
 })();

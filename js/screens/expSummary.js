@@ -35,6 +35,10 @@
       V.emblems(DK.camp.emblems()), DK.icon('next', 18));
   }
 
+  /** v4.74: chips de las piezas de equipo encontradas (con el color de su rareza). */
+  const gearChips = (list, lost) => (list || []).length ? h('div', { class: 'chips' }, list.map((p) => D.items[p.base] ? h('span', { class: 'chip gear-chip' + (lost ? ' neg' : ''), style: { '--g': D.gear.rarities[p.rarity].color }, tip: t('gear.rarity.' + p.rarity) + ' · ' + t('gear.ilvlN', { n: p.ilvl }) },
+    DK.icon(D.items[p.base].icon, 13), lost ? h('s', null, p.name) : p.name) : null)) : null;
+
   /** Chips de objetos { id: n }. lost=true los muestra tachados. */
   const itemChips = (items, lost) => {
     const list = Object.entries(items || {});
@@ -153,7 +157,8 @@
         s.lootSpent ? h('p', { class: 'muted small' }, t('sum.spent', { n: s.lootSpent })) : null,
         h('h4', null, DK.icon('flag', 14), ' ', s.outcome === 'lost' ? t('sum.lootLost') : t('sum.loot')),
         s.outcome === 'lost' ? itemChips(s.lostItems, true) : itemChips(s.items),
-        s.outcome === 'lostBoss' || s.outcome === 'campfire' ? [h('h4', null, DK.icon('skull', 14), ' ', t('sum.lootLost')), itemChips(s.lostItems, true)] : null,
+        s.outcome === 'lost' ? gearChips(s.lostGear, true) : gearChips(s.gear),
+        s.outcome === 'lostBoss' || s.outcome === 'campfire' ? [h('h4', null, DK.icon('skull', 14), ' ', t('sum.lootLost')), itemChips(s.lostItems, true), gearChips(s.lostGear, true)] : null,
         h('h4', null, DK.icon('bag', 14), ' ', t('sum.toBag')),
         itemChips(s.toBag),
         s.packBack && Object.keys(s.packBack).length ? [h('h4', null, DK.icon('bag', 14), ' ', t('sum.packBack')), itemChips(s.packBack)] : null,

@@ -259,6 +259,10 @@
         if (side === 'ally') { bonus *= 1 + DK.relics.sum('dmg') + DK.daskai.houses(A).reduce((a, hh) => a + DK.relics.houseDmg(hh), 0) + DK.camp.value('fuerza'); critP += DK.relics.sum('crit'); }
         else bonus *= Math.max(0.3, 1 - DK.relics.sum('defense') - DK.camp.value('coraza'));
       }
+      // v4.74: equipamiento: +% daño (prefijos, legendarias) y -% daño recibido (sufijos)
+      const gA = DK.gear.fxOf(A), gT = DK.gear.fxOf(T);
+      const gear = (1 + (gA.dmg || 0)) * (1 - (gT.guard || 0));
+      critP += gA.crit || 0;
       // Punto débil de la especie (ver weakness): más daño de ese tipo de ataque
       const wk = this.weakness(T.species) === move.kind && !(hideWeak && !this.weakKnown(T.species)) ? C().weakMult : 1;
       const guard = side === 'enemy' && st.guarding ? C().guardMult : 1;            // te estás defendiendo
@@ -268,14 +272,14 @@
       const atk = this.stat(st, side, phys ? 'atk' : 'matk');
       const tSide = T === this.get(st, other(side)) ? other(side) : null;
       const def = tSide ? this.stat(st, tSide, phys ? 'def' : 'mdef') : DK.daskai.stats(T)[phys ? 'def' : 'mdef'];
-      const mult = h.mult * stab * bonus * wk * guard * switchIn * shield * weather * broken;
+      const mult = h.mult * stab * bonus * wk * guard * switchIn * shield * weather * broken * gear;
       const parts = [
         { k: 'power', v: move.power }, { k: 'atkdef', v: `${Math.round(atk)} / ${Math.round(def)}` }, { k: 'level', v: 1 + A.level / 100 },
-        stab !== 1 ? { k: 'stab', v: stab } : null, h.mult !== 1 ? { k: 'house', v: h.mult } : null, broken !== 1 ? { k: 'broken', v: broken } : null, bonus !== 1 ? { k: 'bonus', v: bonus } : null, wk !== 1 ? { k: 'weak', v: wk } : null,
+        stab !== 1 ? { k: 'stab', v: stab } : null, h.mult !== 1 ? { k: 'house', v: h.mult } : null, broken !== 1 ? { k: 'broken', v: broken } : null, bonus !== 1 ? { k: 'bonus', v: bonus } : null, gear !== 1 ? { k: 'gear', v: gear } : null, wk !== 1 ? { k: 'weak', v: wk } : null,
         guard !== 1 ? { k: 'guard', v: guard } : null, switchIn !== 1 ? { k: 'switchIn', v: switchIn } : null, shield !== 1 ? { k: 'shield', v: shield } : null, weather !== 1 ? { k: 'weather', v: weather } : null,
         A.status === 'quemadura' && phys ? { k: 'burn', v: D.statuses.quemadura.atkMult } : null,
       ].filter(Boolean);
-      return { power: move.power, atk, def, level: A.level, eff: h.eff, house: atkHouse, stab: stab !== 1, mult, critP, parts, weak: wk !== 1, burned: A.status === 'quemadura' };
+      return { power: move.power, atk, def, level: A.level, eff: h.eff, house: atkHouse, stab: stab !== 1, mult, critP, critDmg: gA.critDmg || 0, parts, weak: wk !== 1, burned: A.status === 'quemadura' };
     },
 
     /** Calcula el daño de un ataque de `side` contra el otro (o contra `o.target`). */
@@ -285,7 +289,7 @@
       const crit = random && U.chance(f.critP);
       const dmg = this.rawDamage({
         power: move.power, kind: move.kind, attLevel: A.level, atk: f.atk, def: f.def,
-        mult: f.mult, roll: random ? U.randf(0.88, 1) : 1, crit, burned: f.burned,
+        mult: f.mult * (crit ? 1 + (f.critDmg || 0) : 1), roll: random ? U.randf(0.88, 1) : 1, crit, burned: f.burned,
       });
       return { dmg, crit, eff: f.eff, weak: f.weak, stab: f.stab };
     },
@@ -460,6 +464,9 @@
       if (!U.chance(m.acc / 100)) { this.push(st, ev, { text: t('battle.missed'), kind: 'muted', anim: 'miss', side: other(side), cat: 'dmg' }); return; }
 
       let dealt = 0;
+      const gA = DK.gear.fxOf(A), gT = DK.gear.fxOf(T);
+      // v4.74: esquiva (equipamiento del que recibe)
+      if (m.power > 0 && gT.dodge && U.chance(gT.dodge)) { this.push(st, ev, { text: t('battle.dodged', { name: this.name(st, other(side)) }), kind: 'muted', anim: 'miss', side: other(side), cat: 'dmg' }); return; }
       if (m.power > 0) {
         const r = this.damage(st, side, m);
         dealt = Math.min(r.dmg, T.cur.hp);
@@ -483,6 +490,16 @@
         if (side === 'ally' && st.expedition && r.eff === 'strong') DK.expedition.questTrack('strong');
         if (side === 'ally') this.addBreak(st, this.breakGain(st, m, r), ev);
         if (side === 'ally') this.checkPhase(st, ev);
+        // v4.74: robo de vida, maná al golpear (quien ataca) y espinas (quien recibe; nunca deja a 0)
+        if (dealt > 0) {
+          const sA = DK.daskai.stats(A);
+          const leech = gA.leech ? Math.min(Math.round(dealt * gA.leech), sA.hp - A.cur.hp) : 0;
+          if (leech > 0 && A.cur.hp > 0) { A.cur.hp += leech; this.push(st, ev, { text: t('battle.leech', { name: this.name(st, side), n: leech }), anim: 'heal', side, amount: leech, cat: 'dmg' }); }
+          const mana = gA.mana ? Math.min(Math.round(sA.mp * gA.mana), sA.mp - A.cur.mp) : 0;
+          if (mana > 0) A.cur.mp += mana;
+          const thorns = gT.thorns ? Math.min(Math.round(dealt * gT.thorns), A.cur.hp - 1) : 0;
+          if (thorns > 0) { A.cur.hp -= thorns; this.push(st, ev, { text: t('battle.thorns', { name: this.name(st, other(side)), n: thorns }), kind: 'warn', anim: 'hit', side, amount: thorns, cat: 'dmg' }); }
+        }
       }
 
       const e = m.effect;
@@ -723,11 +740,14 @@
         if (st.expedition && DK.endgame && U.chance(DK.endgame.abisalChance(st))) out.drops.push('fragmento_abisal');
         // Mini jefe: a veces suelta un tónico
         if (st.elite && st.expedition && U.chance(C().expedition.tonicDrops.elite)) out.drops.push(DK.expedition.tonic());
+        // v4.74: piedras de forja (y las exclusivas de jefe)
+        if (st.expedition) out.drops.push(...DK.gear.battleDrops(st.boss ? 'boss' : st.elite ? 'elite' : 'fight'));
       }
       if (st.expedition) {
         const coins0 = DK.expedition.active().loot.coins;
-        const split = DK.expedition.addLoot(out.drops, out.coins);
+        const split = DK.expedition.addLoot(out.drops, out.coins, { src: st.boss ? 'boss' : st.elite ? 'elite' : 'fight', level: e.level });
         out.toBag = split.bag;
+        out.gear = split.gear; // v4.74: piezas con su rareza
         out.coins = DK.expedition.active().loot.coins - coins0; // con la bonificación de reliquias
         // Reliquias que curan al ganar
         const wh = DK.relics.sum('winHeal');

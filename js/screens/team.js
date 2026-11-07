@@ -183,7 +183,7 @@
         const natSel = DK.ui.select({ label: t('common.nature'), value: params.nature || '', onChange: (v) => { params.nature = v || null; refresh(); },
           options: [{ value: '', label: t('team.anyNature') }, ...Object.values(D.natures).map((n) => ({ value: n.id, label: DK.tr('natures', n) }))] });
         const pasSel = DK.ui.select({ label: t('common.passive'), value: params.passive || '', onChange: (v) => { params.passive = v || null; refresh(); },
-          options: [{ value: '', label: t('team.anyPassive') }, ...Object.values(D.passives).map((p) => ({ value: p.id, label: DK.tr('passives', p) }))] });
+          options: [{ value: '', label: t('team.anyPassive') }, ...Object.values(D.passives).filter((p) => !p.legendary).map((p) => ({ value: p.id, label: DK.tr('passives', p) }))] });
         filters = h('div', { class: 'team-filters inline-panel' },
           h('div', { class: 'row gap-s' }, DK.icon('search', 16), search),
           houseChips,

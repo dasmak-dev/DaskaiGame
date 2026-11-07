@@ -30,10 +30,11 @@
     if (it.grants && it.grants.move) return 'move';
     if (it.grants && it.grants.passive) return 'passive';
     if (it.category === 'equipo') return 'stats';
+    if (it.category === 'forja') return 'forge';
     if (it.use && (it.use.perm || it.use.resetPerm)) return 'tonic';
     return 'consumable';
   }
-  const KINDS = { move: 'swords', passive: 'shield', stats: 'gem', tonic: 'flask', consumable: 'heart' };
+  const KINDS = { move: 'swords', passive: 'shield', stats: 'gem', tonic: 'flask', consumable: 'heart', forge: 'anvil' };
   V.craftKind = kindOf;
 
   /** Línea corta de lo que hace el resultado. */
@@ -74,7 +75,7 @@
    * ¿Cuenta para el aviso del menú? Sólo tónicos y equipo NUEVO (que no tengas
    * ni en la bolsa ni equipado) que puedas fabricar ahora mismo.
    */
-  const owned = (id) => DK.bag.count(id) > 0 || DK.party.all().some((d) => d.equip.includes(id));
+  const owned = (id) => (DK.gear.isGear(id) ? DK.gear.ownsBase(id) : DK.bag.count(id) > 0);
   const worthy = (r) => { const k = kindOf(r); return (k === 'tonic' || (['move', 'passive', 'stats'].includes(k) && !owned(r.result))) && C().canCraft(r); };
   DK.menus.add('nav', {
     id: 'craft', icon: 'craftCog', order: 32, screen: 'craft', label: () => t('nav.craft'),
@@ -87,34 +88,14 @@
    * libre (o los ocupados, para cambiarlo) con cómo le cambian los atributos.
    * @returns {Promise<boolean>} true si se equipó
    */
-  V.equipChooser = (itemId) => {
-    const it = D.items[itemId];
-    return DK.ui.modal({
-      title: t('craft.equipQ', { item: it.name }), icon: 'gem', size: 'wide',
-      content: (close) => h('div', { class: 'stack-s' },
-        h('p', { class: 'muted small' }, t('craft.equipText')),
-        h('div', { class: 'list' }, DK.party.active().map((d) => {
-          const free = [...Array(DK.config.maxEquip).keys()].find((i) => !d.equip[i]);
-          const opts = free != null ? [free] : [...Array(DK.config.maxEquip).keys()];
-          const has = d.equip.includes(itemId);
-          return h('div', { class: 'eq-choice' },
-            h('div', { class: 'row gap-s' }, V.sprite(d.species, { look: DK.looks.of(d), size: 40, shiny: d.shiny }),
-              h('div', { class: 'grow' }, h('b', null, DK.daskai.name(d)), h('div', { class: 'muted small' }, `${t('common.lvl')} ${d.level} · ${d.equip.filter(Boolean).length}/${DK.config.maxEquip}`))),
-            has ? h('span', { class: 'badge good' }, DK.icon('check', 12), t('craft.equipped'))
-              : h('div', { class: 'stack-s' }, opts.map((slot) => h('div', { class: 'eq-slot' },
-                h('span', { class: 'small muted' }, d.equip[slot] ? t('craft.replaces', { item: D.items[d.equip[slot]].name }) : t('craft.freeSlot')),
-                V.diffChips(DK.bag.equipPreview(d, slot, itemId)),
-                btn({ icon: 'gem', label: d.equip[slot] ? t('craft.swap') : t('inv.equip'), size: 'sm', variant: 'primary', onClick: () => {
-                  DK.bag.equip(d, slot, itemId); DK.audio.sfx('select');
-                  toast(t('equip.done', { name: DK.daskai.name(d), item: it.name }), { icon: 'gem', kind: 'good' }); close(true);
-                } })))));
-        }))),
-      actions: [{ label: t('craft.notNow'), icon: 'x', variant: 'ghost', value: false }],
-    }).promise;
+  V.equipChooser = (ref) => {
+    // v4.75: una pieza (uid) o la última pieza normal de una base (recién fabricada) → ventana «Equipar en…»
+    const x = DK.gear.find(ref), p = x ? x.p : DK.gear.list().filter((q) => q.base === ref).slice(-1)[0];
+    return p ? V.equipPicker(p.uid) : Promise.resolve(false);
   };
 
   /* ---------------- Mesa de trabajo (detalle de receta) ---------------- */
-  const GROUPS = { consum: ['consumable', 'tonic'], equip: ['move', 'passive', 'stats'] };
+  const GROUPS = { consum: ['consumable', 'tonic', 'forge'], equip: ['move', 'passive', 'stats'] };
   const groupOf = (r) => (GROUPS.equip.includes(kindOf(r)) ? 'equip' : 'consum');
   const inExp = () => !!DK.expedition.active();
 
@@ -154,7 +135,9 @@
     // Qué hace
     const what = [];
     what.push(...V.itemGrants(it));
-    const eff = it.stats ? Object.entries(it.stats).map(([k, v]) => h('span', { class: 'wb-eff' + (v < 0 ? ' neg' : '') }, `${DK.tr('stats', D.stats[k])} ${v > 0 ? '+' : ''}${v}`)) : [];
+    // v4.76: el equipo no tiene atributos fijos: se enseña qué pieza saldrá (ver gearPreview)
+    const eff = it.stats && it.category !== 'equipo' ? Object.entries(it.stats).map(([k, v]) => h('span', { class: 'wb-eff' + (v < 0 ? ' neg' : '') }, `${DK.tr('stats', D.stats[k])} ${v > 0 ? '+' : ''}${v}`)) : [];
+    if (it.category === 'equipo') what.push(gearPreview(it.id));
     if (it.use) eff.push(h('span', { class: 'wb-eff' }, V.useText(it)));
 
     // Materiales en huecos: tienes / necesitas y dónde conseguirlo
@@ -174,12 +157,17 @@
     return h('div', { class: 'wb-detail' },
       h('div', { class: 'wb-res' }, V.itemIcon(it, 38),
         h('div', { class: 'grow' }, h('h3', null, it.name),
-          h('div', { class: 'row gap-s wrap' }, V.rarity(it.rarity), h('span', { class: 'muted small' }, t('craft.kind.' + kind) + ' · ' + t('item.owned', { n: DK.bag.count(it.id) })))),
+          h('div', { class: 'row gap-s wrap' }, it.category === 'equipo'
+            ? [h('span', { class: 'badge' }, DK.icon(it.icon, 12), DK.gear.typeName(it.id)), h('span', { class: 'muted small' }, t('gear.ownedN', { n: DK.gear.list().filter((x) => x.base === it.id).length }))]
+            : [V.rarity(it.rarity), h('span', { class: 'muted small' }, t('craft.kind.' + kind) + ' · ' + t('item.owned', { n: DK.bag.count(it.id) }))])),
         h('button', { class: 'cr-goal' + (goal ? ' on' : ''), type: 'button', tip: goal ? t('craft.goalOff') : t('craft.goalOn'), 'aria-pressed': goal,
           onClick: () => { const on = C().toggleFavorite(r.id); toast(on ? t('craft.goalAdded', { item: it.name }) : t('craft.goalRemoved', { item: it.name }), { icon: 'star', kind: on ? 'good' : '' }); ctx.redraw(); } },
           DK.icon('star', 16), h('span', null, goal ? t('craft.goal') : t('craft.goalShort'))),
         ctx.close ? h('button', { class: 'icon-btn', type: 'button', tip: t('common.close'), 'aria-label': t('common.close'), onClick: ctx.close }, DK.icon('x', 16)) : null),
       it.desc ? h('p', { class: 'muted small wb-desc' }, it.desc) : null,
+      // v4.75: el equipo sale como pieza normal (del nivel de tu equipo) y se mejora en la Forja
+      it.category === 'equipo' ? h('p', { class: 'wb-note gear-note' }, DK.icon('anvil', 13), t('gear.craftNote', { n: DK.gear.defaultIlvl() }),
+        btn({ icon: 'next', label: t('gear.goForge'), size: 'sm', variant: 'ghost', onClick: () => DK.router.reset('craft', { tab: 'forge' }) })) : null,
       eff.length ? h('div', { class: 'wb-effs' }, eff) : null,
       what,
       h('div', { class: 'wb-h' }, DK.icon('craftCog', 13), t('craft.ingredients')),
@@ -221,10 +209,27 @@
         : h('span', { class: 'wb-tag ' + (s.n === 1 ? 'near' : 'far') }, t(s.n === 1 ? 'craft.missingOne' : 'craft.missingN', { n: s.n }));
     return h('button', { class: 'wb-tile s-' + s.key + (s.key === 'missing' && s.n > 1 ? ' far' : '') + (selected ? ' sel' : ''), type: 'button', 'aria-pressed': selected ? 'true' : 'false', onClick },
       goal ? h('span', { class: 'wb-star', tip: t('craft.goal') }, DK.icon('star', 12)) : null,
-      h('span', { class: 'wb-top' }, V.itemIcon(it, 20), h('span', { class: 'wb-name' }, h('b', null, it.name), tag)),
+      h('span', { class: 'wb-top' }, V.itemIcon(it, 20), h('span', { class: 'wb-name' }, h('b', null, it.name), it.category === 'equipo' ? h('small', { class: 'wb-type' }, DK.gear.typeName(it.id)) : null, tag)),
       // v4.42: en vez de la lista de materiales, una barra fina con lo que ya tienes (el detalle los enseña)
       (() => { const ing = Object.entries(r.ingredients), tot = ing.reduce((a, [, n]) => a + n, 0), got = ing.reduce((a, [id, n]) => a + Math.min(n, DK.bag.count(id)), 0);
         return h('span', { class: 'wb-prog', tip: ing.map(([id, n]) => `${D.items[id].name} ${DK.bag.count(id)}/${n}`).join(' · ') }, h('i', { style: { width: Math.round((got / Math.max(1, tot)) * 100) + '%' } })); })());
+  }
+
+  /**
+   * v4.76: qué pieza saldrá al fabricar equipo: tipo, rareza normal y su nivel, cuántos
+   * atributos (y de cuáles), cuántos prefijos/sufijos, lo que concede la base y la pasiva
+   * que tendría de legendaria.
+   */
+  function gearPreview(base) {
+    const R = D.gear.rarities.normal, pool = DK.gear.poolOf(base), lp = D.passives['leg_' + base];
+    const stat = (k) => h('span', { class: 'chip' }, D.stats[k] ? DK.icon(D.stats[k].icon, 12) : null, DK.tr('stats', D.stats[k]));
+    const line = (icon, label, val) => h('div', { class: 'gp-line' }, DK.icon(icon, 14), h('span', { class: 'gp-l' }, label), h('div', { class: 'gp-v' }, val));
+    return h('div', { class: 'gear-preview' },
+      h('div', { class: 'gp-head' }, h('span', { class: 'gp-type' }, DK.icon(D.items[base].icon, 15), DK.gear.typeName(base)), V.gearRarity('normal'), h('span', { class: 'muted small' }, t('gear.ilvlN', { n: '~' + DK.gear.defaultIlvl() }))),
+      line('chart', t('gear.prev.attrs', { a: R.attrs[0], b: R.attrs[1] }), h('div', { class: 'chips' }, pool.map(stat))),
+      line('sparkles', t('gear.prev.affixes'), h('span', { class: 'small' }, t('gear.prev.affixText', { n: R.affixes[1] }))),
+      lp ? line('crown', t('gear.prev.legend'), h('span', { class: 'small' }, h('b', null, DK.tr('passives', lp)), ' · ', DK.tr('passives', lp, 'desc'))) : null,
+      h('p', { class: 'muted small gp-ladder' }, t('gear.prev.ladder')));
   }
 
   /** Ficha de material: icono, nombre, cuántos tienes y en cuántas recetas se usa. */
@@ -262,7 +267,8 @@
     render(params) {
       const refresh = () => DK.router.refresh();
       // Compatibilidad: 'recipes' → la pestaña de la receta elegida
-      if (!params.tab || params.tab === 'recipes') { const r0 = params.sel && C().get(params.sel); params.tab = r0 ? groupOf(r0) : 'equip'; }
+      // v4.75: por defecto, la Forja si tienes piezas que trabajar
+      if (!params.tab || params.tab === 'recipes') { const r0 = params.sel && C().get(params.sel); params.tab = r0 ? groupOf(r0) : params.fp || DK.gear.home().length || DK.gear.equipped().length ? 'forge' : 'equip'; }
       params.sub = params.sub || 'all';
       const q = (params.q || '').trim().toLowerCase();
       const narrow = DK.ui.isNarrow();
@@ -292,18 +298,23 @@
       const tab = (id, icon, label, n, ready) => h('button', { class: 'wb-tabbtn' + (params.tab === id ? ' on' : ''), type: 'button', role: 'tab', 'aria-selected': String(params.tab === id),
         onClick: () => set({ tab: id, sub: 'all', sel: null, mat: null }) }, DK.icon(icon, 15), h('span', null, label), h('small', null, String(n)), ready ? h('i', { class: 'wb-ready', tip: t('craft.readyN', { n: ready }) }, ready) : null);
       const tabsEl = () => h('div', { class: 'wb-tabs', role: 'tablist' },
+        tab('forge', 'anvil', t('craft.tabForge'), DK.gear.home().length + DK.gear.equipped().length, 0),
         tab('consum', 'potion', t('craft.tabConsum'), count('consum'), readyIn('consum')),
-        tab('equip', 'gem', t('craft.tabEquip'), count('equip'), readyIn('equip')),
-        tab('materials', 'cube', t('craft.tabMaterials'), Object.values(D.items).filter((it) => it.category === 'pieza' && !D.isHidden(it.id)).length),
+        tab('equip', 'sword', t('craft.tabEquip'), count('equip'), readyIn('equip')),
+
         DK.runes.total() ? tab('runes', 'rune', t('craft.tabRunes'), DK.runes.total(), DK.runes.defs().filter((r) => DK.runes.canFuse(r.id) || DK.runes.canFuse(DK.runes.withTier(r.id, 2))).length) : null);
+      if (params.tab === 'forge') return h('div', { class: 'screen cr-screen wb forge-only' }, h('div', { class: 'wb-main' }, tabsEl(), V.forgeBench(params, refresh)));
       if (params.tab === 'runes') return h('div', { class: 'screen cr-screen wb runes-only' }, h('div', { class: 'wb-main' }, tabsEl(), runeForge(refresh)));
       // v4.42: filtros compactos (iconos con tooltip), «sólo las que puedo» y la búsqueda como botones de icono
       const search = params.searchOpen || q ? h('input', { class: 'input wb-search', type: 'search', placeholder: isMat ? t('craft.searchMat') : t('craft.search'), value: params.q || '',
         onInput: (e) => { params.q = e.target.value; clearTimeout(params._qt); params._qt = setTimeout(() => { refresh(); const i = document.querySelector('.wb-search'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }, 220); } }) : null;
-      const subs = isMat ? [] : ['all', ...GROUPS[params.tab], 'goals'];
-      const subLabel = (v) => (v === 'all' ? t('craft.sub.all') : v === 'goals' ? t('craft.goals') : t('craft.kind.' + v));
+      // v4.76: en Equipo se filtra por TIPO de objeto (daga, corona…); en Consumibles, por uso
+      const types = [...new Set(D.recipes.filter((r) => groupOf(r) === 'equip').map((r) => DK.gear.type(r.result)))].sort((a, b) => Object.keys(D.gear.types).indexOf(a) - Object.keys(D.gear.types).indexOf(b));
+      const subs = isMat ? [] : ['all', ...(params.tab === 'equip' ? types.map((x) => 'type:' + x) : GROUPS[params.tab]), 'goals'];
+      const subLabel = (v) => (v === 'all' ? t('craft.sub.all') : v === 'goals' ? t('craft.goals') : v.startsWith('type:') ? t(`gear.type.${v.slice(5)}.many`) : t('craft.kind.' + v));
+      const subIcon = (v) => (v === 'goals' ? 'star' : v.startsWith('type:') ? D.gear.types[v.slice(5)] : KINDS[v]);
       const chip = (v) => h('button', { class: 'wb-chip' + (v === 'all' ? '' : ' ico') + (params.sub === v ? ' on' : ''), type: 'button', tip: v === 'all' ? null : subLabel(v), 'aria-label': subLabel(v), onClick: () => set({ sub: v }) },
-        v === 'all' ? subLabel(v) : DK.icon(v === 'goals' ? 'star' : KINDS[v], 14));
+        v === 'all' ? subLabel(v) : DK.icon(subIcon(v), 14));
       const filters = h('div', { class: 'wb-filters' },
         subs.length ? h('div', { class: 'wb-chipset' }, subs.map(chip)) : null,
         search, h('span', { class: 'grow' }),
@@ -315,6 +326,7 @@
       if (!isMat) {
         let list = D.recipes.filter((r) => groupOf(r) === params.tab);
         if (params.sub === 'goals') list = list.filter((r) => C().isFavorite(r.id));
+        else if (params.sub.startsWith('type:')) list = list.filter((r) => DK.gear.isGear(r.result) && DK.gear.type(r.result) === params.sub.slice(5));
         else if (params.sub !== 'all') list = list.filter((r) => kindOf(r) === params.sub);
         if (params.only) list = list.filter((r) => C().plan(r).ok);
         if (q) list = list.filter((r) => D.items[r.result].name.toLowerCase().includes(q) || Object.keys(r.ingredients).some((id) => D.items[id].name.toLowerCase().includes(q)));
@@ -323,16 +335,26 @@
         list.sort((a, b) => ord(a) - ord(b) || D.items[a.result].name.localeCompare(D.items[b.result].name));
         // v4.42: el detalle sólo se abre al pulsar una receta (no se elige la primera sola)
         if (params.sel && !list.some((r) => r.id === params.sel)) params.sel = null;
-        body = list.length ? h('div', { class: 'wb-grid' }, list.map((r) => recipeTile(r, { selected: params.sel === r.id, onClick: () => open({ sel: r.id, mat: null }) })))
-          : DK.ui.empty('craftCog', t('craft.emptyTitle'), t('craft.emptyText'));
+        const tile = (r) => recipeTile(r, { selected: params.sel === r.id, onClick: () => open({ sel: r.id, mat: null }) });
+        // v4.76: en Equipo, agrupado por tipo de objeto (con su icono)
+        body = !list.length ? DK.ui.empty('craftCog', t('craft.emptyTitle'), t('craft.emptyText'))
+          : params.tab === 'equip' && params.sub === 'all' ? h('div', { class: 'wb-typed' }, types.map((ty) => {
+            const rs = list.filter((r) => DK.gear.type(r.result) === ty);
+            return rs.length ? h('section', { class: 'wb-type-sec' }, h('h4', { class: 'wb-type-h' }, DK.icon(D.gear.types[ty], 16), t(`gear.type.${ty}.many`), h('span', { class: 'muted' }, String(rs.length))), h('div', { class: 'wb-grid' }, rs.map(tile))) : null;
+          }))
+            : h('div', { class: 'wb-grid' }, list.map(tile));
+        // v4.76: los materiales, discretos: un enlace al final (ya no son una pestaña)
+        const nMats = Object.values(D.items).filter((it) => it.category === 'pieza' && !D.isHidden(it.id)).length;
+        body = h('div', { class: 'stack' }, body, h('button', { class: 'wb-mats-link', type: 'button', onClick: () => set({ tab: 'materials', sel: null, mat: null, sub: 'all' }) }, DK.icon('cube', 13), t('craft.seeMaterials', { n: nMats }), DK.icon('next', 12)));
         const sel = params.sel && C().get(params.sel);
         if (sel && !narrow) detail = recipeDetail(sel, { times: params.times, setTimes: (n) => set({ times: Math.max(1, Math.min(99, n)) }), redraw: refresh, open: (o) => open(o) });
       } else {
         let mats = Object.values(D.items).filter((it) => it.category === 'pieza' && !D.isHidden(it.id)).map((it) => it.id);
         if (q) mats = mats.filter((id) => D.items[id].name.toLowerCase().includes(q));
         mats.sort((a, b) => (DK.bag.count(b) > 0) - (DK.bag.count(a) > 0) || D.rarities[D.items[a].rarity].order - D.rarities[D.items[b].rarity].order || D.items[a].name.localeCompare(D.items[b].name));
-        body = mats.length ? h('div', { class: 'wb-grid' }, mats.map((id) => materialTile(id, { selected: params.mat === id, onClick: () => open({ mat: id, sel: null }) })))
-          : DK.ui.empty('cube', t('craft.emptyTitle'), '');
+        body = h('div', { class: 'stack' }, h('button', { class: 'wb-mats-link back', type: 'button', onClick: () => set({ tab: 'consum', mat: null, sel: null }) }, DK.icon('back', 12), t('craft.backFromMats')),
+          mats.length ? h('div', { class: 'wb-grid' }, mats.map((id) => materialTile(id, { selected: params.mat === id, onClick: () => open({ mat: id, sel: null }) })))
+            : DK.ui.empty('cube', t('craft.emptyTitle'), ''));
         if (params.mat && !narrow) detail = materialDetail(params.mat, { open: (o) => open(o) });
       }
 

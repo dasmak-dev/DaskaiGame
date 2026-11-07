@@ -11,7 +11,7 @@
 (function () {
   const DK = (window.DK = window.DK || {});
   DK.data = DK.data || {};
-  DK.version = '4.73.0';
+  DK.version = '4.77.0';
 
   DK.util = {
     /** Entero aleatorio entre min y max (ambos incluidos). */

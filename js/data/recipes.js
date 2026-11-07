@@ -59,6 +59,20 @@
   def('sello_equilibrio', 1, { polvo_brillante: 1, esencia_sombria: 1, piedra_runica: 1, obsidiana: 1 });
   def('brasero_vivo', 1, { brasa: 3, esencia_sombria: 1, nucleo_arcano: 1 });
 
+  // Forja (v4.74): piedras para mejorar el equipamiento. Los fragmentos salen al desguazar.
+  def('piedra_transmutacion', 1, { fragmento_forja: 3 });
+  def('piedra_alteracion', 1, { fragmento_forja: 2, hilo: 1 });
+  def('piedra_purga', 1, { fragmento_forja: 2, gota: 1 });
+  def('piedra_regia', 1, { fragmento_forja: 8, nucleo_arcano: 1 });
+  def('piedra_caos', 1, { fragmento_forja: 10, esencia_sombria: 2, obsidiana: 1 });
+  def('piedra_divina', 1, { fragmento_forja: 15, lagrima_estelar: 1 });
+  def('piedra_aumento', 1, { fragmento_forja: 3, polvo_brillante: 1 });
+  def('piedra_alquimia', 1, { fragmento_forja: 12, nucleo_arcano: 1, polvo_brillante: 2 });
+  def('piedra_anulacion', 1, { fragmento_forja: 6, esencia_sombria: 1 });
+  def('piedra_templado', 1, { fragmento_forja: 14, obsidiana: 2 });
+  def('sello_forja', 1, { fragmento_forja: 10, piedra_runica: 2 });
+  def('piedra_exaltacion', 1, { fragmento_forja: 30, lagrima_estelar: 2 });
+
   // Equipamiento de atributos
   def('garra_afilada', 1, { fragmento_garra: 3, hilo: 1 });
   def('amuleto_arcano', 1, { polvo_brillante: 2, hilo: 1, gota: 1 });

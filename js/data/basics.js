@@ -115,6 +115,7 @@
     mejora: { id: 'mejora', name: 'Mejora', icon: 'star', desc: 'Objetos que dan experiencia o mejoran para siempre a tus daskai fuera de combate.' },
     equipo: { id: 'equipo', name: 'Equipamiento', icon: 'gem', desc: 'Objetos que se equipan a los daskai.' },
     pieza: { id: 'pieza', name: 'Piezas', icon: 'cube', desc: 'Materiales para construir objetos en Crafteo.' },
+    forja: { id: 'forja', name: 'Forja', icon: 'anvil', desc: 'Piedras para mejorar el equipamiento: subir su rareza y volver a tirar sus afijos.' },
   };
 
   /* Fases de los jefes (data/zones.json → boss.phases / secretBoss.phases) */

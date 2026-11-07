@@ -27,12 +27,26 @@
     /** ¿Se está usando la mochila de la expedición? */
     inPack() { const e = DK.store.state.expedition; return !!(e && e.pack); },
     /** Pasa objetos { id: n } a la bolsa de casa. */
-    addHome(items) { const b = this.home(); Object.entries(items || {}).forEach(([id, n]) => { if (n > 0) { b[id] = (b[id] || 0) + n; DK.codex && DK.codex.markItem(id); } }); },
+    addHome(items) {
+      const b = this.home();
+      Object.entries(items || {}).forEach(([id, n]) => {
+        if (!(n > 0)) return;
+        // v4.74: el equipamiento no se cuenta: cada unidad es una pieza (normal) en la armería
+        if (DK.gear && DK.gear.isGear(id)) { for (let i = 0; i < n; i++) DK.gear.gain(id, { home: true }); return; }
+        b[id] = (b[id] || 0) + n; DK.codex && DK.codex.markItem(id);
+      });
+    },
     /** Cantidad que tienes de un objeto. */
-    count(id) { return this.raw()[id] || 0; },
-    add(id, n = 1) { if (n > 0 && !D.isHidden(id)) { this.raw()[id] = this.count(id) + n; DK.codex && DK.codex.markItem(id); } },
+    count(id) { return DK.gear && DK.gear.isGear(id) ? DK.gear.countBase(id) : this.raw()[id] || 0; },
+    add(id, n = 1) {
+      if (!(n > 0) || D.isHidden(id)) return;
+      // v4.74: equipamiento → piezas normales (en la expedición, a su botín; en casa, a la armería)
+      if (DK.gear && DK.gear.isGear(id)) { for (let i = 0; i < n; i++) DK.gear.gain(id); return; }
+      this.raw()[id] = this.count(id) + n; DK.codex && DK.codex.markItem(id);
+    },
     /** Quita n unidades. Devuelve false si no hay suficientes. */
     remove(id, n = 1) {
+      if (DK.gear && DK.gear.isGear(id)) return DK.gear.takeBase(id, n);
       const c = this.count(id);
       if (c < n) return false;
       if (c - n <= 0) delete this.raw()[id]; else this.raw()[id] = c - n;
@@ -145,28 +159,23 @@
     },
 
     /** Equipa un objeto en una ranura (devuelve a la bolsa el anterior). */
-    equip(d, slot, itemId) {
-      if (!this.remove(itemId)) return false;
-      if (d.equip[slot]) this.add(d.equip[slot]);
-      d.equip[slot] = itemId;
-      DK.daskai.clamp(d);
-      DK.store.save();
-      return true;
+    /**
+     * Equipa en una ranura (v4.74: piezas de DK.gear). Acepta el uid de una pieza
+     * o el id de una base (equipa la última pieza normal de esa base).
+     */
+    equip(d, slot, idOrUid) {
+      let uid = idOrUid;
+      if (D.items[idOrUid]) { const p = DK.gear.list().filter((x) => x.base === idOrUid).slice(-1)[0]; if (!p) return false; uid = p.uid; }
+      return DK.gear.equip(d, slot, uid);
     },
-    unequip(d, slot) {
-      if (!d.equip[slot]) return false;
-      this.add(d.equip[slot]);
-      d.equip[slot] = null;
-      DK.daskai.clamp(d);
-      DK.store.save();
-      return true;
-    },
+    unequip(d, slot) { return DK.gear.unequip(d, slot); },
 
     /**
      * Diferencias de atributos si se equipa `itemId` en `slot`.
      * @returns {Object} { atk: {from, to, diff}, ... } sólo los que cambian
      */
     equipPreview(d, slot, itemId) {
+      if (DK.gear.find(itemId)) return DK.gear.preview(d, slot, itemId);
       const before = DK.daskai.stats(d);
       const eq = d.equip.slice(); eq[slot] = itemId;
       const after = DK.daskai.stats(d, eq);
@@ -282,6 +291,8 @@
      */
     plan(recipe, times = 1) {
       const vb = Object.assign({}, DK.bag.raw());
+      // v4.74: el equipo que se usa de ingrediente son piezas normales sin equipar
+      DK.gear.list().forEach((p) => { if (p.rarity === 'normal') vb[p.base] = (vb[p.base] || 0) + 1; });
       const steps = [], missing = {};
       const self = this;
       function need(id, n, depth) {

@@ -60,6 +60,8 @@
  * ============================================================= */
 (function () {
   const U = DK.util, D = DK.data;
+  /** Copia ligera de una pieza para el resumen de la expedición (v4.74). */
+  const gearSnap = (p) => ({ uid: p.uid, base: p.base, rarity: p.rarity, ilvl: p.ilvl, name: DK.gear.name(p) });
   const st = () => DK.store.state;
   const cfg = () => DK.config.expedition;
 
@@ -378,6 +380,8 @@
     /** Tamaño del mapa actual. */
     size() { const e = this.active(); return (e && (e.size || (e.map && e.map.size))) || 'small'; },
 
+    /** v4.75: nivel del botín que no suelta un rival concreto (sucesos, cofres…): el medio de la zona. */
+    lootLevel() { const e = this.active(); if (!e) return 1; const z = D.zones[e.zone]; return Math.round((z.levels[0] + z.levels[1]) / 2) + this.levelBonus(); },
     /** Niveles extra de los rivales según la profundidad (sólo en expedición). */
     levelBonus(depth) {
       const e = this.active();
@@ -516,7 +520,7 @@
       const TD = cfg().tonicDrops;
       const tonics = Array.from({ length: TD.boss }, () => this.tonic());
       if (U.chance(TD.elixirBoss)) tonics.push('elixir_olvido');
-      this.addLoot([this.expItem(), this.expItem(), U.pick(this.zoneLoot('raro')), ...tonics].filter(Boolean));
+      this.addLoot([this.expItem(), this.expItem(), U.pick(this.zoneLoot('raro')), ...tonics].filter(Boolean), 0, { src: 'boss' });
       e.log.bossTonics = tonics;
       e.log.kept.push(...this.settleRecruits(true));
       // Recompensa de los pactos: reliquias raras o épicas
@@ -708,11 +712,13 @@
      * piezas) y las monedas se guardan en el botín hasta terminar.
      * @returns {{bag: string[], loot: string[]}}
      */
-    addLoot(items, coins = 0) {
-      const e = this.active(); if (!e) return { bag: [], loot: [] };
+    addLoot(items, coins = 0, o = {}) {
+      const e = this.active(); if (!e) return { bag: [], loot: [], gear: [] };
       this.ensureFields();
-      const out = { bag: [], loot: [] };
+      const out = { bag: [], loot: [], gear: [] };
       items.forEach((id) => {
+        // v4.74: el equipamiento sale como una pieza con rareza (mejor de mini jefes y jefes)
+        if (DK.gear.isGear(id)) { const p = DK.gear.gain(id, { rarity: DK.gear.rollRarity(o.src || 'fight'), ilvl: o.level || this.lootLevel() + (o.src === 'boss' ? 3 : 0) }); out.gear.push(p); return; }
         if (this.toBag(id)) { DK.bag.add(id); e.log.toBag[id] = (e.log.toBag[id] || 0) + 1; out.bag.push(id); }
         else { e.loot.items[id] = (e.loot.items[id] || 0) + 1; out.loot.push(id); }
       });
@@ -833,6 +839,9 @@
         const more = D.shopStock.filter((id) => D.prices[id] && sellable(id) && !out.some((o) => o.id === id));
         if (more.length) out.push(offer(U.pick(more), U.rand(1, 3)));
       }
+      // v4.75: piedras de forja (siempre una; a veces una regia o de alquimia)
+      out.push(offer(U.pick(['piedra_transmutacion', 'piedra_alteracion', 'piedra_aumento', 'piedra_purga', 'fragmento_forja']), U.rand(2, 4)));
+      if (U.chance(0.35)) out.push(offer(U.pick(['piedra_regia', 'piedra_alquimia', 'piedra_anulacion']), 1));
       // Muy de vez en cuando, una pluma de fénix
       if (U.chance(0.12)) out.push(offer('pluma_fenix', 1));
       return out;
@@ -1027,8 +1036,10 @@
       const coins = Math.round(e.loot.coins * mult);
       const pack = Object.assign({}, e.pack || {});
       const summary = { items: e.loot.items, coins, zone: e.zone, recruits, keptRecruits: bonus, mult, pack };
-      this.snapshot(bonus ? 'completed' : 'retreat', { coins, items: e.loot.items, recruits, mult, packBack: pack });
+      const gear = (e.loot.gear || []).slice(); // v4.74: el equipo encontrado vuelve entero
+      this.snapshot(bonus ? 'completed' : 'retreat', { coins, items: e.loot.items, recruits, mult, packBack: pack, gear: gear.map(gearSnap) });
       { const pct = DK.daskai.snapPct(); st().expedition = null; DK.daskai.applyPct(pct); } // v4.68: sin bonus de la expedición, el máximo baja y la vida con él
+      DK.gear.home().push(...gear);
       // Ya fuera de la expedición: botín y mochila vuelven a la bolsa de casa
       DK.bag.addHome(e.loot.items);
       DK.bag.addHome(pack);
@@ -1111,8 +1122,12 @@
       Object.entries(keptGain).forEach(([id, n]) => (packBack[id] = (packBack[id] || 0) + n));
       const kept = this.settleRecruits(true);
       const recruits = e.log.kept.concat(kept).map((x) => Object.assign({}, x, { kept: true }));
-      this.snapshot('campfire', { coins, items: keptLoot, lostItems: lostLoot, lostCoins: e.loot.coins - coins, recruits, packBack, lostPack, keepPct: Math.round(keep * 100) });
+      // v4.74: el equipo encontrado, como el botín: cada pieza se queda con la misma probabilidad
+      const gearKept = [], gearLost = [];
+      (e.loot.gear || []).forEach((p) => (Math.random() < keep ? gearKept : gearLost).push(p));
+      this.snapshot('campfire', { coins, items: keptLoot, lostItems: lostLoot, lostCoins: e.loot.coins - coins, recruits, packBack, lostPack, keepPct: Math.round(keep * 100), gear: gearKept.map(gearSnap), lostGear: gearLost.map(gearSnap) });
       { const pct = DK.daskai.snapPct(); st().expedition = null; DK.daskai.applyPct(pct); } // v4.68: sin bonus de la expedición, el máximo baja y la vida con él
+      DK.gear.home().push(...gearKept);
       this.afterEnd();
       DK.bag.addHome(keptLoot); DK.bag.addHome(packBack); DK.wallet.add(coins);
       DK.emit('expedition:end', { campfire: true });
@@ -1179,7 +1194,7 @@
       const lost = Object.assign({ recruits: this.settleRecruits(false) }, e.loot);
       const recruits = e.log.kept.map((x) => Object.assign({}, x, { kept: true })).concat(lost.recruits.map((x) => Object.assign({}, x, { kept: false })));
       const [packBack, lostPack] = this.packOnDefeat();
-      this.snapshot('lost', { coins: 0, items: {}, lostItems: e.loot.items, lostCoins: e.loot.coins, recruits, packBack, lostPack, keepPack: DK.rules.keepPack() });
+      this.snapshot('lost', { coins: 0, items: {}, lostItems: e.loot.items, lostCoins: e.loot.coins, recruits, packBack, lostPack, keepPack: DK.rules.keepPack(), lostGear: (e.loot.gear || []).map(gearSnap) });
       { const pct = DK.daskai.snapPct(); st().expedition = null; DK.daskai.applyPct(pct); } // v4.68: sin bonus de la expedición, el máximo baja y la vida con él
       this.afterEnd({ defeat: true });
       DK.bag.addHome(packBack);
@@ -1198,7 +1213,7 @@
       const coins = Math.round(e.loot.coins * keep);
       const left = this.settleRecruits(false);
       const recruits = e.log.kept.map((x) => Object.assign({}, x, { kept: true })).concat(left.map((x) => Object.assign({}, x, { kept: false })));
-      this.snapshot('lostBoss', { coins, items: keptLoot, lostItems: lostLoot, lostCoins: e.loot.coins - coins, recruits, packBack: keptPack, lostPack, keepPack: DK.rules.keepPack() });
+      this.snapshot('lostBoss', { coins, items: keptLoot, lostItems: lostLoot, lostCoins: e.loot.coins - coins, recruits, packBack: keptPack, lostPack, keepPack: DK.rules.keepPack(), lostGear: (e.loot.gear || []).map(gearSnap) });
       st().consolation = { zone: e.zone, depth: e.depth || 1 };
       { const pct = DK.daskai.snapPct(); st().expedition = null; DK.daskai.applyPct(pct); } // v4.68: sin bonus de la expedición, el máximo baja y la vida con él
       this.afterEnd({ defeat: true });
@@ -1231,7 +1246,7 @@
     },
 
     /** Número de objetos en el botín. */
-    lootCount() { const e = this.active(); return e ? Object.values(e.loot.items).reduce((a, b) => a + b, 0) : 0; },
+    lootCount() { const e = this.active(); return e ? Object.values(e.loot.items).reduce((a, b) => a + b, 0) + (e.loot.gear || []).length : 0; },
   };
 
   /* ======================= RELIQUIAS =======================

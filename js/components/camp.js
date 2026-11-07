@@ -373,13 +373,14 @@
     // Tu equipo descansando junto a la hoguera
     const fire = SPOTS.find((sp) => sp.fire);
     const fx = narrow ? fire.xs : mid && fire.xm != null ? fire.xm : fire.x, fy = narrow ? fire.ys : mid && fire.ym != null ? fire.ym : fire.y;
-    const offs = narrow ? [[-20, 0], [20, 0], [-12, -14], [13, -14]] : [[-14, -3], [14, -3], [-25, 5], [24, 8], [-13, 13]]; // v4.58: más separados (los daskai son más grandes)
-    const team = (o.team || []).slice(0, narrow ? 4 : 5).map((d, i) => h('button', {
+    // v4.77: sitio para los 6 del equipo (antes sólo cabían 5, y 4 en el móvil)
+    const offs = narrow ? [[-21, 0], [21, 0], [-12, -13], [12, -13], [-15, 12], [15, 12]] : [[-14, -3], [14, -3], [-25, 5], [25, 6], [-13, 13], [13, 14]];
+    const team = (o.team || []).slice(0, offs.length).map((d, i) => h('button', {
       class: 'camp-mon', type: 'button', style: { left: fx + offs[i][0] + '%', top: fy + offs[i][1] + '%', animationDelay: (i * 0.4) + 's' },
       'aria-label': DK.daskai.name(d), tip: `${DK.daskai.name(d)} · ${t('common.lvl')} ${d.level}`,
       // v4.67: el mismo resumen rápido que «Tu equipo» (antes llevaba a la pantalla de equipo)
       onClick: () => { DK.audio.sfx('select'); DK.views.quickStats(d, { onChange: o.onChange || (() => DK.router.refresh()) }); },
-    }, DK.views.sprite(d.species, { look: DK.looks.of(d), size: narrow ? 66 : 96, shiny: d.shiny, flip: offs[i][0] > 0 })));
+    }, DK.views.sprite(d.species, { look: DK.looks.of(d), size: narrow ? 58 : 92, shiny: d.shiny, flip: offs[i][0] > 0 })));
     // Ascuas que suben de la hoguera, niebla baja y antorchas
     const embers = h('div', { class: 'camp-embers', 'aria-hidden': 'true', style: { left: fx + '%', top: fy + '%' } }, Array.from({ length: 16 }, (_, i) => h('i', { style: { '--dx': ((i * 37) % 60 - 30) + 'px', left: ((i * 13) % 40 - 20) + 'px', animationDelay: (i * 0.35) + 's', animationDuration: (2.6 + (i % 5) * 0.5) + 's' } })));
     const fog = h('div', { class: 'camp-fog', 'aria-hidden': 'true' }, h('i'), h('i'));
