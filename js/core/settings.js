@@ -32,6 +32,7 @@
     skipAnims: false,
     showHotkeys: true,
     confirmFlee: false,
+    confirmForge: true,     // v4.84: la forja pide confirmar antes de usar una piedra
     confirmRelease: true,
     vibration: true,
     tutorials: true,

@@ -16,6 +16,8 @@
   const statName = (k) => (k === 'regen' ? DK.tr('stats', D.stats.regen) : DK.tr('stats', D.stats[k]));
   const statShort = (k) => (D.stats[k] && DK.tr('stats', D.stats[k], 'short')) || statName(k);
 
+  /** v4.84: nota de calidad (S/A/B/C/D) con su puntuación en el tooltip. */
+  V.gearQuality = (p, { small = false } = {}) => { const q = DK.gear.quality(p); return h('span', { class: 'gq gq-' + q.grade + (small ? ' sm' : ''), tip: t('gear.qualityTip', { n: q.score, g: q.grade, tip: t('gear.qualityAdvice.' + q.grade) }) }, small ? q.grade : t('gear.quality', { g: q.grade })); };
   V.gearRarity = (r) => h('span', { class: 'gear-rar g-' + r, style: { '--g': RC(r) } }, t('gear.rarity.' + r));
 
   /** Una línea corta con lo que da. */
@@ -43,36 +45,53 @@
    * Ficha completa. o.onAffix(i): botón para volver a tirar ese afijo (esquirla de jefe).
    * o.changed: Set de claves que acaban de cambiar ('a0', 'x1'…) para resaltarlas.
    */
-  V.gearTip = (p, { compact = false, onAffix = null, changed = null, sel = null, onSelect = null } = {}) => {
+  V.gearTip = (p, { compact = false, onAffix = null, changed = null, sel = null, onSelect = null, selBar = null, addSlot = null, onMain = null, will = null } = {}) => {
     const it = D.items[p.base], d = wearer(p);
-    const hi = (key) => (changed && changed.has(key) ? ' fresh' : '');
+    const hi = (key) => (changed && changed.has(key) ? ' fresh' : '') + (will && will.has(key) ? ' will' : ''); // v4.84: will = lo que va a cambiar
     const sep = () => h('i', { class: 'gt-sep' });
     const head = h('div', { class: 'gt-head' },
       h('span', { class: 'gt-ico' }, V.gearIcon(p, compact ? 30 : 40)),
       h('div', { class: 'grow' },
         h('b', { class: 'gt-name' }, DK.gear.name(p)),
         h('span', { class: 'gt-base' }, `${DK.gear.typeName(p)} · ${it.name}`),
-        h('span', { class: 'gt-meta' }, V.gearRarity(p.rarity), h('span', { class: 'gt-ilvl' }, t('gear.ilvlN', { n: p.ilvl })))));
+        h('span', { class: 'gt-meta' }, V.gearRarity(p.rarity), h('span', { class: 'gt-ilvl' }, t('gear.ilvlN', { n: p.ilvl })),
+          // v4.84: calidad, bloqueada y fabricada
+          V.gearQuality(p), p.lk ? h('span', { class: 'gt-lk', tip: t('gear.lockedPiece') }, DK.icon('lock', 12)) : null,
+          p.cf ? h('span', { class: 'gt-cf', tip: t('gear.craftedTip') }, DK.icon('hammer', 11), t('gear.crafted')) : null)));
     const rows = [];
     // Lo que da su base (ataque o pasiva)
     if (it.grants) rows.push(h('div', { class: 'gt-implicit' }, DK.icon('sparkles', 13), V.grantsText(it)), sep());
     // Atributos
-    rows.push(h('div', { class: 'gt-attrs' }, p.attrs.map((a, i) => h('div', { class: 'gt-attr' + hi('a' + i) },
+    // v4.78: el atributo principal (el de su tipo) va destacado
+    const mainK = DK.gear.primaryOf(p.base);
+    rows.push(h('div', { class: 'gt-attrs' }, p.attrs.map((a, i) => h('div', { class: 'gt-attr' + hi('a' + i) + (a.k === mainK ? ' main' : ''), tip: a.k === mainK ? t('gear.prev.mainShort', { stat: statName(a.k) }) : null },
       D.stats[a.k] ? DK.icon(D.stats[a.k].icon, 13) : DK.icon('regen', 13),
-      h('span', null, h('b', null, `+${DK.gear.attrValue(p, a)}${a.k === 'regen' ? '%' : ''}`), ' ', statName(a.k))))));
+      h('span', null, h('b', null, `+${DK.gear.attrValue(p, a)}${a.k === 'regen' ? '%' : ''}`), ' ', statName(a.k),
+        // v4.80: el principal enseña su rango (y en la forja, un botón para re-tirarlo)
+        a.k === mainK && !compact ? h('small', { class: 'gt-range', tip: t('gear.bench.range', { a: DK.gear.attrRange(p, a)[0], b: DK.gear.attrRange(p, a)[1] }) }, ` (${DK.gear.attrRange(p, a).join('–')})`) : null),
+      a.k === mainK && onMain ? onMain(a) : a.k === mainK ? h('span', { class: 'gt-main' }, DK.icon('star', 10)) : null))));
     // Prefijos y sufijos
-    if (p.affixes.length) {
+    // v4.79: addSlot(kind) → nodo para cada hueco libre (añadir prefijo/sufijo en la forja)
+    const sl = addSlot ? DK.gear.slots(p) : null;
+    const freeP = sl && p.affixes.length < sl.total ? Math.max(0, sl.P[1] - sl.P[0]) : 0;
+    const freeS = sl && p.affixes.length < sl.total ? Math.max(0, sl.S[1] - sl.S[0]) : 0;
+    if (p.affixes.length || freeP || freeS) {
       rows.push(sep());
       // v4.75: en la forja los afijos se eligen (onSelect) y el sellado lleva candado
-      const line = (a, i) => h(onSelect ? 'button' : 'div', Object.assign({ class: 'gt-affix ' + DK.gear.kindOf(a) + hi('x' + i) + (sel === i ? ' sel' : '') + (a.lock ? ' locked' : '') },
+      const exOf = (a) => (D.gear.affixes[a.id] || {}).only; // v4.81: exclusivo de su tipo
+      const line = (a, i) => h(onSelect ? 'button' : 'div', Object.assign({ class: 'gt-affix ' + DK.gear.kindOf(a) + hi('x' + i) + (sel === i ? ' sel' : '') + (a.lock ? ' locked' : '') + (exOf(a) ? ' excl' : '') },
         onSelect ? { type: 'button', 'aria-pressed': sel === i, onClick: () => onSelect(sel === i ? null : i) } : {}),
         h('span', { class: 'gt-kind', tip: t('gear.' + DK.gear.kindOf(a)) }, DK.gear.kindOf(a) === 'prefix' ? 'P' : 'S'),
         a.lock ? h('span', { class: 'gt-lock', tip: t('gear.locked') }, DK.icon('lock', 12)) : null,
+        exOf(a) ? h('span', { class: 'gt-excl', tip: t('gear.exclusive', { type: t(`gear.type.${exOf(a)}.one`) }) }, DK.icon('star', 11)) : null,
         h('span', { class: 'grow' }, DK.gear.affixText(a), compact ? null : h('small', { class: 'gt-range' }, ` (${DK.gear.affixRange(a)})`)),
         h('span', { class: 'gt-tier t' + a.t, tip: t('gear.tierTip', { n: a.t }) }, 'N' + a.t),
         onAffix ? h('button', { class: 'gt-reroll', type: 'button', tip: t('gear.rerollThis'), 'aria-label': t('gear.rerollThis'), onClick: () => onAffix(i) }, DK.icon('target', 13)) : null);
       const pre = [], suf = [];
-      p.affixes.forEach((a, i) => (DK.gear.kindOf(a) === 'prefix' ? pre : suf).push(line(a, i)));
+      p.affixes.forEach((a, i) => { const L = DK.gear.kindOf(a) === 'prefix' ? pre : suf; L.push(line(a, i)); if (selBar && sel === i) L.push(selBar); });
+      // Huecos libres: uno por tipo (con cuántos quedan)
+      if (freeP) pre.push(addSlot('prefix', freeP));
+      if (freeS) suf.push(addSlot('suffix', freeS));
       rows.push(h('div', { class: 'gt-affixes' }, pre, suf));
     }
     // Pasiva exclusiva

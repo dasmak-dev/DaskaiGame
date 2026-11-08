@@ -49,6 +49,7 @@
           toggle({ icon: 'skip', label: t('settings.skipAnims'), desc: t('settings.skipAnimsDesc'), value: S.get('skipAnims'), onChange: set('skipAnims') }),
           toggle({ icon: 'keyboard', label: t('settings.showHotkeys'), desc: t('settings.showHotkeysDesc'), value: S.get('showHotkeys'), onChange: set('showHotkeys') }),
           toggle({ icon: 'flee', label: t('settings.confirmFlee'), value: S.get('confirmFlee'), onChange: set('confirmFlee') }),
+          toggle({ icon: 'anvil', label: t('settings.confirmForge'), value: S.get('confirmForge') !== false, onChange: set('confirmForge') }),
           toggle({ icon: 'trash', label: t('settings.confirmRelease'), value: S.get('confirmRelease'), onChange: set('confirmRelease') })),
         group('globe', t('settings.language'),
           rowSeg('globe', t('settings.language'), DK.ui.select({ label: t('settings.language'), value: S.get('lang'), options: DK.i18n.languages().map((l) => ({ value: l.id, label: l.name })), onChange: (v) => { S.set('lang', v); refresh(); if (DK.router.current()) DK.router.refresh(); } }))),

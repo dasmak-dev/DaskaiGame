@@ -8,7 +8,7 @@
  *   fire    hoguera grande: llamas procedurales, troncos en tipi, brasas y chispas (8, v4.54)
  *   anvil   yunque sobre tocón con lingote al rojo y chispas (3)
  *   dummy   muñeco de paja que se balancea (2)
- *   lectern (códice) grimorio que flota sobre un pedestal y pasa página, círculo mágico (8, v4.54)
+ *   lectern (códice) grimorio con el lomo a la vista: reposo con runa que late y hoja que pasa (12, v4.80)
  *   board   tablón con tejas, notas, sello y mapa; farol que se mece; nota al viento (6, v4.54)
  *   portal  arco de piedra (capa fija) con runas y un vórtice que gira (12, fluido)
  *   torch   antorcha (3)
@@ -197,46 +197,61 @@
     /* ---------- Códice: grimorio que flota sobre un pedestal ---------- */
     // v4.54: pedestal de piedra con runas, círculo mágico que gira, libro abierto que flota
     // y pasa una página, y motas de luz que suben (8 fotogramas).
-    lectern: { base: 24, frames: 8, draw(f) {
-      const c = canvas(38, 46), N = 8, ph = (f / N) * Math.PI * 2;
-      const V1 = '#4c1d95', V2 = '#7c3aed', V3 = '#a78bfa', V4 = '#ddd6fe';
-      c.rect(7, 44, 24, 2, 'rgba(0,0,0,.4)');
-      // pedestal: base escalonada, fuste con runas, capitel
-      c.rect(9, 41, 20, 3, STONE.m).rect(9, 41, 20, 1, STONE.l).rect(9, 43, 20, 1, STONE.dd);
-      c.rect(13, 30, 12, 11, STONE.m).rect(13, 30, 2, 11, STONE.l).rect(23, 30, 2, 11, STONE.d);
-      [[17, 32], [19, 35], [17, 38]].forEach(([x, y], i) => { const on = (f + i * 3) % N < 4; c.rect(x, y, 3, 1, on ? V3 : V1).set(x + 1, y + 1, on ? V2 : V1); });
-      c.rect(10, 27, 18, 3, STONE.m).rect(10, 27, 18, 1, STONE.l).rect(10, 29, 18, 1, STONE.dd);
+    // v4.79: el grimorio es UN dibujo quieto (abierto, sin sombra ni motas): el vaivén, la hoja
+    // que pasa (giro 3D) y las chispas son CSS continuo en camp.js (.codex-*), mucho más fluido.
+    // v4.80: grimorio pixel art de 12 fotogramas (como la hoguera): visto un poco desde delante,
+    // con el canto de las hojas, las tapas y el LOMO redondeado con nervios dorados asomando
+    // por debajo. 7 fotogramas de reposo (la runa de la ilustración late) y 5 en los que una
+    // hoja se levanta desde el lomo, se pone de canto y cae al otro lado.
+    lectern: { base: 22, frames: 12, draw(f) {
+      const c = canvas(40, 26), G1 = '#fbbf24', G2 = '#b45309';
+      const PY = 10, SX = 19.5, L = 17, K = 0.5; // arriba de las hojas, lomo, largo de hoja, inclinación
+      const LEA = { l: '#6b2a52', m: '#4a1d3a', d: '#2e1024', dd: '#1d0a17' };
+      // Sombra
+      c.rect(4, 24, 32, 2, 'rgba(0,0,0,.38)');
+      // Tapas (asoman bajo las hojas) con esquinas doradas
+      c.rect(1, PY + 10, 38, 3, LEA.m).rect(1, PY + 10, 38, 1, LEA.l).rect(1, PY + 12, 38, 1, LEA.d);
+      [[1, PY + 10], [37, PY + 10], [1, PY + 12], [37, PY + 12]].forEach(([x, y]) => c.rect(x, y, 2, 1, G1));
+      // Canto del bloque de hojas (rayitas) a cada lado
+      for (let x = 2; x <= 37; x++) { if (x >= 18 && x <= 21) continue; c.set(x, PY + 9, '#e6d6ac').set(x, PY + 10, x % 2 ? '#cdb985' : '#d9c79a'); }
+      // LOMO: sale por debajo, redondeado, con nervios dorados
+      for (let y = PY + 9; y <= PY + 15; y++) {
+        const w = y >= PY + 14 ? 2 : 3;
+        for (let x = 20 - w; x < 20 + w; x++) c.set(x, y, x < 19 ? LEA.l : x > 20 ? LEA.d : LEA.m);
+      }
+      [PY + 11, PY + 13].forEach((y) => c.rect(17, y, 6, 1, G2).set(18, y, G1).set(19, y, G1));
+      c.rect(18, PY + 16, 4, 1, LEA.dd);
+      // Hojas abiertas: el borde de arriba se curva hacia el lomo
+      const pageTop = (x) => PY + (Math.abs(x - SX) < 4 ? 2 : Math.abs(x - SX) < 8 ? 1 : 0);
+      const paper = (x, left) => (left ? (x < 5 ? '#efe3c2' : '#f7edd3') : x > 34 ? '#e8d9b2' : '#f1e5c6');
+      for (let x = 2; x <= 37; x++) {
+        if (x === 19 || x === 20) continue;
+        for (let y = pageTop(x); y <= PY + 8; y++) c.set(x, y, paper(x, x < 19));
+        c.set(x, pageTop(x), x < 19 ? '#fffaf0' : '#fbf3dc');
+      }
+      c.rect(19, PY + 2, 2, 7, '#7c4a1e').set(19, PY + 2, '#5c3414');
+      // Texto (izquierda) e ilustración con runa que late (derecha)
+      [[4, PY + 2, 11], [4, PY + 4, 12], [4, PY + 6, 8]].forEach(([x, y, w]) => c.rect(x, y, w, 1, '#a89a80'));
+      c.set(4, PY + 2, '#7c2d12').set(5, PY + 2, '#7c2d12'); // capitular
+      [[23, PY + 6, 11], [23, PY + 7, 8]].forEach(([x, y, w]) => c.rect(x, y, w, 1, '#a89a80'));
+      const pulse = f < 7 ? [0, 1, 2, 2, 1, 0, 0][f] : 0;
+      const RUNE = ['#7c3aed', '#a78bfa', '#ddd6fe'];
+      c.circle(28, PY + 3, 2, '#c4b5fd').set(28, PY + 3, RUNE[pulse]).set(27, PY + 2, RUNE[Math.min(2, pulse + 1)]).set(29, PY + 4, '#7c3aed');
+      if (pulse === 2) c.set(28, PY, '#ede9fe').set(31, PY + 2, '#ede9fe');
+      // Hoja que pasa (fotogramas 7-11): gira sobre el lomo y cae a la izquierda
+      if (f >= 7) {
+        const th = [20, 55, 90, 125, 156][f - 7] * Math.PI / 180, cs = Math.cos(th), sn = Math.sin(th);
+        const back = cs < 0, edge = Math.abs(cs) < 0.18;
+        for (let i = 0; i <= 60; i++) {
+          const t = i / 60, x = Math.round(SX + t * L * cs), lift = t * L * K * sn;
+          const y0 = Math.round(PY + 1 - lift), y1 = Math.round(PY + 8 - lift);
+          for (let y = y0; y <= y1; y++) c.set(x, y, edge ? '#d9c79a' : back ? (t > 0.85 ? '#d8c69a' : '#e9dcb8') : (t > 0.85 ? '#efe2bf' : '#fbf3dc'));
+          if (!edge) c.set(x, y0, back ? '#cdb985' : '#fffaf0');
+          if (!edge && !back && i % 12 === 6 && t < 0.8) c.set(x, Math.round(PY + 5 - lift), '#a89a80');
+        }
+        if (f === 9) c.set(20, Math.round(PY - 7), '#fffaf0'); // brillo en el canto
+      }
       outline(c);
-      // círculo mágico en el suelo, alrededor del pedestal, con un brillo que gira
-      for (let k = 0; k < 40; k++) {
-        const a = (k / 40) * Math.PI * 2, x = Math.round(19 + Math.cos(a) * 17), y = Math.round(42 + Math.sin(a) * 3);
-        const lit = Math.cos(a - ph) > 0.6;
-        if (!c.g[y] || (c.g[y][x] && !lit && Math.sin(a) < 0)) continue;
-        if (Math.sin(a) < 0 || !c.g[y][x] || lit) c.set(x, y, lit ? V4 : k % 2 ? V2 : V1);
-      }
-      // libro que flota
-      const by = Math.round(Math.sin(ph) * 1.5);
-      const top = 11 + by;
-      c.rect(2, top + 10, 34, 2, '#3b1d0e').rect(2, top + 10, 34, 1, '#5b2d14'); // tapas
-      c.rect(3, top + 1, 15, 10, '#f5ecd2').rect(20, top + 1, 15, 10, '#e9dcb6'); // páginas
-      c.rect(3, top + 1, 15, 1, '#fffaf0').rect(18, top, 2, 11, '#7c4a1e');
-      [3, 5, 7, 9].forEach((dy) => { c.rect(5, top + dy, 11, 1, '#9a8f7d'); });
-      [7, 9].forEach((dy) => c.rect(22, top + dy, 11, 1, '#9a8f7d'));
-      c.circle(26, top + 4, 2, V2).set(25, top + 3, V4).set(27, top + 3, V4); // dibujo de un daskai
-      // página que se pasa (de derecha a izquierda)
-      const turn = f % N, w = [0, 0, 14, 9, 3, -5, -12, 0][turn];
-      if (w) {
-        const x0 = w > 0 ? 20 : 18 + w, ww = Math.abs(w), lift = Math.round((14 - ww) / 3);
-        c.rect(x0, top + 1 - lift, ww, 9, w > 0 ? '#fffaf0' : '#f1e6c8').rect(x0, top + 1 - lift, ww, 1, '#ffffff');
-      }
-      // marcapáginas
-      c.rect(30, top + 11, 1, 3, '#b91c1c');
-      // brillo bajo el libro y motas de luz
-      for (let x = 8; x <= 30; x += 2) c.set(x, top + 13, (x + f) % 4 ? 'rgba(167,139,250,.35)' : 'rgba(221,214,254,.6)');
-      for (let k = 0; k < 5; k++) {
-        const t = ((f + k * 1.6) % N) / N, y = Math.round(top - 1 - t * 10), x = Math.round(7 + k * 6 + Math.sin(ph + k) * 1.5);
-        if (y >= 0) c.set(x, y, t < 0.5 ? V4 : V3);
-      }
       return c;
     } },
 

@@ -131,6 +131,7 @@
 
   /** Una línea de lo que hace un objeto. */
   function shortText(it) {
+    if (it.category === 'forja' && it.id !== 'fragmento_forja') return V.itemDoes(it); // v4.78: qué hace la piedra
     if (it.use) return V.useText(it);
     if (it.grants) return V.grantsText(it);
     if (it.stats) return Object.entries(it.stats).map(([k, v]) => `${DK.tr('stats', D.stats[k])} ${v > 0 ? '+' : ''}${v}`).join(' · ');
@@ -341,7 +342,7 @@
 
   /** Desguazar de golpe todas las piezas normales sin equipar. */
   async function salvageNormals(refresh) {
-    const list = DK.gear.home().filter((p) => p.rarity === 'normal');
+    const list = DK.gear.home().filter((p) => p.rarity === 'normal' && !p.lk);
     if (!list.length) { toast(t('gear.noNormals'), { icon: 'hammer' }); return; }
     const n = list.reduce((a, p) => a + DK.gear.salvageValue(p).fragmento_forja, 0);
     if (!(await DK.ui.confirm(t('gear.salvageAllQ', { n: list.length }), t('gear.salvageAllText', { n: list.length, f: n }), { okLabel: t('gear.salvage'), okIcon: 'hammer', danger: true }))) return;
@@ -370,14 +371,16 @@
     const blocks = [V.gearTip(p)];
     blocks.push(h('div', { class: 'gear-actions' },
       btn({ icon: 'gem', label: t('gear.equipOnBtn'), variant: 'primary', onClick: async () => { if (await V.equipPicker(p.uid)) refresh(); } }),
-      exp ? null : btn({ icon: 'anvil', label: t('gear.toForgeLong'), variant: 'tone', onClick: () => DK.router.reset('craft', { tab: 'forge', fp: p.uid }) })));
+      exp ? null : btn({ icon: 'anvil', label: t('gear.toForgeLong'), variant: 'tone', onClick: () => DK.router.reset('craft', { tab: 'forge', fp: p.uid }) }),
+      // v4.84: bloquear (no se puede desguazar)
+      exp ? null : btn({ icon: 'lock', label: t(p.lk ? 'gear.unlock' : 'gear.lock'), variant: p.lk ? 'tone' : 'ghost', tip: t('gear.lockTip'), onClick: () => { DK.gear.toggleLock(p.uid); refresh(); } })));
     if (wornBy) {
       blocks.push(h('section', { class: 'inv-block' }, h('h4', null, t('gear.wornTitle')),
         h('div', { class: 'inv-target equip' }, V.dSprite(wornBy, { size: 42 }), h('div', { class: 'inv-target-main' }, h('b', null, DK.daskai.name(wornBy)), h('span', { class: 'muted small' }, `${t('common.lvl')} ${wornBy.level}`)),
           btn({ icon: 'x', label: t('equip.remove'), size: 'sm', variant: 'ghost', onClick: () => { DK.gear.unequip(wornBy, x.slot); DK.audio.sfx('select'); refresh(); } }))));
     }
     // Desguazar (en casa y sin equipar)
-    if (!exp && !wornBy) {
+    if (!exp && !wornBy && !p.lk) {
       const got = DK.gear.salvageValue(p);
       blocks.push(h('div', { class: 'gear-salvage' }, DK.icon('hammer', 15), h('span', { class: 'grow small muted' }, t('gear.salvageText', { n: got.fragmento_forja })),
         btn({ icon: 'hammer', label: t('gear.salvage'), size: 'sm', variant: 'ghost', onClick: async () => {

@@ -464,9 +464,6 @@
     "stats": {
       "mp": 6
     },
-    "grants": {
-      "move": "curacion"
-    },
     "desc": "Permite usar Curación en combate."
   },
   "tambor_guerra": {
@@ -477,9 +474,6 @@
     "color": "#ef4444",
     "stats": {
       "hp": 6
-    },
-    "grants": {
-      "move": "rugido"
     },
     "desc": "Permite usar Rugido en combate."
   },
@@ -492,9 +486,6 @@
     "stats": {
       "spd": 2
     },
-    "grants": {
-      "move": "agilidad"
-    },
     "desc": "Permite usar Agilidad en combate."
   },
   "raiz_maestra": {
@@ -505,9 +496,6 @@
     "color": "#65a30d",
     "stats": {
       "def": 2
-    },
-    "grants": {
-      "move": "raiz_drenante"
     },
     "desc": "Permite usar Raíz Drenante en combate."
   },
@@ -520,9 +508,6 @@
     "stats": {
       "matk": 3
     },
-    "grants": {
-      "move": "drenaje_vital"
-    },
     "desc": "Permite usar Drenaje Vital en combate."
   },
   "ascua_eterna": {
@@ -533,9 +518,6 @@
     "color": "#f97316",
     "stats": {
       "matk": 4
-    },
-    "grants": {
-      "move": "llamarada"
     },
     "desc": "Permite usar Llamarada en combate."
   },
@@ -548,9 +530,6 @@
     "stats": {
       "mdef": 4
     },
-    "grants": {
-      "move": "maremoto"
-    },
     "desc": "Permite usar Maremoto en combate."
   },
   "prisma_juicio": {
@@ -561,9 +540,6 @@
     "color": "#f2b705",
     "stats": {
       "matk": 4
-    },
-    "grants": {
-      "move": "juicio"
     },
     "desc": "Permite usar Juicio en combate."
   },
@@ -576,9 +552,6 @@
     "stats": {
       "atk": 4
     },
-    "grants": {
-      "move": "terremoto"
-    },
     "desc": "Permite usar Terremoto en combate."
   },
   "corazon_musgo": {
@@ -587,9 +560,6 @@
     "rarity": "raro",
     "icon": "amulet",
     "color": "#22c55e",
-    "grants": {
-      "passive": "regeneracion"
-    },
     "desc": "Da la pasiva Regeneración."
   },
   "emblema_furia": {
@@ -598,9 +568,6 @@
     "rarity": "raro",
     "icon": "sword",
     "color": "#dc2626",
-    "grants": {
-      "passive": "furia"
-    },
     "desc": "Da la pasiva Furia contenida."
   },
   "caparazon_viejo": {
@@ -609,9 +576,6 @@
     "rarity": "raro",
     "icon": "shield",
     "color": "#0369a1",
-    "grants": {
-      "passive": "caparazon"
-    },
     "desc": "Da la pasiva Caparazón."
   },
   "pluma_ligera": {
@@ -620,9 +584,6 @@
     "rarity": "raro",
     "icon": "boots",
     "color": "#5eead4",
-    "grants": {
-      "passive": "pies_ligeros"
-    },
     "desc": "Da la pasiva Pies ligeros."
   },
   "cristal_vital": {
@@ -631,9 +592,6 @@
     "rarity": "raro",
     "icon": "ring",
     "color": "#4ade80",
-    "grants": {
-      "passive": "vitalidad"
-    },
     "desc": "Da la pasiva Vitalidad."
   },
   "pendiente_arcano": {
@@ -642,9 +600,6 @@
     "rarity": "epico",
     "icon": "ring",
     "color": "#8b5cf6",
-    "grants": {
-      "passive": "mente_arcana"
-    },
     "desc": "Da la pasiva Mente arcana."
   },
   "sello_equilibrio": {
@@ -653,9 +608,6 @@
     "rarity": "epico",
     "icon": "ring",
     "color": "#eab308",
-    "grants": {
-      "passive": "equilibrio"
-    },
     "desc": "Da la pasiva Equilibrio."
   },
   "brasero_vivo": {
@@ -664,9 +616,6 @@
     "rarity": "epico",
     "icon": "staff",
     "color": "#fb923c",
-    "grants": {
-      "passive": "sangre_caliente"
-    },
     "desc": "Da la pasiva Sangre caliente."
   },
   "pelaje": {
@@ -915,7 +864,7 @@
     "icon": "target",
     "color": "#ef4444",
     "noShop": true,
-    "desc": "Sólo la sueltan los jefes. Vuelve a tirar UN prefijo o sufijo que elijas."
+    "desc": "Sólo la sueltan los jefes. Cambia el afijo que elijas por otro del mismo tipo y nunca de peor nivel."
   },
   "corazon_jefe": {
     "name": "Corazón de jefe",
@@ -982,5 +931,21 @@
     "color": "#ff8a3d",
     "noShop": true,
     "desc": "Sólo lo sueltan los jefes. Cambia la pasiva exclusiva de un legendario por otra al azar."
+  },
+  "piedra_cambio": {
+    "name": "Piedra de cambio",
+    "category": "forja",
+    "rarity": "raro",
+    "icon": "refresh",
+    "color": "#2dd4bf",
+    "desc": "Cambia el prefijo o sufijo que elijas por otro distinto del mismo tipo (con su nivel al azar)."
+  },
+  "piedra_nucleo": {
+    "name": "Piedra de núcleo",
+    "category": "forja",
+    "rarity": "raro",
+    "icon": "refresh",
+    "color": "#f472b6",
+    "desc": "Vuelve a tirar el valor del atributo principal dentro de su rango (puede salir más alto o más bajo). No toca nada más."
   }
 }

@@ -57,6 +57,46 @@ module.exports = {
       check(r.heart && r.used && !r.noStone && r.salvage, 'corazón, consumo de piedras o desguace: ' + JSON.stringify(r));
     }),
   }, {
+    name: 'v4.81: más afijos por familia, un exclusivo por tipo de objeto y sus efectos en combate',
+    views: ['desktop'],
+    run: (browser, view) => play(browser, view, async (p) => {
+      const r = await p.evaluate(() => {
+        const D = DK.data, G = DK.gear, B = DK.battle, out = { bad: [] };
+        // Cada tipo tiene su exclusivo y nadie más lo puede llevar
+        Object.entries(D.gear.typeOf).forEach(([base, ty]) => {
+          const ok = G.allowedAffixes(base), ex = D.gear.typeAffix[ty];
+          if (!ok.includes(ex)) out.bad.push(base + ' sin su exclusivo');
+          if (ok.some((id) => D.gear.affixes[id].only && D.gear.affixes[id].only !== ty)) out.bad.push(base + ' con un exclusivo ajeno');
+          if (ok.filter((id) => D.gear.affixes[id].kind === 'prefix').length < 6 || ok.filter((id) => D.gear.affixes[id].kind === 'suffix').length < 6) out.bad.push(base + ' con pocos afijos');
+        });
+        out.total = Object.keys(D.gear.affixes).length;
+        // Todos los afijos tienen texto y nombre en los dos idiomas (el check ya lo mira; aquí, que se pinten)
+        out.text = Object.keys(D.gear.affixes).every((id) => !/gear\.affix/.test(DK.t(`gear.affix.${id}.text`, { v: 1 })));
+        // Efectos: perforar baja la defensa, físico sube el daño, martillo sube la ruptura, báculo abarata el maná
+        const st = B.start('pradera', DK.party.active()[0].uid, {}), A = B.get(st, 'ally'), mv = D.moves[DK.daskai.battleMoves(A).find((m) => D.moves[m].power > 0)];
+        const f0 = B.factors(st, 'ally', mv), slot = (aff) => { const x = G.create('martillo_tierra', { rarity: 'magico', ilvl: 70 }); x.affixes = aff.map((id) => ({ id, t: 5, r: 1 })); return x; };
+        A.equip = [slot(['p_pierce', 's_feast']), slot(mv.kind === 'fisico' ? ['p_phys', 'p_crush'] : ['p_mag', 'p_crush'])];
+        const f1 = B.factors(st, 'ally', mv);
+        out.pierce = f1.def < f0.def; out.dmg = f1.mult > f0.mult;
+        out.brk = !st.breakMax || true;
+        const fx = G.fxOf(A); out.fx = ['pierce', 'killHeal', 'breakPow'].every((k) => fx[k] > 0);
+        const magic = Object.keys(D.moves).find((id) => D.moves[id].kind === 'magico' && D.moves[id].mp >= 6);
+        const c0 = B.mpCost(A, magic); A.equip = [slot(['s_wisdom'])]; out.mp = B.mpCost(A, magic) < c0;
+        // v4.82: monedas y experiencia de los combates, precisión y críticos recibidos
+        A.equip = [slot(['s_gold', 's_exp', 'p_sure', 's_critRes'])];
+        const fx2 = G.fxOf(A); out.fx2 = ['goldFind', 'expFind', 'acc', 'critRes'].every((k) => fx2[k] > 0);
+        const f2 = B.factors({ ...st, enemy: st.enemy }, 'enemy', D.moves[DK.daskai.battleMoves(st.enemy)[0]] || mv);
+        A.equip = [null, null];
+        const f3 = B.factors(st, 'enemy', D.moves[DK.daskai.battleMoves(st.enemy)[0]] || mv);
+        out.critRes = f2.critP < f3.critP || f3.critP === 0;
+        A.equip = [null, null];
+        return out;
+      });
+      check(!r.bad.length, 'reglas de afijos: ' + r.bad.slice(0, 6).join(' | '));
+      check(r.total >= 47 && r.text, 'faltan afijos o sus textos: ' + JSON.stringify(r));
+      check(r.pierce && r.dmg && r.fx && r.mp && r.fx2 && r.critRes, 'los afijos nuevos no hacen efecto en combate: ' + JSON.stringify(r));
+    }),
+  }, {
     name: 'Lo equipado sube atributos y da sus efectos en combate; las partidas antiguas se convierten',
     views: ['desktop'],
     run: (browser, view) => play(browser, view, async (p) => {
@@ -153,6 +193,7 @@ module.exports = {
         DK.bag.addHome({ piedra_templado: 1, piedra_divina: 1 });
         const x = DK.gear.gain('orbe_solar', { rarity: 'raro', ilvl: 80 });
         x.affixes.forEach((a) => (a.t = 1));
+        DK.settings.set('confirmForge', false);
         DK.router.reset('craft', { tab: 'forge', fp: x.uid });
         return x.uid;
       });
@@ -160,10 +201,148 @@ module.exports = {
       check(!(await overflowX(p)), 'la forja se sale de la pantalla');
       const r0 = await p.evaluate(() => ({ pips: document.querySelectorAll('.fb-pips i').length, pool: document.querySelectorAll('.fb-pool-row').length, temperOff: [...document.querySelectorAll('.fs-row')].find((b) => /templado/i.test(b.textContent)).disabled }));
       check(r0.pips === 4 && r0.pool > 0 && r0.temperOff, 'faltan huecos, afijos posibles o el templado debería pedir un afijo: ' + JSON.stringify(r0));
-      await p.evaluate(() => document.querySelector('.fb-mesa button.gt-affix').click()); await sleep(300);
-      await p.evaluate(() => [...document.querySelectorAll('.fs-row')].find((b) => /templado/i.test(b.textContent)).click()); await sleep(400);
+      await p.evaluate(() => document.querySelector('.fb-mesa button.gt-affix:not(.empty)').click()); await sleep(300);
+      // v4.79: el afijo elegido abre su barra de acciones (cambiar, templar, sellar)
+      const bar = await p.evaluate(() => [...document.querySelectorAll('.fa-bar .fa-act')].map((b) => b.textContent));
+      check(bar.length >= 3, 'falta la barra de acciones del afijo: ' + bar.join('|'));
+      await p.evaluate(() => [...document.querySelectorAll('.fa-act')].find((b) => /templ/i.test(b.textContent)).click()); await sleep(400);
+      // El historial está oculto hasta pulsar su enlace
+      const h0 = await p.evaluate(() => document.querySelectorAll('.fb-hist-list li').length);
+      await p.evaluate(() => document.querySelector('.fb-histlink').click()); await sleep(300);
       const r = await p.evaluate((u) => { const x = DK.gear.find(u).p, i = DK.router.current().params.fsel; return { t: i != null ? x.affixes[i].t : -1, hist: document.querySelectorAll('.fb-hist-list li').length, left: DK.bag.home().piedra_templado || 0 }; }, uid);
-      check(r.t === 2 && r.left === 0 && r.hist === 1, 'el templado desde la forja no sube el afijo elegido: ' + JSON.stringify(r));
+      check(h0 === 0 && r.t === 2 && r.left === 0 && r.hist === 1, 'el templado desde la forja no sube el afijo elegido o el historial no está oculto: ' + JSON.stringify(Object.assign({ h0 }, r)));
+    }),
+  }, {
+    name: 'Forja v4.79: sin pieza al entrar, filtros del selector, añadir prefijo/sufijo en un hueco y cambiar un solo afijo',
+    views: ['desktop', 'mobile'],
+    run: (browser, view) => play(browser, view, async (p) => {
+      const uid = await p.evaluate(() => {
+        DK.bag.addHome({ piedra_aumento: 2, piedra_cambio: 2 });
+        DK.gear.gain('orbe_solar', { rarity: 'raro', ilvl: 40 });
+        const x = DK.gear.gain('colmillo_umbrio', { rarity: 'magico', ilvl: 40 });
+        x.affixes = x.affixes.slice(0, 1);
+        DK.settings.set('confirmForge', false);
+        DK.router.reset('craft', { tab: 'forge' });
+        return x.uid;
+      });
+      await p.waitForSelector('.fp-row', { state: 'attached', timeout: 5000 });
+      const r0 = await p.evaluate(() => ({ mesa: !!document.querySelector('.fb-mesa'), rows: document.querySelectorAll('.fp-row').length, hint: !document.querySelector('.fb-pickhint') && !!document.querySelector('.fp-bar .fp-q') }));
+      check(!r0.mesa && r0.rows >= 2 && r0.hint, 'al entrar no debería haber pieza elegida: ' + JSON.stringify(r0));
+      check(!(await overflowX(p)), 'el selector de la forja se sale de la pantalla');
+      // Filtro por atributo principal: ataque → la daga sí, el orbe no
+      await p.evaluate(() => [...document.querySelectorAll('.fp-chip.st')].find((b) => b.getAttribute('aria-label') === DK.tr('stats', DK.data.stats.atk)).click()); await sleep(300);
+      const names = await p.evaluate(() => [...document.querySelectorAll('.fp-row')].map((b) => b.querySelector('.fp-name').textContent));
+      const exp = await p.evaluate((u) => DK.gear.name(DK.gear.find(u).p), uid);
+      check(names.includes(exp) && names.every((n) => n !== ''), 'el filtro por atributo no deja la daga: ' + names.join('|'));
+      await p.evaluate((n) => [...document.querySelectorAll('.fp-row')].find((b) => b.querySelector('.fp-name').textContent === n).click(), exp); await sleep(400);
+      // Hueco libre: añade el tipo elegido
+      const kind = await p.evaluate((u) => { const x = DK.gear.find(u).p; return DK.gear.kindOf(x.affixes[0]) === 'prefix' ? 'suffix' : 'prefix'; }, uid);
+      await p.evaluate((k) => document.querySelector('.gt-affix.empty.' + k).click(), kind); await sleep(400);
+      const r1 = await p.evaluate((u) => { const x = DK.gear.find(u).p; return { n: x.affixes.length, k: DK.gear.kindOf(x.affixes[1]), left: DK.bag.home().piedra_aumento || 0, empty: document.querySelectorAll('.gt-affix.empty').length }; }, uid);
+      check(r1.n === 2 && r1.k === kind && r1.left === 1 && r1.empty === 0, 'no se añade el afijo del tipo elegido: ' + JSON.stringify(r1));
+      // Cambiar sólo uno: el otro se queda igual
+      const before = await p.evaluate((u) => JSON.stringify(DK.gear.find(u).p.affixes), uid);
+      await p.evaluate(() => document.querySelector('.fb-mesa button.gt-affix:not(.empty)').click()); await sleep(300);
+      await p.evaluate(() => [...document.querySelectorAll('.fa-act')].find((b) => /cambi/i.test(b.textContent)).click()); await sleep(400);
+      const r2 = await p.evaluate(([u, b]) => { const x = DK.gear.find(u).p, old = JSON.parse(b), i = DK.router.current().params.fsel; const o = 1 - i;
+        return { i, same: JSON.stringify(x.affixes[o]) === JSON.stringify(old[o]), changed: x.affixes[i].id !== old[i].id, kind: DK.gear.kindOf(x.affixes[i]) === DK.gear.kindOf(old[i]), left: DK.bag.home().piedra_cambio }; }, [uid, before]);
+      check(r2.i != null && r2.same && r2.changed && r2.kind && r2.left === 1, 'la piedra de cambio debería cambiar sólo el afijo elegido: ' + JSON.stringify(r2));
+      // v4.80: el último cambio se ve al lado del historial (oculto hasta pulsarlo)
+      const lastHidden = await p.evaluate(() => !!document.querySelector('.fb-lastlink') && !document.querySelector('.fb-before'));
+      await p.evaluate(() => document.querySelector('.fb-lastlink').click()); await sleep(300);
+      check(lastHidden && (await p.evaluate(() => !!document.querySelector('.fb-before .gear-tip'))), 'falta el «último cambio» discreto junto al historial');
+      // v4.80: piedra de núcleo: sólo re-tira el atributo principal, dentro de su rango
+      await p.evaluate(() => { DK.bag.addHome({ piedra_nucleo: 3 }); DK.router.current().params.fsel = null; DK.router.reset('craft', Object.assign({}, DK.router.current().params)); }); await sleep(400);
+      const r3 = await p.evaluate(async (u) => {
+        const x = DK.gear.find(u).p, G = DK.gear, before = JSON.stringify({ o: x.attrs.slice(1), a: x.affixes }), m = x.attrs[0], seen = new Set();
+        for (let i = 0; i < 3; i++) { document.querySelector('.gt-mainroll').click(); await new Promise((r) => setTimeout(r, 150)); seen.add(m.r); }
+        const [lo, hi] = G.attrRange(x, m), v = G.attrValue(x, m);
+        return { rest: JSON.stringify({ o: x.attrs.slice(1), a: x.affixes }) === before, inRange: v >= lo && v <= hi && lo < hi, varied: seen.size > 1, left: DK.bag.home().piedra_nucleo || 0 };
+      }, uid);
+      check(r3.rest && r3.inRange && r3.varied && r3.left === 0, 'la piedra de núcleo debería re-tirar sólo el principal dentro de su rango: ' + JSON.stringify(r3));
+    }),
+  }, {
+    name: 'Forja v4.84: confirmar con vista previa, calidad, bloqueo, tirar hasta conseguirlo, desguace en lote y fabricar mágico (sin raros)',
+    views: ['desktop', 'mobile'],
+    run: (browser, view) => play(browser, view, async (p) => {
+      const uid = await p.evaluate(() => {
+        DK.settings.set('confirmForge', true);
+        DK.bag.addHome({ piedra_caos: 30, piedra_divina: 1 });
+        const x = DK.gear.gain('garra_afilada', { rarity: 'raro', ilvl: 60 });
+        DK.router.reset('craft', { tab: 'forge', fp: x.uid });
+        return x.uid;
+      });
+      await p.waitForSelector('.fs-row', { state: 'attached', timeout: 5000 });
+      // Pulsar una piedra NO la usa: sale la confirmación con lo que cambiará (resaltado en la ficha)
+      const before = await p.evaluate((u) => JSON.stringify(DK.gear.find(u).p.affixes), uid);
+      await p.evaluate(() => [...document.querySelectorAll('.fs-row')].find((b) => /divina/i.test(b.textContent)).click()); await sleep(300);
+      const c = await p.evaluate(([u, b]) => ({ same: JSON.stringify(DK.gear.find(u).p.affixes) === b, box: !!document.querySelector('.fb-confirm'), will: document.querySelectorAll('.gear-tip .will').length, lines: document.querySelectorAll('.fbc-lines li').length }), [uid, before]);
+      check(c.same && c.box && c.will > 0 && c.lines > 0, 'pulsar una piedra debería pedir confirmación con vista previa: ' + JSON.stringify(c));
+      await p.evaluate(() => document.querySelector('.fbc-ok').click()); await sleep(400);
+      const used = await p.evaluate(() => ({ left: DK.bag.home().piedra_divina || 0, box: !!document.querySelector('.fb-confirm') }));
+      check(used.left === 0 && !used.box, 'confirmar debería usar la piedra: ' + JSON.stringify(used));
+      // Calidad y bloqueo
+      const q = await p.evaluate((u) => { const x = DK.gear.find(u).p, q = DK.gear.quality(x); DK.gear.toggleLock(u); return { q, badge: !!document.querySelector('.gear-tip .gq'), salv: DK.gear.salvage(u).ok }; }, uid);
+      check(q.q.score >= 0 && q.q.score <= 100 && /[SABCD]/.test(q.q.grade) && q.badge && !q.salv, 'calidad o bloqueo mal: ' + JSON.stringify(q));
+      // Tirar hasta conseguirlo (con el sistema directamente)
+      const u = await p.evaluate((u) => { const x = DK.gear.find(u).p; const want = DK.gear.affixPool(x).filter((a) => a.kind === 'suffix').map((a) => a.id).slice(0, 2); const r = DK.gear.rollUntil(u, want, 25); return { ok: r.ok, n: r.n, hit: r.hit, has: x.affixes.some((a) => want.includes(a.id)), left: DK.bag.home().piedra_caos }; }, uid);
+      check(u.ok && u.n >= 1 && u.n <= 25 && u.hit === u.has && u.left === 30 - u.n, 'tirar hasta conseguirlo: ' + JSON.stringify(u));
+      // Desguace en lote: respeta bloqueadas y rarezas
+      const b = await p.evaluate(() => {
+        const G = DK.gear; G.home().length = 0;
+        const n1 = G.gain('garra_afilada', { rarity: 'normal', home: true }), n2 = G.gain('garra_afilada', { rarity: 'magico', home: true }), n3 = G.gain('garra_afilada', { rarity: 'raro', home: true });
+        const n4 = G.gain('garra_afilada', { rarity: 'normal', home: true }); G.toggleLock(n4.uid);
+        const f0 = DK.bag.home().fragmento_forja || 0, r = G.salvageMany(['normal', 'magico']);
+        return { n: r.n, left: G.home().map((x) => x.uid).sort().join() === [n3.uid, n4.uid].sort().join(), f: (DK.bag.home().fragmento_forja || 0) - f0 };
+      });
+      check(b.n === 2 && b.left && b.f > 0, 'desguace en lote: ' + JSON.stringify(b));
+      // Fabricar: normal o mágica (con fragmentos), nunca rara; las fabricadas no suben a rara
+      const m = await p.evaluate(() => {
+        const r = DK.data.recipes.find((x) => x.result === 'garra_afilada');
+        DK.bag.addHome({ fragmento_garra: 6, hilo: 2, fragmento_forja: DK.gear.magicCost, piedra_regia: 1 });
+        const ok = DK.crafting.craft(r, 1, { magic: true });
+        const x = DK.gear.home().filter((y) => y.base === 'garra_afilada' && y.cf).pop();
+        // v4.85: las normales, sólo afijos básicos y como mucho N2; las mágicas, todo y hasta N4
+        const G = DK.gear, bad = [];
+        for (let i = 0; i < 40; i++) {
+          const n = G.create('garra_afilada', { rarity: 'normal', ilvl: 80 }), mg = G.create('garra_afilada', { rarity: 'magico', ilvl: 80 });
+          if (n.affixes.some((a) => !DK.data.gear.basicAffixes.includes(a.id) || a.t > 2)) bad.push('normal');
+          if (mg.affixes.some((a) => a.t > 4)) bad.push('magico');
+        }
+        const more = G.allowedAffixes('garra_afilada', 'magico').length > G.allowedAffixes('garra_afilada', 'normal').length;
+        return { ok, rar: x && x.rarity, cf: x && x.cf, regia: x ? !!DK.gear.cannotForge(x, 'piedra_regia') : null, bad: bad.slice(0, 3), more, cost: DK.gear.magicCost };
+      });
+      check(m.ok && m.rar === 'magico' && m.cf && m.regia, 'fabricar mágico o el tope de las fabricadas: ' + JSON.stringify(m));
+      check(!m.bad.length && m.more && m.cost >= 10, 'normales y mágicas deberían diferenciarse (pool, tier y coste): ' + JSON.stringify(m));
+      check(!(await overflowX(p)), 'la forja se sale de la pantalla');
+    }),
+  }, {
+    name: 'Cada pieza lleva su atributo principal y sólo afijos de su familia; ningún objeto da ataques ni pasivas',
+    views: ['desktop'],
+    run: (browser, view) => play(browser, view, async (p) => {
+      const r = await p.evaluate(() => {
+        const D = DK.data, G = DK.gear, bad = [];
+        Object.keys(D.items).filter((id) => D.items[id].category === 'equipo').forEach((base) => {
+          if (D.items[base].grants) bad.push(base + ' concede algo');
+          const main = G.primaryOf(base), ok = G.allowedAffixes(base);
+          for (let i = 0; i < 4; i++) {
+            const x = G.create(base, { rarity: D.gear.rarityOrder[i], ilvl: 70 });
+            if (!x.attrs.length || x.attrs[0].k !== main) bad.push(base + ' sin principal');
+            if (x.affixes.some((a) => !ok.includes(a.id))) bad.push(base + ' afijo ajeno');
+          }
+        });
+        // Dagas → ataque; espadas → ataque mágico
+        const kinds = { daga: G.primaryOf('colmillo_umbrio'), espada: G.primaryOf('filo_vacio') };
+        // Una pieza antigua sin principal ni afijos de su familia se arregla
+        const s = { gearV: 1, gear: [{ uid: 'x1', base: 'colmillo_umbrio', rarity: 'magico', ilvl: 20, attrs: [{ k: 'hp', r: 0.5 }, { k: 'def', r: 0.5 }, { k: 'mp', r: 0.5 }, { k: 'spd', r: 0.5 }], affixes: [{ id: 's_guard', t: 1, r: 0.5 }], v: 0 }], party: [] };
+        G.migrate(s);
+        const m = s.gear[0];
+        return { bad: bad.slice(0, 6), kinds, mig: m.attrs[0].k === 'atk' && m.attrs.length <= 4 && G.allowedAffixes('colmillo_umbrio').includes(m.affixes[0].id) && s.gearV === 2,
+          moves: DK.daskai.grantedMoves ? DK.daskai.grantedMoves(DK.party.leader()).length : 0 };
+      });
+      check(!r.bad.length, 'piezas fuera de las reglas: ' + r.bad.join(' | '));
+      check(r.kinds.daga === 'atk' && r.kinds.espada === 'matk', 'las dagas deberían dar ataque y las espadas ataque mágico: ' + JSON.stringify(r.kinds));
+      check(r.mig, 'las piezas antiguas no se arreglan al cargar');
     }),
   }],
 };

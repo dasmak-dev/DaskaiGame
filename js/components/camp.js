@@ -215,7 +215,7 @@
     { id: 'tent', sprite: 'tent', screen: 'inventory', nav: 'inventory', x: 16, y: 57, xm: 15, ym: 57, xs: 20, ys: 73, label: () => t('scene.tent') },
     { id: 'anvil', sprite: 'anvil', screen: 'craft', nav: 'craft', x: 83, y: 71, xm: 84, ym: 71, xs: 84, ys: 74, label: () => t('scene.anvil') },
     { id: 'fire', sprite: 'fire', screen: 'team', nav: 'team', x: 49, y: 82, xm: 48, ym: 82, xs: 52, ys: 85, label: () => t('scene.fire'), fire: true },
-    { id: 'lectern', sprite: 'lectern', screen: 'codex', nav: 'codex', x: 9, y: 94, xm: 11, ym: 95, xs: 13, ys: 95, label: () => t('scene.lectern') },
+    { id: 'lectern', sprite: 'lectern', screen: 'codex', nav: 'codex', x: 10, y: 92, xm: 12, ym: 93, xs: 16, ys: 93, label: () => t('scene.lectern') },
     { id: 'dummy', sprite: 'dummy', screen: 'training', nav: 'training', x: 92, y: 93, xm: 91, ym: 95, xs: 85, ys: 96, label: () => t('scene.dummy'), unlock: 'training' },
   ];
 
@@ -358,7 +358,11 @@
       const locked = sp.unlock && !DK.unlocks.has(sp.unlock);
       const it = nav[sp.nav];
       const badge = !locked && it && it.badge ? it.badge() : '';
-      const art = animArt(sp.sprite, scale) || pixSvg(SPRITES[sp.sprite](), scale);
+      const art0 = animArt(sp.sprite, scale) || pixSvg(SPRITES[sp.sprite](), scale);
+      // v4.80: el códice es pixel art animado por fotogramas (campArt.js); aquí sólo un halo suave y las chispas que suben
+      const art = sp.id === 'lectern' ? h('span', { class: 'codex-wrap' }, h('i', { class: 'codex-halo', 'aria-hidden': 'true' }), art0,
+        h('span', { class: 'codex-sparks', 'aria-hidden': 'true' },
+        Array.from({ length: 8 }, (_, i) => h('i', { class: i % 3 === 0 ? 'rune' : i % 3 === 1 ? 'gold' : '', style: { left: (14 + ((i * 37) % 72)) + '%', animationDelay: (i * 0.5).toFixed(2) + 's', animationDuration: (2.8 + (i % 4) * 0.5).toFixed(2) + 's', '--dx': (((i * 23) % 30) - 15) + 'px' } }, i % 3 === 0 ? 'ᚱᚨᛟᛞ'[i % 4] : '')))) : art0;
       const label = typeof sp.label === 'function' ? sp.label() : sp.label;
       return h('button', {
         class: `camp-spot s-${sp.id}` + (locked ? ' locked' : '') + (sp.main ? ' main' : ''), type: 'button',
@@ -384,10 +388,13 @@
     // Ascuas que suben de la hoguera, niebla baja y antorchas
     const embers = h('div', { class: 'camp-embers', 'aria-hidden': 'true', style: { left: fx + '%', top: fy + '%' } }, Array.from({ length: 16 }, (_, i) => h('i', { style: { '--dx': ((i * 37) % 60 - 30) + 'px', left: ((i * 13) % 40 - 20) + 'px', animationDelay: (i * 0.35) + 's', animationDuration: (2.6 + (i % 5) * 0.5) + 's' } })));
     const fog = h('div', { class: 'camp-fog', 'aria-hidden': 'true' }, h('i'), h('i'));
+    // v4.78: la luz de la hoguera parpadea en el suelo y motas de polvo flotan despacio
+    const firelight = h('div', { class: 'camp-firelight', 'aria-hidden': 'true', style: { left: fx + '%', top: fy + '%' } });
+    const motes = h('div', { class: 'camp-motes', 'aria-hidden': 'true' }, Array.from({ length: 14 }, (_, i) => h('i', { style: { left: ((i * 53) % 96 + 2) + '%', top: (40 + (i * 29) % 55) + '%', animationDelay: (i * 1.3).toFixed(1) + 's', animationDuration: (9 + (i % 5) * 2.5) + 's' } })));
     const torches = (narrow ? [[40, 62], [96, 64]] : mid ? [[29, 56], [79, 52], [3, 78], [97, 78]] : [[31, 62], [74, 62], [3, 78], [97, 78]]).map(([x, y], i) =>
       h('span', { class: 'camp-torch', 'aria-hidden': 'true', style: { left: x + '%', top: y + '%' } }, animArt('torch', scale * 0.8, i * 0.13) || pixSvg(SPRITES.torch(0), scale * 0.8)));
     return h('section', { class: 'camp-scene grim tod-' + tod, 'aria-label': t('scene.title') },
-      backdrop(tod, narrow), fog, ...torches, embers,
+      backdrop(tod, narrow), firelight, fog, motes, ...torches, embers,
       h('div', { class: 'camp-greet' }, h('span', { class: 'camp-greet-text' }, t('scene.greet.' + tod))),
       ...team, ...spots);
   };

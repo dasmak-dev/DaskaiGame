@@ -28,15 +28,14 @@
 .camp-anim .fr-top { position: absolute; left: 0; top: 0; }
 .a-fire { --dur: .8s; } .a-torch { --dur: .42s; } .a-portal { --dur: 1.1s; }
 .a-tent { --dur: 1.1s; } .a-anvil { --dur: 1.6s; } .a-dummy { --dur: 2.4s; }
-.a-lectern { --dur: 2.6s; } .a-board { --dur: 2.2s; }
+.a-lectern { --dur: 3.6s; } .a-board { --dur: 2.2s; }
 
 /* ---------- 2. Lugares del campamento ---------- */
 .s-tent .camp-anim { transform-origin: 50% 100%; animation: tentSway 5s ease-in-out infinite; }
 @keyframes tentSway { 0%, 100% { transform: skewX(0); } 50% { transform: skewX(-1.2deg); } }
 .s-dummy:hover .camp-anim, .s-dummy.is-pressed .camp-anim { transform-origin: 50% 100%; animation: dummyHit .6s ease-out; }
 @keyframes dummyHit { 20% { transform: rotate(-7deg); } 45% { transform: rotate(5deg); } 70% { transform: rotate(-2deg); } }
-.s-lectern .camp-anim { animation: lecternGlow 3s ease-in-out infinite; }
-@keyframes lecternGlow { 50% { filter: drop-shadow(0 0 6px rgba(167, 139, 250, .55)); } }
+/* v4.78: el brillo del códice está en grim.css (codexFloatGlow) */
 .s-anvil:hover .camp-anim { animation: anvilClang .35s ease-out; }
 @keyframes anvilClang { 40% { transform: translateY(1px) scaleY(.97); } }
 .s-board:hover .camp-anim { animation: boardRustle .5s ease-in-out; }

@@ -20,6 +20,9 @@
   def('panacea', 1, { antidoto: 1, balsamo: 1, polvo_brillante: 1 });
   def('cristal_vinculo', 1, { piedra_runica: 1, polvo_brillante: 2 });
   def('cristal_mayor', 1, { cristal_vinculo: 2, nucleo_arcano: 1 });
+  def('hiperpocion', 1, { superpocion: 2, nucleo_arcano: 1 });
+  def('supereter', 1, { eter: 3, polvo_brillante: 1, piedra_runica: 1 });
+  def('pluma_fenix', 1, { pluma: 6, brasa: 4, lagrima_estelar: 1 });
   def('elixir', 1, { lagrima_estelar: 1, superpocion: 2 });
 
   // Mejora (experiencia)
@@ -64,14 +67,16 @@
   def('piedra_alteracion', 1, { fragmento_forja: 2, hilo: 1 });
   def('piedra_purga', 1, { fragmento_forja: 2, gota: 1 });
   def('piedra_regia', 1, { fragmento_forja: 8, nucleo_arcano: 1 });
-  def('piedra_caos', 1, { fragmento_forja: 10, esencia_sombria: 2, obsidiana: 1 });
+  def('piedra_caos', 1, { fragmento_forja: 8, esencia_sombria: 1, obsidiana: 1 });
   def('piedra_divina', 1, { fragmento_forja: 15, lagrima_estelar: 1 });
   def('piedra_aumento', 1, { fragmento_forja: 3, polvo_brillante: 1 });
+  def('piedra_nucleo', 1, { fragmento_forja: 4, polvo_brillante: 1, pelaje: 1 });
+  def('piedra_cambio', 1, { fragmento_forja: 5, gota: 1, polvo_brillante: 1 });
   def('piedra_alquimia', 1, { fragmento_forja: 12, nucleo_arcano: 1, polvo_brillante: 2 });
   def('piedra_anulacion', 1, { fragmento_forja: 6, esencia_sombria: 1 });
   def('piedra_templado', 1, { fragmento_forja: 14, obsidiana: 2 });
   def('sello_forja', 1, { fragmento_forja: 10, piedra_runica: 2 });
-  def('piedra_exaltacion', 1, { fragmento_forja: 30, lagrima_estelar: 2 });
+  def('piedra_exaltacion', 1, { fragmento_forja: 20, lagrima_estelar: 1 });
 
   // Equipamiento de atributos
   def('garra_afilada', 1, { fragmento_garra: 3, hilo: 1 });

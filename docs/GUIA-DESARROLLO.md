@@ -357,6 +357,115 @@ Se carga la última y sólo sobrescribe: paleta (piedra oscura, bronce, oro `--g
 - **Expedición:** al entrar en el mapa, el equipo, la mochila o un combate durante una expedición, `#zone-backdrop` (creado en `screens/expedition.js` con `screen:enter`) pinta detrás de todo la escena de la zona actual, oscurecida; `body.in-exp`.
 - **Combate:** la arena usa la escena de la zona (`components/scenes.js`, ahora con árboles muertos, ruinas, tumbas, cristales o tentáculos según la zona) y los **jefes tienen su propio fondo**: `DK.scenes.bossScene(zona, secreto)` → `boss_<escena>` (menhires bajo luna roja, bosque muerto, naufragio con tormenta, bosque de cristales, forja de lava, santuario con estatua, fauces del abismo, ruinas entre rayos) y `boss_secret` (cripta) para los jefes ocultos.
 
+### Cambios de la v4.85 — Normal frente a mágico, piedras más raras, vista previa compacta y calidad explicada
+
+- **Normal ≠ mágico** (`G.rarities`): los normales llevan `basicOnly` (sólo los 16 afijos de `G.basicAffixes`, sin exclusivo), `maxTier: 2` y `power: 0.85` (atributos más bajos); los mágicos, todo el pool de su tipo y `maxTier: 4`; raros y legendarios, hasta N5. `allowedAffixes(base, rarity)`, `maxTierOf(p)` (rareza + nivel de objeto) se usan en `rollAffix`, `rollTier(ilvl, rnd, cap)`, `affixPool`, `tierChances` y `quality`; el templado avisa (`gear.why.rarityTier`) si la rareza no deja subir más.
+- **Fabricar mágico** cuesta ahora 12 fragmentos por pieza (`DK.gear.magicCost`).
+- **Piedras más raras**: todas las probabilidades de piedras de `G.drops` bajan (peleas ×0,18, élites ×0,24, jefes ×0,42 respecto a la v4.84); los fragmentos no cambian. Unas 2 piedras por expedición de media (antes 6-7). El mercader ofrece 1-2 piedras comunes y la rara con un 20%.
+- **Vista previa al fabricar** (`gearPreview(base, rarity)` en `craft.js`): cambia con «Normal / Mágico». Principal con su rango real a su nivel, atributos extra en rejilla de celdas iguales, afijos en dos columnas (prefijos / sufijos) de una línea con el texto entero en el tooltip y los rangos limitados al tier de esa rareza. Sin la línea de pasiva legendaria (lo fabricado no llega a legendario).
+- **Calidad**: el tooltip explica qué mide, por qué importa y un consejo según la nota (`gear.qualityAdvice.S…D`).
+- **Icono del título de Crafteo**: `forgeRune` (antes `craftCog`), también en la hoja del móvil.
+
+### Cambios de la v4.84 — Forja: confirmar con vista previa, calidad, bloqueo, tirar hasta conseguirlo, desguace en lote, fabricar mágico y equilibrio
+
+- **Confirmar con vista previa**: toda acción de la forja (piedras, añadir afijo, barra del afijo, núcleo) pasa por `ask()` y deja la piedra «armada» (`params.farm`). Se ve un panel fijo (`.fb-confirm`) con lo que hará, lo que puede salir con su probabilidad y Cancelar/Confirmar; en la ficha se resaltan con borde discontinuo las filas que van a cambiar (`gearTip({ will })`). `DK.gear.forgePreview(p, stone, o)` → `{ keys, lines, odds }`. Ajuste `confirmForge` (Ajustes y casilla «No volver a preguntar»).
+- **Calidad** `DK.gear.quality(p)` → `{ score 0–100, grade S/A/B/C/D }`: atributos (el principal ×2) y afijos (su tier frente al mejor posible a su nivel ×0.7 + su valor ×0.3). `V.gearQuality(p, { small })` en la ficha y en el selector; orden por calidad.
+- **Bloquear** (`p.lk`, `DK.gear.toggleLock`): no se puede desguazar (ni sola ni en lote). Botón en la forja y en la ficha del inventario; candado en la lista.
+- **Tirar hasta conseguirlo**: en «Afijos que pueden salir» cada afijo tiene una diana para marcarlo (`params.fwant`); el recuadro `.fb-until` elige cuántas piedras como mucho y tira alteración (mágicas) o caos (raras) hasta que sale uno (`DK.gear.rollUntil(uid, ids, max)`, `rerollerFor(p)`).
+- **Desguace en lote** (botón del martillo en la barra del selector): ventana con rarezas (normal y mágico marcadas; raro opcional), sólo piezas sueltas y sin bloquear, con el total de fragmentos (`DK.gear.salvageMany(rarities)`).
+- **Fabricar equipo normal o mágico** (nunca raro): en Crafteo → Equipo se elige «Normal / Mágico»; mágico cuesta `DK.gear.magicCost` (4) fragmentos de forja por pieza (`DK.crafting.craft(r, times, { magic })`, `runPlan(plan, o)`). Las piezas fabricadas llevan `cf: 1` y no pueden pasar a rara (alquimia, regia y corazón de jefe lo rechazan). Los raros salen sólo de las expediciones. Los fragmentos sirven para piedras y para el equipo mágico.
+- **Forja**: fuera el título «Piedras» y la frase de consejo de la columna de piedras.
+- **Equilibrio** (unas 7 peleas, 1,6 élites y 1 jefe por expedición): fragmentos en peleas 0,3 → 0,5 y en élites 0,8 → 1 + 0,5 (≈ 7 por expedición sin contar el desguace); caos 0,015 → 0,03 (peleas) y 0,07 → 0,12 (élites); exaltación en élites 0,015 → 0,03; divina 0,006 → 0,01, templado y sello 0,004 → 0,008 en peleas; corazón de jefe 0,03 → 0,05. Recetas: caos 8 fragmentos + 1 esencia + 1 obsidiana (antes 10 + 2 + 1); exaltación 20 fragmentos + 1 lágrima (antes 30 + 2).
+- Test nuevo en `gear.test.js` (escritorio y móvil) para todo lo anterior; los de la forja anteriores desactivan la confirmación.
+
+### Cambios de la v4.83 — Recetas que faltaban y filtros de la forja más modernos
+
+- **Recetas nuevas** (`recipes.js`): `hiperpocion` (2 superpociones + núcleo arcano), `supereter` (3 éteres + polvo brillante + piedra rúnica) y `pluma_fenix` (6 plumas + 4 brasas + lágrima estelar). Ya salen en Crafteo → Consumibles. El `fragmento_abisal` sigue siendo sólo botín del final del juego.
+- **Forja, selector**: sin título «Tus piezas» ni aviso «Elige una pieza para empezar». Arriba, una barra (`.fp-bar`): buscador en píldora con el número de piezas en el placeholder (`gear.bench.searchN`) y «x/y» cuando hay filtros, segmento Todas/Sueltas/Equipadas y botón de orden que va rotando (rareza → nivel → nombre). Debajo, una sola tira de píldoras (`.fp-chips`, se desliza en horizontal): rarezas con su nombre y número, separador, atributos principales con su icono y «Limpiar». En la columna estrecha (con pieza elegida) las rarezas son sólo el punto de color, la tira se parte en líneas y el orden es sólo el icono.
+- Test: el de la forja v4.79 comprueba que ya no está el aviso y sí el buscador nuevo.
+
+### Cambios de la v4.82 — Icono de runa para Crafteo y diez afijos más
+
+- **Icono de Crafteo**: nuevo `forgeRune` en `icons.js` (gema hexagonal, como las piedras de forja, con una runa de doble flecha). Sustituye al yelmo, que se confundía con la mochila del Inventario.
+- **Los atributos se quedan como atributos** (no se pasan a afijos): son la base de la pieza (el principal con su rango y la piedra de núcleo, la divina, `attrValue` según rareza y nivel), y convertirlos rompería el equilibrio y las partidas guardadas.
+- **10 afijos nuevos** (47 en total), repartidos entre familias (`G.affixPools`):
+  - Prefijos: `p_fast` (+% daño si eres más rápido: `fastDmg`), `p_brave` (rival de más nivel: `underdog`), `p_sure` (+ precisión: `acc`, se suma a `m.acc/100`), `p_weak` (+% al punto débil: `weakDmg`, multiplica junto a `wk`), `p_fresh` (rival con la vida llena: `freshDmg`).
+  - Sufijos: `s_critRes` (resta a la prob. de crítico del rival), `s_critGuard` (-% daño de los críticos recibidos, en `damage`), `s_lastGuard` (-% daño recibido con < 50% vida, en `dmgDown`), `s_gold` y `s_exp` (+% monedas / experiencia del combate, en `rewards` con el equipo del daskai que luchó).
+  - Topes nuevos en `G.caps` (p. ej. `acc` 0.3, `critRes` 0.3, `critGuard` 0.4).
+- Test: el de afijos pide ≥ 47 y comprueba monedas, experiencia, precisión y resistencia a críticos.
+
+### Cambios de la v4.81 — Más afijos, un exclusivo por tipo de objeto y sus efectos en combate
+
+- **37 afijos** (antes 16). Nuevos compartidos (`data/gear.js`): `p_phys` (+% daño físico), `p_mag` (+% daño mágico), `p_pierce` (ignora % de defensa), `p_full` (+% daño con la vida llena), `s_vigor` (% vida), `s_swift` (% velocidad), `s_heal` (+% curación).
+- **Familias más grandes y menos solapadas** (`G.affixPools`): 6-7 prefijos y 6 sufijos por atributo principal (antes 4 + 4). Son superconjuntos de las de la v4.78, así que las piezas viejas no cambian.
+- **Exclusivo de cada tipo** (`G.typeAffix`, afijos con `only`): garra `s_execute` (rival < 35% vida), daga `p_toxic` (rival con estado), martillo `p_crush` (+% ruptura), espada `p_kin` (ataques de su casa), báculo `s_wisdom` (-% maná), orbe `p_surge` (golpes eficaces), escudo `s_endure` (aguanta un golpe mortal con 1 PV, una vez por combate), coraza `p_plate` (-% daño físico), capa `p_veil` (-% daño mágico), amuleto `s_ward` (evita estados), yelmo `s_rage` (< 50% vida), botas `p_ambush` (primer golpe del combate), anillo `s_feast` (cura al derrotar), corona `p_regal` (jefes y élites). `allowedAffixes(base)` = familia + exclusivo de su tipo; el exclusivo pesa el doble al tirar (`affixWeight`).
+- **Combate (`battle.js`)**: `factors` suma los +% de daño condicionales (`dmgUp`) y los -% recibidos (`guard` + `guardPhys`/`guardMag`, tope 80%), y la defensa se multiplica por `1 - pierce`. `breakGain` × (1 + `breakPow`); `mpCost` resta `mpCost` (tope 70% con reliquias); curas × (1 + `healBoost`); `statusRes` puede evitar el estado; `endure` (`st.endured[uid]`), `opener` (`st.opened[side]`) y `killHeal` en `doMove`. Topes nuevos en `G.caps`. Textos de combate: `battle.endure`, `battle.feast`, `battle.warded`.
+- **UI**: los exclusivos llevan estrella dorada y texto en oro (ficha, forja, «Afijos que pueden salir» y vista previa de Crafteo), con el tooltip «Exclusivo de {tipo}».
+- Test nuevo en `gear.test.js`: cada tipo tiene su exclusivo y ninguno ajeno, al menos 6+6 afijos por base, textos, y efectos (perforar, daño físico/mágico, ruptura, maná).
+
+### Cambios de la v4.80 — Códice pixel art con lomo, piedra de núcleo y forja más legible
+
+- **Códice**: vuelve a ser pixel art por fotogramas como la hoguera (`campArt.js`, `lectern`, 12 fotogramas, `--dur: 3.6s` en motion.css). El libro se ve un poco desde delante: canto de las hojas, tapas con esquinas doradas y el **lomo** redondeado con dos nervios dorados asomando por debajo. Fotogramas 0-6: reposo (la runa de la ilustración late); 7-11: una hoja se levanta desde el lomo (proyección: el borde exterior sube `t·L·K·sin θ`), se pone de canto y cae a la izquierda. Se quitan el vaivén y la hoja 3D por CSS (`codex-float`, `codex-page`, `codex-shadow`); quedan un halo que late a pasos y las chispas.
+- **Piedra de núcleo** (`piedra_nucleo`, nueva, rara): vuelve a tirar SÓLO el valor del atributo principal dentro de su rango (puede subir o bajar). Receta: 4 fragmentos + polvo brillante + pelaje; tienda 140; mercaderes y botín de combates y élites. Grupo «Volver a tirar». `DK.gear.attrRange(p, a)` → [mín, máx] a su rareza y nivel.
+- **`V.gearTip`**: el atributo principal enseña su rango «(35–59)» y la opción `onMain(a)` pinta un botón en su fila (en la forja: gema de núcleo y cuántas tienes).
+- **Forja**: el «último cambio» (cómo estaba antes) ya no va bajo la ficha: es un enlace discreto «Último cambio: X» junto a «Historial (n)» al pie (`params.flast`; se abre uno u otro). Selector con iconos y textos más grandes (filas de 48 px, iconos de 30 px, chips de 30 px).
+- Tests: el caso de la forja v4.79 comprueba también el enlace del último cambio y la piedra de núcleo (sólo cambia el principal, dentro de su rango).
+
+### Cambios de la v4.79 — Códice por CSS, icono de yelmo y forja rediseñada
+
+- **Códice del campamento**: el atril (`campArt.js`, `lectern`) es ahora un único fotograma estático (libro abierto) y toda la animación va en CSS (`grim.css`, bloque v4.79): `.codex-float` flota (`codexBob`), `.codex-page` pasa la página en 3D (`codexPage`, rotateY 0 → -180), `.codex-halo` y `.codex-shadow` respiran y las chispas salen del libro. Más pequeño (xs 16 / x 10 en `camp.js`) para que no se salga en el móvil. Respeta el movimiento reducido.
+- **Icono de Crafteo**: nuevo icono `helm` (yelmo) en `icons.js`; la barra de acceso rápido lo usa en vez del engranaje.
+- **Piedra de cambio** (`piedra_cambio`, nueva, rara): cambia SÓLO el afijo elegido por otro distinto del mismo tipo. Se fabrica (5 fragmentos + gota + polvo brillante), la vende la tienda (160) y los mercaderes, y cae en combates y élites. La **esquirla de jefe** ahora nunca baja el nivel (tier) del afijo.
+- **Añadir prefijo o sufijo a elección**: `DK.gear.forge(uid, 'piedra_aumento'|'piedra_exaltacion', { kind: 'prefix'|'suffix' })`; `hasRoom(p, kind)` comprueba el hueco de ese tipo y `adderFor(p)` dice qué piedra añade en esa rareza. Sin `kind` sigue siendo al azar.
+- **`V.gearTip`**: opciones nuevas `addSlot(kind, libres)` (fila de hueco libre «+ Añadir prefijo/sufijo» con la piedra y cuántas tienes) y `selBar` (nodo que se pinta bajo el afijo elegido).
+- **Forja (`forgeBench.js`)**:
+  - Al entrar NO hay pieza elegida: se ve el selector a todo el ancho (cuadrícula) con un aviso «Elige una pieza para empezar». Pulsar la pieza elegida otra vez la suelta.
+  - Selector compacto (`.fp-row`, una línea por pieza: icono, nombre en color de rareza, atributo principal · tipo · nivel, huecos P/S en puntitos y quién la lleva). Filtros: rareza (puntos de color con su número), atributo principal (icono con número), Todas/Sueltas/Equipadas, buscador (nombre, base o tipo) y orden (rareza, nivel, nombre). Cada contador tiene en cuenta los demás filtros. Params: `fgr`, `fst`, `floc`, `fq`, `fsort`.
+  - En el móvil, con pieza elegida, el selector se cambia por un botón «Cambiar de pieza».
+  - Al elegir un afijo aparece debajo una barra (`.fa-bar`) con Cambiar / Esquirla (si tienes) / Templar / Sellar, con su cantidad y el motivo si no se puede.
+  - Historial oculto: sólo un enlace discreto «Historial (n)» al pie (`params.fhist`).
+- Tests: `gear.test.js` cubre la barra de acciones, el historial oculto y un caso nuevo (sin pieza al entrar, filtro por atributo, añadir sufijo/prefijo elegido y cambiar un solo afijo). 107 tests.
+
+### Cambios de la v4.78 — Campamento más vivo, códice-libro, atributo principal del equipo y Crafteo por secciones
+
+- **Campamento** (`components/camp.js`, `components/campArt.js`, `css/grim.css` y `css/motion.css`):
+  - **Códice**: ya sólo es un grimorio que flota y pasa página (`lectern`, 16 fotogramas en lugar de 8, `base` 34).
+    - Tiene tapas de cuero con cantoneras doradas y una ilustración que late.
+    - La hoja se levanta desde el lomo, se curva al pasar y enseña el dorso.
+    - Lleva un marcapáginas que se mece, motas de luz y runas que suben, y la sombra encoge al subir el libro.
+    - Encima, `.codex-sparks` añade 10 chispas violetas y doradas y runas en CSS. Hay fotogramas `n16` y el brillo es `codexFloatGlow` (el `lecternGlow` antiguo de motion.css ya no está).
+  - **Ambiente**:
+    - `.camp-firelight`: luz de la hoguera en el suelo que parpadea de forma irregular (mezcla screen).
+    - `.camp-motes`: 14 motas de polvo que flotan despacio.
+    - Los daskai respiran (`monBreath`: suben y se estiran un poco) y se paran al pasar el ratón.
+    - Las ascuas suben meciéndose.
+  - Todo se apaga con «Reducir animaciones».
+- **El equipo ya no da ataques ni pasivas**:
+  - Se quitó `grants` de las 17 bases que lo tenían (9 ataques y 8 pasivas). Sólo dan atributos, prefijos y sufijos, y la pasiva legendaria si llegan a legendarias.
+- **Atributo principal** (`data/gear.js → primary`, `primaryBoost` 1,3):
+  - Cada tipo tiene uno y toda pieza lo lleva siempre, el primero y más fuerte:
+    - garras, dagas y martillos → ataque;
+    - espadas, báculos y orbes → ataque mágico;
+    - escudos y corazas → defensa;
+    - capas y amuletos → defensa mágica;
+    - yelmos → vida; botas → velocidad; anillos y coronas → maná.
+  - `DK.gear.primaryOf(base)` lo da. `poolOf` lo pone el primero, `fillAttrs` lo añade si falta y `attrValue` lo multiplica. La ficha lo destaca (`.gt-attr.main`, con estrella).
+- **Afijos por familia** (`data/gear.js → affixPools`):
+  - Cada atributo principal tiene 4 prefijos y 4 sufijos propios (las dagas, p. ej.: ataque, daño, velocidad y vida; crítico, daño crítico, robo de vida y esquiva).
+  - `DK.gear.allowedAffixes(base)`; `rollAffix` y `affixPool` sólo usan esos.
+- **Partidas antiguas**: `DK.gear.migrate2` (`gearV` 2) pone el principal el primero (o lo añade, quitando el último si no cabe) y cambia los afijos que no le tocan por otro del mismo tipo de su familia, con el mismo tier y tirada.
+- **Crafteo por secciones**:
+  - La lista sale agrupada con títulos y los filtros son las secciones (`secOf`, `SEC_ORDER`).
+  - **Equipo** va por atributo principal (`stat:<atributo>`), con los tipos debajo del título («Ataque físico · Garras · Dagas · Martillos»).
+  - **Consumibles** van por lo que hacen (`use:<qué>`): curar, maná, estados, vínculo, experiencia, tónicos, especiales y forja (`craft.sec`/`secSub`).
+  - Cada ficha dice qué hace (`.wb-does` → `V.itemDoes`).
+  - El detalle de equipo (`gearPreview`) enseña el principal («siempre»), los atributos que puede tener además y los prefijos y sufijos posibles con su rango, de N1 a N5.
+- **Qué hace cada objeto, en todas partes** (`components/itemViews.js`):
+  - `V.itemDoes(it)` da en pocas palabras el efecto de uso, el de la piedra, el principal del equipo o «material».
+  - `V.itemTipText(it)` → «Poción · Cura 30 PV».
+  - Todo `V.itemIcon` lleva ese tooltip (salvo `{ tip: false }`), y las piezas el suyo: nombre y atributos. En el inventario, las piedras dicen lo que hacen.
+- **Tests**: nuevo «Cada pieza lleva su atributo principal y sólo afijos de su familia; ningún objeto da ataques ni pasivas», que también arregla una pieza antigua.
+
 ### Cambios de la v4.77 — Los 6 junto a la hoguera y fondo que cambia de color
 
 - **Hoguera del campamento** (`components/camp.js`): sólo había sitio para 5 daskai en escritorio y 4 en el móvil, así que con 6 en el equipo faltaban. Ahora `offs` tiene 6 sitios en los dos (dos filas a cada lado del fuego y dos delante), y los sprites son un poco más pequeños (92 px y 58 px en el móvil).

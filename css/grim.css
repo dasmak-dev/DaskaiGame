@@ -2135,3 +2135,316 @@ button.gt-affix:hover { border-color: rgba(255, 255, 255, .12); background: rgba
 .wb-chipset::-webkit-scrollbar { display: none; }
 .wb-chipset > * { flex: none; }
 @media (max-width: 640px) { .wb-filters .wb-chipset { flex: 1 1 100%; } }
+
+/* =============================================================
+ * v4.78 — Campamento más vivo: luz de la hoguera, respiración de los daskai,
+ * ascuas que se mecen, polvo flotante y chispas del códice.
+ * ============================================================= */
+.camp-firelight { position: absolute; z-index: 1; width: 62%; aspect-ratio: 1.9; transform: translate(-50%, -52%); pointer-events: none; mix-blend-mode: screen;
+  background: radial-gradient(ellipse at center, rgba(251, 146, 60, .30), rgba(234, 88, 12, .12) 38%, rgba(185, 28, 28, .05) 58%, transparent 72%);
+  animation: firelight 3.7s ease-in-out infinite; }
+@keyframes firelight { 0%, 100% { opacity: .85; transform: translate(-50%, -52%) scale(1); } 13% { opacity: 1; transform: translate(-50%, -52%) scale(1.04); } 27% { opacity: .78; }
+  41% { opacity: .95; transform: translate(-50%, -52%) scale(1.02); } 58% { opacity: .72; transform: translate(-50%, -52%) scale(.98); } 76% { opacity: 1; transform: translate(-50%, -52%) scale(1.05); } 88% { opacity: .82; } }
+/* Los daskai respiran (suave, con un ligero aplastado al bajar) */
+.camp-mon { animation: monBreath 3.2s cubic-bezier(.45, 0, .55, 1) infinite; transform-origin: 50% 100%; }
+@keyframes monBreath { 0%, 100% { transform: translate(-50%, -100%) scale(1, 1); } 45% { transform: translate(-50%, calc(-100% - 4px)) scale(.985, 1.02); } 55% { transform: translate(-50%, calc(-100% - 4px)) scale(.985, 1.02); } }
+.camp-mon:hover { animation-play-state: paused; filter: drop-shadow(0 0 8px rgba(251, 191, 36, .55)); }
+/* Ascuas que suben meciéndose */
+@keyframes ember { 0% { transform: translate(0, 0) scale(1); opacity: 0; } 10% { opacity: 1; } 45% { transform: translate(calc(var(--dx, 0px) * -.5), -80px) scale(.9); } 100% { transform: translate(var(--dx, 0), -180px) scale(.4); opacity: 0; } }
+/* Polvo que flota despacio */
+.camp-motes { position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
+.camp-motes i { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: rgba(253, 230, 138, .75); box-shadow: 0 0 6px 1px rgba(251, 191, 36, .45); opacity: 0; animation: mote 12s ease-in-out infinite; }
+@keyframes mote { 0% { opacity: 0; transform: translate(0, 0); } 20% { opacity: .8; } 50% { transform: translate(22px, -26px); opacity: .5; } 80% { opacity: .7; } 100% { opacity: 0; transform: translate(-8px, -54px); } }
+/* Códice: chispas violetas y doradas y runas que suben del libro */
+.codex-wrap { position: relative; display: block; }
+.codex-sparks { position: absolute; left: 0; right: 0; bottom: 45%; height: 120%; pointer-events: none; }
+.codex-sparks i { position: absolute; bottom: 0; width: 4px; height: 4px; border-radius: 50%; background: #c4b5fd; box-shadow: 0 0 8px 2px rgba(167, 139, 250, .8); opacity: 0; animation: codexSpark 3s ease-out infinite; font-style: normal; }
+.codex-sparks i.gold { background: #fde68a; box-shadow: 0 0 8px 2px rgba(251, 191, 36, .75); width: 3px; height: 3px; }
+.codex-sparks i.rune { width: auto; height: auto; background: none; box-shadow: none; font: 700 11px/1 serif; color: #ddd6fe; text-shadow: 0 0 6px #8b5cf6, 0 0 12px #7c3aed; }
+@keyframes codexSpark { 0% { transform: translate(0, 0) scale(.6) rotate(0); opacity: 0; } 15% { opacity: 1; } 60% { opacity: .85; } 100% { transform: translate(var(--dx, 0), -70px) scale(1.1) rotate(25deg); opacity: 0; } }
+.a-lectern { --dur: 3.4s; }
+.camp-anim.n16 .fr { animation: cf16 var(--dur) steps(1, end) infinite; animation-delay: calc((var(--i) / 16 - 1) * var(--dur) + var(--d)); }
+@keyframes cf16 { 0% { opacity: 1; } 6.25% { opacity: 0; } 100% { opacity: 0; } }
+.s-lectern .camp-anim { animation: codexFloatGlow 3.6s steps(4, end) infinite; }
+@keyframes codexFloatGlow { 0%, 100% { filter: drop-shadow(0 0 3px rgba(167, 139, 250, .35)); } 50% { filter: drop-shadow(0 0 9px rgba(167, 139, 250, .75)); } }
+:root[data-motion="reduced"] :is(.camp-firelight, .camp-mon, .camp-motes i, .codex-sparks i, .s-lectern .camp-anim) { animation: none; }
+:root[data-motion="reduced"] :is(.camp-motes, .codex-sparks) { display: none; }
+@media (prefers-reduced-motion: reduce) { :is(.camp-firelight, .camp-mon, .camp-motes i, .codex-sparks i, .s-lectern .camp-anim) { animation: none; } :is(.camp-motes, .codex-sparks) { display: none; } }
+
+/* v4.78 — Atributo principal, qué hace cada objeto y secciones de Crafteo */
+.gt-attr.main { grid-column: 1 / -1; padding: 3px 8px; border-radius: 8px; background: color-mix(in srgb, var(--g) 14%, transparent); border: 1px solid color-mix(in srgb, var(--g) 35%, transparent); }
+.gt-attr.main b { font-size: 1.02rem; }
+.gt-main { margin-left: auto; color: var(--g); display: inline-flex; }
+.gear-tip.g-normal .gt-main { color: #e7c27a; }
+.wb-does { display: block; margin-top: 4px; font-size: .72rem; line-height: 1.25; color: var(--muted); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.wb-type-sub { font-weight: 500; font-size: .74rem; color: var(--muted); letter-spacing: 0; }
+.wb-type-h .muted { margin-left: auto; }
+.gp-main { border-color: color-mix(in srgb, var(--gold, #e7c27a) 55%, transparent) !important; color: var(--gold, #e7c27a); }
+.gp-main small { opacity: .7; margin-left: 4px; }
+.gp-affs { margin-top: 6px; }
+.gp-aff b { display: inline-grid; place-items: center; width: 14px; height: 14px; border-radius: 4px; font-size: .58rem; margin-right: 4px; background: rgba(255, 255, 255, .1); }
+.gp-aff.prefix { color: #9fb5ff; }
+.gp-aff.suffix { color: #8fd9ff; }
+:root[data-theme="light"] .gp-aff.prefix { color: #3651c9; }
+:root[data-theme="light"] .gp-aff.suffix { color: #0b6b94; }
+
+/* =============================================================
+ * v4.79 — Códice del campamento con movimiento CSS continuo (fluido):
+ * vaivén suave, hoja que gira en 3D desde el lomo, halo y sombra que respiran.
+ * ============================================================= */
+.codex-wrap { position: relative; display: block; }
+.codex-halo { position: absolute; left: 50%; top: 45%; width: 120%; height: 150%; transform: translate(-50%, -50%); border-radius: 50%; z-index: -1; pointer-events: none;
+  background: radial-gradient(ellipse, rgba(167, 139, 250, .32), rgba(124, 58, 237, .1) 45%, transparent 70%); animation: codexHalo2 3.6s steps(6, end) infinite; }
+@keyframes codexHalo2 { 0%, 100% { opacity: .65; } 50% { opacity: 1; } }
+.codex-sparks { bottom: 40% !important; }
+.a-lectern { --dur: 3.6s; }
+:root[data-motion="reduced"] .codex-halo { animation: none; }
+@media (prefers-reduced-motion: reduce) { .codex-halo { animation: none; } }
+
+/* =============================================================
+ * v4.79 — Forja: selector de piezas compacto con filtros, huecos libres
+ * (añadir prefijo/sufijo), barra de acciones del afijo elegido e historial discreto
+ * ============================================================= */
+.forge-bench.browse { display: flex; flex-direction: column; align-items: stretch; gap: 10px; width: 100%; }
+.forge-bench.browse > * { align-self: stretch; width: auto; max-width: none; }
+.fb-pickhint { display: flex; gap: 10px; align-items: center; margin: 0; padding: 10px 12px; border-radius: 12px; border: 1px dashed color-mix(in srgb, var(--gold, #e7c27a) 45%, transparent); background: color-mix(in srgb, var(--gold, #e7c27a) 6%, transparent); color: var(--gold, #e7c27a); }
+.fb-pickhint span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.fb-pickhint b { color: var(--text); font-size: .92rem; }
+.fb-pickhint small { color: var(--muted); font-size: .78rem; line-height: 1.35; }
+.fb-pieces.browse { position: static; max-height: none; }
+.fb-pieces .fb-h { display: flex; align-items: center; gap: 6px; }
+.fp-sort { margin-left: auto; font: inherit; font-size: .8rem; color: var(--muted); background: transparent; border: 1px solid var(--border); border-radius: 7px; padding: 2px 4px; cursor: pointer; }
+.fp-sort option { background: var(--surface); color: var(--text); }
+.fp-tools { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 6px 0; }
+.fp-tools .fb-search { flex: 1 1 150px; min-width: 0; height: 34px; padding: 4px 10px; font-size: .88rem; margin: 0; }
+.fp-seg { display: inline-flex; flex: 0 0 auto; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.fp-seg button { font: inherit; font-size: .78rem; padding: 6px 9px; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
+.fp-seg button + button { border-left: 1px solid var(--border); }
+.fp-seg button.on { background: color-mix(in srgb, var(--gold, #e7c27a) 16%, transparent); color: var(--text); }
+.fp-filters { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; margin-bottom: 8px; }
+.fp-fg { display: inline-flex; gap: 5px; flex-wrap: wrap; }
+.fp-chip { display: inline-flex; align-items: center; gap: 5px; height: 30px; padding: 0 9px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--muted); font: inherit; font-size: .8rem; cursor: pointer; }
+.fp-chip b { font-weight: 600; }
+.fp-chip .gear-dot { width: 11px; height: 11px; border-radius: 50%; background: var(--g); box-shadow: 0 0 6px color-mix(in srgb, var(--g) 60%, transparent); }
+.fp-chip.zero { opacity: .4; }
+.fp-chip:hover { color: var(--text); border-color: rgba(255, 255, 255, .18); }
+.fp-chip.on { color: var(--text); border-color: var(--g, var(--gold, #e7c27a)); background: color-mix(in srgb, var(--g, var(--gold, #e7c27a)) 14%, transparent); }
+.fp-chip.st.on { --g: var(--gold, #e7c27a); }
+.fp-clear { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; }
+.fp-list { display: flex; flex-direction: column; gap: 2px; }
+.fb-pieces.browse .fp-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 6px 10px; }
+.fb-pieces.browse .fp-slots { margin-left: auto; }
+.fp-row { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 48px; padding: 4px 10px 4px 6px; border-radius: 9px; border: 1px solid transparent; background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; box-shadow: inset 2px 0 0 var(--g); }
+.fp-row:hover { background: rgba(255, 255, 255, .04); border-color: rgba(255, 255, 255, .08); }
+.fp-row.on { background: color-mix(in srgb, var(--g) 12%, transparent); border-color: color-mix(in srgb, var(--g) 55%, transparent); }
+.fp-ico { flex: 0 0 auto; display: grid; place-items: center; }
+.fp-main { display: flex; flex-direction: column; min-width: 0; flex: 1 1 auto; line-height: 1.2; }
+.fp-name { font-size: .9rem; color: var(--g); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fp-row.g-normal .fp-name { color: var(--text); }
+.fp-sub { display: flex; align-items: center; gap: 5px; color: var(--muted); font-size: .76rem; white-space: nowrap; overflow: hidden; }
+.fp-stat { display: inline-flex; color: var(--gold, #e7c27a); }
+.fp-lv { opacity: .8; }
+.fp-lv::before { content: '·'; margin-right: 5px; }
+.fp-slots { display: flex; flex-direction: column; gap: 3px; flex: 0 0 auto; }
+.fp-slots span { display: flex; gap: 2px; justify-content: flex-end; }
+.fp-slots i { width: 7px; height: 7px; border-radius: 1px; border: 1px solid #6b7fc9; }
+.fp-slots i.s { border-color: #5fb6d9; border-radius: 50%; }
+.fp-slots i.p.on { background: #9fb5ff; border-color: #9fb5ff; }
+.fp-slots i.s.on { background: #8fd9ff; border-color: #8fd9ff; }
+.fp-worn { flex: 0 0 26px; width: 26px; height: 26px; display: grid; place-items: center; }
+.fp-nomatch { padding: 10px 4px; text-align: center; }
+/* Huecos libres dentro de la ficha */
+.gt-affix.empty { flex-direction: row !important; justify-content: flex-start !important; align-items: center !important; min-height: 0 !important; height: auto !important; padding: 3px 6px !important; font-size: .82rem !important; border: 1px dashed rgba(159, 181, 255, .32) !important; color: var(--muted) !important; opacity: .9; }
+.gt-affix.empty.suffix { border-color: rgba(143, 217, 255, .32) !important; }
+.gt-affix.empty .gt-kind { opacity: .55; }
+.gt-affix.empty:not(.off):hover { color: var(--text) !important; background: rgba(255, 255, 255, .05) !important; border-style: solid !important; }
+.gt-affix.empty.off { cursor: not-allowed; opacity: .55; }
+.fa-cost { display: inline-flex; align-items: center; gap: 3px; font-size: .74rem; color: var(--text); }
+.fa-cost.zero { color: #f87171; }
+.fa-cost .item-icon { width: 16px !important; height: 16px !important; }
+/* Barra de acciones bajo el afijo elegido */
+.fa-bar { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin: 2px 0 6px 22px; padding: 5px; border-radius: 9px; background: rgba(0, 0, 0, .22); border: 1px solid color-mix(in srgb, var(--gold, #e7c27a) 35%, transparent); animation: faIn .18s ease-out; }
+@keyframes faIn { from { opacity: 0; transform: translateY(-3px); } }
+:root[data-motion="reduced"] .fa-bar { animation: none; }
+.fa-act { display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 8px 0 4px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font: inherit; font-size: .76rem; cursor: pointer; }
+.fa-act .item-icon { width: 18px !important; height: 18px !important; }
+.fa-act b { font-size: .7rem; color: var(--muted); font-weight: 600; }
+.fa-act b.zero { color: #f87171; }
+.fa-act:not(.off):hover { border-color: var(--gold, #e7c27a); }
+.fa-act.off { opacity: .45; cursor: not-allowed; }
+.fa-act.boss { border-color: color-mix(in srgb, #f59e0b 50%, transparent); }
+.fa-x { margin-left: auto; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
+:root[data-theme="light"] .fa-bar { background: rgba(0, 0, 0, .04); }
+/* Historial discreto */
+.fb-histwrap { margin-top: 10px; }
+.fb-histlink { font-size: .74rem; }
+.fb-histlink[aria-expanded="true"] svg:last-child { transform: rotate(180deg); }
+.fb-histwrap .fb-hist-list { margin-top: 6px; }
+/* Volver al selector (móvil) */
+.fb-back { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; font: inherit; font-size: .8rem; padding: 5px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; margin-bottom: 8px; }
+@media (max-width: 760px) {
+  .fb-pieces.browse .fp-list { grid-template-columns: 1fr; }
+  .fp-seg button { padding: 5px 6px; }
+  .fa-bar { margin-left: 0; }
+  .fa-act { padding: 0 6px 0 3px; }
+}
+
+/* v4.80 — forja: principal re-tirable, último cambio discreto junto al historial, iconos más grandes */
+.fp-ico svg, .fp-ico .item-icon { width: 30px !important; height: 30px !important; }
+.fb-pieces:not(.browse) .fp-ico svg, .fb-pieces:not(.browse) .fp-ico .item-icon { width: 28px !important; height: 28px !important; }
+.fb-pickhint svg { width: 20px; height: 20px; }
+.fb-pickhint b { font-size: 1rem; }
+.fb-pickhint small { font-size: .84rem; }
+.gt-mainroll { margin-left: auto; display: inline-flex; align-items: center; gap: 3px; height: 24px; padding: 0 6px 0 3px; border-radius: 7px; border: 1px solid color-mix(in srgb, #f472b6 45%, transparent); background: rgba(0, 0, 0, .2); color: var(--text); font: inherit; font-size: .72rem; cursor: pointer; }
+.gt-mainroll .item-icon { width: 18px !important; height: 18px !important; }
+.gt-mainroll b.zero { color: #f87171; }
+.gt-mainroll:not(.off):hover { border-color: #f472b6; }
+.gt-mainroll.off { opacity: .45; cursor: not-allowed; }
+.fb-foot { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.fb-lastlink[aria-expanded="true"] svg:last-child { transform: rotate(180deg); }
+.fb-before { margin-top: 6px; display: flex; flex-direction: column; gap: 4px; max-width: 380px; opacity: .85; }
+
+/* v4.81 — afijo exclusivo de su tipo de objeto: estrella dorada y un toque de oro */
+.gt-excl { display: inline-flex; color: var(--gold, #e7c27a); filter: drop-shadow(0 0 3px rgba(231, 194, 122, .6)); }
+.gt-affix.excl, .gt-affix.excl .grow { color: #f6d58a !important; }
+:root[data-theme="light"] .gt-affix.excl { color: #8a5a00 !important; }
+.fb-pool-row.excl { color: #f6d58a; }
+.gp-aff.excl { border-color: color-mix(in srgb, var(--gold, #e7c27a) 55%, transparent); color: #f6d58a; }
+.gp-aff.excl svg { color: var(--gold, #e7c27a); }
+
+/* =============================================================
+ * v4.83 — Forja: barra de filtros moderna (buscador con contador, segmento, orden)
+ * y una sola tira de píldoras (rarezas · atributo principal · Limpiar)
+ * ============================================================= */
+.fp-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
+.fp-search { flex: 1 1 200px; min-width: 0; display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 12px; border-radius: 999px;
+  background: rgba(255, 255, 255, .05); border: 1px solid transparent; color: var(--muted); transition: border-color .15s, background .15s; }
+.fp-search:focus-within { border-color: color-mix(in srgb, var(--gold, #e7c27a) 55%, transparent); background: rgba(255, 255, 255, .07); }
+.fp-search input { flex: 1 1 auto; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--text); font: inherit; font-size: .9rem; }
+.fp-search input::-webkit-search-cancel-button { filter: invert(.7); }
+.fp-count { font-size: .74rem; color: var(--gold, #e7c27a); font-variant-numeric: tabular-nums; }
+.fp-bar .fp-seg { height: 38px; border: 0; border-radius: 999px; padding: 3px; gap: 2px; background: rgba(255, 255, 255, .05); }
+.fp-bar .fp-seg button { border: 0 !important; border-radius: 999px; padding: 0 12px; font-size: .8rem; color: var(--muted); }
+.fp-bar .fp-seg button.on { background: color-mix(in srgb, var(--gold, #e7c27a) 22%, transparent); color: var(--text); }
+.fp-sortbtn { display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 14px; border-radius: 999px; border: 0; background: rgba(255, 255, 255, .05); color: var(--muted); font: inherit; font-size: .8rem; cursor: pointer; }
+.fp-sortbtn:hover { color: var(--text); background: rgba(255, 255, 255, .08); }
+.fp-chips { display: flex; gap: 6px; align-items: center; overflow-x: auto; scrollbar-width: none; padding: 2px 0 10px; margin-bottom: 4px; border-bottom: 1px solid rgba(255, 255, 255, .06); }
+.fp-chips::-webkit-scrollbar { display: none; }
+.fp-chips .fp-chip { flex: 0 0 auto; height: 32px; padding: 0 12px; gap: 6px; border-radius: 999px; border: 0; background: rgba(255, 255, 255, .05); font-size: .8rem; }
+.fp-chips .fp-chip b { font-weight: 600; opacity: .65; font-size: .74rem; }
+.fp-chips .fp-chip.on { background: color-mix(in srgb, var(--g, var(--gold, #e7c27a)) 22%, transparent); color: var(--text); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--g, var(--gold, #e7c27a)) 60%, transparent); }
+.fp-chips .fp-chip.on b { opacity: 1; }
+.fp-chips .fp-chip.zero { opacity: .35; }
+.fp-chips .fp-chip:hover { background: rgba(255, 255, 255, .09); }
+.fp-chips .fp-chip.st svg { color: var(--gold, #e7c27a); }
+.fp-div { flex: 0 0 1px; height: 20px; background: rgba(255, 255, 255, .12); margin: 0 4px; }
+.fp-chips .fp-clear { flex: 0 0 auto; width: auto; height: 32px; padding: 0 12px; gap: 5px; display: inline-flex; align-items: center; border-radius: 999px; border: 0; background: transparent; color: var(--gold, #e7c27a); font: inherit; font-size: .8rem; }
+.fp-chips .fp-clear:hover { background: rgba(231, 194, 122, .1); }
+.fb-pieces .fp-list { margin-top: 2px; }
+:root[data-theme="light"] :is(.fp-search, .fp-bar .fp-seg, .fp-sortbtn, .fp-chips .fp-chip) { background: rgba(0, 0, 0, .05); }
+/* En la columna estrecha (con pieza elegida) el nombre de la rareza sobra: sólo el punto */
+.fb-pieces:not(.browse) .fp-chip .fp-lbl { display: none; }
+.fb-pieces:not(.browse) .fp-chips { flex-wrap: wrap; overflow: visible; }
+.fb-pieces:not(.browse) .fp-chips .fp-chip { padding: 0 9px; }
+.fb-pieces:not(.browse) .fp-div { display: none; }
+@media (max-width: 760px) {
+  .fp-bar .fp-seg { flex: 1 1 auto; }
+  .fp-bar .fp-seg button { flex: 1 1 0; padding: 0 6px; }
+  .fp-chips .fp-chip .fp-lbl { display: none; }
+}
+.fb-pieces:not(.browse) .fp-sortbtn { flex: 0 0 38px; width: 38px; padding: 0; justify-content: center; }
+.fb-pieces:not(.browse) .fp-bar { flex-wrap: nowrap; } .fb-pieces:not(.browse) .fp-search { flex: 1 1 100%; } .fb-pieces:not(.browse) .fp-bar { display: grid; grid-template-columns: minmax(0, 1fr) 38px; } .fb-pieces:not(.browse) .fp-search { grid-column: 1 / -1; }
+.fb-pieces:not(.browse) .fp-sortbtn .fp-sortlbl { display: none; }
+.fb-pieces:not(.browse) .fp-bar .fp-seg { flex: 1 1 auto; }
+.fb-pieces:not(.browse) .fp-bar .fp-seg button { flex: 1 1 0; padding: 0 6px; font-size: .76rem; }
+
+/* =============================================================
+ * v4.84 — Forja: confirmar con vista previa, calidad, bloqueo, tirar hasta conseguirlo,
+ * desguace en lote y fabricar mágico
+ * ============================================================= */
+/* Calidad */
+.gq { display: inline-flex; align-items: center; height: 18px; padding: 0 7px; border-radius: 999px; font-size: .7rem; font-weight: 700; letter-spacing: .02em;
+  color: var(--qc); background: color-mix(in srgb, var(--qc) 16%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--qc) 45%, transparent); }
+.gq.sm { width: 20px; height: 20px; padding: 0; justify-content: center; flex: 0 0 auto; }
+.gq-S { --qc: #ff8a3d; } .gq-A { --qc: #f2c94c; } .gq-B { --qc: #7b9bff; } .gq-C { --qc: #9ca3af; } .gq-D { --qc: #6b7280; }
+.gt-lk, .fp-lk { display: inline-flex; color: var(--gold, #e7c27a); }
+.gt-cf { display: inline-flex; align-items: center; gap: 3px; font-size: .7rem; color: var(--muted); }
+.gt-meta { flex-wrap: wrap; row-gap: 4px; }
+/* Lo que va a cambiar */
+.gt-attr.will, .gt-affix.will, .gt-legend.will { outline: 1px dashed color-mix(in srgb, #f59e0b 80%, transparent); outline-offset: 1px; background: rgba(245, 158, 11, .08) !important; animation: willPulse 1.4s ease-in-out infinite; }
+@keyframes willPulse { 50% { background: rgba(245, 158, 11, .16); } }
+:root[data-motion="reduced"] :is(.gt-attr, .gt-affix, .gt-legend).will { animation: none; }
+/* Confirmación */
+.fb-confirm { position: sticky; bottom: 96px; z-index: 6; display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 14px;
+  background: color-mix(in srgb, var(--surface) 94%, #000); border: 1px solid color-mix(in srgb, var(--gold, #e7c27a) 55%, transparent);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .45); animation: faIn .18s ease-out; }
+.fbc-head { display: flex; align-items: center; gap: 10px; }
+.fbc-head .grow { display: flex; flex-direction: column; min-width: 0; }
+.fbc-lines { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; font-size: .84rem; }
+.fbc-lines li { display: flex; gap: 6px; align-items: baseline; }
+.fbc-lines li::before { content: '•'; color: var(--muted); }
+.fbc-lines li.warn { color: #fbbf24; } .fbc-lines li.warn::before { content: '!'; font-weight: 700; color: #f59e0b; }
+.fbc-lines li.good { color: #86efac; } .fbc-lines li.good::before { content: '+'; color: #22c55e; font-weight: 700; }
+.fbc-odds { display: flex; flex-direction: column; gap: 2px; padding: 6px 8px; border-radius: 9px; background: rgba(255, 255, 255, .04); }
+.fbc-odd { display: flex; gap: 6px; align-items: center; font-size: .78rem; }
+.fbc-odd b { font-variant-numeric: tabular-nums; color: var(--muted); font-weight: 600; }
+.fbc-odd.excl { color: #f6d58a; }
+.fbc-actions { display: flex; gap: 8px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
+.fbc-skip { margin-right: auto; display: inline-flex; gap: 6px; align-items: center; font-size: .74rem; color: var(--muted); cursor: pointer; }
+.fs-row.armed { box-shadow: inset 0 0 0 1px var(--gold, #e7c27a); background: rgba(231, 194, 122, .1); }
+/* Tirar hasta conseguirlo */
+.fbp-want { flex: 0 0 auto; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; border: 0; background: transparent; color: var(--muted); cursor: pointer; opacity: .55; }
+.fbp-want:hover { opacity: 1; background: rgba(255, 255, 255, .06); }
+.fbp-want[aria-pressed="true"] { opacity: 1; color: #f87171; background: rgba(248, 113, 113, .14); }
+.fb-pool-row.want { background: rgba(248, 113, 113, .07); border-radius: 7px; }
+.fb-until { display: flex; flex-direction: column; gap: 8px; margin: 8px 0; padding: 10px; border-radius: 10px; background: rgba(248, 113, 113, .07); border: 1px solid rgba(248, 113, 113, .3); }
+.fbu-main { display: flex; gap: 8px; align-items: flex-start; color: #fca5a5; }
+.fbu-main .small { color: var(--text); }
+.fbu-ctl { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.fbu-clear { margin-left: auto; border: 0; background: transparent; color: var(--muted); font: inherit; font-size: .76rem; cursor: pointer; }
+/* Desguace en lote */
+.fp-salv { color: #fca5a5 !important; }
+.fb-batch-rars { display: flex; gap: 8px; flex-wrap: wrap; }
+.fb-batch-rar { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 999px; background: rgba(255, 255, 255, .05); cursor: pointer; font-size: .86rem; }
+.fb-batch-rar input { accent-color: var(--g); }
+.fb-batch-rar .gear-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--g); }
+.fb-batch-rar b { opacity: .6; font-weight: 600; }
+.fb-batch-rar.on { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--g) 60%, transparent); background: color-mix(in srgb, var(--g) 14%, transparent); }
+.fb-batch-sum { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-radius: 10px; background: rgba(255, 255, 255, .04); font-weight: 600; }
+.fb-batch-f { display: inline-flex; align-items: center; gap: 6px; color: #86efac; }
+.fb-lockbtn .icon svg { color: var(--gold, #e7c27a); }
+/* Fabricar normal / mágica */
+.wb-rar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 6px 0; }
+.wb-rarseg { height: 34px; border: 0; border-radius: 999px; padding: 3px; gap: 2px; background: rgba(255, 255, 255, .05); display: inline-flex; }
+.wb-rarseg button { display: inline-flex; align-items: center; gap: 6px; border: 0 !important; border-radius: 999px; padding: 0 12px; font: inherit; font-size: .8rem; color: var(--muted); background: transparent; cursor: pointer; }
+.wb-rarseg button .gear-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--g); }
+.wb-rarseg button.on { background: color-mix(in srgb, var(--g) 22%, transparent); color: var(--text); }
+.wb-rarcost { display: inline-flex; align-items: center; gap: 4px; font-size: .8rem; font-weight: 600; }
+.wb-rarcost.no { color: #f87171; }
+.wb-rarnote { flex: 1 1 100%; }
+@media (max-width: 760px) { .fb-confirm { bottom: 84px; } }
+.fb-pieces:not(.browse) .fp-bar { grid-template-columns: minmax(0, 1fr) 38px 38px; }
+.fb-pieces:not(.browse) .fp-salv { flex: 0 0 38px; width: 38px; padding: 0; justify-content: center; }
+.fb-pieces:not(.browse) .fp-slots { display: none; }
+
+/* v4.85 — vista previa compacta al fabricar equipo: rejillas de celdas iguales, una línea cada una */
+.gp2 { gap: 10px; }
+.gp-main2 { display: flex; align-items: center; gap: 8px; font-size: .86rem; padding: 6px 10px; border-radius: 9px; background: color-mix(in srgb, var(--gold, #e7c27a) 9%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold, #e7c27a) 35%, transparent); }
+.gp-main2 > svg, .gp-main2 .icon { color: var(--gold, #e7c27a); }
+.gp-main2 b { display: inline-flex; align-items: center; gap: 5px; color: var(--gold, #e7c27a); }
+.gp-rng { margin-left: auto; font-variant-numeric: tabular-nums; font-weight: 700; }
+.gp-sec { display: flex; flex-direction: column; gap: 6px; }
+.gp-sh { font-size: .74rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.gp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 4px; }
+.gp-s { display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 9px; border-radius: 8px; background: rgba(255, 255, 255, .045); font-size: .8rem; min-width: 0; }
+.gp-s > span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gp-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; }
+.gp-col { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.gp-ch { font-size: .7rem; color: var(--muted); margin-bottom: 1px; }
+.gp-a { display: flex; align-items: center; gap: 5px; height: 26px; padding: 0 8px; border-radius: 7px; background: rgba(255, 255, 255, .04); font-size: .76rem; min-width: 0; color: #9fb5ff; }
+.gp-a.suffix { color: #8fd9ff; }
+.gp-a.excl { color: #f6d58a; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold, #e7c27a) 40%, transparent); }
+.gp-a > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+:root[data-theme="light"] .gp-a { color: #3651c9; } :root[data-theme="light"] .gp-a.suffix { color: #0b6b94; }
+.gp-leg { margin: 0; }
+@media (max-width: 420px) { .gp-cols { grid-template-columns: 1fr; } }

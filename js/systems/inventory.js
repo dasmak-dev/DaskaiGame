@@ -273,10 +273,16 @@
     maxTimes(r) { return Math.min(...Object.entries(r.ingredients).map(([id, n]) => Math.floor(DK.bag.count(id) / n))); },
 
     /** Fusiona (directamente). */
-    craft(r, times = 1) {
+    craft(r, times = 1, o = {}) {
       if (!this.canCraft(r, times)) return false;
+      // v4.84: equipo mágico fabricado: cuesta además fragmentos de forja (DK.gear.magicCost)
+      const gear = DK.gear && DK.gear.isGear(r.result), magic = gear && o.magic, extra = magic ? DK.gear.magicCost * times : 0;
+      if (extra && DK.bag.count('fragmento_forja') < extra) return false;
       Object.entries(r.ingredients).forEach(([id, n]) => DK.bag.remove(id, n * times));
-      DK.bag.add(r.result, r.qty * times);
+      if (extra) DK.bag.remove('fragmento_forja', extra);
+      // v4.84: las piezas fabricadas se marcan (cf): llegan como mucho a mágicas
+      if (gear) for (let i = 0; i < r.qty * times; i++) { const p = DK.gear.gain(r.result, { rarity: magic ? 'magico' : 'normal' }); p.cf = 1; }
+      else DK.bag.add(r.result, r.qty * times);
       this.discover(r.id);
       DK.store.state.stats.crafts += times;
       DK.emit('crafted', { id: r.result, qty: r.qty * times, times });
@@ -313,9 +319,9 @@
     },
 
     /** Ejecuta un plan de fusión en cadena. */
-    runPlan(plan) {
+    runPlan(plan, o = {}) {
       if (!plan.ok) return false;
-      for (const s of plan.steps) if (!this.craft(s.recipe, s.times)) return false;
+      for (const [i, s] of plan.steps.entries()) if (!this.craft(s.recipe, s.times, i === plan.steps.length - 1 ? o : {})) return false;
       return true;
     },
 

@@ -840,8 +840,8 @@
         if (more.length) out.push(offer(U.pick(more), U.rand(1, 3)));
       }
       // v4.75: piedras de forja (siempre una; a veces una regia o de alquimia)
-      out.push(offer(U.pick(['piedra_transmutacion', 'piedra_alteracion', 'piedra_aumento', 'piedra_purga', 'fragmento_forja']), U.rand(2, 4)));
-      if (U.chance(0.35)) out.push(offer(U.pick(['piedra_regia', 'piedra_alquimia', 'piedra_anulacion']), 1));
+      out.push(offer(U.pick(['piedra_transmutacion', 'piedra_alteracion', 'piedra_aumento', 'piedra_cambio', 'piedra_purga', 'fragmento_forja']), U.rand(1, 2)));
+      if (U.chance(0.2)) out.push(offer(U.pick(['piedra_regia', 'piedra_alquimia', 'piedra_anulacion']), 1));
       // Muy de vez en cuando, una pluma de fénix
       if (U.chance(0.12)) out.push(offer('pluma_fenix', 1));
       return out;

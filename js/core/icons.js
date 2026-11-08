@@ -105,6 +105,10 @@
     home: p('M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z', 'M9 22V12h6v10'),
     crown: p('M2 19h20', 'M3 7l5 5 4-7 4 7 5-5-2 10H5z'),
     helmet: p('M4 15a8 8 0 0 1 16 0v4h-5.5v-4.5h-5V19H4z', 'M12 7V3', 'M9.5 3.5h5'),
+    // v4.79: yelmo de caballero (Crafteo): cúpula, visera con rendija, nasal y cimera
+    // v4.82: runa de forja (gema hexagonal con runa y chispas) para Crafteo
+    forgeRune: p('M12 2.6l8 4.6v9.6l-8 4.6-8-4.6V7.2z', 'M12 7.4v9.4', 'M8.7 10.7L12 7.4l3.3 3.3', 'M9.6 13.6L12 11.2l2.4 2.4'),
+    helm: p('M5.5 21v-8.5a6.5 6.5 0 0 1 13 0V21z', 'M5.5 13.5h13', 'M8 16.5h3', 'M13 16.5h3', 'M12 13.5V21', 'M12 6V3.2', 'M12 3.2c1.6-.9 3.6-.6 4.8.6'),
     boots: p('M7 3h6v8l5.5 2.5A2.5 2.5 0 0 1 20 16v3H6.5L7 3z', 'M6.6 15.5H20', 'M7 7h6'),
     staff: p('M7 21L17 7', 'M17 7a3 3 0 1 0-1.2-4.8', 'M15.5 2.5l3 3', 'M5.5 18.5l2 2'),
     plus: p('M12 5v14', 'M5 12h14'),

@@ -36,10 +36,24 @@
   const shuffle = (arr, rnd = Math.random) => { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; };
 
   /** Pool de atributos de una base: sus atributos positivos + afines (data/gear.js → affinity). */
+  /** v4.78: atributo principal de una base (el de su tipo; data/gear.js → primary). */
+  const primaryOf = (base) => G().primary[G().typeOf[base]] || 'atk';
+  /** Prefijos y sufijos que puede tener una base (los de la familia de su atributo principal). */
+  const allowedAffixes = (base, rarity) => {
+    const fam = G().affixPools[primaryOf(base)] || Object.keys(G().affixes).filter((id) => !G().affixes[id].only);
+    const ex = G().typeAffix && G().typeAffix[G().typeOf[base]]; // v4.81: el exclusivo de su tipo
+    const all = ex && !fam.includes(ex) ? fam.concat(ex) : fam;
+    // v4.85: los normales, sólo los básicos (sin exclusivo)
+    return rarity && RAR()[rarity] && RAR()[rarity].basicOnly ? all.filter((id) => G().basicAffixes.includes(id)) : all;
+  };
+  /** v4.85: tier máximo de un afijo según la rareza y el nivel de objeto. */
+  const maxTierOf = (p) => Math.max(1, Math.min((RAR()[p.rarity] || {}).maxTier || 5, G().tiers.ilvl.filter((min) => (p.ilvl || 0) >= min).length));
+  /** v4.81: peso al tirar un afijo (más si lo favorece la base; el exclusivo de su tipo, el doble). */
+  const affixWeight = (a, pool) => (1 + (a.boost || []).filter((k) => pool.slice(0, 2).includes(k)).length * 1.5) * (a.only ? 2 : 1);
+
   function poolOf(base) {
-    const it = D.items[base], out = [];
+    const it = D.items[base], out = [primaryOf(base)]; // el principal, siempre el primero
     Object.entries(it.stats || {}).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).forEach(([k]) => out.includes(k) || out.push(k));
-    if (!out.length) out.push(it.grants && it.grants.passive ? 'hp' : 'atk');
     for (let i = 0; out.length < G().poolSize && i < 6; i++) out.slice().forEach((k) => (G().affinity[k] || []).forEach((x) => { if (out.length < G().poolSize && !out.includes(x)) out.push(x); }));
     ['hp', 'def', 'mdef', 'spd', 'atk', 'matk', 'mp'].forEach((k) => { if (out.length < G().poolSize && !out.includes(k)) out.push(k); });
     return out;
@@ -49,10 +63,13 @@
   function attrValue(p, a) {
     const it = D.items[p.base], R = RAR()[p.rarity];
     const own = it.stats && it.stats[a.k] > 0 ? Math.max(1, it.stats[a.k] / (G().units[a.k] * (G().baseTier[it.rarity] || 1))) : 1; // la base ya favorece ese atributo
-    const raw = G().units[a.k] * (G().baseTier[it.rarity] || 1) * Math.min(own, 1.6) * (1 + (p.ilvl || 1) / G().ilvlScale) * R.power * (G().roll[0] + (G().roll[1] - G().roll[0]) * a.r);
+    const main = a.k === primaryOf(p.base) ? G().primaryBoost : 1; // el principal pesa más
+    const raw = G().units[a.k] * (G().baseTier[it.rarity] || 1) * Math.min(own, 1.6) * main * (1 + (p.ilvl || 1) / G().ilvlScale) * R.power * (G().roll[0] + (G().roll[1] - G().roll[0]) * a.r);
     // La regeneración (% por turno) no escala con el nivel del objeto: 1–3
     return a.k === 'regen' ? Math.min(3, Math.max(1, Math.round(raw / (1 + (p.ilvl || 1) / G().ilvlScale)))) : Math.max(1, Math.round(raw));
   }
+  /** v4.80: rango [mín, máx] de un atributo plano con su rareza y nivel actuales. */
+  const attrRange = (p, a) => [attrValue(p, Object.assign({}, a, { r: 0 })), attrValue(p, Object.assign({}, a, { r: 1 }))];
   /** Valor de un afijo (en %). */
   function affixValue(a) {
     const def = G().affixes[a.id]; if (!def) return 0;
@@ -61,26 +78,29 @@
   }
 
   /** Tier al azar para un nivel de objeto (los altos, más raros). */
-  function rollTier(ilvl, rnd = Math.random) {
+  function rollTier(ilvl, rnd = Math.random, cap = 5) {
     const T = G().tiers, w = {};
-    T.ilvl.forEach((min, i) => { if ((ilvl || 0) >= min) w[i + 1] = T.weight[i]; });
+    T.ilvl.forEach((min, i) => { if ((ilvl || 0) >= min && i < cap) w[i + 1] = T.weight[i]; });
     return +U.weightedKey(w, rnd, '1');
   }
   /** Afijo nuevo de un tipo (prefix/suffix) que la pieza aún no tenga. */
   function rollAffix(p, kind, rnd = Math.random, not = []) {
-    const pool = poolOf(p.base), have = p.affixes.map((a) => a.id).concat(not), w = {};
+    const pool = poolOf(p.base), have = p.affixes.map((a) => a.id).concat(not), w = {}, ok = allowedAffixes(p.base, p.rarity);
     Object.entries(G().affixes).forEach(([id, a]) => {
-      if (a.kind !== kind || have.includes(id)) return;
-      w[id] = 1 + (a.boost || []).filter((k) => pool.slice(0, 2).includes(k)).length * 1.5;
+      if (a.kind !== kind || have.includes(id) || !ok.includes(id)) return;
+      w[id] = affixWeight(a, pool);
     });
     const id = Object.keys(w).length ? U.weightedKey(w, rnd) : null;
-    return id ? { id, t: rollTier(p.ilvl, rnd), r: rnd() } : null;
+    return id ? { id, t: rollTier(p.ilvl, rnd, maxTierOf(p)), r: rnd() } : null;
   }
   const kindOf = (a) => G().affixes[a.id] && G().affixes[a.id].kind;
   const countKind = (p, kind) => p.affixes.filter((a) => kindOf(a) === kind).length;
 
   /** Rellena atributos hasta n (sin repetir, del pool de su base). */
   function fillAttrs(p, n, rnd = Math.random) {
+    // v4.78: el atributo principal siempre está y va el primero
+    const main = primaryOf(p.base);
+    if (!p.attrs.some((a) => a.k === main)) p.attrs.unshift({ k: main, r: rnd() });
     const free = shuffle(poolOf(p.base).filter((k) => !p.attrs.some((a) => a.k === k)), rnd);
     while (p.attrs.length < n && free.length) p.attrs.push({ k: free.shift(), r: rnd() });
   }
@@ -114,7 +134,7 @@
     isGear,
     poolOf,
     defaultIlvl,
-    attrValue, affixValue,
+    attrValue, attrRange, affixValue, maxTierOf,
     /** Rareza al azar según el tipo de combate (data/gear.js → rarities.*.drop). */
     rollRarity(src = 'fight', rnd = Math.random) {
       const w = {}; Object.entries(RAR()).forEach(([id, r]) => { if (r.drop[src]) w[id] = r.drop[src]; });
@@ -288,30 +308,35 @@
     /** Piedras de forja, por grupos (en el orden de la pantalla de Forja). */
     groups: {
       rarity: ['piedra_transmutacion', 'piedra_alquimia', 'piedra_regia', 'corazon_jefe'],
-      reroll: ['piedra_alteracion', 'piedra_caos', 'piedra_divina', 'piedra_purga'],
-      affix: ['piedra_aumento', 'piedra_exaltacion', 'piedra_anulacion', 'esquirla_jefe', 'piedra_templado', 'sello_forja'],
+      reroll: ['piedra_alteracion', 'piedra_caos', 'piedra_nucleo', 'piedra_divina', 'piedra_purga'],
+      affix: ['piedra_aumento', 'piedra_exaltacion', 'piedra_cambio', 'esquirla_jefe', 'piedra_templado', 'sello_forja', 'piedra_anulacion'],
       legend: ['eco_legendario'],
     },
     get stones() { return [].concat(...Object.values(this.groups)); },
     /** Piedras que actúan sobre UN afijo elegido (o.affix). */
-    targeted: ['esquirla_jefe', 'piedra_templado', 'sello_forja'],
+    targeted: ['piedra_cambio', 'esquirla_jefe', 'piedra_templado', 'sello_forja'],
+    /** Piedras que añaden un afijo (o.kind: 'prefix' | 'suffix' para elegir cuál). */
+    adders: ['piedra_aumento', 'piedra_exaltacion'],
     /** Huecos de afijo de la pieza: { P: [usados, máx], S: [usados, máx], total: máx } */
     slots(p) {
       const R = RAR()[p.rarity];
       return { P: [countKind(p, 'prefix'), R.maxP], S: [countKind(p, 'suffix'), R.maxS], total: R.affixes[1] };
     },
     /** ¿Cabe un afijo más? (tope total de su rareza y hueco de prefijo o sufijo) */
-    hasRoom(p) { const s = this.slots(p); return p.affixes.length < s.total && (s.P[0] < s.P[1] || s.S[0] < s.S[1]); },
+    hasRoom(p, kind) { const s = this.slots(p); if (p.affixes.length >= s.total) return false; return kind === 'prefix' ? s.P[0] < s.P[1] : kind === 'suffix' ? s.S[0] < s.S[1] : s.P[0] < s.P[1] || s.S[0] < s.S[1]; },
+    /** La piedra que añade un afijo a esta pieza (aumento en mágicas, exaltación en raras/legendarias) o null. */
+    adderFor(p) { return p.rarity === 'magico' ? 'piedra_aumento' : p.rarity === 'raro' || p.rarity === 'legendario' ? 'piedra_exaltacion' : null; },
     /**
      * Afijos que le pueden salir (para planificar): [{ id, kind, chance (0–1 entre los de su tipo), maxT, range }]
      * excluye los que ya tiene; maxT = el mejor tier que permite su nivel de objeto.
      */
     affixPool(p) {
       const pool = poolOf(p.base), have = p.affixes.map((a) => a.id), out = [];
-      const T = G().tiers, maxT = T.ilvl.filter((min) => (p.ilvl || 0) >= min).length;
+      const maxT = maxTierOf(p);
       ['prefix', 'suffix'].forEach((kind) => {
-        const list = Object.entries(G().affixes).filter(([id, a]) => a.kind === kind && !have.includes(id))
-          .map(([id, a]) => ({ id, kind, w: 1 + (a.boost || []).filter((k) => pool.slice(0, 2).includes(k)).length * 1.5, maxT, range: a.tiers[maxT - 1] }));
+        const ok = allowedAffixes(p.base, p.rarity);
+        const list = Object.entries(G().affixes).filter(([id, a]) => a.kind === kind && !have.includes(id) && ok.includes(id))
+          .map(([id, a]) => ({ id, kind, w: affixWeight(a, pool), maxT, range: a.tiers[maxT - 1], only: a.only || null }));
         const tot = list.reduce((x, y) => x + y.w, 0) || 1;
         list.forEach((x) => out.push(Object.assign(x, { chance: x.w / tot })));
       });
@@ -319,7 +344,7 @@
     },
     /** Probabilidad de cada tier para su nivel de objeto: [{ t, chance }] */
     tierChances(p) {
-      const T = G().tiers, w = T.ilvl.map((min, i) => ((p.ilvl || 0) >= min ? T.weight[i] : 0)), tot = w.reduce((a, b) => a + b, 0) || 1;
+      const T = G().tiers, cap = maxTierOf(p), w = T.ilvl.map((min, i) => ((p.ilvl || 0) >= min && i < cap ? T.weight[i] : 0)), tot = w.reduce((a, b) => a + b, 0) || 1;
       return w.map((x, i) => ({ t: i + 1, chance: x / tot })).filter((x) => x.chance > 0);
     },
     /**
@@ -335,6 +360,8 @@
         if (!p.affixes.length) return t('gear.why.noAffix');
         if (o.affix != null && !a) return t('gear.why.noAffix');
       }
+      // v4.84: las piezas fabricadas llegan como mucho a mágicas (lo raro sale de las expediciones)
+      if (p.cf && ['piedra_alquimia', 'piedra_regia', 'corazon_jefe'].includes(stone)) return t('gear.why.crafted');
       switch (stone) {
         case 'piedra_transmutacion': return r === 'normal' ? null : t('gear.why.needNormal');
         case 'piedra_alquimia': return r === 'normal' ? null : t('gear.why.needNormal');
@@ -343,12 +370,14 @@
         case 'piedra_alteracion': return r === 'magico' ? null : t('gear.why.needMagic');
         case 'piedra_caos': return rare ? null : t('gear.why.needRare');
         case 'piedra_divina': return null;
+        case 'piedra_nucleo': return p.attrs.length ? null : t('gear.why.noMain');
         case 'piedra_purga': return r === 'magico' || r === 'raro' ? null : t('gear.why.needMagicRare');
-        case 'piedra_aumento': return r !== 'magico' ? t('gear.why.needMagic') : !this.hasRoom(p) ? t('gear.why.full') : null;
-        case 'piedra_exaltacion': return !rare ? t('gear.why.needRare') : !this.hasRoom(p) ? t('gear.why.full') : null;
+        case 'piedra_aumento': return r !== 'magico' ? t('gear.why.needMagic') : !this.hasRoom(p, o.kind) ? t('gear.why.full') : null;
+        case 'piedra_exaltacion': return !rare ? t('gear.why.needRare') : !this.hasRoom(p, o.kind) ? t('gear.why.full') : null;
+        case 'piedra_cambio': return a && a.lock ? t('gear.why.locked') : null;
         case 'piedra_anulacion': return r === 'normal' ? t('gear.why.needMagicRare') : p.affixes.filter((x) => !x.lock).length < 1 || p.affixes.length < 2 ? t('gear.why.tooFew') : null;
         case 'esquirla_jefe': return a && a.lock ? t('gear.why.locked') : null;
-        case 'piedra_templado': return a && a.t >= 5 ? t('gear.why.maxTier') : a && G().tiers.ilvl[a.t] > (p.ilvl || 0) ? t('gear.why.lowIlvl', { n: G().tiers.ilvl[a.t] }) : null;
+        case 'piedra_templado': return a && a.t >= 5 ? t('gear.why.maxTier') : a && a.t >= maxTierOf(p) && maxTierOf(p) === (RAR()[p.rarity].maxTier || 5) ? t('gear.why.rarityTier', { n: maxTierOf(p) }) : a && G().tiers.ilvl[a.t] > (p.ilvl || 0) ? t('gear.why.lowIlvl', { n: G().tiers.ilvl[a.t] }) : null;
         case 'sello_forja': return a && a.lock ? t('gear.why.locked') : null;
         case 'eco_legendario': return r === 'legendario' ? null : t('gear.why.needLegend');
         default: return t('gear.why.noStone');
@@ -381,15 +410,24 @@
         case 'piedra_alteracion': reroll(RAR().magico.affixes); break;
         case 'piedra_caos': reroll(RAR()[p.rarity].affixes); p.nm = [Math.floor(rnd() * 1000), Math.floor(rnd() * 1000)]; break;
         case 'piedra_divina': p.attrs.forEach((a) => (a.r = rnd())); p.affixes.forEach((a) => (a.r = rnd())); break;
+        // v4.80: sólo el valor del atributo principal (el primero), dentro de su rango
+        case 'piedra_nucleo': { const m = p.attrs.find((a) => a.k === primaryOf(p.base)) || p.attrs[0]; m.r = rnd(); break; }
         case 'piedra_purga': p.rarity = 'normal'; p.attrs = p.attrs.slice(0, randInt(...RAR().normal.attrs, rnd)); p.affixes = p.affixes.slice(0, 1).map((a) => { delete a.lock; return a; }); delete p.nm; delete p.lp; break;
-        case 'piedra_aumento': case 'piedra_exaltacion': fillAffixes(p, p.affixes.length + 1, rnd); break;
+        case 'piedra_aumento': case 'piedra_exaltacion': {
+          // v4.79: se puede elegir si añade un prefijo o un sufijo
+          if (o.kind) { const n = rollAffix(p, o.kind, rnd); if (n) p.affixes.push(n); } else fillAffixes(p, p.affixes.length + 1, rnd);
+          break;
+        }
+        case 'piedra_cambio': { const old = p.affixes[o.affix]; p.affixes[o.affix] = rollAffix(p, kindOf(old), rnd, [old.id]) || { id: old.id, t: rollTier(p.ilvl, rnd, maxTierOf(p)), r: rnd() }; break; }
         case 'piedra_anulacion': {
           const free = p.affixes.filter((a) => !a.lock), gone = free[Math.floor(rnd() * free.length)];
           p.affixes = p.affixes.filter((a) => a !== gone); p.affixes.forEach((a) => delete a.lock); break;
         }
         case 'esquirla_jefe': {
           const i = o.affix, old = p.affixes[i];
-          p.affixes[i] = rollAffix(p, kindOf(old), rnd, [old.id]) || { id: old.id, t: rollTier(p.ilvl, rnd), r: rnd() }; break;
+          // v4.79: la esquirla de jefe nunca baja el nivel del afijo
+          const n = rollAffix(p, kindOf(old), rnd, [old.id]) || { id: old.id, t: rollTier(p.ilvl, rnd, maxTierOf(p)), r: rnd() };
+          n.t = Math.max(n.t, old.t); p.affixes[i] = n; break;
         }
         case 'piedra_templado': p.affixes[o.affix].t++; break;
         case 'sello_forja': p.affixes.forEach((a) => delete a.lock); p.affixes[o.affix].lock = true; break;
@@ -408,12 +446,93 @@
       DK.store.save();
       return { ok: true, msg: t('gear.forged.' + stone, { name: this.name(p) }), p, before };
     },
+    /**
+     * v4.84: qué hará una piedra ANTES de usarla (para la confirmación de la forja).
+     * @returns {{keys:Set, lines:[{text, kind}], odds:[{text, chance, only}]}}  keys = filas de la ficha que cambian
+     */
+    forgePreview(p, stone, o = {}) {
+      const keys = new Set(), lines = [], odds = [];
+      const line = (k, v, kind = '') => lines.push({ text: t('gear.pv.' + k, v || {}), kind });
+      const unlocked = p.affixes.map((a, i) => (a.lock ? -1 : i)).filter((i) => i >= 0);
+      const allAff = () => unlocked.forEach((i) => keys.add('x' + i));
+      const R = (r) => t('gear.rarity.' + r);
+      const pool = (kind) => this.affixPool(p).filter((a) => !kind || a.kind === kind);
+      const topOdds = (list) => { const tot = list.reduce((s, a) => s + a.w, 0) || 1; list.slice().sort((a, b) => b.w - a.w).slice(0, 4).forEach((a) => odds.push({ text: t(`gear.affix.${a.id}.text`, { v: `${a.range[0]}–${a.range[1]}` }), chance: a.w / tot, only: a.only })); };
+      const a = o.affix != null ? p.affixes[o.affix] : null;
+      const locked = p.affixes.some((x) => x.lock);
+      switch (stone) {
+        case 'piedra_transmutacion': line('rarity', { a: R('normal'), b: R('magico') }, 'good'); line('adds', { n: '1–2' }); break;
+        case 'piedra_alquimia': line('rarity', { a: R('normal'), b: R('raro') }, 'good'); line('adds', { n: '2–4' }); break;
+        case 'piedra_regia': line('rarity', { a: R('magico'), b: R('raro') }, 'good'); line('adds', { n: 1 }); line('moreAttrs'); break;
+        case 'corazon_jefe': line('rarity', { a: R('raro'), b: R('legendario') }, 'good'); line('passive'); break;
+        case 'piedra_alteracion': case 'piedra_caos': allAff(); line('rerollAll', { n: unlocked.length }, 'warn'); if (locked) line('keepsLocked'); else line('canWorse', null, 'warn'); topOdds(pool()); break;
+        case 'piedra_divina': p.attrs.forEach((_, i) => keys.add('a' + i)); p.affixes.forEach((_, i) => keys.add('x' + i)); line('values', null, 'warn'); line('canWorse', null, 'warn'); break;
+        case 'piedra_purga': p.affixes.forEach((_, i) => keys.add('x' + i)); line('rarity', { a: R(p.rarity), b: R('normal') }, 'warn'); line('losesAll', { n: p.affixes.length }, 'warn'); break;
+        case 'piedra_aumento': case 'piedra_exaltacion': line(o.kind ? 'addsKind' : 'adds', { n: 1, kind: o.kind ? t('gear.' + o.kind).toLowerCase() : '' }, 'good'); topOdds(pool(o.kind)); break;
+        case 'piedra_anulacion': allAff(); line('removes', { n: unlocked.length }, 'warn'); break;
+        case 'piedra_cambio': case 'esquirla_jefe': if (a) { keys.add('x' + o.affix); line('changes', { a: this.affixText(a) }, 'warn'); if (stone === 'esquirla_jefe') line('notWorse', { n: a.t }, 'good'); topOdds(pool(kindOf(a))); } break;
+        case 'piedra_templado': if (a) { keys.add('x' + o.affix); line('temper', { a: a.t, b: a.t + 1 }, 'good'); } break;
+        case 'sello_forja': if (a) { keys.add('x' + o.affix); line('seal', null, 'good'); if (locked) line('sealMoves'); } break;
+        case 'piedra_nucleo': {
+          const i = Math.max(0, p.attrs.findIndex((x) => x.k === primaryOf(p.base))), m = p.attrs[i];
+          if (m) { const [lo, hi] = attrRange(p, m); keys.add('a' + i); line('main', { v: attrValue(p, m), a: lo, b: hi }, 'warn'); line('better', { n: Math.round((1 - m.r) * 100) }); }
+          break;
+        }
+        case 'eco_legendario': keys.add('leg'); line('passiveNew', null, 'warn'); break;
+        default: break;
+      }
+      return { keys, lines, odds };
+    },
+    /**
+     * v4.84: calidad de la pieza (0–100): lo cerca que están sus valores del máximo a su nivel.
+     * Atributos (el principal pesa el doble) y afijos (su tier frente al mejor posible a su nivel, y su valor).
+     */
+    quality(p) {
+      if (!p || typeof p !== 'object') return { score: 0, grade: 'D' };
+      const maxT = maxTierOf(p), main = primaryOf(p.base);
+      let sum = 0, w = 0;
+      p.attrs.forEach((a) => { const k = a.k === main ? 2 : 1; sum += a.r * k; w += k; });
+      p.affixes.forEach((a) => { const k = 1.5; sum += (Math.min(1, a.t / maxT) * 0.7 + a.r * 0.3) * k; w += k; });
+      const score = Math.round((w ? sum / w : 0) * 100);
+      return { score, grade: score >= 90 ? 'S' : score >= 75 ? 'A' : score >= 55 ? 'B' : score >= 35 ? 'C' : 'D' };
+    },
+    /** v4.84: bloquear una pieza (no se puede desguazar por error). */
+    toggleLock(uid) { const x = this.find(uid); if (!x) return false; x.p.lk = !x.p.lk; if (!x.p.lk) delete x.p.lk; DK.store.save(); return !!x.p.lk; },
+    /** v4.84: la piedra que re-tira todos los afijos de esta pieza (alteración / caos) o null. */
+    /** v4.84: fragmentos de forja extra por fabricar una pieza ya mágica. */
+    magicCost: 12,
+    rerollerFor(p) { return p.rarity === 'magico' ? 'piedra_alteracion' : p.rarity === 'raro' || p.rarity === 'legendario' ? 'piedra_caos' : null; },
+    /**
+     * v4.84: tirar hasta conseguirlo: usa la piedra de re-tirar (alteración o caos) hasta que la pieza
+     * tenga alguno de los afijos buscados o se gasten `max` piedras.
+     * @returns {{ok, n, hit, msg, before}}
+     */
+    rollUntil(uid, ids, max, rnd) {
+      const x = this.find(uid), p = x && x.p;
+      if (!p || !ids || !ids.length) return { ok: false, n: 0, msg: t('gear.why.none') };
+      const stone = this.rerollerFor(p);
+      const has = () => p.affixes.some((a) => ids.includes(a.id));
+      if (has()) return { ok: false, n: 0, hit: true, msg: t('gear.until.already') };
+      const before = JSON.parse(JSON.stringify(p));
+      let n = 0;
+      while (n < max && !has()) { const r = this.forge(uid, stone, { rnd, quiet: true }); if (!r.ok) { if (!n) return { ok: false, n, msg: r.msg }; break; } n++; }
+      const hit = has();
+      return { ok: true, n, hit, before, stone, msg: t(hit ? 'gear.until.hit' : 'gear.until.miss', { n, stone: D.items[stone].name }) };
+    },
+    /** v4.84: desguazar en lote: piezas sueltas, sin bloquear, de las rarezas dadas. */
+    salvageMany(rarities) {
+      if (st().expedition) return { ok: false, n: 0, f: 0 };
+      const list = this.home().filter((p) => rarities.includes(p.rarity) && !p.lk);
+      let f = 0; list.forEach((p) => { const r = this.salvage(p.uid); if (r.ok) f += r.got.fragmento_forja; });
+      return { ok: true, n: list.length, f };
+    },
     /** Fragmentos (y a veces una piedra) que da desguazar una pieza. */
     salvageValue(p) { return { fragmento_forja: RAR()[p.rarity].salvage + Math.floor((p.ilvl || 1) / 25) }; },
     /** Desguaza una pieza sin equipar (en casa). */
     salvage(uid) {
       if (st().expedition) return { ok: false, msg: t('gear.why.inExp') };
       const i = this.home().findIndex((p) => p.uid === uid); if (i < 0) return { ok: false, msg: t('gear.why.none') };
+      if (this.home()[i].lk) return { ok: false, msg: t('gear.why.lockedPiece') }; // v4.84: bloqueada
       const p = this.home().splice(i, 1)[0], got = this.salvageValue(p);
       DK.bag.addHome(got);
       DK.emit('gear:salvaged', { p });
@@ -431,7 +550,8 @@
      * común/raro → normal, épico → mágico, legendario → raro.
      */
     migrate(s) {
-      if (!s || s.gearV) return;
+      if (!s) return;
+      if (s.gearV) { if (s.gearV < 2) this.migrate2(s); return; }
       const map = { comun: 'normal', raro: 'normal', epico: 'magico', legendario: 'raro' };
       const lvl = (s.party || []).reduce((a, d) => Math.max(a, d.level || 1), 1);
       const mk = (id) => this.create(id, { rarity: map[D.items[id].rarity] || 'normal', ilvl: lvl });
@@ -446,7 +566,33 @@
         Object.keys(e.loot.items || {}).forEach((id) => { if (isGear(id)) { for (let i = 0; i < e.loot.items[id]; i++) e.loot.gear.push(mk(id)); delete e.loot.items[id]; } });
       }
       s.gearV = 1;
+      this.migrate2(s);
     },
+    /**
+     * v4.78: cada pieza lleva su atributo principal (el primero) y sólo afijos de su familia:
+     * se añade el principal si faltaba (quitando el último si no cabe) y cada afijo que no
+     * le toca se cambia por otro del mismo tipo (mismo tier y tirada).
+     */
+    migrate2(s) {
+      const all = [].concat(s.gear || [], ...(s.party || []).map((d) => (d.equip || []).filter((x) => x && typeof x === 'object')), (s.expedition && s.expedition.loot && s.expedition.loot.gear) || []);
+      all.forEach((p) => {
+        if (!D.items[p.base]) return;
+        const main = primaryOf(p.base), R = RAR()[p.rarity] || RAR().normal, i = p.attrs.findIndex((a) => a.k === main);
+        if (i > 0) p.attrs.unshift(p.attrs.splice(i, 1)[0]);
+        else if (i < 0) { p.attrs.unshift({ k: main, r: Math.random() }); if (p.attrs.length > R.attrs[1]) p.attrs.pop(); }
+        const ok = allowedAffixes(p.base);
+        p.affixes = p.affixes.map((a) => {
+          if (ok.includes(a.id)) return a;
+          const kind = kindOf(a), used = p.affixes.map((x) => x.id);
+          const alt = ok.find((id) => G().affixes[id].kind === kind && !used.includes(id));
+          return alt ? Object.assign({}, a, { id: alt }) : null;
+        }).filter(Boolean);
+        p.v = (p.v || 0) + 1;
+      });
+      s.gearV = 2;
+    },
+    primaryOf,
+    allowedAffixes,
   };
   DK.gear = api;
 })();

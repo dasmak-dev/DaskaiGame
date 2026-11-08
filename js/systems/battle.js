@@ -261,8 +261,18 @@
       }
       // v4.74: equipamiento: +% daño (prefijos, legendarias) y -% daño recibido (sufijos)
       const gA = DK.gear.fxOf(A), gT = DK.gear.fxOf(T);
-      const gear = (1 + (gA.dmg || 0)) * (1 - (gT.guard || 0));
-      critP += gA.crit || 0;
+      // v4.81: afijos condicionales (físico/mágico, vida llena o baja, rival tocado o con estado, eficaz, jefe, primer golpe, su casa)
+      const hpOf = (d) => (d && d.cur ? d.cur.hp / Math.max(1, DK.daskai.stats(d).hp) : 1);
+      const isBoss = (st.boss || st.elite) && T === st.enemy;
+      const dmgUp = (gA.dmg || 0) + ((phys ? gA.physDmg : gA.magDmg) || 0) + (hpOf(A) >= 1 ? gA.fullDmg || 0 : 0) + (hpOf(A) < 0.5 ? gA.rageDmg || 0 : 0)
+        + (hpOf(T) < 0.35 ? gA.execute || 0 : 0) + (T.status ? gA.statusDmg || 0 : 0) + (isBoss ? gA.bossDmg || 0 : 0)
+        + (!(st.opened && st.opened[side]) ? gA.opener || 0 : 0) + (this.isStab(A, move) ? gA.stabDmg || 0 : 0) + (h.eff === 'strong' ? gA.strongDmg || 0 : 0)
+        // v4.82: más rápido que el rival, rival de más nivel, rival con la vida llena
+        + (gA.fastDmg && T.cur && this.stat(st, side, 'spd') > (T === this.get(st, other(side)) ? this.stat(st, other(side), 'spd') : DK.daskai.stats(T).spd) ? gA.fastDmg : 0)
+        + ((T.level || 0) > (A.level || 0) ? gA.underdog || 0 : 0) + (hpOf(T) >= 1 ? gA.freshDmg || 0 : 0);
+      const dmgDown = Math.min(0.8, (gT.guard || 0) + ((phys ? gT.guardPhys : gT.guardMag) || 0) + (hpOf(T) < 0.5 ? gT.lastGuard || 0 : 0));
+      const gear = (1 + dmgUp) * (1 - dmgDown);
+      critP = Math.max(0, critP + (gA.crit || 0) - (gT.critRes || 0)); // v4.82: resistencia a críticos
       // Punto débil de la especie (ver weakness): más daño de ese tipo de ataque
       const wk = this.weakness(T.species) === move.kind && !(hideWeak && !this.weakKnown(T.species)) ? C().weakMult : 1;
       const guard = side === 'enemy' && st.guarding ? C().guardMult : 1;            // te estás defendiendo
@@ -271,15 +281,16 @@
       const weather = st.expedition && move.house ? 1 + DK.expedition.modHouse(move.house) : 1; // modificador del mapa (tormenta, calor…)
       const atk = this.stat(st, side, phys ? 'atk' : 'matk');
       const tSide = T === this.get(st, other(side)) ? other(side) : null;
-      const def = tSide ? this.stat(st, tSide, phys ? 'def' : 'mdef') : DK.daskai.stats(T)[phys ? 'def' : 'mdef'];
-      const mult = h.mult * stab * bonus * wk * guard * switchIn * shield * weather * broken * gear;
+      const def = (tSide ? this.stat(st, tSide, phys ? 'def' : 'mdef') : DK.daskai.stats(T)[phys ? 'def' : 'mdef']) * (1 - (gA.pierce || 0)); // v4.81: perforar
+      const weakUp = wk !== 1 ? 1 + (gA.weakDmg || 0) : 1; // v4.82: más daño al punto débil
+      const mult = h.mult * stab * bonus * wk * weakUp * guard * switchIn * shield * weather * broken * gear;
       const parts = [
         { k: 'power', v: move.power }, { k: 'atkdef', v: `${Math.round(atk)} / ${Math.round(def)}` }, { k: 'level', v: 1 + A.level / 100 },
         stab !== 1 ? { k: 'stab', v: stab } : null, h.mult !== 1 ? { k: 'house', v: h.mult } : null, broken !== 1 ? { k: 'broken', v: broken } : null, bonus !== 1 ? { k: 'bonus', v: bonus } : null, gear !== 1 ? { k: 'gear', v: gear } : null, wk !== 1 ? { k: 'weak', v: wk } : null,
         guard !== 1 ? { k: 'guard', v: guard } : null, switchIn !== 1 ? { k: 'switchIn', v: switchIn } : null, shield !== 1 ? { k: 'shield', v: shield } : null, weather !== 1 ? { k: 'weather', v: weather } : null,
         A.status === 'quemadura' && phys ? { k: 'burn', v: D.statuses.quemadura.atkMult } : null,
       ].filter(Boolean);
-      return { power: move.power, atk, def, level: A.level, eff: h.eff, house: atkHouse, stab: stab !== 1, mult, critP, critDmg: gA.critDmg || 0, parts, weak: wk !== 1, burned: A.status === 'quemadura' };
+      return { power: move.power, atk, def, level: A.level, eff: h.eff, house: atkHouse, stab: stab !== 1, mult, critP, critDmg: gA.critDmg || 0, critGuard: gT.critGuard || 0, parts, weak: wk !== 1, burned: A.status === 'quemadura' };
     },
 
     /** Calcula el daño de un ataque de `side` contra el otro (o contra `o.target`). */
@@ -289,7 +300,7 @@
       const crit = random && U.chance(f.critP);
       const dmg = this.rawDamage({
         power: move.power, kind: move.kind, attLevel: A.level, atk: f.atk, def: f.def,
-        mult: f.mult * (crit ? 1 + (f.critDmg || 0) : 1), roll: random ? U.randf(0.88, 1) : 1, crit, burned: f.burned,
+        mult: f.mult * (crit ? (1 + (f.critDmg || 0)) * (1 - (f.critGuard || 0)) : 1), roll: random ? U.randf(0.88, 1) : 1, crit, burned: f.burned,
       });
       return { dmg, crit, eff: f.eff, weak: f.weak, stab: f.stab };
     },
@@ -302,7 +313,8 @@
       const eff = r ? r.eff : this.effOf(st, move.id);
       if (eff === 'weak') return 0;
       const weak = r ? r.weak : this.weakKnown(st.enemy.species) && this.weakness(st.enemy.species) === move.kind;
-      return G.hit + (eff === 'strong' ? G.strong : 0) + (weak ? G.weak : 0) + (r && r.crit ? G.crit : 0);
+      const pow = 1 + (DK.gear.fxOf(this.get(st, 'ally')).breakPow || 0); // v4.81: martillos
+      return Math.round((G.hit + (eff === 'strong' ? G.strong : 0) + (weak ? G.weak : 0) + (r && r.crit ? G.crit : 0)) * pow);
     },
     /** Suma a la barra y rompe al rival si se llena. */
     addBreak(st, n, ev) {
@@ -383,8 +395,8 @@
     mpCost(d, moveId) {
       const m = D.moves[moveId];
       if (m.kind === 'fisico' || !m.mp) return 0;
-      const save = !d.wild && !d.boss && DK.expedition.active() ? DK.relics.sum('mpSave') : 0;
-      return Math.max(1, Math.round(m.mp * (1 - save)));
+      const save = (!d.wild && !d.boss && DK.expedition.active() ? DK.relics.sum('mpSave') : 0) + (DK.gear.fxOf(d).mpCost || 0); // v4.81: báculos
+      return Math.max(1, Math.round(m.mp * (1 - Math.min(0.7, save))));
     },
     canUseMove(d, moveId) { return d.cur.mp >= this.mpCost(d, moveId); },
     hasUsableMove(d) { return DK.daskai.battleMoves(d).some((m) => this.canUseMove(d, m)); },
@@ -461,7 +473,8 @@
       else st.lastMove = moveId;
       this.push(st, ev, { text: t('battle.uses', { name: this.name(st, side), move: m.name }), anim: 'attack', side, cat: 'dmg', move: moveId, house, kind: m.kind });
 
-      if (!U.chance(m.acc / 100)) { this.push(st, ev, { text: t('battle.missed'), kind: 'muted', anim: 'miss', side: other(side), cat: 'dmg' }); return; }
+      if (!U.chance(m.acc / 100 + (DK.gear.fxOf(A).acc || 0))) { // v4.82: precisión del equipo
+        this.push(st, ev, { text: t('battle.missed'), kind: 'muted', anim: 'miss', side: other(side), cat: 'dmg' }); return; }
 
       let dealt = 0;
       const gA = DK.gear.fxOf(A), gT = DK.gear.fxOf(T);
@@ -469,6 +482,13 @@
       if (m.power > 0 && gT.dodge && U.chance(gT.dodge)) { this.push(st, ev, { text: t('battle.dodged', { name: this.name(st, other(side)) }), kind: 'muted', anim: 'miss', side: other(side), cat: 'dmg' }); return; }
       if (m.power > 0) {
         const r = this.damage(st, side, m);
+        // v4.81: aguantar un golpe mortal con 1 PV (escudos; una vez por combate)
+        st.endured = st.endured || {};
+        if (r.dmg >= T.cur.hp && T.cur.hp > 1 && gT.endure && !st.endured[T.uid] && U.chance(gT.endure)) {
+          st.endured[T.uid] = true; r.dmg = T.cur.hp - 1;
+          this.push(st, ev, { text: t('battle.endure', { name: this.name(st, other(side)) }), kind: 'warn', cat: 'dmg' });
+        }
+        (st.opened = st.opened || {})[side] = true; // ya dio su primer golpe (botas)
         dealt = Math.min(r.dmg, T.cur.hp);
         T.cur.hp = Math.max(0, T.cur.hp - r.dmg);
         DK.emit('damage', { side: other(side), amount: dealt, crit: r.crit });
@@ -499,6 +519,9 @@
           if (mana > 0) A.cur.mp += mana;
           const thorns = gT.thorns ? Math.min(Math.round(dealt * gT.thorns), A.cur.hp - 1) : 0;
           if (thorns > 0) { A.cur.hp -= thorns; this.push(st, ev, { text: t('battle.thorns', { name: this.name(st, other(side)), n: thorns }), kind: 'warn', anim: 'hit', side, amount: thorns, cat: 'dmg' }); }
+          // v4.81: festín (anillos): cura al derrotar al rival
+          const feast = T.cur.hp <= 0 && gA.killHeal && A.cur.hp > 0 ? Math.min(Math.round(sA.hp * gA.killHeal), sA.hp - A.cur.hp) : 0;
+          if (feast > 0) { A.cur.hp += feast; this.push(st, ev, { text: t('battle.feast', { name: this.name(st, side), n: feast }), anim: 'heal', side, amount: feast, cat: 'dmg' }); }
         }
       }
 
@@ -507,14 +530,16 @@
       const lucky = e.chance == null || U.chance(e.chance);
       const s = DK.daskai.stats(A);
       if (e.type === 'drain' && dealt > 0) {
-        const heal = Math.min(Math.round(dealt * e.pct), s.hp - A.cur.hp);
+        const heal = Math.min(Math.round(dealt * e.pct * (1 + (gA.healBoost || 0))), s.hp - A.cur.hp);
         if (heal > 0) { A.cur.hp += heal; this.push(st, ev, { text: t('battle.drains', { name: this.name(st, side), n: heal }), anim: 'heal', side, amount: heal, cat: 'dmg' }); }
       } else if (e.type === 'heal') {
-        const heal = Math.min(Math.round(s.hp * e.pct), s.hp - A.cur.hp);
+        const heal = Math.min(Math.round(s.hp * e.pct * (1 + (gA.healBoost || 0))), s.hp - A.cur.hp);
         if (heal > 0) { A.cur.hp += heal; this.push(st, ev, { text: t('battle.heals', { name: this.name(st, side), n: heal }), anim: 'heal', side, amount: heal, cat: 'dmg' }); }
         else this.push(st, ev, { text: t('battle.alreadyFull'), kind: 'muted', cat: 'dmg' });
       } else if (e.type === 'status' && lucky && T.cur.hp > 0) {
-        if (!T.status) { T.status = e.status; this.push(st, ev, { text: t('battle.gotStatus', { name: this.name(st, other(side)), status: statusName(e.status) }), kind: 'warn', anim: 'status', side: other(side), cat: 'dmg' }); }
+        // v4.81: amuletos: pueden evitar el estado
+        if (!T.status && gT.statusRes && U.chance(gT.statusRes)) this.push(st, ev, { text: t('battle.warded', { name: this.name(st, other(side)) }), kind: 'muted', cat: 'dmg' });
+        else if (!T.status) { T.status = e.status; this.push(st, ev, { text: t('battle.gotStatus', { name: this.name(st, other(side)), status: statusName(e.status) }), kind: 'warn', anim: 'status', side: other(side), cat: 'dmg' }); }
         else if (!m.power) this.push(st, ev, { text: t('battle.noEffect'), kind: 'muted', cat: 'dmg' });
       } else if ((e.type === 'buff' || e.type === 'debuff') && lucky) {
         const tgt = e.type === 'buff' ? side : other(side);
@@ -694,7 +719,8 @@
     rewards(st) {
       const ally = this.ally(st), e = st.enemy, sp = D.species[e.species], zone = D.zones[st.zoneId];
       const out = { exp: 0, coins: 0, drops: [], unlocked: null, captured: st.outcome === 'captured', boss: st.boss, toLoot: st.expedition };
-      out.exp = Math.round(C().expGain(sp.exp, e.level) * (st.boss ? 2 : st.elite ? 1.5 : 1) * (1 + DK.camp.value('sabiduria') + (st.expedition ? DK.relics.sum('exp') + (DK.expedition.kindDef().exp || 0) + DK.runes.bonus('exp') : 0)));
+      const gF = DK.gear.fxOf(ally); // v4.82: sufijos de experiencia y monedas
+      out.exp = Math.round(C().expGain(sp.exp, e.level) * (st.boss ? 2 : st.elite ? 1.5 : 1) * (1 + DK.camp.value('sabiduria') + (gF.expFind || 0) + (st.expedition ? DK.relics.sum('exp') + (DK.expedition.kindDef().exp || 0) + DK.runes.bonus('exp') : 0)));
       out.levelInfo = DK.daskai.gainExp(ally, out.exp);
       // Experiencia compartida con el resto del equipo (no debilitados)
       out.shared = DK.party.active().filter((d) => d.uid !== ally.uid && !DK.daskai.isFainted(d) && d.level < DK.config.maxLevel).map((d) => {
@@ -704,7 +730,7 @@
         return { uid: d.uid, name: DK.daskai.name(d), exp: n, from: before, to: d.level, evolveReady: info.evolveReady };
       });
       const bi = st.bossInfo || zone.boss;
-      out.coins = st.boss ? bi.coins : C().coinDrop(e.level) * (st.elite ? 2 : 1);
+      out.coins = Math.round((st.boss ? bi.coins : C().coinDrop(e.level) * (st.elite ? 2 : 1)) * (1 + (gF.goldFind || 0)));
 
       const entry = DK.codex.entry(st.zoneId, e.species);
       entry.defeated++;

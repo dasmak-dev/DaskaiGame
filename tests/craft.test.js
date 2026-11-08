@@ -33,14 +33,14 @@ module.exports = {
         const w = (ms) => new Promise((res) => setTimeout(res, ms));
         const on = () => document.body.classList.contains('bgfx-on');
         DK.router.reset('craft'); await w(200);
-        const out = { craft: on(), icon: !!DK.icon.raw('craftCog') && document.querySelector('.hud-ribbon svg').innerHTML === DK.icon('craftCog').querySelector('svg').innerHTML };
+        const out = { craft: on(), icon: !!DK.icon.raw('forgeRune') && document.querySelector('.hud-ribbon svg').innerHTML === DK.icon('forgeRune').querySelector('svg').innerHTML };
         DK.settings.set('bgFx', false); await w(100); out.off = !on();
         DK.settings.set('bgFx', true); await w(100); out.back = on();
         DK.expedition.start(); DK.router.reset('expedition'); await w(200); out.exp = !on();
         return out;
       });
       check(r.craft && r.off && r.back && r.exp, 'el fondo animado no se enciende/apaga donde debe: ' + JSON.stringify(r));
-      check(r.icon, 'Crafteo debería usar el icono craftCog');
+      check(r.icon, 'Crafteo debería usar el icono forgeRune');
     }),
   }, {
     name: 'Bolsa: grupos por uso, materiales en Crafteo, buscar/ordenar con iconos y vista previa al usar',
