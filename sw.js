@@ -6,9 +6,10 @@
  * sube el número de CACHE para que los jugadores reciban la versión
  * nueva. (Sólo funciona servido por http/https, no con file://).
  * ============================================================= */
-const CACHE = 'daskai-v4.88.0';
+const CACHE = 'daskai-v4.94.0';
 const FILES = [
     './',
+    './css/cursor.css',
     './css/base.css',
     './css/battle.css',
     './css/components.css',
@@ -39,6 +40,7 @@ const FILES = [
     './js/components/itemViews.js',
     './js/components/gearViews.js',
     './js/components/forgeBench.js',
+    './js/components/runeBench.js',
     './js/components/palette.js',
     './js/components/avatar.js',
     './js/components/shareCard.js',

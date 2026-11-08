@@ -68,15 +68,21 @@
       partyMax: 3,              // daskai por grupo
       // k: multiplicador de botín y experiencia · rolls: materiales · rations: raciones de viaje · fatigue: min agotado si sale mal · risk: × riesgo
       durations: [
-        { id: 'short', min: 30, k: 0.5, rolls: 2, rations: 1, fatigue: 45, risk: 0.85 },
-        { id: 'mid', min: 120, k: 1, rolls: 4, rations: 2, fatigue: 90, risk: 1 },
-        { id: 'long', min: 480, k: 2.6, rolls: 9, rations: 4, fatigue: 180, risk: 1.2 },
+        { id: 'short', min: 30, k: 0.5, rolls: 2, rations: 1, fatigue: 60, risk: 0.8 },
+        { id: 'mid', min: 120, k: 1, rolls: 4, rations: 2, fatigue: 120, risk: 1 },
+        { id: 'long', min: 480, k: 2.6, rolls: 9, rations: 4, fatigue: 240, risk: 1.3 },
       ],
       coins: (zoneLv, k, n) => Math.round((20 + zoneLv * 3) * (0.5 + k * 0.5) * (0.7 + 0.3 * n)), // monedas al salir
       exp: 0.24,                // fracción de su nivel actual que gana por cada k (si no va muy sobrado)
-      // Riesgo de volver agotados: base − (nivel medio − nivel de la zona) × perLevel; × house si alguno es de la casa de la zona
-      risk: { base: 0.18, perLevel: 0.035, min: 0.03, max: 0.8, house: 0.7, firme: 0.75 },
+      /* Riesgo de que algo salga mal (v4.89, más peligroso):
+       *   base + (nivel de la zona − nivel medio del grupo) × perLevel
+       *   × house si alguno es de la casa de la zona · × weak por cada uno débil contra ella
+       *   × size según cuántos van (solo 1, 2 o 3) · × firme por cada Firme · × la duración · × (1 − Puesto)
+       *   entre min y max. De lo que sale mal, una parte es DESASTRE: disaster + gap × (niveles por debajo), hasta disasterMax */
+      risk: { base: 0.3, perLevel: 0.03, min: 0.08, max: 0.92, house: 0.75, weak: 1.15, firme: 0.8, size: [1.3, 1.1, 1], disaster: 0.3, gap: 0.04, disasterMax: 0.7 },
       hurt: 0.5,                // si vuelven agotados, traen la mitad de botín y experiencia
+      // v4.89: DESASTRE: pierden todo el botín (monedas, objetos y equipo), traen esta parte de la experiencia y el agotamiento × disasterFatigue
+      disasterExp: 0.2, disasterFatigue: 2,
       loot: {
         fragment: 0.22,         // por cada tirada de materiales
         ration: 0.25,           // × k: a veces encuentran una ración
@@ -88,6 +94,31 @@
         // v4.87: hallazgo exclusivo de las exploraciones: un alijo con piedras (a veces raras), fragmentos y raciones
         cache: [0.01, 0.03, 0.08],
         cacheRare: ['piedra_regia', 'piedra_caos', 'piedra_templado', 'sello_forja'],
+      },
+      /* v4.89: lo PROPIO de cada zona (sólo explorándola): su REACTIVO de runas (forja de runas), su piedra de
+       * forja favorita (sale el 40% de las veces que sale piedra), los tipos de equipo que más traen (70%)
+       * y su hallazgo raro (un tónico). Las cantidades, por duración (corta / media / larga). */
+      finds: {
+        pradera: { reagent: 'tiza_runica', stone: 'piedra_transmutacion', gear: ['botas', 'capa'], rare: 'baya_saber' },
+        bosque: { reagent: 'savia_runica', stone: 'piedra_alteracion', gear: ['baculo', 'amuleto'], rare: 'tonico_vida' },
+        costa: { reagent: 'perla_runica', stone: 'piedra_aumento', gear: ['anillo', 'orbe'], rare: 'tonico_mana' },
+        cavernas: { reagent: 'cuarzo_eco', stone: 'piedra_cambio', gear: ['daga', 'yelmo'], rare: 'tonico_hierro' },
+        volcan: { reagent: 'ceniza_runica', stone: 'piedra_nucleo', gear: ['garra', 'martillo'], rare: 'tonico_fuerza' },
+        templo: { reagent: 'tinta_sagrada', stone: 'piedra_regia', gear: ['espada', 'corona'], rare: 'tonico_espiritu' },
+        abismo: { reagent: 'tinta_abisal', stone: 'piedra_caos', gear: ['anillo', 'capa'], rare: 'tonico_magia' },
+        cumbre: { reagent: 'escarcha_celeste', stone: 'piedra_templado', gear: ['escudo', 'botas'], rare: 'tonico_viento' },
+        vacio: { reagent: 'polvo_vacio', stone: 'sello_forja', gear: ['espada', 'coraza'], rare: 'esencia_ancestral' },
+      },
+      findRates: {
+        reagent: [0.5, 1.1, 2.6],     // reactivos de media (la parte entera seguro, el resto al azar); sólo con el Taller de runas
+        favStone: 0.4,                // de las piedras, la favorita de la zona
+        favGear: 0.7,                 // del equipo, de sus tipos
+        rare: [0.02, 0.05, 0.12],     // su hallazgo raro
+        rune: [0, 0.05, 0.15],        // una runa (zonas de nivel ≥ runeFrom; con el Taller de runas)
+        runeFrom: 13,
+        magicPerLv: 0.004,            // + probabilidad de equipo mágico por nivel de zona
+        glyph: [0.01, 0.03, 0.08],    // v4.90: glifo de ascenso (zonas de nivel ≥ runeFrom)
+        heart: [0, 0.006, 0.02], heartFrom: 50, // v4.90: corazón rúnico (zonas de nivel ≥ heartFrom)
       },
       gift: 6,                  // raciones de regalo al desbloquear las exploraciones
       // v4.87: encargos del día (se cumplen al recoger una exploración)
@@ -212,20 +243,37 @@
         tierMult: [1, 2, 4],     // bonificaciones × esto en los tiers I, II y III
         // Pisos del mapa según la runa de tamaño y su tier (I, II, III). Sin runa: el tamaño normal (sizes).
         tierFloors: { small: [8, 14, 18], medium: [14, 20, 26], xl: [20, 28, 36] },
-        // Rareza al caer: normal (sin modificadores), mágica (1) o rara (2). + DK.endgame.runeTier()/2
+        // Rareza al caer: normal (sin modificadores), mágica o rara. + DK.endgame.runeTier()/2
         rarity: { magic: 0.3, rare: 0.08 },
-        // Modificadores que puede traer una runa mágica o rara (valor al azar entre min y max × tierScale)
+        // v4.89: como el equipo: mágica 1–2 modificadores (1 prefijo + 1 sufijo como mucho), rara 2–4 (2 + 2)
+        // v4.90: LEGENDARIA (sólo mejorando una rara con el corazón rúnico): 3–4 modificadores, valores × 1,3 y +1 emblema por jefe
+        rarities: { m: { mods: [1, 2], maxP: 1, maxS: 1 }, r: { mods: [2, 4], maxP: 2, maxS: 2 }, l: { mods: [3, 4], maxP: 2, maxS: 2, valueMult: 1.3, emblems: 1 } },
+        // Modificadores (valor al azar entre min y max × tierScale). PREFIJOS: cambian el MAPA; SUFIJOS: las RECOMPENSAS
         affixes: {
-          elitePct: { min: 8, max: 15 },   // % de combates normales del mapa que pasan a ser élites (minijefes)
-          treasures: { min: 1, max: 1 },   // tesoros extra en el mapa
-          recruits: { min: 1, max: 1 },    // reclutas extra en el mapa
-          caves: { min: 1, max: 1 },       // cuevas extra
-          coins: { min: 8, max: 18 },      // +% monedas
-          exp: { min: 8, max: 18 },        // +% experiencia
-          shiny: { min: 1, max: 2 },       // +% variocolor en los reclutas
+          elitePct: { kind: 'prefix', min: 8, max: 15 },   // % de combates normales del mapa que pasan a ser élites (minijefes)
+          treasures: { kind: 'prefix', min: 1, max: 1 },   // tesoros extra en el mapa
+          recruits: { kind: 'prefix', min: 1, max: 1 },    // reclutas extra en el mapa
+          caves: { kind: 'prefix', min: 1, max: 1 },       // cuevas extra
+          shops: { kind: 'prefix', min: 1, max: 1 },       // v4.89: mercaderes extra
+          shrines: { kind: 'prefix', min: 1, max: 1 },     // v4.89: santuarios extra
+          coins: { kind: 'suffix', min: 8, max: 18 },      // +% monedas
+          exp: { kind: 'suffix', min: 8, max: 18 },        // +% experiencia
+          shiny: { kind: 'suffix', min: 1, max: 2 },       // +% variocolor en los reclutas
+          relicFind: { kind: 'suffix', min: 8, max: 15 },  // v4.89: +% de reliquia en los cofres
+          runeFind: { kind: 'suffix', min: 15, max: 30 },  // v4.89: +% de que caigan runas
+          stoneFind: { kind: 'suffix', min: 15, max: 30 }, // v4.89: +% piedras de forja en los combates
+        },
+        /* v4.89: FORJA DE RUNAS (Crafteo → Runas): cada reactivo sale SÓLO explorando su zona (explore.finds).
+         *   up: normal → mágica · alter: re-tira los de una mágica · add: añade uno (elige prefijo/sufijo)
+         *   change: cambia uno elegido · rare: mágica → rara · values: re-tira los valores · chaos: re-tira los de una rara
+         *   max: lleva uno elegido a su valor máximo · remove: quita uno elegido */
+        reagents: {
+          tiza_runica: 'up', savia_runica: 'alter', perla_runica: 'add', cuarzo_eco: 'change', ceniza_runica: 'rare',
+          tinta_sagrada: 'values', tinta_abisal: 'chaos', escarcha_celeste: 'max', polvo_vacio: 'remove',
+          glifo_ascenso: 'tier', corazon_runico: 'legend',   // v4.90: sustituyen a fundir (élites, jefes y exploraciones altas)
         },
         tierScale: [1, 1.5, 2],
-        fuseCost: [500, 2000],   // monedas por fundir 3 → 1 (a tier II, a tier III)
+        fuseCost: [500, 2000],   // monedas por subir de tier con el glifo de ascenso (a tier II, a tier III); fundir ya no está en pantalla
         slots: 4,   // huecos para engastar runas antes de partir (como mucho 1 de tamaño y 1 de tipo)
       },
       weights: { fight: 36, event: 20, elite: 10, recruit: 9, shop: 7, treasure: 8, rest: 5, shrine: 4, cave: 4 },

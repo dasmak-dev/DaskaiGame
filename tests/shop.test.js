@@ -62,14 +62,14 @@ module.exports = {
         DK.router.reset('training', { plan: true });
       });
       await sleep(500);
-      const r = await p.evaluate(() => ({ zones: document.querySelectorAll('.ex-zone').length, durs: document.querySelectorAll('.ex-durs button').length, tiles: document.querySelectorAll('.ex-tile').length, steps: document.querySelectorAll('.tr-step').length, slots: DK.explore.slotCount() }));
+      const r = await p.evaluate(() => ({ zones: document.querySelectorAll('.ex-zt').length, durs: document.querySelectorAll('.ex-dpills button').length, tiles: document.querySelectorAll('.ex-tile').length, steps: document.querySelectorAll('.tr-step').length, slots: DK.explore.slotCount() }));
       check(r.zones >= 1 && r.durs === 3 && r.tiles >= 3 && r.steps === 4, 'faltan zonas, duraciones, daskai o mejoras: ' + JSON.stringify(r));
       // Elegir dos daskai: sale el resumen con riesgo, coste y experiencia
       await p.evaluate(() => { const ts = [...document.querySelectorAll('.ex-tile:not([disabled])')]; ts[0].click(); });
       await sleep(250);
       await p.evaluate(() => { const ts = [...document.querySelectorAll('.ex-tile:not([disabled]):not(.on)')]; ts[0].click(); });
       await sleep(250);
-      const s1 = await p.evaluate(() => ({ sel: DK.router.current().params.sel.length, risk: !!document.querySelector('.ex-risk'), cost: !!document.querySelector('.ex-cost'), exp: document.querySelectorAll('.ex-exps span').length }));
+      const s1 = await p.evaluate(() => ({ sel: DK.router.current().params.sel.length, risk: !!document.querySelector('.ex-rk'), cost: !!document.querySelector('.ex-cost'), exp: document.querySelectorAll('.ex-exps span').length }));
       check(s1.sel === 2 && s1.risk && s1.cost && s1.exp === 2, 'el resumen del grupo no sale: ' + JSON.stringify(s1));
       check(!(await overflowX(p)), 'el planificador se sale de la pantalla');
       // v4.87: lo que puede salir (lista con probabilidades) y la lista de daskai plegable
@@ -82,7 +82,7 @@ module.exports = {
       check(fold.tiles === 0 && fold.chosen === 2, 'la lista de daskai no se pliega o no se ven los elegidos: ' + JSON.stringify(fold));
       const w0 = await p.evaluate(() => ({ c: DK.wallet.get(), r: DK.bag.count('racion_viaje') }));
       await p.evaluate(() => document.querySelector('.ex-go .btn-primary').click()); await sleep(400);
-      const g = await p.evaluate(() => { const X = DK.explore, g = X.slots()[0]; return { n: X.slots().length, uids: g && g.uids.length, out: g && g.uids.every((u) => !DK.store.state.team.includes(u) && X.isTraining(u)), c: DK.wallet.get(), r: DK.bag.count('racion_viaje'), cards: document.querySelectorAll('.ex-group').length }; });
+      const g = await p.evaluate(() => { const X = DK.explore, g = X.slots()[0]; return { n: X.slots().length, uids: g && g.uids.length, out: g && g.uids.every((u) => !DK.store.state.team.includes(u) && X.isTraining(u)), c: DK.wallet.get(), r: DK.bag.count('racion_viaje'), cards: document.querySelectorAll('.ex-gc:not(.free)').length }; });
       check(g.n === 1 && g.uids === 2 && g.out && g.c < w0.c && g.r < w0.r && g.cards === 1, 'mandar el grupo no cobra o no los saca del equipo: ' + JSON.stringify({ g, w0 }));
       // Volver: informe con diario y botín; experiencia; vuelven al equipo
       const rep = await p.evaluate(() => {
@@ -110,6 +110,19 @@ module.exports = {
         return { lo, hi, weak, strong, why: !!why, join };
       });
       check(risk.hi > risk.lo && risk.weak > risk.strong && risk.why && !risk.join, 'el riesgo o el cansancio no funcionan: ' + JSON.stringify(risk));
+      // v4.89: desastre (pierden todo el botín) y lo propio de cada zona (reactivo de runas con el Taller)
+      const dis = await p.evaluate(() => {
+        const X = DK.explore, ds = DK.party.all().filter((x) => !x.temp && !X.isTraining(x.uid)).slice(-1);
+        DK.store.state.camp = DK.store.state.camp || {}; DK.store.state.camp.runas = 1; DK.bag.addHome({ racion_viaje: 4 });
+        const ri = X.riskInfo(ds, 'cumbre', 'long');
+        const c0 = DK.wallet.get(); const g = X.send([ds[0].uid], 'pradera', 'mid'); g.start -= (g.min + 1) * 60000;
+        const c1 = DK.wallet.get(); const r = X.collect(g.id, () => 0.001), same = DK.wallet.get() === c1;
+        const g2 = X.send([DK.party.all().filter((x) => !x.temp && !X.isTraining(x.uid) && !X.isTired(x))[0].uid], 'pradera', 'long'); g2.start -= (g2.min + 1) * 60000;
+        const r2 = X.collect(g2.id, () => 0.97);
+        return { dis: ri.disaster > 0 && ri.disaster < ri.risk, parts: ri.parts.length, out: r.outcome, items: Object.keys(r.items).length, coins: r.coins, wallet: same, tired: X.isTired(ds[0]),
+          reagent: r2.items.tiza_runica || 0, own: !!X.zoneLoot('pradera', 'long').own.reagent, c0: c0 > c1 };
+      });
+      check(dis.dis && dis.parts >= 2 && dis.out === 'disaster' && !dis.items && !dis.coins && dis.wallet && dis.tired && dis.reagent >= 2 && dis.own, 'el desastre o lo propio de la zona no funcionan: ' + JSON.stringify(dis));
       // Sin raciones no se puede salir
       const nr = await p.evaluate(() => { const X = DK.explore, d = DK.party.all().filter((x) => !x.temp && !DK.party.isActive(x.uid))[0] || DK.party.all()[1]; DK.bag.remove('racion_viaje', DK.bag.count('racion_viaje')); return X.cannot([d.uid], 'pradera', 'mid'); });
       check(!!nr, 'debería pedir raciones de viaje');

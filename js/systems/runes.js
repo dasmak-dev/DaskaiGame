@@ -37,6 +37,7 @@
   const U = DK.util;
   const cfg = () => DK.config.expedition.runes;
   const st = () => DK.store.state;
+  const { t } = DK;
 
   DK.runes = {
     /** Tier máximo desbloqueado con la mejora «Taller de runas» (0 = sin runas: no caen ni hay huecos). */
@@ -59,7 +60,7 @@
     parse(id) {
       const [base, tt, rr, aa] = String(id || '').split(':');
       const affixes = (aa || '').split(',').filter(Boolean).map((x) => { const [k, v] = x.split('='); return { k, v: +v || 0 }; }).filter((a) => cfg().affixes && cfg().affixes[a.k]);
-      return { base, tier: Math.min(3, Math.max(1, +tt || 1)), rarity: rr === 'm' || rr === 'r' ? rr : 'n', affixes };
+      return { base, tier: Math.min(3, Math.max(1, +tt || 1)), rarity: ['m', 'r', 'l'].includes(rr) ? rr : 'n', affixes };
     },
     /** Monta un id. Las normales sin modificadores se quedan como siempre ('oro', 'oro:2'). */
     make(base, tier = 1, rarity = 'n', affixes = []) {
@@ -72,16 +73,34 @@
     get(id) { const p = this.parse(id); const r = cfg().list[p.base]; return r ? Object.assign({}, r, { id: this.make(p.base, p.tier, p.rarity, p.affixes), base: p.base, tier: p.tier, rarity: p.rarity, affixes: p.affixes }) : null; },
     /** Valor de un modificador de una runa (0 si no lo tiene). */
     affix(id, k) { return this.parse(id).affixes.filter((a) => a.k === k).reduce((x, a) => x + a.v, 0); },
-    /** Sortea `n` modificadores distintos para una runa de ese tier. */
-    rollAffixes(n, tier, rnd = Math.random) {
-      const keys = Object.keys(cfg().affixes || {}), out = [];
-      while (out.length < n && out.length < keys.length) {
-        const k = keys[Math.floor(rnd() * keys.length)]; if (out.some((a) => a.k === k)) continue;
-        const A = cfg().affixes[k], sc = (cfg().tierScale || [1, 1.5, 2])[tier - 1];
-        out.push({ k, v: Math.max(1, Math.round((A.min + rnd() * (A.max - A.min)) * sc)) });
-      }
+    /** v4.89: ¿prefijo (mapa) o sufijo (recompensas)? */
+    kindOf(k) { const A = (cfg().affixes || {})[k]; return (A && A.kind) || 'suffix'; },
+    /** v4.89: [mín, máx] de un modificador en un tier. */
+    range(k, tier = 1, rr = 'm') { const A = cfg().affixes[k], sc = (cfg().tierScale || [1, 1.5, 2])[tier - 1] * (this.rar(rr).valueMult || 1); return [Math.max(1, Math.round(A.min * sc)), Math.max(1, Math.round(A.max * sc))]; },
+    /** v4.89: reglas de una rareza ('m' | 'r'): { mods: [mín, máx], maxP, maxS }. */
+    rar(rr) { return (cfg().rarities || {})[rr] || { mods: [0, 0], maxP: 0, maxS: 0 }; },
+    /** v4.89: huecos de la runa: { P: [usados, máx], S: [usados, máx], total } */
+    slotsOf(id) {
+      const p = this.parse(id), R = this.rar(p.rarity), n = (k) => p.affixes.filter((a) => this.kindOf(a.k) === k).length;
+      return { P: [n('prefix'), R.maxP], S: [n('suffix'), R.maxS], total: R.mods[1] };
+    },
+    /** v4.89: un modificador nuevo (de un tipo, o del que quepa) que la lista aún no tenga, o null. */
+    rollMod(have, rr, tier, rnd = Math.random, kind = null, not = []) {
+      const R = this.rar(rr), n = (k) => have.filter((a) => this.kindOf(a.k) === k).length;
+      const can = (k) => (k === 'prefix' ? n('prefix') < R.maxP : n('suffix') < R.maxS);
+      const keys = Object.keys(cfg().affixes || {}).filter((k) => !have.some((a) => a.k === k) && !not.includes(k) && (kind ? this.kindOf(k) === kind : true) && can(this.kindOf(k)));
+      if (!keys.length) return null;
+      const k = keys[Math.floor(rnd() * keys.length)], [lo, hi] = this.range(k, tier, rr);
+      return { k, v: lo + Math.floor(rnd() * (hi - lo + 1)) };
+    },
+    /** Sortea `n` modificadores distintos para una runa de ese tier (respetando prefijos/sufijos de su rareza). */
+    rollAffixes(n, tier, rnd = Math.random, rr = n > 2 ? 'r' : 'm', have = []) {
+      const out = have.slice();
+      for (let i = 0; i < 12 && out.length < n; i++) { const a = this.rollMod(out, rr, tier, rnd); if (!a) break; out.push(a); }
       return out;
     },
+    /** v4.89: suma de un modificador en las runas de la expedición en curso (o de `list`). */
+    modSum(k, list) { const e = DK.expedition.active(); return (list || (e && e.runesUsed) || []).reduce((a, id) => a + this.affix(id, k), 0); },
     /** Rareza al azar ('n' | 'm' | 'r'); sube con la profundidad/corrupción. */
     rollRarity(rnd = Math.random, up = 0) {
       const R = cfg().rarity || { magic: 0, rare: 0 }, x = rnd();
@@ -91,7 +110,9 @@
     roll1(base, tier, rnd = Math.random, rarity = null, up = 0) {
       tier = Math.max(1, Math.min(tier, this.maxTier() || 1));
       const rr = rarity || this.rollRarity(rnd, up);
-      return this.make(base, tier, rr, this.rollAffixes(rr === 'r' ? 2 : rr === 'm' ? 1 : 0, tier, rnd));
+      if (rr === 'n') return this.make(base, tier);
+      const [a, b] = this.rar(rr).mods;
+      return this.make(base, tier, rr, this.rollAffixes(a + Math.floor(rnd() * (b - a + 1)), tier, rnd, rr));
     },
     /** Multiplicador de una runa de bonificación según su tier. */
     mult(id) { return (cfg().tierMult || [1, 2, 4])[this.parse(id).tier - 1]; },
@@ -105,7 +126,7 @@
     /** Cuántas tienes de esa runa y tier (de cualquier rareza). */
     countKey(id) { const k = this.key(id); return Object.entries(this.all()).reduce((a, [x, n]) => a + (this.key(x) === k ? n : 0), 0); },
     /** Ids que tienes de esa runa y tier, de menor a mayor rareza. */
-    idsOfKey(id) { const k = this.key(id), ord = { n: 0, m: 1, r: 2 }; return Object.keys(this.all()).filter((x) => this.all()[x] > 0 && this.key(x) === k).sort((a, b) => ord[this.parse(a).rarity] - ord[this.parse(b).rarity]); },
+    idsOfKey(id) { const k = this.key(id), ord = { n: 0, m: 1, r: 2, l: 3 }; return Object.keys(this.all()).filter((x) => this.all()[x] > 0 && this.key(x) === k).sort((a, b) => ord[this.parse(a).rarity] - ord[this.parse(b).rarity]); },
     total() { return Object.values(this.all()).reduce((a, b) => a + b, 0); },
     add(id, n = 1) {
       if (!this.get(id) || n <= 0) return 0;
@@ -134,7 +155,7 @@
      */
     drop(source, rnd = Math.random) {
       if (!this.enabled()) return [];
-      const p = cfg().drop[source] || 0;
+      const p = (cfg().drop[source] || 0) * (1 + this.modSum('runeFind') / 100); // v4.89: sufijo «+% runas»
       const n = p >= 1 ? Math.floor(p) : rnd() < p ? 1 : 0;
       // A más profundidad y corrupción, más probable que salga de un tier mayor
       const up = DK.endgame.runeTier() + (source === 'secret' ? 0.2 : 0);
@@ -212,14 +233,14 @@
       // + modificadores (coins/exp/shiny en %)
       return (list || (e && e.runesUsed) || []).reduce((a, id) => { const r = this.get(id); return a + (r && r[key] ? r[key] * this.mult(id) : 0) + (['coins', 'exp', 'shiny'].includes(key) ? this.affix(id, key) / 100 : 0); }, 0);
     },
-    /** Emblemas extra por jefe de las runas de tamaño/tipo de tier II-III. */
+    /** Emblemas extra por jefe de las runas de tamaño/tipo de tier II-III (+ las legendarias, v4.90). */
     emblemBonus(list) {
       const e = DK.expedition.active();
-      return (list || (e && e.runesUsed) || []).reduce((a, id) => { const r = this.get(id); return a + (r && r.group !== 'bonus' ? r.tier - 1 : 0); }, 0);
+      return (list || (e && e.runesUsed) || []).reduce((a, id) => { const r = this.get(id); return a + (r && r.group !== 'bonus' ? r.tier - 1 : 0) + (r ? this.rar(r.rarity).emblems || 0 : 0); }, 0);
     },
     /** Lo que cambian en el mapa las runas: élites garantizados, sin hogueras, cuevas extra. */
     mapExtra(list) {
-      const out = { minElites: 0, noRest: false, caves: 0, elitePct: 0, treasures: 0, recruits: 0, rows: 0 };
+      const out = { minElites: 0, noRest: false, caves: 0, elitePct: 0, treasures: 0, recruits: 0, shops: 0, shrines: 0, rows: 0 };
       (list || []).forEach((id) => {
         const r = this.get(id); if (!r) return;
         // Runa de tamaño: los pisos dependen de su tier (los mostrados = filas + 2: inicio y jefe)
@@ -227,13 +248,87 @@
         if (fl) out.rows = fl[r.tier - 1] - 2;
         out.elitePct += this.affix(id, 'elitePct') / 100;
         out.treasures += this.affix(id, 'treasures'); out.recruits += this.affix(id, 'recruits'); out.caves += this.affix(id, 'caves');
+        out.shops += this.affix(id, 'shops'); out.shrines += this.affix(id, 'shrines');
         if (r.elites) out.minElites += r.elites * r.tier;
         if (r.noRest) out.noRest = true;
         if (r.group === 'size' && r.value === 'xl' && r.tier === 3) out.caves += 2;
       });
       return out;
     },
+    /* ---------- Forja de runas (v4.89, Crafteo → Runas) ---------- */
+    /** Reactivos de la forja de runas (en orden) y lo que hace cada uno. */
+    /** Id canónico ('oro:1' → 'oro'). */
+    norm(id) { const r = this.get(id); return r ? r.id : id; },
+    reagents() { return Object.keys(cfg().reagents || {}); },
+    opOf(item) { return (cfg().reagents || {})[item] || null; },
+    /** Los que actúan sobre un modificador elegido (o.mod = índice). */
+    targetedOps: ['change', 'max', 'remove'],
+    /** ¿Se puede usar ese reactivo en esa runa? null si sí, o el motivo. */
+    cannotForge(id, item, o = {}) {
+      id = this.norm(id);
+      const op = this.opOf(item), p = this.parse(id), r = this.get(id);
+      if (!r || !op) return t('rune.why.none');
+      if (DK.expedition.active()) return t('gear.why.inExp');
+      if (this.free(id) <= 0) return t('rune.why.socketed');
+      if ((DK.bag.home()[item] || 0) < 1) return t('gear.why.noStone');
+      const m = o.mod != null ? p.affixes[o.mod] : null;
+      if (this.targetedOps.includes(op) && !p.affixes.length) return t('gear.why.noAffix');
+      if (this.targetedOps.includes(op) && o.mod != null && !m) return t('gear.why.noAffix');
+      const sl = this.slotsOf(id), room = (k) => p.affixes.length < sl.total && (k === 'prefix' ? sl.P[0] < sl.P[1] : k === 'suffix' ? sl.S[0] < sl.S[1] : sl.P[0] < sl.P[1] || sl.S[0] < sl.S[1]);
+      switch (op) {
+        case 'up': return p.rarity === 'n' ? null : t('rune.why.needNormal');
+        case 'alter': return p.rarity === 'm' ? null : t('rune.why.needMagic');
+        case 'rare': return p.rarity === 'm' ? null : t('rune.why.needMagic');
+        case 'chaos': return p.rarity === 'r' || p.rarity === 'l' ? null : t('rune.why.needRare');
+        case 'add': return p.rarity === 'n' ? t('rune.why.needMagicRare') : !room(o.kind) ? t('gear.why.full') : null;
+        case 'values': return p.affixes.length ? null : t('gear.why.noAffix');
+        case 'change': return m && !this.rollMod(p.affixes.filter((x) => x !== m), p.rarity, p.tier, () => 0, this.kindOf(m.k), [m.k]) ? t('rune.why.noOther') : null;
+        case 'max': return m && m.v >= this.range(m.k, p.tier, p.rarity)[1] ? t('rune.why.atMax') : null;
+        case 'tier': return p.tier >= 3 ? t('rune.why.maxTier') : p.tier >= this.maxTier() ? t('forge.tierLocked', { n: ['', 'II', 'III'][p.tier] }) : DK.wallet.get() < this.tierCost(id) ? t('rune.why.coins', { n: this.tierCost(id) }) : null;
+        case 'legend': return p.rarity === 'r' ? null : t('rune.why.needRare');
+        case 'remove': return null;
+        default: return t('rune.why.none');
+      }
+    },
+    /**
+     * Usa un reactivo en UNA runa (de las libres de ese id). o.mod: índice del modificador; o.kind: prefijo/sufijo al añadir.
+     * @returns {{ok, msg, id, before}} id: la runa nueva
+     */
+    forge(id, item, o = {}, rnd = Math.random) {
+      id = this.norm(id); // 'oro:1' y 'oro' son la misma runa
+      const op = this.opOf(item), p = this.parse(id);
+      if (this.targetedOps.includes(op) && o.mod == null) return { ok: false, msg: t('gear.why.pickAffix') };
+      const why = this.cannotForge(id, item, o); if (why) return { ok: false, msg: why };
+      let rr = p.rarity, mods = p.affixes.map((a) => Object.assign({}, a));
+      const fill = (range, have = []) => { const [a, b] = range, n = a + Math.floor(rnd() * (b - a + 1)); return this.rollAffixes(Math.max(n, have.length), p.tier, rnd, rr, have); };
+      switch (op) {
+        case 'up': rr = 'm'; mods = fill(this.rar('m').mods); break;
+        case 'alter': mods = fill(this.rar('m').mods); break;
+        case 'chaos': mods = fill(this.rar(rr).mods); break;
+        case 'rare': rr = 'r'; mods = this.rollAffixes(Math.max(2, mods.length + 1), p.tier, rnd, 'r', mods); break;
+        case 'add': { const a = this.rollMod(mods, rr, p.tier, rnd, o.kind || null); if (a) mods.push(a); break; }
+        case 'values': mods.forEach((a) => { const [lo, hi] = this.range(a.k, p.tier, rr); a.v = lo + Math.floor(rnd() * (hi - lo + 1)); }); break;
+        case 'change': { const old = mods[o.mod], a = this.rollMod(mods.filter((x) => x !== old), rr, p.tier, rnd, this.kindOf(old.k), [old.k]); if (a) mods[o.mod] = a; break; }
+        case 'max': mods[o.mod].v = this.range(mods[o.mod].k, p.tier, rr)[1]; break;
+        // v4.90: subir de tier (sustituye a fundir 3): los valores suben en proporción
+        case 'tier': { const nt = p.tier + 1; mods.forEach((a) => { const [lo0, hi0] = this.range(a.k, p.tier, rr), [lo, hi] = this.range(a.k, nt, rr); const f = hi0 > lo0 ? (a.v - lo0) / (hi0 - lo0) : 1; a.v = Math.round(lo + f * (hi - lo)); });
+          DK.wallet.spend(this.tierCost(id)); p.tier = nt; break; }
+        // v4.90: rara → LEGENDARIA: valores × valueMult y un modificador más si cabe
+        case 'legend': { rr = 'l'; mods.forEach((a) => { const [lo0, hi0] = this.range(a.k, p.tier, 'r'), [lo, hi] = this.range(a.k, p.tier, 'l'); const f = hi0 > lo0 ? (a.v - lo0) / (hi0 - lo0) : 1; a.v = Math.round(lo + f * (hi - lo)); });
+          mods = this.rollAffixes(Math.max(this.rar('l').mods[0], mods.length + 1), p.tier, rnd, 'l', mods); break; }
+        case 'remove': mods.splice(o.mod, 1); if (!mods.length) rr = 'n'; break;
+      }
+      const next = this.make(p.base, p.tier, rr, mods);
+      this.all()[id]--; if (!this.all()[id]) delete this.all()[id];
+      this.add(next);
+      DK.bag.home()[item]--; if (DK.bag.home()[item] <= 0) delete DK.bag.home()[item];
+      DK.emit('runes:forged', { from: id, to: next, item });
+      DK.store.save();
+      return { ok: true, id: this.get(next).id, before: id, msg: t('rune.forged', { name: DK.views.runeName ? DK.views.runeName(next) : next }) };
+    },
     /* ---------- Fundir (Crafteo → Runas) ---------- */
+    /** v4.90: monedas por subir de tier con el glifo (I → II, II → III). */
+    tierCost(id) { return this.fuseCost(id) || 0; },
     fuseCost(id) { const tt = this.parse(id).tier; return tt >= 3 ? null : (cfg().fuseCost || [500, 2000])[tt - 1]; },
     /** Libres (sin engastar) de esa runa y tier, de cualquier rareza. */
     freeKey(id) { return this.idsOfKey(id).reduce((a, x) => a + Math.max(0, this.free(x)), 0); },
@@ -242,7 +337,7 @@
     /** Gasta 3 (primero las de menor rareza) y da una del tier siguiente con la rareza más alta de las gastadas. */
     fuse(id, rnd = Math.random) {
       if (!this.canFuse(id)) return null;
-      const cost = this.fuseCost(id), p = this.parse(id), ord = { n: 0, m: 1, r: 2 };
+      const cost = this.fuseCost(id), p = this.parse(id), ord = { n: 0, m: 1, r: 2, l: 3 };
       let left = 3, best = 'n';
       for (const x of this.idsOfKey(id)) {
         const take = Math.min(left, Math.max(0, this.free(x))); if (!take) continue;

@@ -160,7 +160,7 @@
     });
     // Modificadores de las runas mágicas/raras: combates → élites, tesoros y reclutas extra
     if (extra.elitePct) rows.slice(Math.min(c.eliteFrom, c.rows - 1)).flat().forEach((n) => { if (n.type === 'fight' && rnd() < extra.elitePct) n.type = 'elite'; });
-    [['treasure', extra.treasures], ['recruit', extra.recruits]].forEach(([type, k]) => {
+    [['treasure', extra.treasures], ['recruit', extra.recruits], ['shop', extra.shops], ['shrine', extra.shrines]].forEach(([type, k]) => { // v4.89: + mercaderes y santuarios
       for (let i = 0; i < (k || 0); i++) {
         const pool = rows.slice(1).flat().filter((n) => n.type === 'fight' || n.type === 'event');
         if (pool.length) U.pick(pool, rnd).type = type;
@@ -758,7 +758,7 @@
       const coins = Math.round((lv * U.rand(6, 10) + 20) * (kc.coins || 1));
       const split = this.addLoot(items, coins);
       // A veces hay una reliquia (en las de tesoro, también épicas)
-      const relic = U.chance(DK.config.expedition.chestRelicChance + (kc.relic || 0)) ? DK.relics.give(DK.relics.roll(kc.relic ? ['comun', 'raro', 'epico'] : ['comun', 'raro'], 1)[0]) : null;
+      const relic = U.chance(DK.config.expedition.chestRelicChance + (kc.relic || 0) + DK.runes.modSum('relicFind') / 100) ? DK.relics.give(DK.relics.roll(kc.relic ? ['comun', 'raro', 'epico'] : ['comun', 'raro'], 1)[0]) : null;
       // A veces, una runa de expedición (se guarda ya: DK.runes)
       const runes = DK.runes.drop('treasure').concat(kc.rune && U.chance(kc.rune) ? DK.runes.drop('boss') : []);
       return { items, coins, bag: split.bag, loot: split.loot, relic, runes };

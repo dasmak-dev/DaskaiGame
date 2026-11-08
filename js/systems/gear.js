@@ -42,14 +42,28 @@
   const allowedAffixes = (base, rarity) => {
     const fam = G().affixPools[primaryOf(base)] || Object.keys(G().affixes).filter((id) => !G().affixes[id].only);
     const ex = G().typeAffix && G().typeAffix[G().typeOf[base]]; // v4.81: el exclusivo de su tipo
-    const all = ex && !fam.includes(ex) ? fam.concat(ex) : fam;
+    let all = ex && !fam.includes(ex) ? fam.concat(ex) : fam;
+    all = all.concat(resAffixes(base)); // v4.89: resistencias a casas (según el tipo)
     // v4.85: los normales, sólo los básicos (sin exclusivo)
     return rarity && RAR()[rarity] && RAR()[rarity].basicOnly ? all.filter((id) => G().basicAffixes.includes(id)) : all;
+  };
+  /** v4.89: resistencias que admite una base (las dagas, sólo la de su casa; las armas de ataque, ninguna). */
+  const resAffixes = (base) => {
+    const ty = G().typeOf[base]; if (!G().resMax || !G().resMax[ty]) return [];
+    const only = (G().resHouse || {})[base];
+    if (ty === 'daga' && !only) return [];
+    return Object.keys(G().affixes).filter((id) => G().affixes[id].res && (!only || G().affixes[id].res === only));
+  };
+  /** v4.89: ¿no cabe esta resistencia? (tope de su tipo o ya tiene una de esa casa). `not`: ids que se van a quitar. */
+  const resBlocked = (p, a, not = []) => {
+    if (!a.res) return false;
+    const mine = p.affixes.filter((x) => !not.includes(x.id) && G().affixes[x.id] && G().affixes[x.id].res);
+    return mine.length >= (G().resMax[G().typeOf[p.base]] || 0) || mine.some((x) => G().affixes[x.id].res === a.res);
   };
   /** v4.85: tier máximo de un afijo según la rareza y el nivel de objeto. */
   const maxTierOf = (p) => Math.max(1, Math.min((RAR()[p.rarity] || {}).maxTier || 5, G().tiers.ilvl.filter((min) => (p.ilvl || 0) >= min).length));
   /** v4.81: peso al tirar un afijo (más si lo favorece la base; el exclusivo de su tipo, el doble). */
-  const affixWeight = (a, pool) => (1 + (a.boost || []).filter((k) => pool.slice(0, 2).includes(k)).length * 1.5) * (a.only ? 2 : 1);
+  const affixWeight = (a, pool) => (1 + (a.boost || []).filter((k) => pool.slice(0, 2).includes(k)).length * 1.5) * (a.only ? 2 : 1) * (a.res ? G().resWeight || 1 : 1);
 
   function poolOf(base) {
     const it = D.items[base], out = [primaryOf(base)]; // el principal, siempre el primero
@@ -87,7 +101,7 @@
   function rollAffix(p, kind, rnd = Math.random, not = []) {
     const pool = poolOf(p.base), have = p.affixes.map((a) => a.id).concat(not), w = {}, ok = allowedAffixes(p.base, p.rarity);
     Object.entries(G().affixes).forEach(([id, a]) => {
-      if (a.kind !== kind || have.includes(id) || !ok.includes(id)) return;
+      if (a.kind !== kind || have.includes(id) || !ok.includes(id) || resBlocked(p, a, not)) return;
       w[id] = affixWeight(a, pool);
     });
     const id = Object.keys(w).length ? U.weightedKey(w, rnd) : null;
@@ -335,7 +349,7 @@
       const maxT = maxTierOf(p);
       ['prefix', 'suffix'].forEach((kind) => {
         const ok = allowedAffixes(p.base, p.rarity);
-        const list = Object.entries(G().affixes).filter(([id, a]) => a.kind === kind && !have.includes(id) && ok.includes(id))
+        const list = Object.entries(G().affixes).filter(([id, a]) => a.kind === kind && !have.includes(id) && ok.includes(id) && !resBlocked(p, a))
           .map(([id, a]) => ({ id, kind, w: affixWeight(a, pool), maxT, range: a.tiers[maxT - 1], only: a.only || null }));
         const tot = list.reduce((x, y) => x + y.w, 0) || 1;
         list.forEach((x) => out.push(Object.assign(x, { chance: x.w / tot })));
@@ -542,7 +556,12 @@
 
     /* ---------------- Botín ---------------- */
     /** Piedras de forja de un combate ganado en expedición (data/gear.js → drops). */
-    battleDrops(src = 'fight') { return (G().drops[src] || []).filter(([, p]) => U.chance(p)).map(([id]) => id); },
+    battleDrops(src = 'fight') {
+      // v4.89: el sufijo de runa «+% piedras» sube las piedras (no los fragmentos ni las raciones)
+      const up = 1 + (DK.runes && DK.expedition.active() ? DK.runes.modSum('stoneFind') / 100 : 0);
+      const runeOk = (id) => !(DK.runes && DK.runes.opOf(id)) || DK.runes.enabled(); // v4.90: los de runas, sólo con el Taller
+      return (G().drops[src] || []).filter(([id, p]) => runeOk(id) && U.chance(id === 'fragmento_forja' || id === 'racion_viaje' ? p : p * up)).map(([id]) => id);
+    },
 
     /* ---------------- Partidas antiguas ---------------- */
     /**

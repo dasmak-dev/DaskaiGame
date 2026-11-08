@@ -4,8 +4,8 @@
  * Sustituye los dibujos sencillos de los lugares del campamento por
  * versiones con sombreado (luz por la izquierda), contorno oscuro,
  * texturas y VARIOS FOTOGRAMAS para animarlos:
- *   tent    tienda grande y cuadrada con banderín, farolillo y bajo que se mueve (3)
- *   fire    hoguera grande: llamas procedurales, troncos en tipi, brasas y chispas (8, v4.54)
+ *   tent    (Inventario) mochila con muchos bolsillos: al pasar el ratón los abre (4, v4.93)
+ *   fire    hoguera: tres lenguas de fuego en forma de gota, troncos, brasas y chispas (8, v4.92)
  *   anvil   yunque sobre tocón con lingote al rojo y chispas (3)
  *   dummy   (Exploraciones) mapa de pergamino en un atril: camino que se dibuja hasta la X (8)
  *   lectern (códice) grimorio con el lomo a la vista: reposo con runa que late y hoja que pasa (12, v4.80)
@@ -41,49 +41,64 @@
   const STONE = { l: '#8a8290', m: '#625a68', d: '#433c48', dd: '#2a2430' };
 
   const ART = {
-    /* ---------- Tienda de lona ---------- */
-    // v4.45: tienda de campaña grande y cuadrada (paredes rectas, tejado a dos aguas, faldón festoneado)
-    tent: { base: 38, frames: 3, draw(f) {
-      const c = canvas(52, 42);
-      const RED = ['#a32a22', '#86211b', '#5e1513'], BONE = ['#c9bba0', '#a89a80', '#6d6253'];
-      const stripe = (x, shade) => (Math.floor((x - 2) / 5) % 2 ? RED : BONE)[shade];
-      // sombra
-      c.rect(3, 39, 46, 2, 'rgba(0,0,0,.35)');
-      // vientos y estacas
-      line(c, 5, 18, 0, 39, '#a8957a'); line(c, 46, 18, 51, 39, '#a8957a');
-      c.rect(0, 38, 2, 3, W.d).rect(50, 38, 2, 3, W.d);
-      // paredes rectas (lado derecho en sombra)
-      for (let y = 19; y <= 38; y++) for (let x = 6; x <= 45; x++) c.set(x, y, stripe(x, x < 9 ? 0 : x > 36 ? 2 : 1));
-      // tejado a dos aguas (trapecio) con el alero que sobresale
-      for (let y = 7; y <= 18; y++) {
-        const k = (y - 7) / 11, x0 = Math.round(13 - k * 10), x1 = Math.round(38 + k * 10);
-        for (let x = x0; x <= x1; x++) c.set(x, y, stripe(x, y < 9 ? 0 : x > 36 ? 2 : x < 16 ? 0 : 1));
+    /* ---------- Mochila (v4.93: Inventario) ---------- */
+    // Mochila de explorador llena de bolsillos grandes: bolsillo frontal, dos laterales y uno en la
+    // solapa, saco de dormir enrollado arriba y una taza colgando. NO se anima sola: al pasar el
+    // ratón (css/motion.css) recorre los fotogramas 0 → 3 abriendo los bolsillos y se queda abierta.
+    tent: { base: 18, frames: 4, draw(f) {
+      const c = canvas(32, 36);
+      const L = ['#c27a3c', '#9c5a26', '#6e3d18', '#4a2810'], P = ['#b98552', '#8f6235', '#5f3f20'];
+      const ROLL = ['#6f9c8f', '#4f7a6e', '#33564c'], BRASS = ['#fde68a', '#e0b448', '#9a7420'], STRAP = '#3a2010';
+      c.rect(4, 34, 24, 2, 'rgba(0,0,0,.38)');
+      // cuerpo (arriba redondeado)
+      for (let y = 8; y <= 33; y++) for (let x = 6; x <= 25; x++) {
+        if (y < 11 && (x < 6 + (11 - y) || x > 25 - (11 - y))) continue;
+        c.set(x, y, x < 8 ? L[0] : x > 23 ? L[2] : L[1]);
       }
-      c.rect(13, 7, 26, 1, '#e3d6bb');
-      // faldón festoneado bajo el alero
-      for (let x = 3; x <= 48; x++) { c.set(x, 19, '#3b1d0e'); if (x % 4 !== 0) c.set(x, 20, (Math.floor(x / 4) % 2 ? RED : BONE)[1]); }
-      // costuras y remiendo
-      for (let y = 22; y < 38; y += 3) { c.set(6, y, '#3b1d0e'); c.set(45, y, '#2a140a'); }
-      c.rect(10, 27, 4, 3, '#7a6a4f').set(10, 27, '#c9bba0').set(13, 29, '#4d3f2e');
-      // bajo que ondea con el viento
-      for (let x = 6; x <= 45; x++) if ((x + f * 2) % 6 < 2) c.set(x, 38, stripe(x, 2));
-      // entrada con luz cálida dentro y solapas recogidas
-      c.rect(20, 23, 12, 16, '#140a05').rect(21, 30, 10, 9, '#2a1408').rect(22, 34, 8, 5, f === 1 ? '#7c3a0e' : '#6a300c');
-      c.rect(24, 36, 4, 2, f === 1 ? '#f59e0b' : '#d97706').set(25, 35, '#fde68a');
-      c.tri(19, 22, 34, 3, (x, y, hw, dx) => (dx < 0 ? '#c9bba0' : '#a89a80'));
-      c.tri(32, 22, 34, 3, (x, y, hw, dx) => (dx > 0 ? '#6d6253' : '#a89a80'));
-      line(c, 17, 29, 21, 29, W.d); line(c, 31, 29, 35, 29, W.d);
-      // farolillo junto a la puerta
-      c.rect(35, 23, 1, 2, W.dd).rect(34, 25, 3, 3, '#3b2414').set(35, 26, ['#fbbf24', '#fde68a', '#f59e0b'][f]);
-      // postes de las esquinas y mástil con banderín
-      c.rect(12, 4, 1, 4, W.d).rect(39, 4, 1, 4, W.d).set(12, 3, W.l).set(39, 3, W.l);
-      c.rect(25, 0, 1, 8, W.d);
-      for (let x = 0; x < 9; x++) {
-        const off = Math.round(Math.sin((x + f * 2) * 0.9) * (x / 5));
-        const hh = Math.max(1, 3 - Math.floor(x / 4));
-        c.rect(26 + x, 1 + off, 1, hh, x % 3 === 2 ? '#7f1d1d' : '#b91c1c');
+      c.rect(6, 33, 20, 1, L[3]);
+      // saco de dormir enrollado arriba con sus correas
+      c.rect(4, 3, 24, 6, ROLL[1]).rect(4, 3, 24, 2, ROLL[0]).rect(4, 8, 24, 1, ROLL[2]);
+      c.rect(3, 4, 2, 4, ROLL[2]).set(3, 5, '#93c2b4').rect(27, 4, 2, 4, ROLL[2]);
+      c.rect(9, 2, 1, 8, STRAP).rect(22, 2, 1, 8, STRAP);
+      // solapa superior con su bolsillo pequeño
+      c.rect(8, 9, 16, 7, L[0]).rect(8, 15, 16, 1, L[3]).rect(9, 9, 14, 1, '#d99a5c');
+      c.rect(12, 11, 8, 3, P[1]).rect(12, 11, 8, 1, P[0]).set(16, 13, BRASS[1]);
+      // correas y hebillas de la solapa
+      c.rect(10, 15, 2, 4, STRAP).rect(20, 15, 2, 4, STRAP).rect(10, 18, 2, 1, BRASS[1]).rect(20, 18, 2, 1, BRASS[1]);
+      /* --- bolsillos laterales (izquierda y derecha) --- */
+      const side = (x0, dir, open) => {
+        c.rect(x0, 19, 5, 11, P[1]).rect(x0, 29, 5, 1, P[2]).rect(dir < 0 ? x0 : x0 + 4, 19, 1, 11, dir < 0 ? P[0] : P[2]);
+        if (open) {
+          c.rect(x0, 17, 5, 2, '#24140a'); // boca abierta
+          c.rect(x0 + 1, 14, 1, 4, '#e8dcc0').rect(x0 + 2, 15, 1, 3, '#d6c49c').set(x0 + 1, 14, '#b91c1c'); // mapa enrollado
+          c.rect(x0 + (dir < 0 ? -1 : 1), 15, 5, 2, P[0]); // solapa caída hacia fuera
+        } else c.rect(x0, 18, 5, 3, P[0]).rect(x0, 20, 5, 1, P[2]).set(x0 + 2, 20, BRASS[1]);
+      };
+      side(1, -1, f >= 2); side(26, 1, f >= 3);
+      /* --- bolsillo frontal grande --- */
+      c.rect(9, 21, 14, 11, P[1]).rect(9, 21, 1, 11, P[0]).rect(22, 21, 1, 11, P[2]).rect(9, 31, 14, 1, P[2]);
+      c.rect(11, 27, 10, 1, P[2]); // costura
+      if (f === 0) {
+        c.rect(8, 19, 16, 5, L[0]).rect(8, 23, 16, 1, L[3]).rect(9, 19, 14, 1, '#d99a5c');
+        c.rect(15, 22, 2, 3, BRASS[1]).set(15, 22, BRASS[0]);
+      } else {
+        // interior en sombra con lo que lleva dentro
+        const lift = f === 1 ? 2 : 5;
+        c.rect(9, 21, 14, f === 1 ? 2 : 4, '#1c0f07');
+        if (f >= 2) {
+          c.rect(11, 18, 2, 4, '#dc2626').set(11, 18, '#fca5a5').rect(11, 17, 2, 1, '#e8dcc0'); // poción
+          c.rect(15, 19, 4, 3, '#e8dcc0').rect(15, 19, 4, 1, '#fff7e0'); // pergamino
+          c.rect(20, 20, 2, 2, BRASS[1]).set(20, 20, BRASS[0]); // moneda
+        }
+        // la solapa se levanta y se dobla hacia arriba (se ve su forro)
+        const fy = 19 - lift;
+        c.rect(8, fy, 16, f === 1 ? 4 : 3, f === 1 ? L[0] : '#d99a5c').rect(8, fy, 16, 1, L[3]);
+        c.rect(15, fy + (f === 1 ? 3 : 0), 2, 1, BRASS[1]);
       }
-      c.set(26, 1, '#fca5a5');
+      // brillo de la moneda al final
+      if (f === 3) c.set(21, 19, '#fffbe6').set(22, 20, '#fff3c4').set(20, 18, '#fff3c4');
+      // taza de hojalata colgando a la derecha
+      c.rect(24, 11, 1, 3, STRAP).rect(23, 14, 3, 3, '#9aa3ad').rect(23, 14, 3, 1, '#d1d5db').set(26, 15, '#6b7480');
       return outline(c);
     } },
 
@@ -101,21 +116,29 @@
         const k = Math.sin(x * 1.7 + y * 2.3 + ph * 2) * 0.5 + 0.5;
         c.set(x, y, bed[Math.min(3, Math.floor(k * 3 + (y === 39 ? 1 : 0)))]);
       }
-      // llamas: cuerpo rojo y naranja, lenguas amarillas y un corazón claro pequeño
-      const col = ['#7f1d1d', '#dc2626', '#f97316', '#fbbf24', '#fde68a', '#fffbeb'];
-      for (let y = 8; y <= 39; y++) {
-        const up = (39 - y) / 31; // 0 abajo → 1 arriba
-        const cx = 22 + Math.sin(y * 0.35 - ph) * 2.4 * up + Math.sin(ph) * 0.7 * up;
-        const half = 12 * Math.pow(1 - up, 0.65) + 0.8;
-        for (let x = 4; x <= 40; x++) {
-          const d = Math.abs(x - cx) / half;
-          if (d > 1.4) continue;
-          const n = Math.sin(x * 0.95 + y * 0.6 + ph * 2) * Math.sin(y * 0.85 - x * 0.35 + ph * 3) + Math.sin(y * 0.5 + x * 0.2 + ph) * 0.45;
-          const v = (1 - d) - up * 0.6 + n * 0.2;
-          const i = v > 0.78 ? 5 : v > 0.6 ? 4 : v > 0.44 ? 3 : v > 0.26 ? 2 : v > 0.12 ? 1 : v > 0.04 ? 0 : -1;
-          if (i >= 0) c.set(x, y, col[i]);
+      // v4.92: llamas más pequeñas y limpias: tres lenguas en forma de gota (la central más alta)
+      // que oscilan con suavidad, con capas rojo → naranja → amarillo → corazón claro
+      const col = ['#b91c1c', '#ea580c', '#f59e0b', '#fde047', '#fffbeb'];
+      const tongues = [
+        { cx: 22, h: 29 + Math.sin(ph) * 2.5, w: 8.5, sway: 1.8, o: 0 },
+        { cx: 15, h: 19 + Math.sin(ph * 2 + 1.3) * 2.5, w: 5.6, sway: -1.6, o: 1.7 },
+        { cx: 29, h: 20 + Math.sin(ph * 2 + 3.1) * 2.5, w: 5.6, sway: 1.6, o: 3.4 },
+      ];
+      const BASE = 39, best = {};
+      tongues.forEach((T) => {
+        for (let y = Math.floor(BASE - T.h); y <= BASE; y++) {
+          const t = (BASE - y) / T.h; if (t < 0 || t > 1) continue;
+          const cx = T.cx + Math.sin(ph + T.o + t * 2.2) * T.sway * t * t;
+          const half = T.w * Math.pow(1 - t, 0.75) * (t < 0.12 ? 0.8 + t * 1.6 : 1) + 0.4;
+          for (let x = Math.floor(cx - half - 1); x <= Math.ceil(cx + half + 1); x++) {
+            const d = Math.abs(x + 0.5 - cx) / half; if (d > 1) continue;
+            const v = (1 - d) * (1 - t * 0.55);
+            const i = v > 0.62 && t < 0.45 ? 4 : v > 0.48 ? 3 : v > 0.3 ? 2 : v > 0.12 ? 1 : 0;
+            const key = x + ',' + y; if (best[key] == null || i > best[key]) best[key] = i;
+          }
         }
-      }
+      });
+      Object.entries(best).forEach(([k, i]) => { const [x, y] = k.split(',').map(Number); c.set(x, y, col[i]); });
       // troncos cruzados delante de la base del fuego (corteza y corte claro)
       for (let i = 0; i < 22; i++) {
         const y = 41 - Math.floor(i / 4);
@@ -123,19 +146,16 @@
         c.set(35 - i, y, W.l).set(35 - i, y + 1, W.m).set(35 - i, y + 2, W.d);
       }
       c.rect(6, 40, 3, 3, '#d6b48a').set(7, 41, W.m).rect(35, 40, 3, 3, '#d6b48a').set(36, 41, W.m);
-      // lenguas sueltas que se escapan arriba
-      [[0, -6], [2, 5], [5, 1]].forEach(([o, dx]) => {
-        const t = ((f + o) % N) / N, y = Math.round(16 - t * 10), x = 22 + dx + Math.round(Math.sin(ph + o) * 1.5);
-        if (t < 0.85) c.rect(x, y, 1, 2, t < 0.4 ? '#f97316' : '#dc2626');
-      });
+      // una lengüecita que se suelta de la punta
+      { const t = (f % N) / N, y = Math.round(8 - t * 6), x = 22 + Math.round(Math.sin(ph) * 1.5); if (t < 0.6) c.set(x, y, t < 0.3 ? '#f59e0b' : '#dc2626'); }
       // piedras de delante (tapan la base del fuego)
       [[3, 41], [8, 43], [14, 44], [20, 44], [26, 44], [32, 43], [37, 41]].forEach(([x, y], i) => {
         c.rect(x, y, 5, 3, STONE.m).rect(x, y, 4, 1, STONE.l).set(x, y + 1, STONE.l).rect(x + 1, y + 2, 4, 1, STONE.d);
         c.set(x + 2, y, i % 2 ? '#fdba74' : '#fb923c'); // reflejo del fuego
       });
       // chispas que suben
-      for (let k = 0; k < 6; k++) {
-        const t = ((f + k * 1.37) % N) / N, y = Math.round(26 - t * 25), x = Math.round(22 + Math.sin(k * 2.4 + t * 6) * (4 + t * 9));
+      for (let k = 0; k < 4; k++) {
+        const t = ((f + k * 1.37) % N) / N, y = Math.round(18 - t * 17), x = Math.round(22 + Math.sin(k * 2.4 + t * 6) * (4 + t * 8));
         if (y >= 0) c.set(x, y, t < 0.5 ? '#fde047' : '#fb923c');
       }
       return c; // sin contorno: el fuego brilla

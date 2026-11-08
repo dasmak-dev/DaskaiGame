@@ -275,7 +275,7 @@ module.exports = {
       await p.waitForSelector('.fs-row', { state: 'attached', timeout: 5000 });
       // Pulsar una piedra NO la usa: sale la confirmación con lo que cambiará (resaltado en la ficha)
       const before = await p.evaluate((u) => JSON.stringify(DK.gear.find(u).p.affixes), uid);
-      await p.evaluate(() => [...document.querySelectorAll('.fs-row')].find((b) => /divina/i.test(b.textContent)).click()); await sleep(300);
+      await p.evaluate(() => [...document.querySelectorAll('.fs-row')].find((b) => /divin/i.test(b.textContent)).click()); await sleep(300);
       const c = await p.evaluate(([u, b]) => ({ same: JSON.stringify(DK.gear.find(u).p.affixes) === b, box: !!document.querySelector('.fb-confirm'), will: document.querySelectorAll('.gear-tip .will').length, lines: document.querySelectorAll('.fbc-lines li').length }), [uid, before]);
       check(c.same && c.box && c.will > 0 && c.lines > 0, 'pulsar una piedra debería pedir confirmación con vista previa: ' + JSON.stringify(c));
       await p.evaluate(() => document.querySelector('.fbc-ok').click()); await sleep(400);
@@ -343,6 +343,52 @@ module.exports = {
       check(!r.bad.length, 'piezas fuera de las reglas: ' + r.bad.join(' | '));
       check(r.kinds.daga === 'atk' && r.kinds.espada === 'matk', 'las dagas deberían dar ataque y las espadas ataque mágico: ' + JSON.stringify(r.kinds));
       check(r.mig, 'las piezas antiguas no se arreglan al cargar');
+    }),
+  }, {
+    name: 'v4.89: resistencias a casas (anillos hasta 3, dagas su casa) y forja de runas',
+    run: (browser, view) => play(browser, view, async (p) => {
+      const r = await p.evaluate(() => {
+        const G = DK.gear, GD = DK.data.gear, res = (x) => x.affixes.filter((a) => GD.affixes[a.id].res);
+        let ringMax = 0, ringDup = false, dag = new Set(), sword = 0, normal = 0;
+        for (let i = 0; i < 300; i++) {
+          const a = G.create('perla_marina', { rarity: 'raro', ilvl: 70 }), ra = res(a); ringMax = Math.max(ringMax, ra.length);
+          if (new Set(ra.map((x) => GD.affixes[x.id].res)).size !== ra.length) ringDup = true;
+          res(G.create('colmillo_umbrio', { rarity: 'raro', ilvl: 70 })).forEach((x) => dag.add(GD.affixes[x.id].res));
+          sword += res(G.create('prisma_juicio', { rarity: 'raro', ilvl: 70 })).length + 0;
+          normal += res(G.create('perla_marina', { rarity: 'normal', ilvl: 70 })).length;
+        }
+        // En combate: -% daño de esa casa
+        const B = DK.battle, st = B.start('pradera', DK.party.active()[0].uid, {}), d = B.get(st, 'ally');
+        const mv = Object.values(DK.data.moves).find((m) => m.house === 'fuego' && m.power > 0);
+        const before = B.factors(st, 'enemy', mv).mult;
+        const ring = G.create('perla_marina', { rarity: 'magico', ilvl: 70 }); ring.affixes = [{ id: 's_res_fuego', t: 5, r: 1 }];
+        const eq0 = d.equip; d.equip = [ring];
+        const after = B.factors(st, 'enemy', mv).mult; d.equip = eq0;
+        // Runas
+        DK.store.state.camp = DK.store.state.camp || {}; DK.store.state.camp.runas = 3;
+        const R = DK.runes; R.add('oro'); DK.bag.addHome({ tiza_runica: 1, ceniza_runica: 1, perla_runica: 1, polvo_vacio: 1, savia_runica: 1 });
+        const a1 = R.forge('oro', 'tiza_runica'), a2 = R.forge(a1.id, 'ceniza_runica'), sl = R.slotsOf(a2.id);
+        const a3 = R.forge(a2.id, 'perla_runica', { kind: sl.P[0] < sl.P[1] ? 'prefix' : 'suffix' });
+        const n3 = R.parse(a3.id).affixes.length, a4 = R.forge(a3.id, 'polvo_vacio', { mod: 0 });
+        // v4.90: subir de tier con el glifo (cuesta monedas) y rara → legendaria con el corazón rúnico
+        DK.wallet.add(5000, { silent: true }); DK.bag.addHome({ glifo_ascenso: 1, corazon_runico: 1 });
+        const w0 = DK.wallet.get(), t2 = R.forge(a4.id, 'glifo_ascenso'), paid = w0 - DK.wallet.get();
+        const lg = R.forge(t2.id, 'corazon_runico'), lp = R.parse(lg.id);
+        return { ringMax, ringDup, dag: [...dag], sword, normal, before, after, r1: R.parse(a1.id).rarity, r2: R.parse(a2.id).rarity, n3, n4: R.parse(a4.id).affixes.length,
+          tier2: R.parse(t2.id).tier, paid, legR: lp.rarity, legN: lp.affixes.length, legEm: R.emblemBonus([lg.id]),
+          wrong: !!R.cannotForge(lg.id, 'savia_runica'), left: R.count(lg.id), kinds: R.parse(a2.id).affixes.every((x) => ['prefix', 'suffix'].includes(R.kindOf(x.k))) };
+      });
+      check(r.ringMax >= 2 && r.ringMax <= 3 && !r.ringDup && r.dag.length === 1 && r.sword === 0 && r.normal === 0, 'reglas de resistencias: ' + JSON.stringify(r));
+      check(r.after < r.before * 0.85, 'la resistencia no baja el daño de esa casa: ' + JSON.stringify(r));
+      check(r.r1 === 'm' && r.r2 === 'r' && r.n4 === r.n3 - 1 && r.wrong && r.left === 1 && r.kinds, 'mejora de runas: ' + JSON.stringify(r));
+      check(r.tier2 === 2 && r.paid > 0 && r.legR === 'l' && r.legN >= 3 && r.legEm >= 1, 'tier o legendaria: ' + JSON.stringify(r));
+      // v4.90: un solo banco de Mejorar (Equipo / Runas); la pestaña antigua de runas lleva aquí
+      await p.evaluate(() => DK.router.reset('craft', { tab: 'runes' })); await sleep(500);
+      await p.evaluate(() => document.querySelector('.rb-row').click()); await sleep(300);
+      const ui = await p.evaluate(() => ({ card: !!document.querySelector('.rb-card'), reag: document.querySelectorAll('.rb-reagent').length, kinds: document.querySelectorAll('.ub-kbtn').length, tabs: document.querySelectorAll('.wb-tabbtn').length, fuse: !!document.querySelector('.forge-card') }));
+      check(ui.card && ui.reag === 11 && ui.kinds === 2 && ui.tabs === 3 && !ui.fuse, 'el banco de mejora de runas no se ve bien: ' + JSON.stringify(ui));
+      await p.evaluate(() => document.querySelector('.ub-kbtn').click()); await sleep(300);
+      check(await p.evaluate(() => DK.router.current().params.fkind === 'gear' && !!document.querySelector('.forge-bench:not(.rune-bench)')), 'no vuelve al equipo desde el selector');
     }),
   }],
 };

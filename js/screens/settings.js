@@ -30,6 +30,7 @@
           h('div', { class: 'setting-row', tip: t('uiScale.desc') }, DK.icon('maximize', 18), h('span', { class: 'setting-text' }, h('b', null, t('uiScale.label')), h('small', { class: 'muted' }, t('uiScale.desc'))),
             segmented({ value: Number(S.get('uiScale')) || 1, onChange: (v) => { S.set('uiScale', v); setTimeout(() => window.dispatchEvent(new Event('resize')), 50); }, options: [0.9, 1, 1.1, 1.25].map((v) => ({ value: v, label: Math.round(v * 100) + '%' })) })),
           toggle({ icon: 'image', label: t('settings.pixelArt'), desc: t('settings.pixelArtDesc'), value: S.get('pixelArt') !== false, onChange: (v) => { S.set('pixelArt', v); DK.router.refresh(); } }),
+          toggle({ icon: 'hand', label: t('settings.customCursor'), desc: t('settings.customCursorDesc'), value: S.get('customCursor') !== false, onChange: set('customCursor') }),
           toggle({ icon: 'sparkles', label: t('settings.bgFx'), desc: t('settings.bgFxDesc'), value: S.get('bgFx') !== false, onChange: set('bgFx') }),
           toggle({ icon: 'dna', label: t('settings.showTraits'), desc: t('settings.showTraitsDesc'), value: !!S.get('showTraits'), onChange: set('showTraits') })),
         group('accessibility', t('settings.accessibility'),

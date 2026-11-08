@@ -169,7 +169,7 @@
       h('span', { class: 'fb-ilvl', tip: t('gear.bench.ilvlTip') }, DK.icon('info', 12), t('gear.ilvlN', { n: p.ilvl })));
     const selA = params.fsel != null ? p.affixes[params.fsel] : null;
     const have = (id) => DK.bag.home()[id] || 0;
-    const short = (id) => D.items[id].name.replace(/^Piedra (de |del )?/i, '').replace(/^\w/, (c) => c.toUpperCase());
+    const short = (id) => D.items[id].name.replace(/^(Piedra|Cristal) (de |del )?/i, '').replace(/^\w/, (c) => c.toUpperCase());
     // v4.79: huecos libres → «+ Añadir prefijo/sufijo» (aumento en mágicas, exaltación en raras y legendarias)
     const adder = DK.gear.adderFor(p);
     const addSlot = adder ? (kind, free) => {
@@ -280,7 +280,7 @@
     const hist = nh || fx ? h('div', { class: 'fb-histwrap' },
       h('div', { class: 'fb-foot' },
         fx ? h('button', { class: 'wb-mats-link fb-lastlink', type: 'button', 'aria-expanded': !!params.flast, onClick: tog('flast', 'fhist') },
-          DK.icon('refresh', 12), t('gear.bench.lastLink', { stone: D.items[fx.stone].name.replace(/^Piedra (de |del )?/i, '') }), DK.icon('chevronDown', 12)) : null,
+          DK.icon('refresh', 12), t('gear.bench.lastLink', { stone: D.items[fx.stone].name.replace(/^(Piedra|Cristal) (de |del )?/i, '') }), DK.icon('chevronDown', 12)) : null,
         nh ? h('button', { class: 'wb-mats-link fb-histlink', type: 'button', 'aria-expanded': !!params.fhist, onClick: tog('fhist', 'flast') },
           DK.icon('clock', 12), t('gear.bench.histLink', { n: nh }), DK.icon('chevronDown', 12)) : null),
       fx && params.flast ? h('div', { class: 'fb-before' }, h('small', { class: 'muted' }, t('gear.bench.before')), V.gearTip(fx.before, { compact: true })) : null,
@@ -294,7 +294,7 @@
       // v4.76: fila compacta: gema, nombre y efecto en una línea, cantidad; el motivo, en el tooltip
       return h('button', { class: 'fs-row' + (arm && arm.stone === id ? ' armed' : '') + (why ? ' off' : '') + (n ? '' : ' none') + (['esquirla_jefe', 'corazon_jefe', 'eco_legendario'].includes(id) ? ' boss' : '') + (needSel && n && !DK.gear.cannotForge(p, id) ? ' wants' : ''),
         type: 'button', disabled: !!why, tip: (why ? why + ' · ' : '') + it.desc, 'aria-label': it.name, 'aria-pressed': !!(arm && arm.stone === id), onClick: () => ask(id) },
-        V.itemIcon(it, 26), h('span', { class: 'fs-main' }, h('b', null, it.name.replace(/^Piedra (de |del )?/i, '').replace(/^\w/, (c) => c.toUpperCase())), h('small', null, t('gear.stoneShort.' + id))),
+        V.itemIcon(it, 26), h('span', { class: 'fs-main' }, h('b', null, it.name.replace(/^(Piedra|Cristal) (de |del )?/i, '').replace(/^\w/, (c) => c.toUpperCase())), h('small', null, t('gear.stoneShort.' + id))),
         h('span', { class: 'fs-n' + (n ? '' : ' zero') }, String(n)));
     };
     const stonesCol = h('div', { class: 'fb-col fb-stones' },

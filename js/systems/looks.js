@@ -825,7 +825,7 @@
 
   /* ---------- Rasgos: lista, iconos y colección del Códice ---------- */
   const CATS = { hair: Object.fromEntries(Object.entries(HAIR).filter(([k]) => k !== 'none')), wings: WINGS, body: ALL.body, legs: Object.fromEntries(Object.entries(ALL_LEGS).map(([k, v]) => [k, v[1]])), eyes: ALL.eyes, mouth: ALL.mouth, ears: ALL.ears, mark: ALL.mark, final: Object.assign({}, FINALS, FINALS4, FINALS5), arms: Object.fromEntries(Object.entries(ARMS_ALL).filter(([k]) => k !== 'none')) };
-  const CAT_ICON = { arms: 'hand', hair: 'sparkles', wings: 'feather', size: 'maximize', body: 'paw', legs: 'footprints', eyes: 'eye', mouth: 'smile', ears: 'sparkles', mark: 'star', wings: 'feather', final: 'crown' };
+  const CAT_ICON = { arms: 'hand', hair: 'sparkles', wings: 'feather', size: 'maximize', body: 'paw', legs: 'footprints', eyes: 'eye', mouth: 'smile', ears: 'sparkles', mark: 'star', final: 'crown' };
   const sizeKey = (z) => (z < 0.86 ? 'xs' : z < 0.95 ? 's' : z <= 1.06 ? 'm' : z <= 1.15 ? 'l' : 'xl');
   /** Rasgos de un individuo, para pintarlos como iconos. */
   function traits(i, { final = true } = {}) {

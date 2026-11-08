@@ -129,6 +129,10 @@
       return { z, lv: zoneLevel(z), house: zoneHouse(z), mats: Object.keys(mats).sort((a, b) => mats[b] - mats[a]), w: mats };
     },
     dur(id) { return C().durations.find((x) => x.id === id) || C().durations[0]; },
+    /** v4.89: lo propio de una zona (reactivo, piedra favorita, tipos de equipo, hallazgo raro) o null. */
+    finds(zoneId) { return (C().finds || {})[zoneId] || null; },
+    /** v4.89: probabilidad de que el equipo encontrado sea mágico (sube con el nivel de la zona). */
+    magicChance(lv) { return Math.min(0.75, C().loot.magic + lv * (C().findRates.magicPerLv || 0)); },
     /**
      * v4.87: todo lo que puede salir en una zona con una duración (para la lista «Posibles objetos»).
      * @returns {{mats:[{id, chance}], rolls, fragment, ration, coins:[min,max], stones:{list, chance}, gear:{chance, magic}, cache:{chance, rare}, total}}
@@ -144,23 +148,51 @@
         stones: { list: L.stones, chance: Math.min(0.9, L.stone[i] * rare) }, gear: { chance: Math.min(0.9, L.gear[i] * rare), magic: L.magic },
         cache: { chance: Math.min(0.5, L.cache[i] * rare), rare: L.cacheRare },
       };
+      // v4.89: lo propio de la zona
+      const F = this.finds(zoneId), FR = C().findRates;
+      if (F) {
+        out.own = {
+          reagent: F.reagent && D.items[F.reagent] ? { id: F.reagent, n: FR.reagent[i], locked: !DK.runes.enabled() } : null,
+          stone: F.stone && D.items[F.stone] ? { id: F.stone, chance: out.stones.chance * FR.favStone } : null,
+          gear: { types: F.gear || [], chance: out.gear.chance * FR.favGear },
+          rare: F.rare && D.items[F.rare] ? { id: F.rare, chance: Math.min(0.5, FR.rare[i] * rare) } : null,
+          rune: info.lv >= FR.runeFrom && FR.rune[i] ? { chance: Math.min(0.5, FR.rune[i] * rare), locked: !DK.runes.enabled() } : null,
+          glyph: info.lv >= FR.runeFrom && (FR.glyph || [])[i] ? { chance: Math.min(0.5, FR.glyph[i] * rare), locked: !DK.runes.enabled() } : null,
+          heart: info.lv >= (FR.heartFrom || 99) && (FR.heart || [])[i] ? { chance: Math.min(0.5, FR.heart[i] * rare), locked: !DK.runes.enabled() } : null,
+        };
+        out.gear.magic = this.magicChance(info.lv);
+      }
       // Objetos que traerán más o menos (si todo va bien)
-      out.total = Math.round(rolls * (1 + L.fragment) + out.ration + out.stones.chance + out.gear.chance + out.cache.chance * 5);
+      out.total = Math.round(rolls * (1 + L.fragment) + out.ration + out.stones.chance + out.gear.chance + out.cache.chance * 5 + (out.own && out.own.reagent && !out.own.reagent.locked ? out.own.reagent.n : 0));
       return out;
     },
 
     /* ---------- Previsión ---------- */
-    /** Riesgo (0–1) de que vuelvan agotados. */
-    risk(ds, zoneId, durId) {
-      const R = C().risk, info = this.zoneInfo(zoneId), du = this.dur(durId);
-      if (!info || !ds.length) return 0;
+    /** Riesgo (0–1) de que algo salga mal (agotados o desastre). */
+    risk(ds, zoneId, durId) { return this.riskInfo(ds, zoneId, durId).risk; },
+    /**
+     * v4.89: riesgo desglosado (para la pantalla y el informe).
+     * @returns {{risk, disaster, gap, parts:[{k, v}]}}  disaster = probabilidad de desastre (ya incluida en risk)
+     */
+    riskInfo(ds, zoneId, durId) {
+      const R = C().risk, info = this.zoneInfo(zoneId), du = this.dur(durId), parts = [];
+      if (!info || !ds.length) return { risk: 0, disaster: 0, gap: 0, parts };
       const lv = ds.reduce((a, d) => a + d.level, 0) / ds.length + sum(ds, 'riskLv');
-      let r = R.base - (lv - info.lv) * R.perLevel;
-      if (ds.some((d) => DK.daskai.species(d).house === info.house)) r *= R.house;
-      r *= Math.pow(R.firme, ds.filter((d) => NAT(d).risk).length);
-      r *= du.risk || 1;
-      r *= 1 - (this.instr().safety || 0);
-      return Math.max(R.min, Math.min(R.max, r));
+      const gap = info.lv - lv; // > 0: van por debajo del nivel de la zona
+      let r = R.base + gap * R.perLevel;
+      parts.push({ k: 'level', v: Math.round(gap) });
+      const mul = (k, v) => { if (v !== 1) { r *= v; parts.push({ k, v }); } };
+      mul('house', ds.some((d) => DK.daskai.species(d).house === info.house) ? R.house : 1);
+      // Débiles contra la casa de la zona (la casa de la zona es fuerte contra la suya)
+      const weak = info.house && D.houses[info.house] ? ds.filter((d) => D.houses[info.house].strongVs === DK.daskai.species(d).house).length : 0;
+      mul('weak', Math.pow(R.weak || 1, weak));
+      mul('size', (R.size || [])[Math.min(3, ds.length) - 1] || 1);
+      mul('firme', Math.pow(R.firme, ds.filter((d) => NAT(d).risk).length));
+      mul('dur', du.risk || 1);
+      mul('post', 1 - (this.instr().safety || 0));
+      const risk = Math.max(R.min, Math.min(R.max, r));
+      const share = Math.min(R.disasterMax || 0.7, (R.disaster || 0) + Math.max(0, gap) * (R.gap || 0));
+      return { risk, disaster: risk * share, gap, parts };
     },
     /** Lo que cuesta salir: monedas y raciones. */
     cost(ds, zoneId, durId) {
@@ -185,7 +217,7 @@
       const L = C().loot, i = Math.min(2, C().durations.indexOf(du));
       const rare = 1 + sum(ds, 'rare');
       return {
-        info, du, minutes: this.minutes(ds, durId), risk: this.risk(ds, zoneId, durId), cost: this.cost(ds, zoneId, durId),
+        info, du, minutes: this.minutes(ds, durId), risk: this.risk(ds, zoneId, durId), riskInfo: this.riskInfo(ds, zoneId, durId), cost: this.cost(ds, zoneId, durId),
         exp: ds.map((d) => ({ d, n: this.expFor(d, zoneId, durId) })),
         rolls: du.rolls + sum(ds, 'rolls'), stone: Math.min(0.9, L.stone[i] * rare), gear: Math.min(0.9, L.gear[i] * rare),
         houseMatch: ds.some((d) => DK.daskai.species(d).house === info.house),
@@ -257,8 +289,11 @@
       const ds = p.ds, info = this.zoneInfo(g.zone), du = this.dur(g.dur), L = C().loot, i = Math.min(2, C().durations.indexOf(du));
       const names = () => DK.daskai.name(U.pick(ds, rnd));
       const log = [t('explore.log.set', { names: ds.map((d) => DK.daskai.name(d)).join(', '), zone: info.z.name })];
-      const hurt = rnd() < this.risk(ds, g.zone, g.dur);
+      // v4.89: tres desenlaces: bien, agotados (mitad de todo) o DESASTRE (sin botín, poca experiencia, el doble de agotados)
+      const RI = this.riskInfo(ds, g.zone, g.dur), roll = rnd();
+      const outcome = roll < RI.disaster ? 'disaster' : roll < RI.risk ? 'hurt' : 'ok', hurt = outcome !== 'ok', lost = outcome === 'disaster';
       const mult = (hurt ? C().hurt : 1) * (1 + (this.instr().rate || 0));
+      const F = this.finds(g.zone) || {}, FR = C().findRates;
       const items = {}, add = (id, n = 1) => (items[id] = (items[id] || 0) + n);
       // Materiales de la zona
       const rolls = Math.max(1, Math.round((du.rolls + sum(ds, 'rolls')) * mult));
@@ -269,11 +304,32 @@
       if (rnd() < L.ration * du.k) add('racion_viaje');
       // Algo raro: piedra común o equipo (normal o mágico)
       const rare = 1 + sum(ds, 'rare'), gear = [];
-      if (rnd() < L.stone[i] * rare * (hurt ? 0.5 : 1)) { const s = U.pick(L.stones, rnd); add(s); log.push(t('explore.log.rare', { name: names(), item: D.items[s].name })); }
+      if (rnd() < L.stone[i] * rare * (hurt ? 0.5 : 1)) {
+        // v4.89: la piedra favorita de la zona sale más
+        const s = F.stone && D.items[F.stone] && rnd() < FR.favStone ? F.stone : U.pick(L.stones, rnd);
+        add(s); log.push(t('explore.log.rare', { name: names(), item: D.items[s].name }));
+      }
+      // v4.89: reactivo de runas de la zona (sólo con el Taller de runas)
+      if (F.reagent && D.items[F.reagent] && DK.runes.enabled()) {
+        const avg = FR.reagent[i] * (hurt ? 0.5 : 1), n = Math.floor(avg) + (rnd() < avg % 1 ? 1 : 0);
+        if (n) { add(F.reagent, n); log.push(t('explore.log.reagent', { name: names(), item: D.items[F.reagent].name })); }
+      }
+      // v4.89: hallazgo raro de la zona (un tónico)
+      if (F.rare && D.items[F.rare] && rnd() < FR.rare[i] * rare * (hurt ? 0.5 : 1)) { add(F.rare); log.push(t('explore.log.rare', { name: names(), item: D.items[F.rare].name })); }
       if (rnd() < L.gear[i] * rare * (hurt ? 0.5 : 1)) {
-        const base = U.pick(Object.keys(D.gear.typeOf).filter((b) => D.items[b]), rnd);
-        const pc = DK.gear.gain(base, { rarity: rnd() < L.magic ? 'magico' : 'normal', ilvl: info.lv, home: true });
+        // v4.89: sobre todo de los tipos de la zona; más mágico cuanto más alta
+        const bases = Object.keys(D.gear.typeOf).filter((b) => D.items[b]), fav = bases.filter((b) => (F.gear || []).includes(D.gear.typeOf[b]));
+        const base = U.pick(fav.length && rnd() < FR.favGear ? fav : bases, rnd);
+        const pc = DK.gear.create(base, { rarity: rnd() < this.magicChance(info.lv) ? 'magico' : 'normal', ilvl: info.lv });
         gear.push(pc); log.push(t('explore.log.gear', { name: names(), item: DK.gear.name(pc) }));
+      }
+      // v4.90: glifo de ascenso y corazón rúnico (para mejorar runas), en zonas altas
+      if (DK.runes.enabled() && info.lv >= FR.runeFrom && rnd() < (FR.glyph || [])[i] * rare * (hurt ? 0.5 : 1)) { add('glifo_ascenso'); log.push(t('explore.log.rare', { name: names(), item: D.items.glifo_ascenso.name })); }
+      if (DK.runes.enabled() && info.lv >= (FR.heartFrom || 99) && rnd() < (FR.heart || [])[i] * rare * (hurt ? 0.5 : 1)) { add('corazon_runico'); log.push(t('explore.log.rare', { name: names(), item: D.items.corazon_runico.name })); }
+      // v4.89: una runa (zonas altas, con el Taller de runas)
+      const runes = [];
+      if (DK.runes.enabled() && info.lv >= FR.runeFrom && rnd() < FR.rune[i] * rare * (hurt ? 0.5 : 1)) {
+        const r = DK.runes.roll(1, rnd)[0]; if (r) { const id = DK.runes.roll1(r, 1, rnd); runes.push(id); log.push(t('explore.log.rune', { name: names() })); }
       }
       // v4.87: hallazgo exclusivo: un alijo de explorador
       let cache = null;
@@ -288,24 +344,34 @@
       const coins = Math.round(L.coins(info.lv) * du.k * mult * (1 + sum(ds, 'coins')));
       // Un suceso de ambiente
       log.push(t('explore.log.ev.' + U.pick(C().events, rnd), { name: names(), zone: info.z.name }));
+      // v4.89: desastre: lo pierden todo por el camino
+      let lostN = 0;
+      if (lost) {
+        lostN = Object.values(items).reduce((a, b) => a + b, 0) + gear.length + runes.length;
+        Object.keys(items).forEach((k) => delete items[k]); gear.length = 0; runes.length = 0; cache = null;
+        log.push(t('explore.log.disaster', { name: names(), n: lostN }));
+      }
+      const coinsGot = lost ? 0 : coins;
       // Aplicar
       Object.entries(items).forEach(([id, n]) => DK.bag.addHome({ [id]: n }));
-      if (coins) DK.wallet.add(coins, { silent: true });
+      gear.forEach((pc) => { DK.gear.home().push(pc); if (DK.codex) DK.codex.markItem(pc.base); DK.emit('gear:gained', { p: pc }); });
+      runes.forEach((id) => DK.runes.add(id));
+      if (coinsGot) DK.wallet.add(coinsGot, { silent: true });
       const exp = ds.map((d) => {
-        const n = Math.round(this.expFor(d, g.zone, g.dur) * (hurt ? C().hurt : 1));
+        const n = Math.round(this.expFor(d, g.zone, g.dur) * (lost ? C().disasterExp : hurt ? C().hurt : 1));
         const levelInfo = n > 0 ? DK.daskai.gainExp(d, n) : null;
         return { d, n, levelInfo };
       });
       if (hurt) {
-        const fat = du.fatigue * Math.max(0.3, 1 - sum(ds, 'fatigue'));
+        const fat = du.fatigue * (lost ? C().disasterFatigue : 1) * Math.max(0.3, 1 - sum(ds, 'fatigue'));
         ds.forEach((d) => (d.tired = Date.now() + fat * MIN));
         log.push(t('explore.log.hurt', { name: names(), t: U.duration(fat * 60) }));
       } else log.push(t('explore.log.back'));
       st().slots = st().slots.filter((x) => x !== g);
       ds.forEach((d) => this.rejoin(d.uid));
-      const rep = { ok: true, hurt, zone: g.zone, dur: g.dur, exp, items, coins, gear, log, cache, at: Date.now() };
+      const rep = { ok: true, hurt, outcome, lost: lostN, zone: g.zone, dur: g.dur, exp, items, coins: coinsGot, gear, runes, log, cache, at: Date.now() };
       rep.done = this.checkRequests(rep, ds);
-      const s = st(); s.reports = [{ zone: g.zone, hurt, names: ds.map((d) => DK.daskai.name(d)), items, coins, gear: gear.length, at: rep.at }].concat(s.reports || []).slice(0, 8);
+      const s = st(); s.reports = [{ zone: g.zone, hurt, outcome, names: ds.map((d) => DK.daskai.name(d)), items, coins: coinsGot, gear: gear.length, at: rep.at }].concat(s.reports || []).slice(0, 8);
       DK.emit('training:collect', rep);
       DK.store.save();
       return rep;

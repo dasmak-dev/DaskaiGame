@@ -91,7 +91,7 @@ module.exports = {
       check(r.floors.small1 === 8 && r.floors.small2 === 14 && r.floors.small3 === 18 && r.floors.medium1 === 14 && r.floors.xl3 === 36, 'los pisos por tier no cuadran: ' + JSON.stringify(r.floors));
       check(r.elites >= 3 && r.treasures >= 2, 'los modificadores no cambian el mapa: ' + JSON.stringify(r));
       check(Math.abs(r.bonusCoins - (0.25 + 0.15)) < 1e-9, 'el modificador de monedas no se suma: ' + r.bonusCoins);
-      check(r.fusedP.tier === 2 && r.fusedP.rarity === 'r' && r.fusedP.affixes.length === 2 && r.left === 0, 'fundir debería dar tier II con la rareza más alta: ' + JSON.stringify(r.fusedP));
+      check(r.fusedP.tier === 2 && r.fusedP.rarity === 'r' && r.fusedP.affixes.length >= 2 && r.fusedP.affixes.length <= 4 && r.left === 0, 'fundir debería dar tier II con la rareza más alta: ' + JSON.stringify(r.fusedP));
     }),
   }, {
     name: 'Runas con tier: se funden 3 en 1, multiplican su efecto y suben emblemas; las de final de juego cambian el mapa',

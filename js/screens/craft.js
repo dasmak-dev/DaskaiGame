@@ -291,27 +291,6 @@
       h('span', { class: 'wb-qty-big' + (n ? '' : ' zero') }, '×' + n));
   }
 
-  /* ---------------- Forja rúnica: fundir 3 runas en una del tier siguiente ---------------- */
-  function runeForge(refresh) {
-    const R = DK.runes;
-    const bases = R.defs().filter((r) => !r.late || DK.endgame.late() || R.tiersOf(r.id).some((id) => R.countKey(id)));
-    return h('div', { class: 'stack' },
-      h('p', { class: 'muted small' }, DK.icon('info', 13), ' ', t('forge.help', { a: R.fuseCost(R.withTier('oro', 1)), b: R.fuseCost(R.withTier('oro', 2)) })),
-      h('div', { class: 'forge-grid' }, bases.map((r) => h('div', { class: 'forge-card' },
-        h('div', { class: 'forge-head' }, V.runeGem(r.id, 44), h('div', null, h('b', null, V.runeName(r.id)), h('small', { class: 'muted' }, V.runeEffect(r.id)))),
-        h('div', { class: 'forge-tiers' }, R.tiersOf(r.id).map((id, i) => {
-          const n = R.countKey(id), next = i < 2 ? R.tiersOf(r.id)[i + 1] : null;
-          // Desglose por rareza (normal · mágica · rara)
-          const byR = { n: 0, m: 0, r: 0 }; R.idsOfKey(id).forEach((x) => { byR[R.parse(x).rarity] += R.count(x); });
-          return h('div', { class: 'forge-tier' + (n ? '' : ' none') },
-            V.runeGem(id, 30, { dim: !n }), h('span', null, h('b', null, '×' + n), h('small', null, V.runeEffect(id)),
-              n ? h('small', { class: 'forge-rar' }, ['n', 'm', 'r'].filter((k) => byR[k]).map((k) => h('span', { class: 'rr-' + k }, byR[k] + ' ' + t('rune.rar.' + k)))) : null),
-            next ? btn({ icon: 'merge', label: t('forge.fuse', { cost: R.fuseCost(id) }), size: 'sm', variant: R.canFuse(id) ? 'primary' : 'ghost', disabled: !R.canFuse(id),
-              tip: R.parse(id).tier >= R.maxTier() ? t('forge.tierLocked', { n: R.roman(next) }) : R.freeKey(id) < 3 ? t('forge.need', { n: 3 - R.freeKey(id) }) : DK.wallet.get() < R.fuseCost(id) ? t('forge.noCoins') : t('forge.tip', { name: V.runeName(next) }),
-              onClick: () => { const got = R.fuse(id); if (got) { DK.audio.sfx('craft'); DK.ui.toast(t('forge.done', { name: V.runeName(got) }), { icon: 'rune', kind: 'good' }); refresh(); } } }) : null);
-        }))))));
-  }
-
   /* ---------------- Pantalla ---------------- */
   DK.screens.register('craft', {
     title: () => t('craft.title'), icon: 'forgeRune', section: 'craft', music: 'menu',
@@ -319,6 +298,8 @@
       const refresh = () => DK.router.refresh();
       // Compatibilidad: 'recipes' → la pestaña de la receta elegida
       // v4.75: por defecto, la Forja si tienes piezas que trabajar
+      // v4.90: las runas se mejoran en el mismo banco que el equipo (Mejorar → Runas)
+      if (params.tab === 'runes') { params.tab = 'forge'; params.fkind = 'rune'; }
       if (!params.tab || params.tab === 'recipes') { const r0 = params.sel && C().get(params.sel); params.tab = r0 ? groupOf(r0) : params.fp || DK.gear.home().length || DK.gear.equipped().length ? 'forge' : 'equip'; }
       params.sub = params.sub || 'all';
       const q = (params.q || '').trim().toLowerCase();
@@ -349,13 +330,21 @@
       const tab = (id, icon, label, n, ready) => h('button', { class: 'wb-tabbtn' + (params.tab === id ? ' on' : ''), type: 'button', role: 'tab', 'aria-selected': String(params.tab === id),
         onClick: () => set({ tab: id, sub: 'all', sel: null, mat: null }) }, DK.icon(icon, 15), h('span', null, label), h('small', null, String(n)), ready ? h('i', { class: 'wb-ready', tip: t('craft.readyN', { n: ready }) }, ready) : null);
       const tabsEl = () => h('div', { class: 'wb-tabs', role: 'tablist' },
-        tab('forge', 'anvil', t('craft.tabForge'), DK.gear.home().length + DK.gear.equipped().length, 0),
+        tab('forge', 'anvil', t('craft.tabForge'), DK.gear.home().length + DK.gear.equipped().length + DK.runes.total(), 0),
         tab('consum', 'potion', t('craft.tabConsum'), count('consum'), readyIn('consum')),
         tab('equip', 'sword', t('craft.tabEquip'), count('equip'), readyIn('equip')),
-
-        DK.runes.total() ? tab('runes', 'rune', t('craft.tabRunes'), DK.runes.total(), DK.runes.defs().filter((r) => DK.runes.canFuse(r.id) || DK.runes.canFuse(DK.runes.withTier(r.id, 2))).length) : null);
-      if (params.tab === 'forge') return h('div', { class: 'screen cr-screen wb forge-only' }, h('div', { class: 'wb-main' }, tabsEl(), V.forgeBench(params, refresh)));
-      if (params.tab === 'runes') return h('div', { class: 'screen cr-screen wb runes-only' }, h('div', { class: 'wb-main' }, tabsEl(), runeForge(refresh)));
+      );
+      // v4.90: banco de MEJORA único: eliges equipo o runa y salen las piedras / reactivos que le sirven
+      if (params.tab === 'forge') {
+        const runesOn = DK.runes.enabled() || DK.runes.total() > 0;
+        if (!runesOn) params.fkind = 'gear';
+        params.fkind = params.fkind || 'gear';
+        const nG = DK.gear.home().length + DK.gear.equipped().length, nR = DK.runes.total();
+        const kindSeg = runesOn ? h('div', { class: 'ub-kind', role: 'tablist' },
+          [['gear', 'sword', t('upg.gear'), nG], ['rune', 'rune', t('upg.runes'), nR]].map(([k, ic, lbl, n]) => h('button', { class: 'ub-kbtn' + (params.fkind === k ? ' on' : ''), type: 'button', role: 'tab', 'aria-selected': String(params.fkind === k),
+            onClick: () => { params.fkind = k; refresh(); } }, DK.icon(ic, 15), h('span', null, lbl), h('small', null, String(n))))) : null;
+        return h('div', { class: 'screen cr-screen wb forge-only' }, h('div', { class: 'wb-main' }, tabsEl(), kindSeg, params.fkind === 'rune' ? V.runeBench(params, refresh) : V.forgeBench(params, refresh)));
+      }
       // v4.42: filtros compactos (iconos con tooltip), «sólo las que puedo» y la búsqueda como botones de icono
       const search = params.searchOpen || q ? h('input', { class: 'input wb-search', type: 'search', placeholder: isMat ? t('craft.searchMat') : t('craft.search'), value: params.q || '',
         onInput: (e) => { params.q = e.target.value; clearTimeout(params._qt); params._qt = setTimeout(() => { refresh(); const i = document.querySelector('.wb-search'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }, 220); } }) : null;

@@ -38,7 +38,7 @@
       const ready = DK.crafting.goalsReady();
       if (!ready.length) return null;
       return { id: 'goals', icon: 'star', kind: 'good', text: ready.length === 1 ? t('todo.goalOne', { item: D.items[ready[0].result].name }) : t('todo.goalMany', { n: ready.length }),
-        cta: t('todo.craft'), run: go('craft', ready.length === 1 ? { sel: ready[0].id } : {}) };
+        cta: t('todo.craftCta'), run: go('craft', ready.length === 1 ? { sel: ready[0].id } : {}) };
     },
     // Misiones por cobrar
     () => { const n = DK.missions.claimable(); return n ? { id: 'missions', icon: 'gift', kind: 'good', text: tn('todo.missions', n), cta: t('todo.claim'), run: go('progress', { tab: 'missions' }) } : null; },

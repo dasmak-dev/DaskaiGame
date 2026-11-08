@@ -60,7 +60,7 @@
     if (tier >= 2) { const tx = svg('text', { x: 24, y: 45, 'text-anchor': 'middle', 'font-size': 9, 'font-weight': 800, fill: tier === 3 ? '#fde68a' : '#fff', stroke: '#000', 'stroke-width': 0.6, 'paint-order': 'stroke', 'font-family': 'serif' }); tx.textContent = DK.runes.roman(id); s.appendChild(tx); }
     // Rareza: mágica = halo azul, rara = halo dorado
     const rar = DK.runes.parse(id).rarity;
-    if (rar !== 'n') s.insertBefore(svg('circle', { cx: 24, cy: 24, r: 22.5, fill: 'none', stroke: rar === 'r' ? '#ffd84a' : '#8f8fff', 'stroke-width': 2.4, 'stroke-opacity': 0.9, filter: `url(#${uid}f)` }), s.childNodes[1]);
+    if (rar !== 'n') s.insertBefore(svg('circle', { cx: 24, cy: 24, r: 22.5, fill: 'none', stroke: rar === 'l' ? '#ff8a3d' : rar === 'r' ? '#ffd84a' : '#8f8fff', 'stroke-width': rar === 'l' ? 3 : 2.4, 'stroke-opacity': 0.9, filter: `url(#${uid}f)` }), s.childNodes[1]);
     s.setAttribute('class', s.getAttribute('class') + ' t' + tier + ' rr-' + rar);
     return s;
   };
@@ -71,7 +71,8 @@
     let txt = r.group === 'bonus' ? t('rune.' + r.base + '.effect', { n: r.elites ? r.elites * r.tier : Math.round((r.coins || r.exp || r.loot || 0) * m * 100) }) : t('rune.' + r.base + '.effect');
     const fl = r.group === 'size' && (DK.config.expedition.runes.tierFloors || {})[r.value];
     if (fl) txt += ' · ' + t('rune.floors', { n: fl[r.tier - 1] });
-    if (r.group !== 'bonus' && r.tier > 1) txt += ' · ' + t('rune.tierEmblems', { n: r.tier - 1 });
+    const emb = (r.group !== 'bonus' ? r.tier - 1 : 0) + (DK.runes.rar(r.rarity).emblems || 0); // v4.90: + legendaria
+    if (emb > 0) txt += ' · ' + t('rune.tierEmblems', { n: emb });
     if (r.group === 'size' && r.base === 'xl' && r.tier === 3) txt += ' · ' + t('rune.tierCaves', { n: 2 });
     return txt;
   };

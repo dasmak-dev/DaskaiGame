@@ -270,7 +270,8 @@
         // v4.82: más rápido que el rival, rival de más nivel, rival con la vida llena
         + (gA.fastDmg && T.cur && this.stat(st, side, 'spd') > (T === this.get(st, other(side)) ? this.stat(st, other(side), 'spd') : DK.daskai.stats(T).spd) ? gA.fastDmg : 0)
         + ((T.level || 0) > (A.level || 0) ? gA.underdog || 0 : 0) + (hpOf(T) >= 1 ? gA.freshDmg || 0 : 0);
-      const dmgDown = Math.min(0.8, (gT.guard || 0) + ((phys ? gT.guardPhys : gT.guardMag) || 0) + (hpOf(T) < 0.5 ? gT.lastGuard || 0 : 0));
+      // v4.89: + resistencia a la casa del ataque (anillos, armaduras, dagas…)
+      const dmgDown = Math.min(0.8, (gT.guard || 0) + ((phys ? gT.guardPhys : gT.guardMag) || 0) + (hpOf(T) < 0.5 ? gT.lastGuard || 0 : 0) + (atkHouse ? gT['res_' + atkHouse] || 0 : 0));
       const gear = (1 + dmgUp) * (1 - dmgDown);
       critP = Math.max(0, critP + (gA.crit || 0) - (gT.critRes || 0)); // v4.82: resistencia a críticos
       // Punto débil de la especie (ver weakness): más daño de ese tipo de ataque

@@ -166,11 +166,30 @@
     p_regal: { kind: 'prefix', fx: 'bossDmg', only: 'corona', tiers: [[4, 6], [7, 10], [11, 15], [16, 21], [22, 28]] },
   };
 
+  /**
+   * v4.89: RESISTENCIAS a una casa: -% daño de los ataques de esa casa (fx res_<casa>).
+   * Cada casa tiene un prefijo (p_res_<casa>) y un sufijo (s_res_<casa>), así que caben varias.
+   * resMax: cuántas resistencias puede llevar una pieza según su tipo (los anillos hasta 3; las
+   * armaduras 2; yelmos, amuletos, botas y coronas 1; las armas de ataque ninguna).
+   * resHouse: las DAGAS sólo resisten a una casa concreta (la de su base). Nunca dos de la misma casa.
+   * Sólo en mágicos, raros y legendarios (no son afijos básicos). Pesan menos al tirar (resWeight).
+   */
+  G.resMax = { anillo: 3, escudo: 2, coraza: 2, capa: 2, yelmo: 1, amuleto: 1, botas: 1, corona: 1, daga: 1 };
+  G.resHouse = { colmillo_umbrio: 'luz', colmillo_vampiro: 'oscuridad' };
+  G.resWeight = 0.45;
+  G.resTiers = [[3, 5], [6, 8], [9, 12], [13, 16], [17, 20]];
+
   /** Topes de los efectos de combate sumando todo el equipo (en tanto por uno). */
   G.caps = { crit: 0.4, dodge: 0.3, guard: 0.4, leech: 0.3, thorns: 0.6, mana: 0.2, dmg: 0.8, critDmg: 1.5,
     physDmg: 0.6, magDmg: 0.6, pierce: 0.4, fullDmg: 0.6, healBoost: 1, execute: 0.8, statusDmg: 0.6, breakPow: 1, stabDmg: 0.6, mpCost: 0.5,
     strongDmg: 0.6, endure: 0.5, guardPhys: 0.4, guardMag: 0.4, statusRes: 0.6, rageDmg: 0.6, opener: 1, killHeal: 0.4, bossDmg: 0.6,
     fastDmg: 0.6, underdog: 0.6, acc: 0.3, weakDmg: 0.6, freshDmg: 0.6, critRes: 0.3, critGuard: 0.4, lastGuard: 0.4, goldFind: 1, expFind: 1 };
+  // v4.89: un prefijo y un sufijo de resistencia por casa (tope 50% por casa)
+  Object.keys(DK.data.houses).forEach((hs) => {
+    G.affixes['p_res_' + hs] = { kind: 'prefix', fx: 'res_' + hs, res: hs, tiers: G.resTiers };
+    G.affixes['s_res_' + hs] = { kind: 'suffix', fx: 'res_' + hs, res: hs, tiers: G.resTiers };
+    G.caps['res_' + hs] = 0.5;
+  });
 
   /**
    * Pasiva exclusiva de cada base al ser legendaria. Se registra en D.passives
@@ -230,9 +249,9 @@
     fight: [['fragmento_forja', 0.5], ['racion_viaje', 0.08], ['piedra_transmutacion', 0.018], ['piedra_alteracion', 0.0144], ['piedra_aumento', 0.009], ['piedra_cambio', 0.0072], ['piedra_nucleo', 0.0072], ['piedra_purga', 0.0072], ['piedra_regia', 0.0045],
       ['piedra_alquimia', 0.0022], ['piedra_caos', 0.0054], ['piedra_anulacion', 0.0018], ['piedra_divina', 0.0018], ['piedra_templado', 0.0014], ['sello_forja', 0.0014]],
     elite: [['fragmento_forja', 1], ['fragmento_forja', 0.5], ['racion_viaje', 0.3], ['piedra_transmutacion', 0.072], ['piedra_alteracion', 0.06], ['piedra_aumento', 0.036], ['piedra_cambio', 0.036], ['piedra_nucleo', 0.036], ['piedra_regia', 0.024], ['piedra_alquimia', 0.012],
-      ['piedra_caos', 0.0288], ['piedra_anulacion', 0.012], ['piedra_exaltacion', 0.0072], ['piedra_divina', 0.0072], ['piedra_templado', 0.0072], ['sello_forja', 0.0072], ['esquirla_jefe', 0.0192]],
+      ['piedra_caos', 0.0288], ['piedra_anulacion', 0.012], ['piedra_exaltacion', 0.0072], ['piedra_divina', 0.0072], ['piedra_templado', 0.0072], ['sello_forja', 0.0072], ['esquirla_jefe', 0.0192], ['glifo_ascenso', 0.04]],
     // Jefes: lo exclusivo (esquirla, eco y el corazón, muy raro)
     boss: [['fragmento_forja', 1], ['fragmento_forja', 1], ['piedra_regia', 0.168], ['piedra_alquimia', 0.084], ['piedra_caos', 0.126], ['piedra_exaltacion', 0.0252], ['piedra_divina', 0.0504],
-      ['piedra_templado', 0.042], ['sello_forja', 0.042], ['esquirla_jefe', 0.21], ['esquirla_jefe', 0.063], ['eco_legendario', 0.0126], ['corazon_jefe', 0.021]],
+      ['piedra_templado', 0.042], ['sello_forja', 0.042], ['esquirla_jefe', 0.21], ['esquirla_jefe', 0.063], ['eco_legendario', 0.0126], ['corazon_jefe', 0.021], ['glifo_ascenso', 0.3], ['corazon_runico', 0.03]],
   };
 })();

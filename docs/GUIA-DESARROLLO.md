@@ -357,6 +357,59 @@ Se carga la última y sólo sobrescribe: paleta (piedra oscura, bronce, oro `--g
 - **Expedición:** al entrar en el mapa, el equipo, la mochila o un combate durante una expedición, `#zone-backdrop` (creado en `screens/expedition.js` con `screen:enter`) pinta detrás de todo la escena de la zona actual, oscurecida; `body.in-exp`.
 - **Combate:** la arena usa la escena de la zona (`components/scenes.js`, ahora con árboles muertos, ruinas, tumbas, cristales o tentáculos según la zona) y los **jefes tienen su propio fondo**: `DK.scenes.bossScene(zona, secreto)` → `boss_<escena>` (menhires bajo luna roja, bosque muerto, naufragio con tormenta, bosque de cristales, forja de lava, santuario con estatua, fauces del abismo, ruinas entre rayos) y `boss_secret` (cripta) para los jefes ocultos.
 
+### Cambios de la v4.94 — Cursor de guantelete, mochila más pequeña y hoguera más grande
+
+- **Cursor** (`tools/cursors.js` → `css/cursor.css`): la flecha pasa a ser un **guantelete de metal con el índice apuntando** arriba a la izquierda (se dibuja derecho y se gira −38°; punta en 2,2). **Dorado** el normal y **turquesa** sobre lo que se puede pulsar (`--cur-pointer`); ayuda, prohibido, espera y lupa llevan su insignia abajo a la izquierda. Texto (barra dorada) y agarrar (mano) igual.
+- **Mochila** del campamento más pequeña (`base 18`).
+- **Hoguera** más grande: lengua central de 29 px (antes 22) y laterales de 19–20 (antes 13–14), más anchas; la lengüecita y las chispas suben más.
+
+### Cambios de la v4.93 — Mochila con bolsillos y cursor del juego
+
+- **Inventario en el campamento** (`campArt.js` → `tent`): sólo una **mochila de explorador** (el baúl se quita), más pequeña (`base 25`, lienzo 32×36): saco de dormir arriba, solapa con bolsillo, bolsillo frontal grande, dos laterales y una taza colgando. **No se anima sola**: al pasar el ratón (o con foco / pulsada) recorre los fotogramas 0 → 3 abriendo el bolsillo frontal (poción, pergamino y moneda que brilla) y los laterales, y se queda abierta (`motion.css`: `.a-tent`, `bagFrame` / `bagFrameLast`).
+- **Cursor propio** (`css/cursor.css`, generado con `node tools/cursors.js`; se carga el PRIMERO): flecha de metal dorado con contorno oscuro y variantes: **botón/enlace** (gema turquesa y halo), **ayuda** (?), **prohibido**, **espera**, **texto**, **agarrar/agarrando** y **lupa**. Todas las hojas usan `var(--cur-pointer|help|notAllowed|default|grab|grabbing|text|zoom)` en lugar de los cursores del sistema; las reglas base van en `:where()` (especificidad 0). Ajustes → Gráficos → «Cursor del juego» (`settings.customCursor`, `html[data-cursor="native"]` vuelve a los del sistema); en pantallas táctiles (`pointer: coarse`) no se usa.
+
+### Cambios de la v4.92 — Baúl de viaje y hoguera más bonita
+
+- **Inventario en el campamento** (`campArt.js` → `tent`, el id no cambia): la tienda de campaña pasa a ser un **baúl de viaje** con herrajes, cerradura dorada y la tapa entreabierta con brillo, monedas y una gema, y a su lado una **mochila de cuero** con un saco de dormir enrollado. 4 fotogramas (brillo que late, destello que recorre la tapa y una chispa); lienzo 58×42, `base 42`; `.a-tent { --dur: 1.4s }`.
+- **Hoguera** (`fire`): llamas más pequeñas y limpias: tres lenguas en forma de gota (la central más alta) que oscilan con suavidad, en capas rojo → naranja → amarillo → corazón claro; una lengüecita que se suelta y menos chispas. Troncos, brasas y piedras igual.
+
+### Cambios de la v4.91 — Cristales de mejora y revisión de código
+
+- **Piedras → cristales de mejora** (sólo los nombres; los ids `piedra_*` no cambian para no romper partidas): Cristal de transmutación, alteración, purga, regio, del caos, divino, alquimia, aumento, exaltación, anulación, templado, cambio y núcleo; «Fragmento de forja» → **Fragmento de cristal**; «Sello de forja» → **Sello de mejora**; «Ceniza de forja» → **Ceniza rúnica**. La categoría `forja` se muestra como «Mejora». Textos de es/en actualizados («cristales de mejora», «Su cristal favorito»…); los recortes de nombre aceptan `^(Piedra|Cristal) (de |del )?`.
+- **Revisión de código** (tsc `--checkJs` sobre todo `js/`):
+  - `todo.craft` estaba dos veces en el mismo objeto: el botón «Fabricar» del aviso de objetivos mostraba «Puedes fabricar {n} recetas». Ahora el botón usa `todo.craftCta`.
+  - `battle.effStrong` / `effWeak` duplicados (se quedaba el último); quitado el primero (sin cambio visible).
+  - `CAT_ICON.wings` duplicado en `looks.js`.
+  - `DK.runes.forge` / `cannotForge` normalizan el id (`norm`: 'oro:1' → 'oro') para no crear entradas fantasma en el inventario de runas.
+
+### Cambios de la v4.90 — Banco de Mejora único (equipo y runas), runas legendarias y planificador alineado
+
+- **Mejorar** (antes «Forja»; Crafteo → Mejorar): un solo banco con selector **Equipo / Runas** (`params.fkind`, `.ub-kind`); según lo elegido salen las piedras del equipo (`V.forgeBench`) o los reactivos de runas (`V.runeBench`). La pestaña «Runas» y **Fundir** desaparecen (`tab: 'runes'` lleva a Mejorar → Runas; `DK.runes.fuse` se conserva sólo por compatibilidad). Textos renombrados: «Mejorar», «Ir a Mejorar», «Las mejoras se hacen en casa»…
+- **Runas**: reactivos agrupados (Rareza · Tier · Volver a tirar · Un modificador) y dos nuevos:
+  - **Glifo de ascenso** (`glifo_ascenso`, op `tier`): sube I → II → III (hasta el tier del Taller) por monedas (`tierCost` = 500 / 2000); los valores suben en proporción. Sale en élites (4%), jefes (30%) y exploraciones de zonas de nivel ≥ 13 (`findRates.glyph`).
+  - **Corazón rúnico** (`corazon_runico`, op `legend`): rara → **LEGENDARIA** (`rarity 'l'`, `runes.rarities.l`: 3–4 modificadores, valores × 1,3 con `range(k, tier, rr)`, +1 emblema por jefe en `emblemBonus`). Jefes (3%) y exploraciones de zonas ≥ 50 (`findRates.heart`). Gema con halo naranja (`rr-l`).
+  - Los reactivos de runas no caen en combate sin el Taller de runas (`battleDrops`).
+- **Planificador de exploraciones**: rejilla por áreas (`zones who / picker / zone sum`): la ficha de la zona y el riesgo empiezan a la misma altura; en el móvil, zonas → ficha → quién → selector → resumen.
+- **Elegir daskai**: selector a lo ancho con **buscador** (nombre, especie, casa o nivel), Todos/Equipo/Cajas, orden (nivel, nombre, casa) y **páginas** (16 en escritorio, 9 en el móvil) (`params.wq`, `wsort`, `wpage`).
+- Tests: `gear.test.js` (tier, legendaria y banco único).
+
+### Cambios de la v4.89 — Botín propio por zona, exploraciones más peligrosas, forja de runas y resistencias a casas
+
+- **Botín propio de cada zona** (`config.explore.finds` + `findRates`; `DK.explore.finds(zona)`, `magicChance(lv)`; en `zoneLoot(...).own`):
+  - Cada zona tiene un **reactivo de runas** que sólo sale explorándola (≈0,5 / 1,1 / 2,6 por viaje; sólo con el Taller de runas): Pradera → tiza rúnica, Bosque → savia antigua, Costa → perla rúnica, Cavernas → cuarzo del eco, Volcán → ceniza de forja, Templo → tinta sagrada, Abismo → tinta abisal, Cumbre → escarcha celeste, Vacío → polvo del vacío (objetos nuevos, categoría `forja`, `noShop`).
+  - Su **piedra favorita** (40% de las piedras que salen), sus **tipos de equipo** (70% del equipo; más mágico cuanto más alta la zona: `loot.magic + lv × magicPerLv`), un **hallazgo raro** (un tónico distinto por zona) y, en zonas de nivel ≥ 13, a veces **una runa**.
+  - Diario: `explore.log.reagent` / `rune`. La ventana «Ver todo» abre con la sección «Sólo en esta zona».
+- **Riesgo nuevo** (`riskInfo(ds, zona, dur)` → `{ risk, disaster, gap, parts }`; `risk()` sigue devolviendo el número):
+  - `base 30% + 3% × niveles por debajo de la zona (−3% por encima)`, después × casa de la zona 0,75 · × 1,15 por cada uno débil contra la casa de la zona · × tamaño (solo 1,3 / dos 1,1 / tres 1) · × Firme 0,8 · × duración (0,8 / 1 / 1,3) · × (1 − Puesto); entre 8% y 92%.
+  - **Tres desenlaces**: bien · agotados (mitad de botín y experiencia; fatiga 60/120/240 min) · **desastre** (parte del riesgo: 30% + 4% por nivel por debajo, hasta 70%): pierden TODO el botín (monedas, objetos, equipo, runas), traen el 20% de la experiencia y descansan el doble. `rep.outcome`, `rep.lost`.
+- **Pantalla de exploraciones rediseñada** (`screens/training.js`): cabecera limpia (sin «Grupos» ni raciones; las raciones van en el coste y los grupos en «En camino N/M»), grupos en tarjetas compactas, planificador en dos columnas: **zonas en mosaico** (escala a muchas zonas: icono, nombre, nivel con punto de dificultad para tu grupo y el reactivo de la zona) + **ficha de la zona** (casa, descripción, «Sólo en esta zona», materiales); a la derecha quién va, **duración en píldoras discretas**, riesgo con barra doble (agotados / desastre) y «¿Cómo se calcula?» con el desglose, coste, experiencia y botín.
+- **Forja de runas** (Crafteo → Runas → **Forjar** / Fundir; `components/runeBench.js`, `DK.runes.forge(id, reactivo, { mod, kind })`, `cannotForge`, `slotsOf`, `kindOf`, `range`, `rollMod`, `modSum`):
+  - Los modificadores de runa son ahora **prefijos (mapa)**: élites, tesoros, reclutas, cuevas, **mercaderes**, **santuarios**; y **sufijos (recompensas)**: monedas, experiencia, variocolor, **+% reliquias en cofres**, **+% runas**, **+% piedras de forja**. Mágica 1–2 (1P + 1S), rara 2–4 (2P + 2S) (`runes.rarities`).
+  - Reactivos (`runes.reagents`): normal → mágica, re-tirar mágica, añadir (eliges P/S), cambiar uno, mágica → rara, re-tirar valores, re-tirar rara, uno al máximo, quitar uno. Sólo runas sin engastar y fuera de expedición; las ids antiguas siguen valiendo.
+- **Resistencias a casas** (`data/gear.js`: `p_res_<casa>` y `s_res_<casa>`, fx `res_<casa>`, tope 50% por casa; en `battle.factors` se suman a `dmgDown` según la casa del ataque):
+  - Cuántas caben por tipo (`resMax`): **anillos hasta 3**, escudos/corazas/capas 2, yelmos/amuletos/botas/coronas 1, armas de ataque ninguna. Las **dagas sólo la de su casa** (`resHouse`: colmillo umbrío → Luz, colmillo vampírico → Oscuridad). Nunca dos de la misma casa (`resBlocked`), pesan ×0,45 al tirar y no salen en piezas normales.
+- Tests: `gear.test.js` (reglas de resistencias, daño reducido, forja de runas y su pantalla) y `shop.test.js` (desastre y reactivo de zona; selectores nuevos del planificador).
+
 ### Cambios de la v4.88 — Música nueva por situación, mapa animado en el campamento y planificador más limpio
 
 - **Música (`systems/audio.js`)**, todo sintetizado como antes:

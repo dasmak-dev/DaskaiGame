@@ -802,15 +802,15 @@
     "desc": "La corona del Devorador. Mejora todo lo que eres."
   },
   "fragmento_forja": {
-    "name": "Fragmento de forja",
+    "name": "Fragmento de cristal",
     "category": "forja",
     "rarity": "comun",
     "icon": "cube",
     "color": "#94a3b8",
-    "desc": "Lo que queda al desguazar equipamiento. Sirve para fabricar piedras de forja."
+    "desc": "Lo que queda al desguazar equipamiento. Sirve para fabricar cristales de mejora."
   },
   "piedra_transmutacion": {
-    "name": "Piedra de transmutación",
+    "name": "Cristal de transmutación",
     "category": "forja",
     "rarity": "comun",
     "icon": "orb",
@@ -818,7 +818,7 @@
     "desc": "Convierte un objeto normal en mágico: gana atributos y afijos."
   },
   "piedra_alteracion": {
-    "name": "Piedra de alteración",
+    "name": "Cristal de alteración",
     "category": "forja",
     "rarity": "comun",
     "icon": "dice",
@@ -826,7 +826,7 @@
     "desc": "Vuelve a tirar los prefijos y sufijos de un objeto mágico."
   },
   "piedra_purga": {
-    "name": "Piedra de purga",
+    "name": "Cristal de purga",
     "category": "forja",
     "rarity": "comun",
     "icon": "droplet",
@@ -834,7 +834,7 @@
     "desc": "Devuelve un objeto mágico o raro a normal (para volver a empezar)."
   },
   "piedra_regia": {
-    "name": "Piedra regia",
+    "name": "Cristal regio",
     "category": "forja",
     "rarity": "raro",
     "icon": "crown",
@@ -842,7 +842,7 @@
     "desc": "Convierte un objeto mágico en raro: gana atributos y afijos."
   },
   "piedra_caos": {
-    "name": "Piedra del caos",
+    "name": "Cristal del caos",
     "category": "forja",
     "rarity": "raro",
     "icon": "sparkles",
@@ -850,7 +850,7 @@
     "desc": "Vuelve a tirar todos los prefijos y sufijos de un objeto raro."
   },
   "piedra_divina": {
-    "name": "Piedra divina",
+    "name": "Cristal divino",
     "category": "forja",
     "rarity": "epico",
     "icon": "star",
@@ -876,7 +876,7 @@
     "desc": "Muy raro: sólo lo sueltan los jefes. Convierte un objeto raro en legendario, con su pasiva exclusiva."
   },
   "piedra_alquimia": {
-    "name": "Piedra de alquimia",
+    "name": "Cristal de alquimia",
     "category": "forja",
     "rarity": "epico",
     "icon": "flask",
@@ -884,7 +884,7 @@
     "desc": "Convierte un objeto normal directamente en raro."
   },
   "piedra_aumento": {
-    "name": "Piedra de aumento",
+    "name": "Cristal de aumento",
     "category": "forja",
     "rarity": "comun",
     "icon": "plus",
@@ -892,7 +892,7 @@
     "desc": "Añade un prefijo o sufijo a un objeto mágico que tenga hueco."
   },
   "piedra_exaltacion": {
-    "name": "Piedra de exaltación",
+    "name": "Cristal de exaltación",
     "category": "forja",
     "rarity": "legendario",
     "icon": "sparkles",
@@ -900,7 +900,7 @@
     "desc": "Añade un prefijo o sufijo a un objeto raro o legendario que tenga hueco."
   },
   "piedra_anulacion": {
-    "name": "Piedra de anulación",
+    "name": "Cristal de anulación",
     "category": "forja",
     "rarity": "raro",
     "icon": "x",
@@ -908,7 +908,7 @@
     "desc": "Quita un prefijo o sufijo al azar (nunca el sellado)."
   },
   "piedra_templado": {
-    "name": "Piedra de templado",
+    "name": "Cristal de templado",
     "category": "forja",
     "rarity": "epico",
     "icon": "flame",
@@ -916,7 +916,7 @@
     "desc": "Sube un nivel (tier) el afijo que elijas, si el nivel del objeto lo permite."
   },
   "sello_forja": {
-    "name": "Sello de forja",
+    "name": "Sello de mejora",
     "category": "forja",
     "rarity": "epico",
     "icon": "lock",
@@ -933,7 +933,7 @@
     "desc": "Sólo lo sueltan los jefes. Cambia la pasiva exclusiva de un legendario por otra al azar."
   },
   "piedra_cambio": {
-    "name": "Piedra de cambio",
+    "name": "Cristal de cambio",
     "category": "forja",
     "rarity": "raro",
     "icon": "refresh",
@@ -941,7 +941,7 @@
     "desc": "Cambia el prefijo o sufijo que elijas por otro distinto del mismo tipo (con su nivel al azar)."
   },
   "piedra_nucleo": {
-    "name": "Piedra de núcleo",
+    "name": "Cristal de núcleo",
     "category": "forja",
     "rarity": "raro",
     "icon": "refresh",
@@ -955,5 +955,104 @@
     "icon": "gift",
     "color": "#d6a35c",
     "desc": "Provisiones para mandar a tus daskai de exploración (1 por viaje corto, 2 por medio y 4 por largo). Se fabrican con 1 fibra y 1 gota, las vende el mercader, caen a veces en combate y las traen los exploradores y los encargos."
+  },
+  "tiza_runica": {
+    "name": "Tiza rúnica",
+    "category": "forja",
+    "rarity": "comun",
+    "icon": "edit",
+    "color": "#e7e5e4",
+    "noShop": true,
+    "desc": "Reactivo de runas: sólo se encuentra explorando Pradera Verde. Convierte una runa normal en mágica (1–2 modificadores)."
+  },
+  "savia_runica": {
+    "name": "Savia antigua",
+    "category": "forja",
+    "rarity": "comun",
+    "icon": "droplet",
+    "color": "#84cc16",
+    "noShop": true,
+    "desc": "Reactivo de runas: sólo se encuentra explorando Bosque Susurrante. Vuelve a tirar los modificadores de una runa mágica."
+  },
+  "perla_runica": {
+    "name": "Perla rúnica",
+    "category": "forja",
+    "rarity": "raro",
+    "icon": "pearl",
+    "color": "#38bdf8",
+    "noShop": true,
+    "desc": "Reactivo de runas: sólo se encuentra explorando Costa Marea. Añade un modificador a una runa mágica o rara (eliges prefijo o sufijo)."
+  },
+  "cuarzo_eco": {
+    "name": "Cuarzo del eco",
+    "category": "forja",
+    "rarity": "raro",
+    "icon": "crystal",
+    "color": "#c4b5fd",
+    "noShop": true,
+    "desc": "Reactivo de runas: sólo se encuentra explorando Cavernas Umbrías. Cambia el modificador de runa que elijas por otro del mismo tipo."
+  },
+  "ceniza_runica": {
+    "name": "Ceniza rúnica",
+    "category": "forja",
+    "rarity": "raro",
+    "icon": "flame",
+    "color": "#f97316",
+    "noShop": true,
+    "desc": "Reactivo de runas: sólo se encuentra explorando Volcán Ígneo. Convierte una runa mágica en rara (+1 modificador)."
+  },
+  "tinta_sagrada": {
+    "name": "Tinta sagrada",
+    "category": "forja",
+    "rarity": "epico",
+    "icon": "scroll",
+    "color": "#fde68a",
+    "noShop": true,
+    "desc": "Reactivo de runas: sólo se encuentra explorando Templo Áureo. Vuelve a tirar los valores de todos los modificadores de una runa."
+  },
+  "tinta_abisal": {
+    "name": "Tinta abisal",
+    "category": "forja",
+    "rarity": "epico",
+    "icon": "vial",
+    "color": "#22d3ee",
+    "noShop": true,
+    "desc": "Reactivo de runas: sólo se encuentra explorando Abismo Eterno. Vuelve a tirar todos los modificadores de una runa rara."
+  },
+  "escarcha_celeste": {
+    "name": "Escarcha celeste",
+    "category": "forja",
+    "rarity": "epico",
+    "icon": "sparkle",
+    "color": "#a5f3fc",
+    "noShop": true,
+    "desc": "Reactivo de runas: sólo se encuentra explorando Cumbre Celeste. Lleva el modificador de runa que elijas a su valor máximo."
+  },
+  "polvo_vacio": {
+    "name": "Polvo del vacío",
+    "category": "forja",
+    "rarity": "legendario",
+    "icon": "dust",
+    "color": "#8b5cf6",
+    "noShop": true,
+    "desc": "Reactivo de runas: sólo se encuentra explorando Corazón del Vacío. Quita el modificador de runa que elijas."
+  },
+  "glifo_ascenso": {
+    "name": "Glifo de ascenso",
+    "category": "forja",
+    "rarity": "epico",
+    "icon": "arrowUp",
+    "color": "#fde047",
+    "noShop": true,
+    "desc": "Sube una runa al tier siguiente (I → II → III) conservando sus modificadores, que suben en proporción. Cuesta además monedas. Lo sueltan élites y jefes y lo traen a veces las exploraciones de zonas altas."
+  },
+  "corazon_runico": {
+    "name": "Corazón rúnico",
+    "category": "forja",
+    "rarity": "legendario",
+    "icon": "heart",
+    "color": "#ff8a3d",
+    "noShop": true,
+    "desc": "Convierte una runa rara en LEGENDARIA: sus modificadores valen un 30% más, gana uno nuevo si cabe y da +1 emblema por jefe. Muy raro: jefes y exploraciones de las zonas más altas."
   }
 }

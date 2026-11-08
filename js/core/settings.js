@@ -32,6 +32,7 @@
     skipAnims: false,
     showHotkeys: true,
     confirmFlee: false,
+    customCursor: true,     // v4.93: cursor propio del juego (false = el del sistema)
     confirmForge: true,     // v4.84: la forja pide confirmar antes de usar una piedra
     confirmRelease: true,
     vibration: true,
@@ -96,6 +97,7 @@
       el.dataset.colorblind = this.data.colorblind ? 'on' : 'off';
       el.dataset.motion = this.reducedMotion() ? 'reduced' : 'full';
       el.dataset.hotkeys = this.data.showHotkeys ? 'on' : 'off';
+      el.dataset.cursor = this.data.customCursor === false ? 'native' : 'game';
       if (DK.i18n) DK.i18n.setLang(this.data.lang);
     },
   };
