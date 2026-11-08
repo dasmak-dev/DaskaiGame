@@ -20,6 +20,7 @@
   def('panacea', 1, { antidoto: 1, balsamo: 1, polvo_brillante: 1 });
   def('cristal_vinculo', 1, { piedra_runica: 1, polvo_brillante: 2 });
   def('cristal_mayor', 1, { cristal_vinculo: 2, nucleo_arcano: 1 });
+  def('racion_viaje', 2, { hilo: 1, gota: 1 });
   def('hiperpocion', 1, { superpocion: 2, nucleo_arcano: 1 });
   def('supereter', 1, { eter: 3, polvo_brillante: 1, piedra_runica: 1 });
   def('pluma_fenix', 1, { pluma: 6, brasa: 4, lagrima_estelar: 1 });

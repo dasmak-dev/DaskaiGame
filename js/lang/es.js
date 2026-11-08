@@ -616,7 +616,7 @@ DK.i18n.register('es', {
   /* Navegación (barra lateral / inferior) */
   nav: {
     more: 'Más',
-    training: 'Entrenamiento',
+    training: 'Exploraciones',
     home: 'Campamento', team: 'Equipo', inventory: 'Inventario', battle: 'Batalla', codex: 'Códice', progress: 'Progreso', profile: 'Perfil', camp: 'Mejoras', craft: 'Crafteo', pack: 'Mochila', expMap: 'Mapa',
     main: 'Navegación principal', breadcrumb: 'Estás en',
   },
@@ -799,8 +799,8 @@ DK.i18n.register('es', {
     salvageQ: '¿Desguazar {name}?', salvageQText: 'Se pierde para siempre y te da {n} fragmentos de forja.', salvaged: '{name} desguazado: +{n} fragmentos de forja',
     pickAffix: 'Elige el prefijo o sufijo que quieres volver a tirar (botón de la diana).',
     toForgeLong: 'Mejorar en la forja', equipOnBtn: 'Equipar en…', equipTitle: 'Equipar: {name}', equipSearch: 'Buscar daskai…',
-    secTeam: 'En tu equipo', secTraining: 'Entrenando', secBox: 'Caja: {name}', secNone: 'Ningún daskai coincide.', secOther: 'Otros',
-    slotN: 'Hueco {n}', slotFree: 'Libre', equipHere: 'Equipar aquí', swapHere: 'Cambiar', inTraining: 'Entrenando', locked: 'Sellado: sobrevive al siguiente re-tirado',
+    secTeam: 'En tu equipo', secTraining: 'Explorando', secBox: 'Caja: {name}', secNone: 'Ningún daskai coincide.', secOther: 'Otros',
+    slotN: 'Hueco {n}', slotFree: 'Libre', equipHere: 'Equipar aquí', swapHere: 'Cambiar', inTraining: 'Explorando', locked: 'Sellado: sobrevive al siguiente re-tirado',
     bench: {
       pieces: 'Tus piezas', empty: 'Elige una pieza para trabajarla', emptyText: 'Aquí mejoras tu equipo con las piedras de forja: sube su rareza, re-tira sus prefijos y sufijos, séllalos o témplalos hasta conseguir tu pieza perfecta.',
       none: 'No tienes piezas', noneText: 'El equipo sale en las expediciones y se fabrica en la pestaña Equipo.',
@@ -851,10 +851,46 @@ DK.i18n.register('es', {
   },
   /* Taller de fusión (screens/inventory.js) */
   /* Crafteo (screens/craft.js) */
+  // v4.86: Exploraciones (sustituyen al campo de entrenamiento)
+  explore: {
+    title: 'Exploraciones', text: 'Manda grupos de daskai a una zona. Vuelven con experiencia y botín de allí, aunque cierres el juego.',
+    groups: 'Grupos {n}/{max}', send: 'Mandar un grupo', sendHint: 'Elige zona, duración y hasta 3 daskai', locked: 'Mejora el puesto', lockedTip: 'Mejora el Puesto de exploradores para mandar más grupos',
+    newTitle: 'Nueva exploración', zone: 'Zona', dur: 'Duración', who: 'Quién va ({n}/{max})', whoHint: 'Pulsa para añadir o quitar', back: 'Volver',
+    durs: { short: 'Corta', mid: 'Media', long: 'Larga' }, lv: 'Nv. {n}', lvTip: 'Nivel recomendado de la zona', houseTip: 'Casa de la zona: llevar a uno de esta casa baja el riesgo',
+    risk: 'Riesgo', riskTip: 'Probabilidad de que vuelvan agotados: la mitad de botín y experiencia, y un rato sin poder salir. Baja con más nivel, con uno de la casa de la zona y con naturalezas Firme o Valiente.',
+    riskLv: { low: 'Bajo', mid: 'Medio', high: 'Alto', crazy: 'Muy alto' },
+    cost: 'Coste', rations: '{n} raciones', rationsHave: 'Tienes {n}', craftRations: 'Fabricar raciones', expEach: 'Experiencia', loot: 'Botín', lootMats: '{n} materiales de la zona', lootRare: '{s}% piedra · {g}% equipo',
+    houseMatch: 'Llevas a uno de su casa: menos riesgo', go: 'Mandar ({t})', away: 'Fuera · vuelven en {t}', ready: '¡Han vuelto!', collect: 'Ver qué traen', recall: 'Hacerlos volver',
+    recallTitle: '¿Hacerlos volver ya?', recallText: 'Vuelven sin nada y lo pagado no se devuelve.', recalled: 'Han vuelto antes de tiempo',
+    report: 'Informe de la exploración', reportHurt: 'Han vuelto agotados', reportOk: 'Han vuelto sin problemas', got: 'Traen', coins: '{n} monedas', gearGot: 'Equipo', expGot: '+{n} exp',
+    tired: 'Agotado · {t}', tiredTip: 'Volvió agotado de una exploración: no puede ir de expedición ni de exploración durante {t}.',
+    legacy: 'El campo de entrenamiento ahora son Exploraciones. Han vuelto con su experiencia: {list}', last: 'Últimas exploraciones', none: 'Ningún daskai puede ir ahora', pickZone: 'Elige una zona',
+    nat: { feroz: '+20% experiencia', astuta: '+1 material', sabia: '+35% de algo raro', firme: 'Menos riesgo', valiente: 'Cuenta 3 niveles más para el riesgo', serena: 'Se cansa la mitad', tranquila: '+25% monedas', impetuosa: 'Viaje un 12% más corto', equilibrada: '+5% experiencia y monedas' },
+    why: { notThis: 'Este daskai no puede ir', already: 'Ya está de exploración', tired: 'Está agotado ({t})', inExpedition: 'No durante una expedición', full: 'No te quedan grupos libres',
+      noOne: 'Elige al menos un daskai', tooMany: 'Como mucho {n} por grupo', lastOne: 'Te quedarías sin equipo: deja al menos uno', zone: 'Elige una zona desbloqueada', noCoins: 'Te faltan monedas ({n})', noRations: 'Necesitas {n} raciones de viaje' },
+    log: {
+      set: 'Rumbo a {zone}: {names}.', found: '{name} recoge {item}.', rare: '¡{name} desentierra {item}!', gear: '¡{name} encuentra {item} entre unas rocas!',
+      cache: '¡{name} encuentra un alijo de explorador escondido!', hurt: 'Un salvaje demasiado fuerte les da un buen susto: vuelven agotados ({t} de descanso).', back: 'Vuelven al campamento con la mochila llena.',
+      ev: { rest: '{name} se echa una siesta al sol.', river: '{name} cruza un río saltando de piedra en piedra.', tracks: '{name} sigue unas huellas misteriosas por {zone}.', storm: 'Una tormenta les obliga a refugiarse un rato.',
+        ruins: '{name} husmea entre unas ruinas olvidadas.', wild: 'Un salvaje los observa de lejos y se marcha.', stars: 'Pasan la noche contando estrellas.', lost: '{name} se despista, pero encuentra el camino.' },
+    },
+    // v4.87
+    approx: 'Traerán unos {n} objetos', approxTip: 'Aproximado: durante la exploración pueden encontrar más (o menos) según la suerte.', seeAll: 'Ver todo lo que puede salir',
+    lootTitle: 'Qué se puede encontrar en {zone}', lootDur: 'Exploración {d}', perTrip: 'por viaje', atLeastOne: 'Probabilidad de traer al menos uno de cada.',
+    lootSec: { mats: 'Objetos de la zona ({n} tiradas)', usual: 'A menudo', some: 'A veces', rare: 'Hallazgo raro (sólo en exploraciones)' },
+    lootFrag: 'Fragmento de forja (en cada tirada)', lootRation: 'Ración de viaje', lootCoins: 'Monedas', lootStones: 'Una piedra común', lootGear: 'Equipo normal o mágico ({m}% mágico)',
+    lootCache: 'Alijo del explorador: 2 piedras (a veces una rara), 3 fragmentos y 2 raciones', cacheGot: '¡Alijo del explorador!',
+    chosen: 'Van', listShow: 'Elegir daskai ({n})', listHide: 'Ocultar lista', zoneMats: 'Materiales',
+    req: { title: 'Encargos de hoy', hint: 'Se cumplen al recoger una exploración. Cambian cada día.', zone: 'Explora {zone}', long: 'Completa una exploración larga', house: 'Explora con un daskai de la casa {house}',
+      items: 'Trae {n} objetos o más de una sola exploración', safe: 'Vuelve sin agotarse de una zona de Nv. {n} o más', claim: 'Cobrar', claimed: 'Cobrado', done: '¡Encargo cumplido!', got: 'Encargo cobrado: +{c} monedas y más' },
+    gift: 'Te regalan {n} raciones de viaje para empezar',
+    rationsHelp: 'Las raciones se fabrican en Crafteo (1 fibra + 1 gota = 2), las vende el mercader de las expediciones, caen a veces de los combates y las traen los exploradores y los encargos.',
+    up: { title: 'Puesto de exploradores', slots: '{n} grupos', rate: '+{n}% botín y experiencia', discount: '−{n}% coste', safety: '−{n}% riesgo' },
+  },
   train: {
     whoAll: 'Todos ({n})', whoTeam: 'Equipo', whoBox: 'Cajas', cantList: 'No pueden entrenar ahora ({n})',
     up: { title: 'Mejoras del campo', level: 'Nivel {n}/{max}', next: 'Siguiente:', slots: '{n} huecos', rate: '+{n}% de ritmo', discount: '−{n}% al sacarlo', buy: 'Mejorar a nivel {n}', noMoney: 'Te faltan {n} monedas', noEmblems: 'Te faltan {n} emblemas (los dan los jefes)', bought: '¡Campo de entrenamiento a nivel {n}!', maxed: 'Al máximo' },
-    title: 'Campo de entrenamiento', text: 'Gana experiencia aunque cierres el juego. Pagas al sacarlo.',
+    title: 'Exploraciones', text: 'Manda grupos de daskai a por botín y experiencia, aunque cierres el juego.',
     slots: 'Huecos {n}/{max}', instructor: 'Instructor +{n}% ritmo · −{d}% cobro',
     free: 'Hueco libre', freeHint: 'Deja a un daskai ganando experiencia', locked: 'Bloqueado', lockedTip: 'Compra la mejora «Instructor» para tener más huecos',
     pickTitle: 'Elige quién entrena', pickHint: 'Los de nivel bajo suben mucho más rápido.', nobody: 'No hay nadie disponible',
@@ -872,7 +908,7 @@ DK.i18n.register('es', {
     fee: 'Cobro', feeTip: 'Lo que pagas al sacarlo. Crece con el tiempo y con su nivel.',
     collect: 'Sacar · {n}', goCollect: 'Recoger', collectedExp: '{name} vuelve con +{n} de experiencia (pagas {c})',
     freeOut: 'Sacar sin experiencia', freeOutTip: 'Sacarlo gratis, perdiendo la experiencia ganada', freeOutText: '{name} vuelve sin la experiencia ganada (+{n}). No pagas nada.', freedOut: '{name} vuelve sin experiencia',
-    inTraining: 'Está en el campo de entrenamiento', short: 'Entrena', goTo: 'Ver entrenamiento',
+    inTraining: 'Está de exploración', short: 'Fuera', goTo: 'Ver exploraciones',
   },
   /* Guía del Códice (data/wiki.js, screens/codex.js) */
   // Aspecto de los daskai (systems/looks.js, v4.47)
@@ -900,7 +936,7 @@ DK.i18n.register('es', {
     search: 'Buscar en la guía…', locked: 'Por descubrir', lockedN: '{n} por descubrir', empty: 'Nada coincide con la búsqueda', open: 'Ver en la guía',
     unlockedTitle: 'Funciones desbloqueadas', unlockedHint: 'Pulsa para ver cómo funciona.',
     g: { basics: 'Lo básico', expedition: 'Expediciones', progress: 'Progreso', bosses: 'Jefes', endgame: 'Final del juego' },
-    s: { best: 'Récord: {n}', runes: '{n} runas', training: 'Nivel {n}/{max} · {s} huecos', craft: '{n} recetas', level: 'Nivel {n}', zones: 'Zonas: {n}', floor: 'Récord: piso {n}', stars: '{n} estrellas' },
+    s: { best: 'Récord: {n}', runes: '{n} runas', training: 'Puesto {n}/{max} · {s} grupos', craft: '{n} recetas', level: 'Nivel {n}', zones: 'Zonas: {n}', floor: 'Récord: piso {n}', stars: '{n} estrellas' },
     e: {
       combat: { t: 'Combate', b: 'Los combates son por turnos: actúa primero quien tenga más velocidad. Cada ataque es físico (ataque contra defensa) o mágico (magia contra defensa mágica) y los mágicos gastan maná.\nPuedes cambiar de daskai, usar objetos o huir. Huir es más fácil cuanto más nivel tengas que el rival.' },
       houses: { t: 'Casas', b: 'Cada daskai y cada ataque pertenece a una casa. Una casa fuerte contra otra hace ×{x} de daño, y un defensor de una casa fuerte recibe un {p}% menos.\nMira el punto débil de cada especie en su ficha del Códice.' },
@@ -918,7 +954,7 @@ DK.i18n.register('es', {
       runes: { t: 'Runas de expedición', b: 'Se desbloquean con la mejora «Taller de runas» (emblemas): cada nivel abre un tier. Las runas caen en cofres, élites y jefes y se guardan para siempre. Al preparar la expedición engastas hasta 4: una de tamaño y una de tipo, que los fijan, y las de bonificación que quieras (oro, saber…). Se gastan al partir.' },
       runeTiers: { t: 'Tiers de runas', b: 'Las runas tienen tier I, II y III. Tres de la misma runa y tier (de cualquier rareza) se funden en una del tier siguiente en Crafteo → Runas, con la rareza más alta de las tres. Las bonificaciones se multiplican con el tier; las de tamaño fijan los pisos (pequeño 8/14/18, mediano 14/20/26, XL 20/28/36) y las de tier alto dan emblemas extra por jefe.\nAl caer pueden ser normales, mágicas (1 modificador) o raras (2): más élites, tesoros, reclutas o cuevas en el mapa, o más monedas, experiencia o variocolores.' },
       emblems: { t: 'Emblemas y Mejoras', b: 'Los jefes dan emblemas (más en mapas grandes). Se gastan en las Mejoras permanentes al terminar cada expedición y en las mejoras del campo de entrenamiento.' },
-      training: { t: 'Campo de entrenamiento', b: 'Deja daskai ganando experiencia en tiempo real, aunque cierres el juego. Ganan un % de su nivel cada minuto (menos cuanto más nivel) y van más rápido cuanto más tiempo pasan.\nNo pagas al entrar: se cobra al sacarlo según el tiempo y su nivel. Puedes pagar un acelerador al dejarlo. Las mejoras del campo cuestan emblemas y monedas.' },
+      training: { t: 'Exploraciones', b: 'Manda grupos de 1 a 3 daskai a una zona que ya hayas desbloqueado (30 min, 2 h u 8 h; el tiempo corre aunque cierres el juego). Vuelven con experiencia y botín de esa zona: sus materiales, monedas, fragmentos de forja y, a veces, una piedra común o equipo normal o mágico.\nSalir cuesta monedas y raciones de viaje (se fabrican con fibra y una gota). Hay riesgo: si el grupo va flojo para la zona puede volver agotado (la mitad de botín y un rato sin poder salir). Llevar a uno de la casa de la zona protege, y cada naturaleza da un bonus. El Puesto de exploradores se mejora con emblemas y monedas.' },
       craft: { t: 'Crafteo', b: 'Con los materiales de las expediciones fabricas consumibles y equipo en el taller. Cada receta te dice qué materiales necesita y en qué zona conseguir los que faltan.' },
       missions: { t: 'Misiones y logros', b: 'Las misiones diarias dan monedas y experiencia de la Senda; puedes cambiar una al día. Los logros premian los hitos de la partida y algunos dan recompensas visibles.' },
       pass: { t: 'Senda del aventurero', b: 'Casi todo lo que haces da experiencia de la Senda. Cada nivel tiene un premio y cada temporada trae marcos y títulos propios.' },
@@ -972,9 +1008,9 @@ DK.i18n.register('es', {
     tonicsOne: 'Tienes 1 tónico sin usar', upgradesOne: 'Tienes emblemas para 1 mejora (se compra al terminar una expedición)', trainFreeOne: '1 hueco libre en el entrenamiento', craftOne: 'Puedes fabricar 1 receta',
     title: 'Qué hacer ahora', none: 'Todo al día. ¡Buen momento para una expedición!', more: 'Ver {n} más', less: 'Ver menos',
     choose: 'Elegir', claim: 'Cobrar', use: 'Usar', see: 'Ver',
-    trainReady: '{n} daskai han terminado de entrenar', talentOne: '{name} puede elegir un talento', talentMany: '{n} daskai tienen talentos por elegir',
+    trainReady: '{n} grupos han vuelto de explorar', talentOne: '{name} puede elegir un talento', talentMany: '{n} daskai tienen talentos por elegir',
     evolve: '{name} puede evolucionar', missions: '{n} misiones listas para cobrar', fainted: 'Tienes {n} daskai debilitados o muy heridos', hurt: '{n} daskai de tu equipo están heridos',
-    tonics: 'Tienes {n} tónicos sin usar', upgrades: 'Tienes emblemas para {n} mejoras (se compran al terminar una expedición)', trainFree: '{n} huecos libres en el entrenamiento', craft: 'Puedes fabricar {n} recetas',
+    tonics: 'Tienes {n} tónicos sin usar', upgrades: 'Tienes emblemas para {n} mejoras (se compran al terminar una expedición)', trainFree: 'Puedes mandar {n} grupos de exploración', craft: 'Puedes fabricar {n} recetas',
   },
   emblem: {
     title: 'Emblemas', plus: 'Emblemas +{n}', have: 'Tienes {n} emblemas', thisRun: '{n} en esta expedición',
@@ -1064,12 +1100,12 @@ DK.i18n.register('es', {
     noFaint: { name: 'Sin bajas', desc: 'Supera el mapa sin que caiga ninguno de tus daskai.' },
   },
   unlock: {
-    training: '¡Campo de entrenamiento desbloqueado! Ya puedes dejar daskai entrenando (el muñeco del campamento).',
+    training: '¡Exploraciones desbloqueadas! Ya puedes mandar grupos de daskai a por botín (el poste del campamento).',
     trainingLocked: 'Se desbloquea al derrotar a tu primer jefe en una expedición.',
   },
   pause: { title: 'Pausa', resume: 'Continuar', menu: 'Menú', menuTip: 'Menú de pausa (Esc)' },
   scene: {
-    title: 'Campamento', path: 'Expediciones', board: 'Misiones', tent: 'Inventario', anvil: 'Crafteo', fire: 'Equipo', lectern: 'Códice', dummy: 'Entrenamiento', locked: 'Bloqueado',
+    title: 'Campamento', path: 'Expediciones', board: 'Misiones', tent: 'Inventario', anvil: 'Crafteo', fire: 'Equipo', lectern: 'Códice', dummy: 'Exploraciones', locked: 'Bloqueado',
     greet: { day: 'Un cielo rojo cubre el campamento', dawn: 'El alba no logra vencer a la bruma', dusk: 'La oscuridad acecha más allá del fuego', night: 'La hoguera mantiene a raya la noche' },
   },
   box: {

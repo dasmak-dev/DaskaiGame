@@ -20,7 +20,7 @@
 
   const SOURCES = [
     // Entrenamientos que ya no ganan más (o llegaron al tope)
-    () => { const n = DK.training.readyCount(); return n ? { id: 'train', icon: 'dumbbell', kind: 'good', text: tn('todo.trainReady', n), cta: t('train.goCollect'), run: go('training') } : null; },
+    () => { const n = DK.training.readyCount(); return n ? { id: 'train', icon: 'compass', kind: 'good', text: tn('todo.trainReady', n), cta: t('train.goCollect'), run: go('training') } : null; },
     // Talentos por elegir
     () => {
       const ds = DK.party.all().filter((d) => !d.temp && DK.daskai.talentsPending(d).length);
@@ -61,7 +61,7 @@
       if (!DK.unlocks.has('training')) return null;
       const free = DK.training.slotCount() - DK.training.slots().length;
       const idle = DK.party.all().some((d) => !d.temp && !DK.party.isActive(d.uid) && !DK.training.isTraining(d.uid));
-      return free > 0 && idle ? { id: 'trainFree', icon: 'dumbbell', kind: '', text: tn('todo.trainFree', free), cta: t('todo.see'), run: go('training') } : null;
+      return free > 0 && idle ? { id: 'trainFree', icon: 'compass', kind: '', text: tn('todo.trainFree', free), cta: t('todo.see'), run: go('training') } : null;
     },
     // Recetas que se pueden fabricar ya
     () => { const n = D.recipes.filter((r) => DK.crafting.canCraft(r)).length; return n ? { id: 'craft', icon: 'craftCog', kind: '', text: tn('todo.craft', n), cta: t('todo.see'), run: go('craft') } : null; },

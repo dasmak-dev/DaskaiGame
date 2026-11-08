@@ -612,7 +612,8 @@
      * salieron con ella (e.members) y sus reclutas: el resto está en casa.
      */
     canJoin(uid) {
-      if (DK.training && DK.training.isTraining(uid)) return false; // está en el campo de entrenamiento
+      if (DK.training && DK.training.isTraining(uid)) return false; // está de exploración
+      if (DK.training && DK.training.isTired && DK.training.isTired(this.get(uid))) return false; // v4.86: vuelve agotado
       const e = DK.expedition && DK.expedition.active();
       if (!e || !e.members) return true;
       const d = this.get(uid);

@@ -511,6 +511,12 @@
   const NPC_COLOR = { traveler: '#f59e0b', hermit: '#a78bfa', smith: '#fb923c', cartographer: '#38bdf8', bandits: '#ef4444', gamble: '#4ade80', trainer: '#f472b6', collector: '#facc15' };
   const npcOf = (e, id, icon) => (NPC_COLOR[id] ? { key: id + '|' + e.seed + '|' + e.pending, color: NPC_COLOR[id], icon } : null);
 
+  /** v4.88: pista de la expedición: la de la zona, o misterio en sucesos y santuarios sin resolver. */
+  function expTrack() {
+    const e = E().active(), pn = e && E().pendingNode();
+    return pn && (pn.type === 'event' || pn.type === 'shrine') && !e.result ? 'mystery' : DK.audio.zoneTrack();
+  }
+
   function nodePanel(n, refresh) {
     const e = E().active();
     const done = (key, vars) => h('div', { class: 'stack-s' }, h('div', { class: 'warning good' }, DK.icon('check', 18), h('span', null, t(key, vars))), cont(refresh));
@@ -1110,14 +1116,15 @@
 
   DK.screens.register('expedition', {
     title: () => { const e = E().active(); return e ? t('exp.title', { zone: D.zones[e.zone].name }) : t('exp.titleNone'); },
-    icon: 'flag', section: 'battle', music: () => DK.audio.zoneTrack(), tutorial: 'expedition',
+    icon: 'flag', section: 'battle', music: () => expTrack(), tutorial: 'expedition',
     render(params) {
       const refresh = () => DK.router.refresh();
       const e = E().active();
       if (!e) return h('div', { class: 'screen' }, DK.ui.empty('flag', t('exp.none'), t('exp.noneText')),
         btn({ icon: 'map', label: t('nav.battle'), variant: 'primary', onClick: () => DK.router.reset('zones') }));
       E().ensureMap(); E().ensureFields();
-      DK.audio.music(DK.audio.zoneTrack()); // al pasar a un mapa nuevo cambia la música de la zona
+      // Al pasar a un mapa nuevo cambia la música de la zona; v4.88: en sucesos y santuarios, música de misterio
+      DK.audio.music(expTrack());
       // Cortinilla al llegar a un mapa nuevo (una vez por mapa)
       const introKey = `${e.depth || 1}|${e.seed}`;
       if (e.introShown !== introKey) {

@@ -227,9 +227,9 @@
    */
   // v4.85: las piedras salen bastante menos (≈ 1,5–2 por expedición); los fragmentos, igual
   G.drops = {
-    fight: [['fragmento_forja', 0.5], ['piedra_transmutacion', 0.018], ['piedra_alteracion', 0.0144], ['piedra_aumento', 0.009], ['piedra_cambio', 0.0072], ['piedra_nucleo', 0.0072], ['piedra_purga', 0.0072], ['piedra_regia', 0.0045],
+    fight: [['fragmento_forja', 0.5], ['racion_viaje', 0.08], ['piedra_transmutacion', 0.018], ['piedra_alteracion', 0.0144], ['piedra_aumento', 0.009], ['piedra_cambio', 0.0072], ['piedra_nucleo', 0.0072], ['piedra_purga', 0.0072], ['piedra_regia', 0.0045],
       ['piedra_alquimia', 0.0022], ['piedra_caos', 0.0054], ['piedra_anulacion', 0.0018], ['piedra_divina', 0.0018], ['piedra_templado', 0.0014], ['sello_forja', 0.0014]],
-    elite: [['fragmento_forja', 1], ['fragmento_forja', 0.5], ['piedra_transmutacion', 0.072], ['piedra_alteracion', 0.06], ['piedra_aumento', 0.036], ['piedra_cambio', 0.036], ['piedra_nucleo', 0.036], ['piedra_regia', 0.024], ['piedra_alquimia', 0.012],
+    elite: [['fragmento_forja', 1], ['fragmento_forja', 0.5], ['racion_viaje', 0.3], ['piedra_transmutacion', 0.072], ['piedra_alteracion', 0.06], ['piedra_aumento', 0.036], ['piedra_cambio', 0.036], ['piedra_nucleo', 0.036], ['piedra_regia', 0.024], ['piedra_alquimia', 0.012],
       ['piedra_caos', 0.0288], ['piedra_anulacion', 0.012], ['piedra_exaltacion', 0.0072], ['piedra_divina', 0.0072], ['piedra_templado', 0.0072], ['sello_forja', 0.0072], ['esquirla_jefe', 0.0192]],
     // Jefes: lo exclusivo (esquirla, eco y el corazón, muy raro)
     boss: [['fragmento_forja', 1], ['fragmento_forja', 1], ['piedra_regia', 0.168], ['piedra_alquimia', 0.084], ['piedra_caos', 0.126], ['piedra_exaltacion', 0.0252], ['piedra_divina', 0.0504],

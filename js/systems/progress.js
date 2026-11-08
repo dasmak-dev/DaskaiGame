@@ -150,7 +150,7 @@
    *   training: el campo de entrenamiento, tras derrotar al primer jefe.
    */
   const UNLOCKS = {
-    training: { icon: 'dumbbell', screen: 'training', when: (s) => Object.values(s.bosses || {}).some((b) => b.defeated > 0) || (s.training && s.training.slots && s.training.slots.length > 0) },
+    training: { icon: 'compass', screen: 'training', when: (s) => Object.values(s.bosses || {}).some((b) => b.defeated > 0) || (s.training && s.training.slots && s.training.slots.length > 0) },
   };
   DK.unlocks = {
     defs: UNLOCKS,

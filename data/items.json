@@ -947,5 +947,13 @@
     "icon": "refresh",
     "color": "#f472b6",
     "desc": "Vuelve a tirar el valor del atributo principal dentro de su rango (puede salir más alto o más bajo). No toca nada más."
+  },
+  "racion_viaje": {
+    "name": "Ración de viaje",
+    "category": "pieza",
+    "rarity": "comun",
+    "icon": "gift",
+    "color": "#d6a35c",
+    "desc": "Provisiones para mandar a tus daskai de exploración (1 por viaje corto, 2 por medio y 4 por largo). Se fabrican con 1 fibra y 1 gota, las vende el mercader, caen a veces en combate y las traen los exploradores y los encargos."
   }
 }

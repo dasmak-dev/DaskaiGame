@@ -143,7 +143,7 @@
     const notes = [
       DK.daskai.canEvolve(d) ? h('span', { class: 'qs-note evo' }, DK.icon('evolve', 13), t('evo.ready')) : null,
       DK.daskai.talentsPending(d).length ? h('span', { class: 'qs-note talent' }, DK.icon('star', 13), t('talent.pendingTip')) : null,
-      DK.training && DK.training.isTraining(d.uid) ? h('span', { class: 'qs-note' }, DK.icon('dumbbell', 13), t('train.inTraining')) : null,
+      DK.training && DK.training.isTraining(d.uid) ? h('span', { class: 'qs-note' }, DK.icon('compass', 13), t('train.inTraining')) : null,
     ].filter(Boolean);
     let m;
     const go = () => { m.close(true); DK.router.reset('team', { uid: d.uid }); };
@@ -218,7 +218,8 @@
   V.extraTags = (d) => [
     DK.daskai.isNew(d) ? h('span', { class: 'badge new', tip: t('newMark.tip') }, t('newMark.label')) : null,
     d.locked ? h('span', { class: 'badge lock', tip: t('lock.locked') }, DK.icon('lock', 12)) : null,
-    DK.training && DK.training.isTraining(d.uid) ? h('span', { class: 'badge train', tip: t('train.inTraining') }, DK.icon('dumbbell', 12), t('train.short')) : null,
+    DK.training && DK.training.isTired && DK.training.isTired(d) ? h('span', { class: 'badge tired', tip: t('explore.tiredTip', { t: DK.util.duration(DK.training.tiredLeft(d) * 60) }) }, DK.icon('clock', 12), t('explore.tired', { t: DK.util.duration(DK.training.tiredLeft(d) * 60) })) : null,
+    DK.training && DK.training.isTraining(d.uid) ? h('span', { class: 'badge train', tip: t('train.inTraining') }, DK.icon('compass', 12), t('train.short')) : null,
     DK.daskai.talentsPending(d).length ? h('span', { class: 'badge talent', tip: t('talent.pendingTip') }, DK.icon('star', 12)) : null,
   ].filter(Boolean);
 

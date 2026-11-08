@@ -357,6 +357,46 @@ Se carga la última y sólo sobrescribe: paleta (piedra oscura, bronce, oro `--g
 - **Expedición:** al entrar en el mapa, el equipo, la mochila o un combate durante una expedición, `#zone-backdrop` (creado en `screens/expedition.js` con `screen:enter`) pinta detrás de todo la escena de la zona actual, oscurecida; `body.in-exp`.
 - **Combate:** la arena usa la escena de la zona (`components/scenes.js`, ahora con árboles muertos, ruinas, tumbas, cristales o tentáculos según la zona) y los **jefes tienen su propio fondo**: `DK.scenes.bossScene(zona, secreto)` → `boss_<escena>` (menhires bajo luna roja, bosque muerto, naufragio con tormenta, bosque de cristales, forja de lava, santuario con estatua, fauces del abismo, ruinas entre rayos) y `boss_secret` (cripta) para los jefes ocultos.
 
+### Cambios de la v4.88 — Música nueva por situación, mapa animado en el campamento y planificador más limpio
+
+- **Música (`systems/audio.js`)**, todo sintetizado como antes:
+  - Pistas nuevas: `title` (menú principal: misterio, campanas, coro grave y susurros), `mystery` (sucesos y santuarios de la expedición), `elite` (pulso tenso y metales), `danger` (latido y ostinato cuando tu daskai tiene < 30% de vida) y `boss_rage` (jefe por debajo del 35%).
+  - **Variante de combate** de cada zona: `'<escena>:fight'` (`trackOf`): la misma pista un 22% más rápida, con percusión `drive`, más densa y con ostinato.
+  - **Las pistas evolucionan** por secciones de 8 compases: A · B (progresión rotada y melodía una octava arriba) · C (calma: menos notas, sin percusión salvo guerra/latido) · D (rotada y más densa).
+  - Instrumentos y percusiones nuevos: coro (`choir`), ostinato (`pulse`), lead `pulse`, percusión `drive` y `heart`.
+  - Quién elige: `mainMenu` → `title`; `battle` → `battleTrack(st, p)` (zona `:fight`, `elite`, `boss`/`boss_secret`, y en cada actualización de estado `danger` o `boss_rage`); `expedition` → `expTrack()` (`mystery` en sucesos y santuarios sin resolver, si no la de la zona). `DK.audio.current()` y `DK.audio.has(name)` para las pruebas.
+- **Campamento**: las Exploraciones son ahora un **mapa de pergamino sobre un atril** (8 fotogramas, `--dur` 3,2 s): un explorador dorado recorre el camino discontinuo hasta la X roja, que late al llegar; mar con olas, montañas, bosquecillo y rosa de los vientos.
+- **Planificador**: las zonas son una lista de verdad (un bloque con filas separadas por líneas y la elegida marcada con una barra de su color). Mientras planificas ya no salen debajo los huecos «Mandar un grupo» ni los bloqueados (sólo los grupos que están fuera).
+- Test nuevo en `shell.test.js` (pistas, combate normal con variante de zona y latido con poca vida, menú principal).
+
+### Cambios de la v4.87 — Exploraciones, fase 2: encargos, alijos, lista de botín y planificador más cómodo
+
+- **Raciones de viaje**: 6 de regalo al desbloquear las exploraciones (`takeGift`, también a partidas que ya las tenían), caen en combates (`G.drops`: 8% en peleas, 30% en élites), se fabrican (1 fibra + 1 gota → 2), las vende el mercader (20), las traen los exploradores y son premio de los encargos. La descripción del objeto lo explica.
+- **Encargos del día** (`requests()`, `requestText`, `requestReward`, `checkRequests`, `claimRequest`; `state.training.req`): 2 al día (3 con el puesto a nivel 2), elegidos con la fecha como semilla: explorar una zona, una exploración larga, ir con un daskai de cierta casa, traer 8+ objetos de una vez, volver sin agotarse de la zona más alta. Se cumplen al recoger y se cobran en la tarjeta «Encargos de hoy» (monedas, raciones, fragmentos y a veces una piedra).
+- **Alijo del explorador** (hallazgo exclusivo, `loot.cache` 1% / 3% / 8% × Sabia): 2 piedras (30% de que una sea rara: regia, caos, templado o sello), 3 fragmentos y 2 raciones. Sale en el diario y en el informe.
+- **Lo que puede salir** (`zoneLoot(zona, dur, uids)`): objetos de la zona con la probabilidad de traer al menos uno según las tiradas, fragmentos, monedas (rango), raciones, piedra común, equipo y alijo, y un total aproximado (`total`). En el planificador: «Traerán unos N objetos» y el enlace «Ver todo lo que puede salir» (ventana con todo).
+- **Planificador**: las zonas son una **lista** (fila con radio, icono, nombre, punto de su casa, 4 objetos y nivel; con scroll si hay muchas). Los elegidos se ven arriba como fichas que se quitan con un toque, y la **lista de daskai se pliega** («Elegir daskai (N)» / «Ocultar lista»): abierta si no hay nadie, se cierra sola al completar el grupo.
+- **Campamento**: el muñeco de entrenamiento pasa a ser un **poste de caminos** con tres carteles, banderín que ondea, mochila y saco de dormir (`campArt.js`, `dummy`).
+- Test de exploraciones ampliado (lista de botín, lista plegable, encargos y regalo).
+
+### Cambios de la v4.86 — Exploraciones (sustituyen al campo de entrenamiento)
+
+- **`systems/training.js` reescrito** (`DK.training`, alias `DK.explore`; se mantienen la ruta `training`, la clave de desbloqueo y `state.training`). Se manda un **grupo de 1-3 daskai** a una zona desbloqueada con una **duración** (corta 30 min / media 2 h / larga 8 h). Al volver (`collect(id, rnd)`) traen experiencia y botín de esa zona: materiales de sus salvajes (`zoneMats`, por peso de aparición y de botín), fragmentos de forja, monedas, a veces una ración, una piedra común (`loot.stones`) o equipo normal/mágico al nivel de la zona (nunca raro). Devuelve un informe con **diario** (`explore.log.*`).
+- **Coste al salir**: monedas (`config.explore.coins(nivelZona, k, n)`) + **raciones de viaje** (`racion_viaje`, nueva, categoría pieza: receta 1 fibra + 1 gota → 2; tienda 20; también la vende el mercader y a veces la traen).
+- **Riesgo** (`risk(ds, zona, dur)`): base 18% − 3,5% por nivel medio de diferencia con la zona, ×0,7 si alguno es de la **casa de la zona** (la más común entre sus salvajes), ×0,75 por cada Firme, Valiente cuenta +3 niveles, × la duración y −% del puesto; entre 3% y 80%. Si sale mal vuelven **agotados**: la mitad de botín y experiencia y `d.tired` (no pueden ir de expedición —`DK.party.canJoin`— ni de exploración durante `fatigue` minutos; Serena la mitad).
+- **Naturalezas** (`config.explore.natures`): Feroz +20% exp, Astuta +1 material, Sabia +35% de algo raro, Firme menos riesgo, Valiente +3 niveles para el riesgo, Serena se cansa la mitad, Tranquila +25% monedas, Impetuosa viaje 12% más corto, Equilibrada +5% exp y monedas.
+- **Experiencia**: `expCurve(nivel) × 0,24 × k`, menos si va más de 4 niveles por encima de la zona.
+- **Puesto de exploradores** (`config.explore.post`, antes Instructor; mismos precios en emblemas y monedas): grupos extra, +% botín y experiencia, −% coste y −% riesgo.
+- **Partidas antiguas**: los que estaban entrenando vuelven solos con la experiencia que llevaban ganada (sin cobrar) y se avisa al abrir la pantalla (`takeLegacy`).
+- **Pantalla** (`screens/training.js`): grupos fuera con barra de tiempo, «Ver qué traen» (informe en ventana con diario, botín y experiencia) y «Hacerlos volver» (sin nada); planificador con zona (nivel y casa), duración, quién va (fichas con el bonus de su naturaleza), y resumen (riesgo con barra y color, coste, experiencia de cada uno, botín posible) y últimas exploraciones. Icono `compass` en vez de `dumbbell`; insignia «Agotado» en las fichas.
+- Test nuevo en `shop.test.js` (sustituye al del entrenamiento). Arreglado un test de la estrella de ascensión que fallaba a veces por redondeo.
+
+### Publicar en itch.io
+
+- `crear-zip-itch.bat` (Windows, usa `tools/zip-itch.ps1`) o `crear-zip-itch.sh` (Linux/Mac, Python 3) crean `dist/daskai-itch-vX.Y.Z.zip` con la versión de `package.json`.
+- El zip lleva sólo `index.html`, `sw.js`, `manifest.webmanifest`, `css/`, `js/` e `icons/` en la raíz (sin `tests/`, `tools/`, `docs/`, `data/*.json` ni `node_modules/`). Las rutas van con «/» (por eso no se usa `Compress-Archive`, que en Windows PowerShell 5 mete «\» y rompe el juego en itch.io).
+- En itch.io: *Kind of project* = HTML, subir el zip y marcar «This file will be played in the browser». `dist/` está en `.gitignore`.
+
 ### Cambios de la v4.85 — Normal frente a mágico, piedras más raras, vista previa compacta y calidad explicada
 
 - **Normal ≠ mágico** (`G.rarities`): los normales llevan `basicOnly` (sólo los 16 afijos de `G.basicAffixes`, sin exclusivo), `maxTier: 2` y `power: 0.85` (atributos más bajos); los mágicos, todo el pool de su tipo y `maxTier: 4`; raros y legendarios, hasta N5. `allowedAffixes(base, rarity)`, `maxTierOf(p)` (rareza + nivel de objeto) se usan en `rollAffix`, `rollTier(ilvl, rnd, cap)`, `affixPool`, `tierChances` y `quality`; el templado avisa (`gear.why.rarityTier`) si la rareza no deja subir más.

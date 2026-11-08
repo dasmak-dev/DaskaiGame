@@ -62,6 +62,59 @@
       ],
     },
 
+    // v4.86: Exploraciones (systems/training.js, DK.explore): sustituyen al campo de entrenamiento
+    explore: {
+      slots: 2,                 // grupos fuera a la vez (+ mejoras del Puesto de exploradores)
+      partyMax: 3,              // daskai por grupo
+      // k: multiplicador de botín y experiencia · rolls: materiales · rations: raciones de viaje · fatigue: min agotado si sale mal · risk: × riesgo
+      durations: [
+        { id: 'short', min: 30, k: 0.5, rolls: 2, rations: 1, fatigue: 45, risk: 0.85 },
+        { id: 'mid', min: 120, k: 1, rolls: 4, rations: 2, fatigue: 90, risk: 1 },
+        { id: 'long', min: 480, k: 2.6, rolls: 9, rations: 4, fatigue: 180, risk: 1.2 },
+      ],
+      coins: (zoneLv, k, n) => Math.round((20 + zoneLv * 3) * (0.5 + k * 0.5) * (0.7 + 0.3 * n)), // monedas al salir
+      exp: 0.24,                // fracción de su nivel actual que gana por cada k (si no va muy sobrado)
+      // Riesgo de volver agotados: base − (nivel medio − nivel de la zona) × perLevel; × house si alguno es de la casa de la zona
+      risk: { base: 0.18, perLevel: 0.035, min: 0.03, max: 0.8, house: 0.7, firme: 0.75 },
+      hurt: 0.5,                // si vuelven agotados, traen la mitad de botín y experiencia
+      loot: {
+        fragment: 0.22,         // por cada tirada de materiales
+        ration: 0.25,           // × k: a veces encuentran una ración
+        stone: [0.04, 0.1, 0.25],   // piedra común (corta / media / larga)
+        gear: [0.03, 0.08, 0.2],    // equipo normal o mágico (nunca raro)
+        magic: 0.25,
+        stones: ['piedra_transmutacion', 'piedra_alteracion', 'piedra_aumento', 'piedra_cambio', 'piedra_nucleo'],
+        coins: (lv) => 12 + lv * 4,
+        // v4.87: hallazgo exclusivo de las exploraciones: un alijo con piedras (a veces raras), fragmentos y raciones
+        cache: [0.01, 0.03, 0.08],
+        cacheRare: ['piedra_regia', 'piedra_caos', 'piedra_templado', 'sello_forja'],
+      },
+      gift: 6,                  // raciones de regalo al desbloquear las exploraciones
+      // v4.87: encargos del día (se cumplen al recoger una exploración)
+      requests: { base: 2, extraAt: 2, reward: (lv) => ({ coins: 40 + lv * 8, items: { racion_viaje: 2, fragmento_forja: 2 } }), stoneChance: 0.35 },
+      // Bonus por naturaleza (key = texto de explore.nat.*)
+      natures: {
+        feroz: { key: 'feroz', exp: 0.2 },
+        astuta: { key: 'astuta', rolls: 1 },
+        sabia: { key: 'sabia', rare: 0.35 },
+        firme: { key: 'firme', risk: true },
+        valiente: { key: 'valiente', riskLv: 3 },
+        serena: { key: 'serena', fatigue: 0.5 },
+        tranquila: { key: 'tranquila', coins: 0.25 },
+        impetuosa: { key: 'impetuosa', time: 0.12 },
+        equilibrada: { key: 'equilibrada', exp: 0.05, coins: 0.05 },
+      },
+      events: ['rest', 'river', 'tracks', 'storm', 'ruins', 'wild', 'stars', 'lost'],
+      // Puesto de exploradores (antes Instructor): grupos extra, +% botín y experiencia, −coste y −riesgo
+      post: [
+        { slots: 0, rate: 0, discount: 0, safety: 0 },
+        { slots: 1, rate: 0.1, discount: 0.05, safety: 0.05, emblems: 3, cost: 3000 },
+        { slots: 1, rate: 0.2, discount: 0.1, safety: 0.1, emblems: 6, cost: 10000 },
+        { slots: 2, rate: 0.35, discount: 0.15, safety: 0.15, emblems: 10, cost: 25000 },
+        { slots: 2, rate: 0.5, discount: 0.2, safety: 0.25, emblems: 15, cost: 60000 },
+      ],
+    },
+
     // --- Casas: atacante fuerte → daño x1.5 ; defensor fuerte → recibe un 25% menos ---
     house: { strongDamage: 1.5, weakDefense: 0.25 },
 

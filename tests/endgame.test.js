@@ -162,7 +162,8 @@ module.exports = {
         const d = DK.party.active()[0], out = {};
         d.level = DK.config.maxLevel; DK.daskai.touch(); const a0 = DK.daskai.stats(d).atk;
         out.asc = DK.ascension.ascend(d); out.lv = d.level; out.stars = d.stars;
-        d.level = 30; DK.daskai.touch(); const withStar = DK.daskai.stats(d).atk; d.stars = 0; DK.daskai.touch(); const noStar = DK.daskai.stats(d).atk; d.stars = 1; DK.daskai.touch();
+        const tot = () => Object.values(DK.daskai.stats(d)).filter((v) => typeof v === 'number').reduce((x, y) => x + y, 0); // suma de todo: con un atributo bajo el redondeo podía empatar
+        d.level = 30; DK.daskai.touch(); const withStar = tot(); d.stars = 0; DK.daskai.touch(); const noStar = tot(); d.stars = 1; DK.daskai.touch();
         out.starBoost = withStar > noStar;
         DK.bag.add('fragmento_abisal', 1);
         out.notFinal = !!DK.bag.cannotUse('fragmento_abisal', d);

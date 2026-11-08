@@ -154,7 +154,7 @@
             h('summary', null, DK.icon(icon, 15), h('span', null, title), h('b', null, String(shown.length)), DK.icon('next', 13)), shown.map(row));
         };
         const draw = () => {
-          const secs = [section(t('gear.secTeam'), 'users', team, true), section(t('gear.secTraining'), 'dumbbell', training, true),
+          const secs = [section(t('gear.secTeam'), 'users', team, true), section(t('gear.secTraining'), 'compass', training, true),
             ...boxes.map((b) => section(b.name === '—' ? t('gear.secOther') : t('gear.secBox', { name: b.name }), 'grid', b.list, false))].filter(Boolean);
           body.replaceChildren(...(secs.length ? secs : [h('p', { class: 'muted small' }, t('gear.secNone'))]));
         };

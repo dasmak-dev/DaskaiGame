@@ -41,7 +41,7 @@
     // --- Progreso ---
     { id: 'emblems', group: 'progress', icon: 'emblem', when: () => bossesDone() > 0 || DK.camp.emblems() > 0,
       stat: () => num(DK.camp.emblems()) },
-    { id: 'training', group: 'progress', icon: 'dumbbell', when: () => DK.unlocks.has('training'),
+    { id: 'training', group: 'progress', icon: 'compass', when: () => DK.unlocks.has('training'),
       stat: () => DK.t('wiki.s.training', { n: DK.training.level(), max: C().training.instructor.length - 1, s: DK.training.slotCount() }) },
     { id: 'craft', group: 'progress', icon: 'craftCog', when: () => (S().recipesKnown || []).length > 0 || (st().crafts || 0) > 0,
       stat: () => DK.t('wiki.s.craft', { n: (S().recipesKnown || []).length }) },

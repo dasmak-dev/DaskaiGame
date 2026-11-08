@@ -84,5 +84,23 @@ module.exports = {
       check(r.secret === 'boss_secret', 'el jefe oculto debería tener su fondo');
       check(r.track === 'volcano', 'en expedición debería sonar la música de la zona: ' + r.track);
     }),
+  }, {
+    name: 'v4.88: música nueva: misterio en el menú principal, variante de combate de la zona, élites, latido con poca vida y furia del jefe',
+    views: ['desktop'],
+    run: (browser, view) => play(browser, view, async (p) => {
+      const r = await p.evaluate(async () => {
+        const out = { has: ['title', 'mystery', 'elite', 'danger', 'boss_rage', 'meadow:fight', 'volcano:fight'].every((n) => DK.audio.has(n)), bad: DK.audio.has('meadow:nope') };
+        DK.router.reset('battle', { zone: 'pradera', leaderUid: DK.party.active()[0].uid }); await new Promise((r) => setTimeout(r, 2600));
+        out.fight = DK.audio.current();
+        const st = DK.router.current().params.state, a = DK.battle.ally(st);
+        a.cur.hp = 1; DK.router.refresh(); await new Promise((r) => setTimeout(r, 300)); out.low = DK.audio.current();
+        DK.router.reset('mainMenu'); await new Promise((r) => setTimeout(r, 300)); out.menu = DK.audio.current();
+        return out;
+      });
+      check(r.has && !r.bad, 'faltan pistas nuevas');
+      check(r.menu === 'title', 'el menú principal debería sonar con la pista de misterio: ' + r.menu);
+      check(r.fight === 'meadow:fight', 'un combate normal debería usar la variante de combate de su zona: ' + r.fight);
+      check(r.low === 'danger', 'con poca vida debería sonar el latido: ' + r.low);
+    }),
   }],
 };

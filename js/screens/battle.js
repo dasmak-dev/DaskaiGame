@@ -20,9 +20,22 @@
   const D = DK.data, V = DK.views, B = () => DK.battle;
   const { t } = DK;
 
+  /** v4.88: pista del combate: la de la zona más rápida, élite, jefe; con poca vida, latido; jefe herido, furia. */
+  function battleTrack(st, p) {
+    const boss = st ? st.boss || st.secret : p.boss || p.secret, secret = st ? st.secret : p.secret, elite = st ? st.elite : p.elite;
+    const zone = D.zones[st ? st.zoneId : p.zone];
+    const base = boss ? (secret ? 'boss_secret' : 'boss') : elite ? 'elite' : (zone ? zone.scene : 'menu') + ':fight';
+    if (!st || st.outcome) return base;
+    const a = DK.battle.ally(st), e = st.enemy;
+    if (a && !DK.daskai.isFainted(a) && DK.daskai.hpPct(a) < 0.3) return 'danger';
+    if (boss && e && DK.daskai.hpPct(e) < 0.35) return 'boss_rage';
+    return base;
+  }
+
   DK.screens.register('battle', {
     title: (p) => D.zones[p.zone].name, icon: 'swords', back: false, nav: false, section: 'battle', tutorial: 'battle',
-    music: (p) => (p.boss || p.secret ? (p.secret ? 'boss_secret' : 'boss') : D.zones[p.zone].scene),
+    // v4.88: combate normal = variante «fight» de la pista de la zona; élites y jefes, las suyas
+    music: (p) => battleTrack(p.state, p),
     /**
      * Entrada al combate: la pantalla se tapa con una cortinilla, el
      * combate se monta detrás y se descubre. Jefes y mini jefes llevan
@@ -192,7 +205,12 @@
     /** Efectos temporales de pasivas «al entrar» (ATQ −15% · 2). */
     const timedTags = (side) => B().timedOf(st, side).map((x) => h('span', { class: 'badge timed ' + (x.pct > 0 ? 'up' : 'down'), tip: t('battle.timedTip', { passive: DK.tr('passives', D.passives[x.src]), n: x.left }) },
       DK.icon(x.pct > 0 ? 'arrowUp' : 'arrowDown', 11), `${D.stats[x.stat].short} ${x.pct > 0 ? '+' : '−'}${Math.round(Math.abs(x.pct) * 100)}%`, h('small', null, x.left)));
+    /** v4.88: la música cambia con la tensión: poca vida → latido; jefe herido → furia. */
+    function updateMood() {
+      if (!st.outcome) DK.audio.music(battleTrack(st, params));
+    }
     function updateStatus() {
+      updateMood();
       ui.aStatus.replaceChildren(V.statusTag(B().ally(st).status) || '', ...timedTags('ally'));
       ui.eStatus.replaceChildren(V.statusTag(st.enemy.status) || '', ...timedTags('enemy'));
       updatePhase();

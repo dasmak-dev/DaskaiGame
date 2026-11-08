@@ -157,7 +157,7 @@
             V.dSprite(d, { size: 56 }), V.formPips(d), V.newDot(d),
             h('span', { class: 'pc-lv' }, d.level),
             h('span', { class: 'pc-house' }, DK.icon(D.houses[sp.house].icon, 11)),
-            d.shiny ? h('span', { class: 'pc-flag shiny' }, DK.icon('sparkles', 11)) : training ? h('span', { class: 'pc-flag train' }, DK.icon('dumbbell', 11)) : DK.daskai.canEvolve(d) ? h('span', { class: 'pc-flag evo' }, DK.icon('evolve', 11)) : null);
+            d.shiny ? h('span', { class: 'pc-flag shiny' }, DK.icon('sparkles', 11)) : training ? h('span', { class: 'pc-flag train' }, DK.icon('compass', 11)) : DK.daskai.canEvolve(d) ? h('span', { class: 'pc-flag evo' }, DK.icon('evolve', 11)) : null);
           ctx(mon, d);
         }
         return h('div', { class: 'pc-slot drop-zone' + (d ? '' : ' is-empty'), dataset: { zone: 'box', index: i } }, mon);

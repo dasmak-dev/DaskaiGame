@@ -122,7 +122,7 @@
     if (active) {
       if (!isLeader) main.push(btn({ icon: 'crown', label: t('detail.makeLeader'), variant: 'tone', size: 'sm', onClick: () => { DK.party.setLeader(d.uid); DK.audio.sfx('swap'); changed(); } }));
     } else if (DK.training.isTraining(d.uid)) {
-      main.push(btn({ icon: 'dumbbell', label: t('train.goTo'), variant: 'primary', size: 'sm', onClick: () => DK.router.reset('training') }));
+      main.push(btn({ icon: 'compass', label: t('train.goTo'), variant: 'primary', size: 'sm', onClick: () => DK.router.reset('training') }));
     } else {
       main.push(btn({ icon: 'plus', label: t('detail.addTeam'), variant: 'primary', size: 'sm', onClick: () => { if (!full) { DK.party.addToTeam(d.uid); DK.audio.sfx('swap'); changed(); } else toggle('team'); } }));
     }

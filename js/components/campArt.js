@@ -7,7 +7,7 @@
  *   tent    tienda grande y cuadrada con banderín, farolillo y bajo que se mueve (3)
  *   fire    hoguera grande: llamas procedurales, troncos en tipi, brasas y chispas (8, v4.54)
  *   anvil   yunque sobre tocón con lingote al rojo y chispas (3)
- *   dummy   muñeco de paja que se balancea (2)
+ *   dummy   (Exploraciones) mapa de pergamino en un atril: camino que se dibuja hasta la X (8)
  *   lectern (códice) grimorio con el lomo a la vista: reposo con runa que late y hoja que pasa (12, v4.80)
  *   board   tablón con tejas, notas, sello y mapa; farol que se mece; nota al viento (6, v4.54)
  *   portal  arco de piedra (capa fija) con runas y un vórtice que gira (12, fluido)
@@ -169,28 +169,46 @@
     } },
 
     /* ---------- Muñeco de paja ---------- */
-    dummy: { base: 16, frames: 2, draw(f) {
-      const c = canvas(26, 40);
-      c.rect(6, 38, 14, 2, 'rgba(0,0,0,.35)');
-      const lean = f;
-      // poste y travesaño
-      c.rect(12, 14, 3, 25, W.m).rect(12, 14, 1, 25, W.l).rect(14, 14, 1, 25, W.d);
-      c.rect(1 + lean, 15, 24, 3, W.m).rect(1 + lean, 15, 24, 1, W.l).rect(1 + lean, 17, 24, 1, W.d);
-      // cuerpo de paja con textura
-      c.rect(6 + lean, 14, 14, 15, '#c69a2a');
-      for (let y = 14; y < 29; y++) for (let x = 6; x < 20; x++) if ((x * 3 + y * 5) % 7 === 0) c.set(x + lean, y, '#e2b84a'); else if ((x + y * 2) % 9 === 0) c.set(x + lean, y, '#9a7418');
-      c.rect(6 + lean, 14, 2, 15, '#ddb446');
-      // cuerdas
-      c.rect(6 + lean, 19, 14, 1, '#7a5a30').rect(6 + lean, 25, 14, 1, '#7a5a30');
-      // diana
-      c.circle(13 + lean, 22, 3, '#f5f0e0').circle(13 + lean, 22, 2, '#dc2626').set(13 + lean, 22, '#f5f0e0');
-      // paja que asoma
-      [[5, 29], [8, 30], [17, 30], [20, 29], [4, 14], [21, 15]].forEach(([x, y]) => c.set(x + lean, y, '#e2b84a'));
-      // cabeza de saco con costuras
-      c.circle(13 + lean, 8, 6, '#b8a07a').circle(12 + lean, 7, 4, '#cdb68e');
-      c.rect(10 + lean, 6, 2, 2, '#2a1a10').rect(15 + lean, 6, 2, 2, '#2a1a10');
-      line(c, 10 + lean, 11, 16 + lean, 11, '#6b5537'); [11, 13, 15].forEach((x) => c.set(x + lean, 12, '#6b5537'));
-      c.rect(8 + lean, 2, 10, 1, '#8a6a3a');
+    // v4.88: Exploraciones: un MAPA de pergamino sobre un atril. Animado (8 fotogramas): un caminito
+    // de puntos se va dibujando hasta la X roja, que late, y las esquinas del pergamino se mecen.
+    dummy: { base: 18, frames: 8, draw(f) {
+      const c = canvas(34, 36);
+      c.rect(6, 34, 22, 2, 'rgba(0,0,0,.35)');
+      // atril: dos patas y travesaño
+      line(c, 9, 20, 6, 34, W.d); line(c, 10, 20, 7, 34, W.m);
+      line(c, 24, 20, 27, 34, W.d); line(c, 23, 20, 26, 34, W.m);
+      c.rect(16, 22, 2, 12, W.m).rect(16, 22, 1, 12, W.l);
+      c.rect(7, 23, 20, 2, W.m).rect(7, 23, 20, 1, W.l);
+      // pergamino (ligeramente inclinado: la parte de arriba más estrecha)
+      const P = '#ead7ac', P2 = '#d9c08a', P3 = '#c4a66c';
+      for (let y = 2; y <= 22; y++) { const inset = Math.round((22 - y) * 0.08); c.rect(3 + inset, y, 28 - inset * 2, 1, P); }
+      c.rect(3, 22, 28, 1, P2);
+      // rollos arriba y abajo (se mecen un pelín)
+      const sway = [0, 0, 1, 1, 0, 0, -1, -1][f];
+      c.rect(2 + sway, 1, 30, 2, P3).rect(2 + sway, 1, 30, 1, P2).set(1 + sway, 1, W.d).set(32 + sway, 1, W.d).set(1 + sway, 2, W.d).set(32 + sway, 2, W.d);
+      c.rect(2, 22, 30, 2, P3).rect(2, 22, 30, 1, P2).set(1, 22, W.d).set(32, 22, W.d).set(1, 23, W.d).set(32, 23, W.d);
+      // manchas de pergamino
+      [[6, 6], [25, 18], [20, 5], [8, 17]].forEach(([x, y]) => c.set(x, y, P2));
+      // mar en la esquina, con su costa y olas
+      const coast = [21, 20, 20, 21, 22, 24, 26, 28];
+      coast.forEach((cx, k) => { const y = 3 + k; c.rect(cx, y, 31 - cx - (y < 4 ? 1 : 0), 1, '#8fb8c8').set(cx, y, '#5f8fa3'); });
+      [[25, 5], [28, 4], [27, 7]].forEach(([x, y]) => c.set(x, y, '#d6edf3').set(x + 1, y, '#d6edf3'));
+      // montañas (dos picos nevados)
+      const peak = (x, y) => { for (let k = 0; k < 3; k++) { c.rect(x - k, y + k, k * 2 + 1, 1, k ? '#8a7558' : '#f5f0e0'); c.set(x - k, y + k, '#6b5a44'); } };
+      peak(7, 9); peak(11, 8);
+      // bosquecillo
+      [[8, 16], [11, 15], [13, 17]].forEach(([x, y]) => c.rect(x - 1, y, 3, 1, '#4c7a5a').set(x, y - 1, '#5f9470').set(x, y + 1, '#5c3d24'));
+      // camino discontinuo hasta la X y un explorador (punto dorado) que lo recorre
+      const path = [[5, 20], [6, 20], [7, 21], [8, 21], [9, 21], [10, 20], [11, 20], [12, 19], [13, 19], [14, 18], [15, 17], [16, 16], [17, 15], [18, 14], [19, 14], [20, 13], [21, 13], [22, 14], [23, 14]];
+      path.forEach(([x, y], i) => { if (i % 3 !== 2) c.set(x, y, '#9a3412'); });
+      const at = path[Math.min(path.length - 1, Math.round((f / 7) * (path.length - 1)))];
+      c.rect(at[0], at[1] - 1, 2, 2, '#fbbf24').set(at[0], at[1] - 2, '#fde68a');
+      // la X (late al llegar)
+      const big = f >= 6;
+      [[24, 15], [25, 16], [26, 17], [26, 15], [24, 17]].forEach(([x, y]) => c.set(x, y, '#dc2626'));
+      if (big) [[23, 14], [27, 18], [27, 14], [23, 18]].forEach(([x, y]) => c.set(x, y, '#f87171'));
+      // rosa de los vientos
+      c.set(6, 4, '#7c2d12').set(6, 3, '#dc2626').set(5, 5, '#7c2d12').set(7, 5, '#7c2d12').set(6, 6, '#7c2d12').set(6, 5, '#e7c27a');
       return outline(c);
     } },
 

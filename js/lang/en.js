@@ -614,7 +614,7 @@ DK.i18n.register('en', {
 
   nav: {
     more: 'More',
-    training: 'Training',
+    training: 'Explorations',
     home: 'Camp', team: 'Team', inventory: 'Inventory', battle: 'Battle', codex: 'Codex', progress: 'Progress', profile: 'Profile', camp: 'Upgrades', craft: 'Crafting', pack: 'Backpack', expMap: 'Map',
     main: 'Main navigation', breadcrumb: 'You are in',
   },
@@ -796,8 +796,8 @@ DK.i18n.register('en', {
     salvageQ: 'Salvage {name}?', salvageQText: 'It is gone for good and gives you {n} forge shards.', salvaged: '{name} salvaged: +{n} forge shards',
     pickAffix: 'Pick the prefix or suffix you want to reroll (target button).',
     toForgeLong: 'Improve at the forge', equipOnBtn: 'Equip on…', equipTitle: 'Equip: {name}', equipSearch: 'Search daskai…',
-    secTeam: 'In your team', secTraining: 'Training', secBox: 'Box: {name}', secNone: 'No daskai matches.', secOther: 'Others',
-    slotN: 'Slot {n}', slotFree: 'Free', equipHere: 'Equip here', swapHere: 'Swap', inTraining: 'Training', locked: 'Sealed: survives the next reroll',
+    secTeam: 'In your team', secTraining: 'Exploring', secBox: 'Box: {name}', secNone: 'No daskai matches.', secOther: 'Others',
+    slotN: 'Slot {n}', slotFree: 'Free', equipHere: 'Equip here', swapHere: 'Swap', inTraining: 'Exploring', locked: 'Sealed: survives the next reroll',
     bench: {
       pieces: 'Your pieces', empty: 'Pick a piece to work on', emptyText: 'Improve your gear with forge stones here: raise its rarity, reroll its prefixes and suffixes, seal or temper them until you get your perfect piece.',
       none: 'You have no pieces', noneText: 'Gear drops on expeditions and can be made in the Gear tab.',
@@ -847,10 +847,46 @@ DK.i18n.register('en', {
     battles: 'Battles', winRate: 'Win rate', bestStreak: 'Best streak', captures: 'Bonds', achievements: 'Achievements', playTime: 'Play time', favorite: 'FAVORITE DASKAI', byHouse: 'Defeated by house',
   },
   /* Crafting (screens/craft.js) */
+  // v4.86: Explorations (replace the training grounds)
+  explore: {
+    title: 'Explorations', text: 'Send groups of daskai to a zone. They come back with experience and loot from there, even with the game closed.',
+    groups: 'Groups {n}/{max}', send: 'Send a group', sendHint: 'Pick a zone, a duration and up to 3 daskai', locked: 'Upgrade the post', lockedTip: 'Upgrade the Scouts\' post to send more groups',
+    newTitle: 'New exploration', zone: 'Zone', dur: 'Duration', who: 'Who goes ({n}/{max})', whoHint: 'Tap to add or remove', back: 'Back',
+    durs: { short: 'Short', mid: 'Medium', long: 'Long' }, lv: 'Lv. {n}', lvTip: 'Recommended zone level', houseTip: 'Zone house: bringing one of this house lowers the risk',
+    risk: 'Risk', riskTip: 'Chance they come back exhausted: half the loot and experience, and a while unable to leave. Lower with more level, one of the zone\'s house and Firm or Brave natures.',
+    riskLv: { low: 'Low', mid: 'Medium', high: 'High', crazy: 'Very high' },
+    cost: 'Cost', rations: '{n} rations', rationsHave: 'You have {n}', craftRations: 'Craft rations', expEach: 'Experience', loot: 'Loot', lootMats: '{n} zone materials', lootRare: '{s}% stone · {g}% gear',
+    houseMatch: 'You bring one of its house: lower risk', go: 'Send ({t})', away: 'Away · back in {t}', ready: 'They\'re back!', collect: 'See what they bring', recall: 'Call them back',
+    recallTitle: 'Call them back now?', recallText: 'They come back with nothing and the cost is not refunded.', recalled: 'They came back early',
+    report: 'Exploration report', reportHurt: 'They came back exhausted', reportOk: 'They came back safely', got: 'They bring', coins: '{n} coins', gearGot: 'Gear', expGot: '+{n} exp',
+    tired: 'Exhausted · {t}', tiredTip: 'Came back exhausted from an exploration: cannot go on expeditions or explorations for {t}.',
+    legacy: 'The training grounds are now Explorations. They came back with their experience: {list}', last: 'Recent explorations', none: 'No daskai can go right now', pickZone: 'Pick a zone',
+    nat: { feroz: '+20% experience', astuta: '+1 material', sabia: '+35% chance of something rare', firme: 'Lower risk', valiente: 'Counts 3 extra levels for risk', serena: 'Tires half as much', tranquila: '+25% coins', impetuosa: 'Trip 12% shorter', equilibrada: '+5% experience and coins' },
+    why: { notThis: 'This daskai cannot go', already: 'Already exploring', tired: 'Exhausted ({t})', inExpedition: 'Not during an expedition', full: 'No free groups left',
+      noOne: 'Pick at least one daskai', tooMany: 'At most {n} per group', lastOne: 'You would be left without a team: keep at least one', zone: 'Pick an unlocked zone', noCoins: 'Not enough coins ({n})', noRations: 'You need {n} travel rations' },
+    log: {
+      set: 'Off to {zone}: {names}.', found: '{name} picks up {item}.', rare: '{name} digs up {item}!', gear: '{name} finds {item} among some rocks!',
+      cache: '{name} finds a hidden explorer\'s cache!', hurt: 'A wild one far too strong gives them a scare: they come back exhausted ({t} of rest).', back: 'They return to camp with a full backpack.',
+      ev: { rest: '{name} takes a nap in the sun.', river: '{name} crosses a river hopping from stone to stone.', tracks: '{name} follows some mysterious tracks through {zone}.', storm: 'A storm forces them to take shelter for a while.',
+        ruins: '{name} snoops around some forgotten ruins.', wild: 'A wild one watches them from afar and leaves.', stars: 'They spend the night counting stars.', lost: '{name} gets lost, but finds the way back.' },
+    },
+    // v4.87
+    approx: 'They will bring about {n} items', approxTip: 'Approximate: during the trip they may find more (or fewer) depending on luck.', seeAll: 'See everything that can drop',
+    lootTitle: 'What can be found in {zone}', lootDur: '{d} exploration', perTrip: 'per trip', atLeastOne: 'Chance of bringing at least one of each.',
+    lootSec: { mats: 'Zone items ({n} rolls)', usual: 'Often', some: 'Sometimes', rare: 'Rare find (explorations only)' },
+    lootFrag: 'Forge fragment (on each roll)', lootRation: 'Travel ration', lootCoins: 'Coins', lootStones: 'A common stone', lootGear: 'Normal or magic gear ({m}% magic)',
+    lootCache: 'Explorer\'s cache: 2 stones (sometimes a rare one), 3 fragments and 2 rations', cacheGot: 'Explorer\'s cache!',
+    chosen: 'Going', listShow: 'Pick daskai ({n})', listHide: 'Hide list', zoneMats: 'Materials',
+    req: { title: 'Today\'s requests', hint: 'Completed when you collect an exploration. They change every day.', zone: 'Explore {zone}', long: 'Complete a long exploration', house: 'Explore with a daskai of the {house} house',
+      items: 'Bring {n} or more items from a single exploration', safe: 'Come back unharmed from a zone of Lv. {n} or higher', claim: 'Claim', claimed: 'Claimed', done: 'Request completed!', got: 'Request claimed: +{c} coins and more' },
+    gift: 'You get {n} travel rations to start with',
+    rationsHelp: 'Rations are crafted (1 fiber + 1 drop = 2), sold by the expedition merchant, sometimes dropped in battles and brought back by explorers and requests.',
+    up: { title: 'Scouts\' post', slots: '{n} groups', rate: '+{n}% loot and experience', discount: '−{n}% cost', safety: '−{n}% risk' },
+  },
   train: {
     whoAll: 'All ({n})', whoTeam: 'Team', whoBox: 'Boxes', cantList: 'Cannot train now ({n})',
     up: { title: 'Grounds upgrades', level: 'Level {n}/{max}', next: 'Next:', slots: '{n} slots', rate: '+{n}% pace', discount: '−{n}% when collecting', buy: 'Upgrade to level {n}', noMoney: 'You need {n} more coins', noEmblems: 'You need {n} more emblems (bosses drop them)', bought: 'Training grounds at level {n}!', maxed: 'Maxed out' },
-    title: 'Training grounds', text: 'Gains experience even with the game closed. You pay when taking it out.',
+    title: 'Explorations', text: 'Send groups of daskai for loot and experience, even with the game closed.',
     slots: 'Slots {n}/{max}', instructor: 'Instructor +{n}% pace · −{d}% fee',
     free: 'Free slot', freeHint: 'Leave a daskai gaining experience', locked: 'Locked', lockedTip: 'Buy the «Instructor» upgrade for more slots',
     pickTitle: 'Choose who trains', pickHint: 'Low-level daskai grow much faster.', nobody: 'Nobody available',
@@ -868,7 +904,7 @@ DK.i18n.register('en', {
     fee: 'Fee', feeTip: 'What you pay to take it out. Grows with time and level.',
     collect: 'Take out · {n}', goCollect: 'Collect', collectedExp: '{name} comes back with +{n} experience (you pay {c})',
     freeOut: 'Take out without exp', freeOutTip: 'Take it out for free, losing the experience gained', freeOutText: '{name} comes back without the experience gained (+{n}). You pay nothing.', freedOut: '{name} comes back without experience',
-    inTraining: 'At the training grounds', short: 'Training', goTo: 'View training',
+    inTraining: 'Out exploring', short: 'Away', goTo: 'View explorations',
   },
   /* Codex guide (data/wiki.js, screens/codex.js) */
   // Daskai looks (systems/looks.js, v4.47)
@@ -914,7 +950,7 @@ DK.i18n.register('en', {
       runes: { t: 'Expedition runes', b: 'Unlocked with the «Rune workshop» upgrade (emblems): each level opens a tier. Runes drop from chests, elites and bosses and are kept forever. When preparing you socket up to 4: one size and one type rune, which fix those, and any bonus runes (gold, wisdom…). They are spent on departure.' },
       runeTiers: { t: 'Rune tiers', b: 'Runes come in tier I, II and III. Three of the same rune and tier (any rarity) fuse into the next tier in Crafting → Runes, keeping the highest rarity. Bonuses multiply with tier; size runes set the floors (small 8/14/18, medium 14/20/26, XL 20/28/36) and high tiers give extra emblems per boss.\nThey can drop normal, magic (1 modifier) or rare (2): more elites, treasure, recruits or caves on the map, or more coins, experience or shinies.' },
       emblems: { t: 'Emblems and Upgrades', b: 'Bosses give emblems (more on big maps). Spend them on permanent Upgrades after each expedition and on training grounds upgrades.' },
-      training: { t: 'Training grounds', b: 'Leave daskai gaining experience in real time, even with the game closed. They gain a % of their level per minute (less at higher levels) and speed up the longer they stay.\nNothing to pay up front: you pay when taking them out, based on time and level. You can buy a booster when leaving them. Grounds upgrades cost emblems and coins.' },
+      training: { t: 'Explorations', b: 'Send groups of 1 to 3 daskai to a zone you have unlocked (30 min, 2 h or 8 h; time runs even with the game closed). They come back with experience and that zone\'s loot: its materials, coins, forge fragments and sometimes a common stone or normal or magic gear.\nLeaving costs coins and travel rations (crafted from fiber and a drop). There is risk: a group that is too weak for the zone may come back exhausted (half the loot and a while unable to leave). Bringing one of the zone\'s house helps, and each nature gives a bonus. The Scouts\' post is upgraded with emblems and coins.' },
       craft: { t: 'Crafting', b: 'With expedition materials you craft consumables and gear at the workbench. Each recipe shows the materials it needs and which zone has the missing ones.' },
       missions: { t: 'Missions and achievements', b: 'Daily missions give coins and Path experience; you can reroll one per day. Achievements reward milestones and some give visible rewards.' },
       pass: { t: 'Adventurer\'s path', b: 'Almost everything you do gives Path experience. Each level has a reward and each season brings its own frames and titles.' },
@@ -968,9 +1004,9 @@ DK.i18n.register('en', {
     tonicsOne: 'You have 1 unused tonic', upgradesOne: 'You have emblems for 1 upgrade (bought when an expedition ends)', trainFreeOne: '1 free training slot', craftOne: 'You can craft 1 recipe',
     title: 'What to do now', none: 'All caught up. Great time for an expedition!', more: 'Show {n} more', less: 'Show less',
     choose: 'Choose', claim: 'Claim', use: 'Use', see: 'View',
-    trainReady: '{n} daskai finished training', talentOne: '{name} can choose a talent', talentMany: '{n} daskai have talents to choose',
+    trainReady: '{n} groups are back from exploring', talentOne: '{name} can choose a talent', talentMany: '{n} daskai have talents to choose',
     evolve: '{name} can evolve', missions: '{n} missions ready to claim', fainted: '{n} daskai are fainted or badly hurt', hurt: '{n} daskai in your team are hurt',
-    tonics: 'You have {n} unused tonics', upgrades: 'You have emblems for {n} upgrades (bought when an expedition ends)', trainFree: '{n} free training slots', craft: 'You can craft {n} recipes',
+    tonics: 'You have {n} unused tonics', upgrades: 'You have emblems for {n} upgrades (bought when an expedition ends)', trainFree: 'You can send {n} exploration groups', craft: 'You can craft {n} recipes',
   },
   emblem: {
     title: 'Emblems', plus: 'Emblems +{n}', have: 'You have {n} emblems', thisRun: '{n} this expedition',
@@ -1060,12 +1096,12 @@ DK.i18n.register('en', {
     noFaint: { name: 'No losses', desc: 'Clear the map without any of your daskai fainting.' },
   },
   unlock: {
-    training: 'Training grounds unlocked! You can now leave daskai training (the training dummy at camp).',
+    training: 'Explorations unlocked! You can now send groups of daskai for loot (the signpost at camp).',
     trainingLocked: 'Unlocks when you defeat your first boss in an expedition.',
   },
   pause: { title: 'Paused', resume: 'Resume', menu: 'Menu', menuTip: 'Pause menu (Esc)' },
   scene: {
-    title: 'Camp', path: 'Expeditions', board: 'Missions', tent: 'Inventory', anvil: 'Crafting', fire: 'Team', lectern: 'Codex', dummy: 'Training', locked: 'Locked',
+    title: 'Camp', path: 'Expeditions', board: 'Missions', tent: 'Inventory', anvil: 'Crafting', fire: 'Team', lectern: 'Codex', dummy: 'Explorations', locked: 'Locked',
     greet: { day: 'A red sky covers the camp', dawn: 'Dawn cannot beat the mist', dusk: 'Darkness lurks beyond the fire', night: 'The bonfire keeps the night at bay' },
   },
   box: {

@@ -95,7 +95,7 @@
   }
 
   DK.screens.register('mainMenu', {
-    title: '', music: 'menu', nav: false,
+    title: '', music: 'title', nav: false,
     render() {
       if (DK.store.state) DK.store.close();
       const refresh = () => DK.router.refresh();

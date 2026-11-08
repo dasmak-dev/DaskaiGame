@@ -153,7 +153,28 @@
     // Jefes: tambores de guerra y metales graves
     boss: { bpm: 118, root: 45, scale: HARM, prog: [0, 5, 1, 4], lead: 'brass', pad: 0.6, drone: 1.1, drums: 'war', fx: 'none', density: 0.7 },
     boss_secret: { bpm: 104, root: 44, scale: PHRY, prog: [0, 1, 0, 6], lead: 'bell', pad: 0.9, drone: 1.2, drums: 'war', fx: 'whisper', density: 0.5 },
+    // v4.88: menú principal: misterio (campanas lejanas, coro bajo y susurros)
+    title: { bpm: 56, root: 45, scale: HARM, prog: [0, 6, 3, 4, 0, 5, 1, 4], lead: 'bell', pad: 1.1, drone: 1, drums: 'none', fx: 'whisper', density: 0.28, choir: 0.8 },
+    // Sucesos y santuarios de la expedición: intriga (arpa y gotas, en frigio)
+    mystery: { bpm: 64, root: 47, scale: PHRY, prog: [0, 1, 6, 1], lead: 'harp', pad: 0.8, drone: 0.9, drums: 'none', fx: 'drip', density: 0.32, choir: 0.4 },
+    // Élites: pulso tenso y metales
+    elite: { bpm: 112, root: 46, scale: PHRY, prog: [0, 1, 0, 5], lead: 'brass', pad: 0.5, drone: 1, drums: 'drive', fx: 'none', density: 0.6, pulse: 1 },
+    // Jefe con poca vida o en su última fase
+    boss_rage: { bpm: 132, root: 46, scale: HARM, prog: [0, 1, 5, 4], lead: 'brass', pad: 0.5, drone: 1.2, drums: 'war', fx: 'none', density: 0.8, pulse: 1, choir: 0.6 },
+    // Poca vida (< 30%) en combate: latido y ostinato tenso
+    danger: { bpm: 126, root: 44, scale: PHRY, prog: [0, 1, 0, 1], lead: 'pulse', pad: 0.3, drone: 1.1, drums: 'heart', fx: 'none', density: 0.75, pulse: 1 },
   };
+  /**
+   * v4.88: variante de combate de una pista de zona ('meadow:fight'): más rápida,
+   * con percusión y algo más densa. Las pistas también «evolucionan» por secciones
+   * (ver playStep): A, B (otra progresión y la melodía una octava arriba), C (calma) y D.
+   */
+  function trackOf(name) {
+    if (TRACKS[name]) return TRACKS[name];
+    const [base, mode] = String(name || '').split(':');
+    const tr = TRACKS[base]; if (!tr || mode !== 'fight') return null;
+    return Object.assign({}, tr, { bpm: Math.round(tr.bpm * 1.22), drums: tr.drums === 'war' ? 'war' : 'drive', density: Math.min(0.85, tr.density + 0.18), pulse: 0.7, fx: 'none' });
+  }
 
   /** Nota con filtro paso bajo y envolvente (instrumentos de la música). */
   function voice(freq, dur, { type = 'sawtooth', vol = 0.05, delay = 0, attack = 0.01, release = null, cutoff = 1200, detune = 0, out = musicGain } = {}) {
@@ -175,7 +196,7 @@
 
   function startTrack(name) {
     stopTrack();
-    const tr = TRACKS[name];
+    const tr = trackOf(name);
     if (!tr || !ctx) return;
     const eighth = 60 / tr.bpm / 2;
     seq = { tr, name, step: 0, next: ctx.currentTime + 0.1, eighth };
@@ -191,8 +212,13 @@
 
   /** Toca un paso (corchea) de la pista activa. */
   function playStep(step, delay) {
-    const { tr, eighth, name } = seq;
-    const barN = Math.floor(step / 8), bar = barN % tr.prog.length, beat = step % 8;
+    const { tr: tr0, eighth, name } = seq;
+    const barN = Math.floor(step / 8), beat = step % 8;
+    // v4.88: la pista evoluciona por secciones de 8 compases: A · B (progresión rotada, melodía arriba) · C (calma) · D
+    const sect = Math.floor(barN / 8) % 4;
+    const tr = sect === 1 || sect === 3 ? Object.assign({}, tr0, { prog: tr0.prog.slice(2).concat(tr0.prog.slice(0, 2)), up: sect === 1 ? 12 : 0, density: tr0.density * (sect === 3 ? 1.15 : 1) })
+      : sect === 2 ? Object.assign({}, tr0, { density: tr0.density * 0.45, drums: tr0.drums === 'war' || tr0.drums === 'heart' ? tr0.drums : 'none', pulse: 0 }) : tr0;
+    const bar = barN % tr.prog.length;
     const g0 = tr.prog[bar];
     const o = { delay: Math.max(0, delay) };
     const barLen = eighth * 8;
@@ -200,20 +226,32 @@
     if (beat === 0) {
       if (tr.drone) { voice(midi(deg(tr, g0) - 24), barLen * 1.05, { ...o, type: 'sawtooth', vol: 0.05 * tr.drone, attack: 0.6, release: 0.6, cutoff: 260, detune: 7 }); voice(midi(deg(tr, g0 + 4) - 24), barLen * 1.05, { ...o, type: 'sawtooth', vol: 0.03 * tr.drone, attack: 0.8, release: 0.6, cutoff: 220 }); }
       if (tr.pad) [0, 2, 4].forEach((k, i) => voice(midi(deg(tr, g0 + k) - 12), barLen, { ...o, delay: o.delay + i * 0.05, type: 'triangle', vol: 0.022 * tr.pad, attack: barLen * 0.35, release: 0.8, cutoff: 900, detune: 9 }));
+      // v4.88: coro grave («aah») para las pistas de misterio
+      if (tr.choir) [0, 4].forEach((k) => voice(midi(deg(tr, g0 + k)), barLen * 1.1, { ...o, type: 'sawtooth', vol: 0.012 * tr.choir, attack: barLen * 0.5, release: 1, cutoff: 650, detune: 14 }));
     }
+    // v4.88: ostinato de tensión (corcheas en la tónica y la quinta)
+    if (tr.pulse) voice(midi(deg(tr, g0 + (beat % 4 === 3 ? 4 : 0)) - 12), eighth * 0.8, { ...o, type: 'square', vol: 0.014 * tr.pulse, attack: 0.004, cutoff: 900 });
     // Melodía escasa (estable por compás)
     const rnd = hashRnd(name + ':' + (barN % (tr.prog.length * 2)) + ':' + beat);
     const playLead = rnd() < tr.density * (beat % 2 ? 0.55 : 1);
     if (playLead) {
       const g = g0 + [0, 2, 4, 7, 4, 2, 1, 6][Math.floor(rnd() * 8)];
-      const n = deg(tr, g) + (tr.lead === 'brass' ? -12 : 0);
+      const n = deg(tr, g) + (tr.lead === 'brass' ? -12 : 0) + (tr.up || 0);
       if (tr.lead === 'pluck') { voice(midi(n), eighth * 2.6, { ...o, type: 'triangle', vol: 0.07, attack: 0.004, cutoff: 1800 }); voice(midi(n + 12), eighth * 1.2, { ...o, type: 'sawtooth', vol: 0.012, attack: 0.004, cutoff: 2400 }); }
       else if (tr.lead === 'harp') voice(midi(n + 12), eighth * 3, { ...o, type: 'triangle', vol: 0.05, attack: 0.003, cutoff: 2600 });
       else if (tr.lead === 'bell') { voice(midi(n + 12), eighth * 6, { ...o, type: 'sine', vol: 0.05, attack: 0.003, cutoff: 5000 }); voice(midi(n + 31), eighth * 3, { ...o, type: 'sine', vol: 0.012, attack: 0.003, cutoff: 6000 }); }
       else if (tr.lead === 'brass') voice(midi(n), eighth * 1.8, { ...o, type: 'sawtooth', vol: 0.045, attack: 0.04, cutoff: 700, detune: 6 });
+      else if (tr.lead === 'pulse') voice(midi(n + 12), eighth * 0.9, { ...o, type: 'square', vol: 0.03, attack: 0.004, cutoff: 1600 });
     }
     // Percusión
     if (tr.drums === 'soft' && beat === 0) tone(70, 0.5, { ...o, out: musicGain, type: 'sine', vol: 0.12, slide: 40 });
+    // v4.88: «drive» (combate normal y élites) y «heart» (latido con poca vida)
+    if (tr.drums === 'drive') {
+      if (beat === 0 || beat === 4) tone(64, 0.3, { ...o, out: musicGain, type: 'sine', vol: 0.16, slide: 36 });
+      if (beat === 2 || beat === 6) noise(0.12, { ...o, out: musicGain, vol: 0.05, freq: 1800, q: 0.9 });
+      if (beat % 2 === 1) noise(0.04, { ...o, out: musicGain, vol: 0.018, freq: 5200 });
+    }
+    if (tr.drums === 'heart' && (beat === 0 || beat === 1)) tone(beat ? 52 : 58, 0.22, { ...o, out: musicGain, type: 'sine', vol: beat ? 0.14 : 0.2, slide: 30 });
     if (tr.drums === 'war') {
       if (beat === 0 || beat === 3 || beat === 6) tone(62, 0.35, { ...o, out: musicGain, type: 'sine', vol: 0.2, slide: 34 });
       if (beat === 4) { noise(0.18, { ...o, out: musicGain, vol: 0.08, freq: 260, q: 0.8 }); tone(110, 0.2, { ...o, out: musicGain, type: 'triangle', vol: 0.06, slide: 60 }); }
@@ -242,6 +280,9 @@
     updateVolumes,
     /** Pista de la zona de la expedición en curso (o la del campamento). */
     zoneTrack() { const e = DK.expedition && DK.expedition.active(); const z = e && DK.data.zones[e.zone]; return z && TRACKS[z.scene] ? z.scene : 'menu'; },
+    /** v4.88: pista que suena ahora (para las pruebas). */
+    current: () => wantedTrack,
+    has: (name) => !!trackOf(name),
     /** ¿Está sonando la música? (para las pruebas) */
     playing: () => !!seq && !!ctx && ctx.state === 'running',
     /** Lista de efectos disponibles (para la guía y pruebas). */

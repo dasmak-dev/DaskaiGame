@@ -53,35 +53,71 @@ module.exports = {
       check((await p.evaluate(() => DK.party.active()[2].level)) === lv + 1, 'entrenar no sube al elegido');
     }),
   }, {
-    name: 'Entrenamiento: elegir daskai en cuadrícula y mejoras caras con monedas',
+    name: 'Exploraciones: planificar (zona, duración, grupo), coste en monedas y raciones, riesgo, botín con informe y mejoras del puesto',
     run: (browser, view) => play(browser, view, async (p) => {
-      await p.evaluate(() => { DK.store.state.bosses = { pradera: { defeated: 1 } }; ['brotin', 'gotin', 'plumin'].forEach((s) => DK.party.add(DK.daskai.create(s, 4))); DK.wallet.add(3500, { silent: true }); DK.store.state.emblems = 3; DK.router.reset('training', { pick: true }); });
-      await sleep(500);
-      const r = await p.evaluate(() => ({ tiles: document.querySelectorAll('.tr-tile').length, steps: document.querySelectorAll('.tr-step').length, cost: DK.training.nextLevel().cost, em: DK.training.nextLevel().emblems, slots: DK.training.slotCount() }));
-      check(r.tiles >= 4 && r.steps === 4, 'faltan fichas o mejoras: ' + JSON.stringify(r));
-      check(r.cost >= 2000 && r.em > 0, 'las mejoras deberían costar muchas monedas y emblemas');
-      await p.click('.tr-up .btn'); await sleep(300);
-      check(await p.evaluate(() => DK.store.state.emblems === 0 && DK.training.slotMax() === 4), 'la mejora no gasta los emblemas o hay más de 4 huecos');
-      const after = await p.evaluate(() => ({ lv: DK.training.level(), slots: DK.training.slotCount(), statMax: DK.training.statMax() }));
-      check(after.lv === 1 && after.slots === r.slots + 1, 'la mejora no se aplica: ' + JSON.stringify(after));
-      await p.click('.tr-tile >> nth=0'); await sleep(300);
-      check((await p.$$('.tr-boost')).length === 3 && (await p.$$('.tr-plan-row')).length === 5, 'falta el acelerador o la previsión');
-      // Sólo experiencia: no se paga al entrar (×1), se cobra al sacarlo y crece con el tiempo
-      const m = await p.evaluate(() => {
-        const T = DK.training, d = DK.party.all().filter((x) => !x.temp).sort((a, b) => a.level - b.level)[0];
-        const w0 = DK.wallet.get(); const ok = T.start(d.uid, 1); const w1 = DK.wallet.get();
-        const s = T.get(d.uid); const lv0 = d.level;
-        const at = (min) => T.progress(s, s.start + min * 60000);
-        const a = at(60), b = at(240);
-        const r1 = a.exp / 60, r4 = (b.exp - at(180).exp) / 60;      // exp por minuto al principio y a las 3-4 h
-        const fast = T.simulate(d, 60, 3);
-        const lowPct = T.pct(5), highPct = T.pct(60);
-        s.start -= 600 * 60000; DK.wallet.add(100000, { silent: true });
-        const fee = T.progress(s).fee, w2 = DK.wallet.get();
-        const res = T.collect(d.uid, true);
-        return { ok, free: w0 === w1, grows: r4 > r1, feeUp: b.fee > a.fee, boost: fast.gained > a.exp * 2.5, lvlDep: lowPct > highPct, paid: w2 - DK.wallet.get() === fee && fee > 0, up: d.level > lv0, out: !T.isTraining(d.uid), exp: res.exp > 0 };
+      await p.evaluate(() => {
+        DK.store.state.bosses = { pradera: { defeated: 1 } }; DK.world.unlockNext && DK.world.unlockNext('pradera');
+        ['brotin', 'gotin', 'plumin'].forEach((s) => DK.party.add(DK.daskai.create(s, 6)));
+        DK.wallet.add(5000, { silent: true }); DK.store.state.emblems = 3; DK.bag.addHome({ racion_viaje: 10 });
+        DK.router.reset('training', { plan: true });
       });
-      check(Object.values(m).every(Boolean), 'el entrenamiento no cumple las reglas: ' + JSON.stringify(m));
+      await sleep(500);
+      const r = await p.evaluate(() => ({ zones: document.querySelectorAll('.ex-zone').length, durs: document.querySelectorAll('.ex-durs button').length, tiles: document.querySelectorAll('.ex-tile').length, steps: document.querySelectorAll('.tr-step').length, slots: DK.explore.slotCount() }));
+      check(r.zones >= 1 && r.durs === 3 && r.tiles >= 3 && r.steps === 4, 'faltan zonas, duraciones, daskai o mejoras: ' + JSON.stringify(r));
+      // Elegir dos daskai: sale el resumen con riesgo, coste y experiencia
+      await p.evaluate(() => { const ts = [...document.querySelectorAll('.ex-tile:not([disabled])')]; ts[0].click(); });
+      await sleep(250);
+      await p.evaluate(() => { const ts = [...document.querySelectorAll('.ex-tile:not([disabled]):not(.on)')]; ts[0].click(); });
+      await sleep(250);
+      const s1 = await p.evaluate(() => ({ sel: DK.router.current().params.sel.length, risk: !!document.querySelector('.ex-risk'), cost: !!document.querySelector('.ex-cost'), exp: document.querySelectorAll('.ex-exps span').length }));
+      check(s1.sel === 2 && s1.risk && s1.cost && s1.exp === 2, 'el resumen del grupo no sale: ' + JSON.stringify(s1));
+      check(!(await overflowX(p)), 'el planificador se sale de la pantalla');
+      // v4.87: lo que puede salir (lista con probabilidades) y la lista de daskai plegable
+      await p.evaluate(() => document.querySelector('.ex-seeall').click()); await sleep(400);
+      const ll = await p.evaluate(() => ({ rows: document.querySelectorAll('.ex-lrow').length, mats: document.querySelectorAll('.ex-lsec')[0].querySelectorAll('.ex-lrow').length, total: DK.explore.zoneLoot(DK.router.current().params.z, 'mid', DK.router.current().params.sel).total }));
+      check(ll.rows >= 6 && ll.mats >= 2 && ll.total > 2, 'la lista de lo que puede salir está incompleta: ' + JSON.stringify(ll));
+      await p.evaluate(() => DK.ui.closeAll()); await sleep(200);
+      await p.evaluate(() => document.querySelector('.ex-listtog').click()); await sleep(250);
+      const fold = await p.evaluate(() => ({ tiles: document.querySelectorAll('.ex-tile').length, chosen: document.querySelectorAll('.ex-pick:not(.empty)').length }));
+      check(fold.tiles === 0 && fold.chosen === 2, 'la lista de daskai no se pliega o no se ven los elegidos: ' + JSON.stringify(fold));
+      const w0 = await p.evaluate(() => ({ c: DK.wallet.get(), r: DK.bag.count('racion_viaje') }));
+      await p.evaluate(() => document.querySelector('.ex-go .btn-primary').click()); await sleep(400);
+      const g = await p.evaluate(() => { const X = DK.explore, g = X.slots()[0]; return { n: X.slots().length, uids: g && g.uids.length, out: g && g.uids.every((u) => !DK.store.state.team.includes(u) && X.isTraining(u)), c: DK.wallet.get(), r: DK.bag.count('racion_viaje'), cards: document.querySelectorAll('.ex-group').length }; });
+      check(g.n === 1 && g.uids === 2 && g.out && g.c < w0.c && g.r < w0.r && g.cards === 1, 'mandar el grupo no cobra o no los saca del equipo: ' + JSON.stringify({ g, w0 }));
+      // Volver: informe con diario y botín; experiencia; vuelven al equipo
+      const rep = await p.evaluate(() => {
+        const X = DK.explore, g = X.slots()[0], ds = g.uids.map((u) => DK.party.get(u)), e0 = ds.map((d) => d.level * 1e6 + d.exp);
+        g.start -= (g.min + 1) * 60000;
+        let i = 0; const seq = [0.99, 0.01, 0.5, 0.3, 0.7, 0.2, 0.9, 0.4]; const rnd = () => seq[i++ % seq.length];
+        const r = X.collect(g.id, rnd);
+        return { ok: !!r, hurt: r.hurt, items: Object.keys(r.items).length, coins: r.coins, log: r.log.length, up: ds.every((d, k) => d.level * 1e6 + d.exp > e0[k]), back: X.slots().length === 0 && ds.every((d) => !X.isTraining(d.uid)) };
+      });
+      check(rep.ok && !rep.hurt && rep.items > 0 && rep.coins > 0 && rep.log >= 3 && rep.up && rep.back, 'el informe de la exploración no cuadra: ' + JSON.stringify(rep));
+      // v4.87: encargos del día (se cumplen y se cobran) y regalo de raciones
+      const rq = await p.evaluate(() => {
+        const X = DK.explore, list = X.requests(), r = list[0]; r.done = true; const c0 = DK.wallet.get(), got = X.claimRequest(r.id);
+        const s = DK.store.state.training; delete s.gift; const r0 = DK.bag.count('racion_viaje'), gift = X.takeGift();
+        return { n: list.length, text: list.every((x) => X.requestText(x).length > 5), got: !!got && DK.wallet.get() > c0 && r.claimed, gift: gift > 0 && DK.bag.count('racion_viaje') === r0 + gift, again: X.takeGift() === 0 };
+      });
+      check(rq.n >= 2 && rq.text && rq.got && rq.gift && rq.again, 'encargos o regalo de raciones: ' + JSON.stringify(rq));
+      // Riesgo: más alto en una zona muy por encima; si sale mal vuelven agotados y no pueden ir
+      const risk = await p.evaluate(() => {
+        const X = DK.explore, d = DK.party.all().filter((x) => !x.temp)[0];
+        const lo = X.risk([d], 'pradera', 'mid'), hi = X.risk([d], 'cumbre', 'mid');
+        d.level = 2; const weak = X.risk([d], 'pradera', 'long'); d.level = 40; const strong = X.risk([d], 'pradera', 'short');
+        d.tired = Date.now() + 60 * 60000;
+        const why = X.cannotMember(d), join = DK.party.canJoin(d.uid); delete d.tired;
+        return { lo, hi, weak, strong, why: !!why, join };
+      });
+      check(risk.hi > risk.lo && risk.weak > risk.strong && risk.why && !risk.join, 'el riesgo o el cansancio no funcionan: ' + JSON.stringify(risk));
+      // Sin raciones no se puede salir
+      const nr = await p.evaluate(() => { const X = DK.explore, d = DK.party.all().filter((x) => !x.temp && !DK.party.isActive(x.uid))[0] || DK.party.all()[1]; DK.bag.remove('racion_viaje', DK.bag.count('racion_viaje')); return X.cannot([d.uid], 'pradera', 'mid'); });
+      check(!!nr, 'debería pedir raciones de viaje');
+      // Mejora del puesto: gasta emblemas y da un grupo más
+      await p.evaluate(() => DK.router.reset('training')); await sleep(300);
+      await p.click('.tr-up .btn'); await sleep(300);
+      const up = await p.evaluate(() => ({ em: DK.store.state.emblems, lv: DK.explore.level(), slots: DK.explore.slotCount(), max: DK.explore.slotMax() }));
+      check(up.em === 0 && up.lv === 1 && up.slots === r.slots + 1 && up.max === 4, 'la mejora del puesto no se aplica: ' + JSON.stringify(up));
     }),
   }, {
     name: 'Las flechas de crecimiento reflejan lo que de verdad sube',

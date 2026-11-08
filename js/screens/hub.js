@@ -32,7 +32,7 @@
       DK.daskai.isNew(d) ? h('span', { class: 'hs-flag new', tip: t('newMark.tip') }, t('newMark.label')) : null,
       DK.daskai.canEvolve(d) ? h('span', { class: 'hs-flag evo', tip: t('evo.readyTip') }, DK.icon('evolve', 12)) : null,
       DK.daskai.talentsPending(d).length ? h('span', { class: 'hs-flag talent', tip: t('talent.pendingTip') }, DK.icon('star', 12)) : null,
-      DK.training && DK.training.isTraining(d.uid) ? h('span', { class: 'hs-flag train', tip: t('train.inTraining') }, DK.icon('dumbbell', 12)) : null,
+      DK.training && DK.training.isTraining(d.uid) ? h('span', { class: 'hs-flag train', tip: t('train.inTraining') }, DK.icon('compass', 12)) : null,
       st ? h('span', { class: 'hs-flag bad', tip: DK.tr('statuses', st) }, DK.icon(st.icon, 12)) : null,
       fainted ? h('span', { class: 'hs-flag bad', tip: t('common.fainted') }, DK.icon('skull', 12)) : null,
     ].filter(Boolean);
