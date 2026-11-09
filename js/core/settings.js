@@ -91,6 +91,7 @@
       if (meta && window.getComputedStyle) { const bg = getComputedStyle(el).getPropertyValue('--bg').trim(); if (bg) meta.setAttribute('content', bg); }
       el.dataset.textsize = this.data.textSize;
       const z = Number(this.data.uiScale) || 1; el.style.zoom = z === 1 ? '' : String(z);
+      el.style.setProperty('--uiz', String(z)); // v5.16: las capas fijas a pantalla completa compensan el zoom (si no, no llegaban al borde)
       el.dataset.style = this.data.uiStyle === 'classic' ? 'classic' : 'clean';
       el.dataset.skin = this.data.uiStyle === 'exile' ? 'exile' : 'none';
       el.dataset.contrast = this.data.highContrast ? 'high' : 'normal';

@@ -887,3 +887,63 @@ html:root[data-style="classic"][data-theme="light"] .oe-plate { border-color: #f
 @keyframes armFlexN { 0%, 100% { rotate: 0deg; } 30% { rotate: 60deg; } 45% { rotate: 50deg; } 60% { rotate: 62deg; } }
 @keyframes armFlexF { 0%, 100% { rotate: 0deg; } 30% { rotate: -55deg; } 45% { rotate: -45deg; } 60% { rotate: -57deg; } }
 :root[data-motion="reduced"] .sprite .dk-arm { animation: none !important; }
+
+/* v5.16: el cofre de la expedición se abre al entrar: salta un poco, destella y el botín cae en cascada */
+.chest-big.open.just { animation: chestPop .55s cubic-bezier(.2, 1.6, .4, 1) both; }
+@keyframes chestPop { 0% { scale: .7; rotate: -6deg; } 45% { scale: 1.12; rotate: 4deg; } 100% { scale: 1; rotate: 0deg; } }
+.chest-big.open.just::after { content: ''; position: absolute; inset: -6px; border-radius: inherit; box-shadow: 0 0 0 0 rgba(250, 204, 21, .55); animation: chestRing .8s ease-out .1s both; pointer-events: none; }
+@keyframes chestRing { to { box-shadow: 0 0 0 26px rgba(250, 204, 21, 0); } }
+:root[data-motion="reduced"] .chest-big.open.just, :root[data-motion="reduced"] .chest-big.open.just::after { animation: none; }
+
+/* v5.16: el equipo del resumen ocupa todo el ancho de su caja (las fichas se estiran; mismo tamaño de dibujo) */
+.sum-team .st-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.sum-team .st-grid > .st-card { flex: 1 1 118px; max-width: 360px; min-width: 0; }
+/* rivales: se pueden pulsar para verlos en grande */
+button.sf-card { font: inherit; color: inherit; cursor: var(--cur-pointer); transition: transform .15s var(--ease), border-color .15s; }
+button.sf-card:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+.sf-zoom { width: min(440px, 94vw); }
+.sfz-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.sfz-art { display: grid; place-items: center; width: 100%; aspect-ratio: 1 / 1; max-height: 340px; border-radius: 16px;
+  background: radial-gradient(70% 60% at 50% 60%, color-mix(in srgb, var(--c, #888) 24%, transparent), transparent 75%), var(--surface-2); border: 1px solid var(--border); }
+.sfz-art .sprite { width: min(280px, 70vw) !important; height: min(280px, 70vw) !important; }
+.sfz-wrap.boss .sfz-art { background: radial-gradient(70% 60% at 50% 60%, rgba(239, 68, 68, .22), transparent 75%), var(--surface-2); }
+.sfz-meta { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; font-weight: 600; }
+.sfz-meta .sf-tag { position: static; }
+
+/* v5.16: con el tamaño de interfaz reducido/aumentado (zoom en <html>), las capas fijas medidas en vw/vh
+   se encogían con el zoom y el fondo no llegaba al borde: se compensan con --uiz (core/settings.js) */
+#bgfx { width: calc(100vw / var(--uiz, 1)); height: calc(100vh / var(--uiz, 1)); }
+
+/* v5.17: el cofre de la expedición con el escenario de los sucesos (el cofre dentro del medallón; en
+   Clásico y Exilio, el dibujo con relieve; en Limpio, el icono de línea grande) */
+.ev-stage.chest-stage .ev-emblem.has-art { width: 150px; height: 150px; }
+.ev-stage.chest-stage .chest-big { width: 100%; height: 100%; border: 0; border-radius: 50%; background: none; box-shadow: none; display: grid; place-items: center; }
+.ev-stage.chest-stage .chest-big .node-art { position: relative; display: grid; place-items: center; width: 104px; height: 104px; }
+.ev-stage.chest-stage .chest-big .node-art > svg { filter: drop-shadow(0 8px 14px rgba(0,0,0,.5)); }
+html:root .ev-stage.chest-stage .chest-big .node-line .icon, html:root .ev-stage.chest-stage .chest-big .node-line svg { width: 64px; height: 64px; }
+.ev-stage.chest-stage .chest-glow { inset: -24px; z-index: -1; }
+.ev-stage.chest-stage .ev-bubble h3 { font-size: 1.7rem; }
+.ev-stage.chest-stage .loot-grid { margin: 0; }
+@media (max-width: 760px) { .ev-stage.chest-stage .ev-emblem.has-art { width: 116px; height: 116px; margin: 4px 0 8px; } .ev-stage.chest-stage .chest-big .node-art { width: 82px; height: 82px; } html:root .ev-stage.chest-stage .chest-big .node-line .icon, html:root .ev-stage.chest-stage .chest-big .node-line svg { width: 50px; height: 50px; } }
+
+/* v5.17: la barra «Seguir el camino» del mercader va siempre encima de la barra de accesos (antes, en algunos
+   anchos quedaba debajo y se tapaban); --dock-h lo mide core/app.js */
+body[data-nav="on"] .merchant .mr-foot { bottom: calc(var(--dock-h, 96px) + 8px); }
+
+/* v5.17: avisos más discretos. Pastilla pequeña arriba a la derecha (en el móvil, arriba y centrada), del ancho
+   de su texto, con el icono pequeño y sin brillo; se van antes (core/ui.js). */
+:root:root:root:root:root:root body .toast-host, :root:root:root:root:root:root body[data-nav="on"] .toast-host, :root:root:root:root:root:root body[data-screen] .toast-host {
+  left: auto; right: 14px; transform: none; width: auto; max-width: min(340px, calc(100vw - 28px)); align-items: flex-end; gap: 4px; top: calc(66px + env(safe-area-inset-top)) !important; }
+:root:root:root:root:root:root body .toast-host > .toast {
+  width: auto; max-width: 100%; padding: 5px 10px 5px 5px; gap: 7px; border-radius: 99px; font-size: .78rem; font-weight: 500;
+  background: color-mix(in srgb, var(--tk) 8%, rgba(18, 13, 10, .86)); border-color: color-mix(in srgb, var(--tk) 22%, rgba(255, 255, 255, .05));
+  box-shadow: 0 6px 16px -8px rgba(0, 0, 0, .7); opacity: .96; animation: toastSlide .26s cubic-bezier(.2, .9, .3, 1); }
+:root:root:root:root:root:root[data-theme="light"] body .toast-host > .toast { background: rgba(255, 250, 242, .92); }
+:root:root:root:root:root:root body .toast-host > .toast .toast-ic { width: 20px; height: 20px; border-radius: 99px; box-shadow: none; }
+:root:root:root:root:root:root body .toast-host > .toast .toast-ic svg { width: 12px; height: 12px; }
+:root:root:root:root:root:root body .toast-host > .toast .toast-bar { height: 2px; opacity: .5; }
+@keyframes toastSlide { from { opacity: 0; translate: 16px 0; } to { opacity: .96; translate: 0 0; } }
+@media (max-width: 600px) {
+  :root:root:root:root:root:root body .toast-host, :root:root:root:root:root:root body[data-nav="on"] .toast-host, :root:root:root:root:root:root body[data-screen] .toast-host {
+    right: 50%; translate: 50% 0; align-items: center; top: calc(56px + env(safe-area-inset-top)) !important; }
+}

@@ -127,6 +127,8 @@
     // v5.4: golpe seco al engarzar una runa
     thud: () => { tone(110, 0.16, { type: 'sine', vol: 0.3, slide: 45 }); noise(0.07, { vol: 0.3, freq: 420, q: 0.8 }); tone(midi(79), 0.25, { type: 'triangle', vol: 0.04, delay: 0.05 }); },
     chest: () => { noise(0.25, { vol: 0.18, freq: 500, q: 0.6 }); tone(90, 0.2, { type: 'square', vol: 0.06, slide: 60 }); arp([76, 83, 88], 0.07, { type: 'triangle', vol: 0.1, dur: 0.3, delay: 0.22 }); },
+    // v5.16: cofre de la expedición, más discreto: un clic de cerradura y dos notas suaves
+    chestSoft: () => { noise(0.05, { vol: 0.06, freq: 1800, q: 1.5 }); tone(midi(79), 0.35, { type: 'sine', vol: 0.045, delay: 0.06, attack: 0.02 }); tone(midi(84), 0.45, { type: 'sine', vol: 0.04, delay: 0.16, attack: 0.03 }); },
     legend: () => { tone(300, 1.2, { type: 'sine', vol: 0.1, slide: 1200, attack: 0.25 }); [84, 88, 91, 96].forEach((n, i) => tone(midi(n), 1.2, { type: 'triangle', vol: 0.07, delay: 0.7 + i * 0.05 })); noise(0.6, { vol: 0.08, freq: 8000, q: 1, delay: 0.7 }); },
     forge: () => { [0, 0.12, 0.24].forEach((d) => { noise(0.05, { vol: 0.35, freq: 3200, q: 3, delay: d }); tone(1800 + Math.random() * 600, 0.3, { type: 'sine', vol: 0.04, delay: d }); }); tone(90, 0.3, { type: 'sine', vol: 0.2, slide: 50 }); },
     craft: () => { noise(0.1, { vol: 0.3, freq: 2500 }); arp([67, 74, 79], 0.08, { type: 'triangle', vol: 0.12, dur: 0.22, delay: 0.08 }); },
@@ -174,6 +176,11 @@
     elite: { bpm: 112, root: 46, scale: PHRY, prog: [0, 1, 0, 5], lead: 'brass', pad: 0.5, drone: 1, drums: 'drive', fx: 'none', density: 0.6, pulse: 1 },
     // Jefe con poca vida o en su última fase
     boss_rage: { bpm: 132, root: 46, scale: HARM, prog: [0, 1, 5, 4], lead: 'brass', pad: 0.5, drone: 1.2, drums: 'war', fx: 'none', density: 0.8, pulse: 1, choir: 0.6 },
+    // v5.17: electrónica rápida para algunos jefes y para los combates contra varios rivales seguidos
+    //   arp = arpegio a semicorcheas · bass = bajo en contratiempo · drums 'edm' = bombo a negras, palmas y charles
+    boss_synth: { bpm: 140, root: 45, scale: HARM, prog: [0, 5, 3, 4], lead: 'synth', pad: 0.4, drone: 0.6, drums: 'edm', fx: 'none', density: 0.55, arp: 1, bass: 1 },
+    boss_synth_rage: { bpm: 152, root: 46, scale: PHRY, prog: [0, 1, 5, 4], lead: 'synth', pad: 0.4, drone: 0.8, drums: 'edm', fx: 'none', density: 0.7, arp: 1.2, bass: 1.2, pulse: 0.6 },
+    horde: { bpm: 136, root: 47, scale: DOR, prog: [0, 3, 6, 4], lead: 'synth', pad: 0.5, drone: 0.5, drums: 'edm', fx: 'none', density: 0.5, arp: 0.9, bass: 1 },
     // Poca vida (< 30%) en combate: latido y ostinato tenso
     danger: { bpm: 126, root: 44, scale: PHRY, prog: [0, 1, 0, 1], lead: 'pulse', pad: 0.3, drone: 1.1, drums: 'heart', fx: 'none', density: 0.75, pulse: 1 },
   };
@@ -209,34 +216,49 @@
 
   /** v5.4: tensión del combate (0–1): capas de percusión extra que entran poco a poco. */
   let intensity = 0;
+  /*
+   * v5.17: cada pista suena por su propio bus (GainNode → musicGain). Al cambiar de pista, la anterior se apaga
+   * poco a poco y la nueva entra subiendo (fundido cruzado), en vez del corte en seco de antes. En mitad de un
+   * combate (furia, peligro) el cambio es rápido y con un redoble; al salir del combate, más largo.
+   */
   function startTrack(name) {
-    // v5.4: al cambiar de pista en mitad de un combate (furia, peligro) se baja el volumen un instante
-    // y la nueva entra en el siguiente pulso con un redoble, en vez de cortar en seco
     const prev = seq;
-    stopTrack();
     const tr = trackOf(name);
+    const fightish = (n) => /^(boss|danger|elite|boss_rage|boss_secret|boss_synth|boss_synth_rage|horde)$|:fight$/.test(n || '');
+    const swap = prev && fightish(prev.name) && /^(boss_rage|danger|boss_synth_rage)$/.test(name);
+    const leavingFight = prev && fightish(prev.name) && !fightish(name);
+    const fadeOut = !prev ? 0 : swap ? 0.35 : leavingFight ? 1.6 : 0.9, fadeIn = !prev ? 0.25 : swap ? 0.5 : leavingFight ? 2.2 : 0.9;
+    stopTrack(fadeOut);
     if (!tr || !ctx) return;
     const eighth = 60 / tr.bpm / 2;
-    const swap = prev && /^(boss|danger|elite|boss_rage|boss_secret)$|:fight$/.test(prev.name) && /^(boss_rage|danger)$/.test(name);
-    if (swap) {
-      const t0 = ctx.currentTime, g = musicGain.gain, v = g.value;
-      g.cancelScheduledValues(t0); g.setValueAtTime(v, t0); g.linearRampToValueAtTime(v * 0.35, t0 + 0.12); g.linearRampToValueAtTime(v, t0 + 0.9);
-      [0, 1, 2, 3, 4, 5].forEach((i) => noise(0.08, { out: musicGain, vol: 0.03 + i * 0.012, freq: 300 + i * 40, q: 0.8, delay: 0.1 + i * eighth / 2 }));
-    }
-    seq = { tr, name, step: 0, next: ctx.currentTime + (swap ? 0.1 + 3 * eighth : 0.1), eighth };
+    const bus = ctx.createGain(); bus.connect(musicGain);
+    const t0 = ctx.currentTime, lead = swap ? 0.1 + 3 * eighth : leavingFight ? 0.45 : prev ? 0.15 : 0.1;
+    bus.gain.setValueAtTime(0.0001, t0); bus.gain.setValueAtTime(0.0001, t0 + lead * 0.5); bus.gain.linearRampToValueAtTime(1, t0 + lead * 0.5 + fadeIn);
+    if (swap) [0, 1, 2, 3, 4, 5].forEach((i) => noise(0.08, { out: musicGain, vol: 0.03 + i * 0.012, freq: 300 + i * 40, q: 0.8, delay: 0.1 + i * eighth / 2 }));
+    seq = { tr, name, step: 0, next: t0 + lead, eighth, bus };
     seq.timer = setInterval(() => {
       if (!ctx || !seq) return;
       while (seq.next < ctx.currentTime + 0.3) { playStep(seq.step, seq.next - ctx.currentTime); seq.next += seq.eighth; seq.step++; }
     }, 90);
   }
-  function stopTrack() { if (seq) { clearInterval(seq.timer); seq = null; } }
+  /** Para la pista: con fade (segundos) se apaga poco a poco (las notas ya programadas se desvanecen). */
+  function stopTrack(fade = 0) {
+    if (!seq) return;
+    clearInterval(seq.timer);
+    const bus = seq.bus; seq = null;
+    if (!bus || !ctx) return;
+    const t0 = ctx.currentTime, g = bus.gain;
+    g.cancelScheduledValues(t0); g.setValueAtTime(Math.max(0.0001, g.value), t0);
+    if (fade > 0) g.linearRampToValueAtTime(0.0001, t0 + fade); else g.setValueAtTime(0.0001, t0);
+    setTimeout(() => { try { bus.disconnect(); } catch (e) { /* ya desconectado */ } }, (fade + 0.6) * 1000);
+  }
 
   /** Nota de la escala (grado g, puede pasar de 7) sobre la tónica. */
   const deg = (tr, g) => tr.root + tr.scale[((g % 7) + 7) % 7] + 12 * Math.floor(g / 7);
 
   /** Toca un paso (corchea) de la pista activa. */
   function playStep(step, delay) {
-    const { tr: tr0, eighth, name } = seq;
+    const { tr: tr0, eighth, name } = seq, bus = seq.bus || musicGain;
     const barN = Math.floor(step / 8), beat = step % 8;
     // v4.88: la pista evoluciona por secciones de 8 compases: A · B (progresión rotada, melodía arriba) · C (calma) · D
     const sect = Math.floor(barN / 8) % 4;
@@ -244,7 +266,7 @@
       : sect === 2 ? Object.assign({}, tr0, { density: tr0.density * 0.45, drums: tr0.drums === 'war' || tr0.drums === 'heart' ? tr0.drums : 'none', pulse: 0 }) : tr0;
     const bar = barN % tr.prog.length;
     const g0 = tr.prog[bar];
-    const o = { delay: Math.max(0, delay) };
+    const o = { delay: Math.max(0, delay), out: bus };
     const barLen = eighth * 8;
     // Drone y pad al empezar el compás
     if (beat === 0) {
@@ -267,29 +289,39 @@
       else if (tr.lead === 'brass') voice(midi(n), eighth * 1.8, { ...o, type: 'sawtooth', vol: 0.045, attack: 0.04, cutoff: 700, detune: 6 });
       else if (tr.lead === 'pulse') voice(midi(n + 12), eighth * 0.9, { ...o, type: 'square', vol: 0.03, attack: 0.004, cutoff: 1600 });
     }
+    // v5.17: capas electrónicas: arpegio a semicorcheas por el acorde, bajo en contratiempo y lead «synth»
+    if (tr.arp) { const ch = [0, 2, 4, 7, 4, 2]; [0, 1].forEach((k) => { const n = deg(tr, g0 + ch[(beat * 2 + k) % ch.length]) + 12; voice(midi(n), eighth * 0.42, { ...o, delay: o.delay + k * eighth / 2, type: 'sawtooth', vol: 0.016 * tr.arp, attack: 0.003, cutoff: 1500 + (beat % 4) * 400 }); }); }
+    if (tr.bass && beat % 2 === 1) voice(midi(deg(tr, g0) - 12), eighth * 0.7, { ...o, type: 'sawtooth', vol: 0.05 * tr.bass, attack: 0.004, cutoff: 420 + (bar % 2) * 180, detune: 5 });
+    if (playLead && tr.lead === 'synth') { const g = g0 + [0, 2, 4, 7, 4, 2, 1, 6][Math.floor(rnd() * 8)], n = deg(tr, g) + 12 + (tr.up || 0); voice(midi(n), eighth * 1.6, { ...o, type: 'square', vol: 0.026, attack: 0.006, cutoff: 2600, detune: 8 }); }
     // Percusión
-    if (tr.drums === 'soft' && beat === 0) tone(70, 0.5, { ...o, out: musicGain, type: 'sine', vol: 0.12, slide: 40 });
+    if (tr.drums === 'soft' && beat === 0) tone(70, 0.5, { ...o, out: bus, type: 'sine', vol: 0.12, slide: 40 });
     // v4.88: «drive» (combate normal y élites) y «heart» (latido con poca vida)
     if (tr.drums === 'drive') {
-      if (beat === 0 || beat === 4) tone(64, 0.3, { ...o, out: musicGain, type: 'sine', vol: 0.16, slide: 36 });
-      if (beat === 2 || beat === 6) noise(0.12, { ...o, out: musicGain, vol: 0.05, freq: 1800, q: 0.9 });
-      if (beat % 2 === 1) noise(0.04, { ...o, out: musicGain, vol: 0.018, freq: 5200 });
+      if (beat === 0 || beat === 4) tone(64, 0.3, { ...o, out: bus, type: 'sine', vol: 0.16, slide: 36 });
+      if (beat === 2 || beat === 6) noise(0.12, { ...o, out: bus, vol: 0.05, freq: 1800, q: 0.9 });
+      if (beat % 2 === 1) noise(0.04, { ...o, out: bus, vol: 0.018, freq: 5200 });
     }
-    if (tr.drums === 'heart' && (beat === 0 || beat === 1)) tone(beat ? 52 : 58, 0.22, { ...o, out: musicGain, type: 'sine', vol: beat ? 0.14 : 0.2, slide: 30 });
+    if (tr.drums === 'heart' && (beat === 0 || beat === 1)) tone(beat ? 52 : 58, 0.22, { ...o, out: bus, type: 'sine', vol: beat ? 0.14 : 0.2, slide: 30 });
+    if (tr.drums === 'edm') { // v5.17: bombo a negras, palmas en 2 y 4, charles abierto a contratiempo
+      if (beat % 2 === 0) tone(58, 0.22, { ...o, type: 'sine', vol: 0.2, slide: 34 });
+      if (beat === 2 || beat === 6) { noise(0.1, { ...o, vol: 0.06, freq: 1500, q: 0.7 }); noise(0.06, { ...o, vol: 0.04, freq: 2600, q: 1, delay: o.delay + 0.012 }); }
+      if (beat % 2 === 1) noise(0.07, { ...o, vol: 0.022, freq: 8000, q: 1.2 });
+      noise(0.02, { ...o, vol: 0.008, freq: 9500, q: 2, delay: o.delay + eighth / 2 });
+    }
     if (tr.drums === 'war') {
-      if (beat === 0 || beat === 3 || beat === 6) tone(62, 0.35, { ...o, out: musicGain, type: 'sine', vol: 0.2, slide: 34 });
-      if (beat === 4) { noise(0.18, { ...o, out: musicGain, vol: 0.08, freq: 260, q: 0.8 }); tone(110, 0.2, { ...o, out: musicGain, type: 'triangle', vol: 0.06, slide: 60 }); }
-      if (beat % 2 === 1) noise(0.05, { ...o, out: musicGain, vol: 0.025, freq: 3200 });
+      if (beat === 0 || beat === 3 || beat === 6) tone(62, 0.35, { ...o, out: bus, type: 'sine', vol: 0.2, slide: 34 });
+      if (beat === 4) { noise(0.18, { ...o, out: bus, vol: 0.08, freq: 260, q: 0.8 }); tone(110, 0.2, { ...o, out: bus, type: 'triangle', vol: 0.06, slide: 60 }); }
+      if (beat % 2 === 1) noise(0.05, { ...o, out: bus, vol: 0.025, freq: 3200 });
     }
     // v5.4: capas de tensión (DK.audio.intensity): charles a semicorcheas, tambor grave y un pedal agudo
-    if (intensity > 0.25 && tr.drums !== 'none') noise(0.03, { ...o, out: musicGain, vol: 0.012 * intensity, freq: 7000, q: 1.5, delay: o.delay + eighth / 2 });
-    if (intensity > 0.5 && (beat === 1 || beat === 5)) tone(80, 0.25, { ...o, out: musicGain, type: 'sine', vol: 0.11 * intensity, slide: 40 });
+    if (intensity > 0.25 && tr.drums !== 'none') noise(0.03, { ...o, out: bus, vol: 0.012 * intensity, freq: 7000, q: 1.5, delay: o.delay + eighth / 2 });
+    if (intensity > 0.5 && (beat === 1 || beat === 5)) tone(80, 0.25, { ...o, out: bus, type: 'sine', vol: 0.11 * intensity, slide: 40 });
     if (intensity > 0.75 && beat % 2 === 0) voice(midi(deg(tr, g0) + 24), eighth * 0.6, { ...o, type: 'square', vol: 0.008 * intensity, attack: 0.004, cutoff: 3000 });
     // Ambiente
-    if (tr.fx === 'drip' && rnd() < 0.08) tone(midi(96 + Math.floor(rnd() * 8)), 0.12, { ...o, out: musicGain, type: 'sine', vol: 0.03, slide: midi(84) });
-    if (tr.fx === 'wind' && beat === 0 && bar % 2 === 0) noise(barLen * 1.6, { ...o, out: musicGain, vol: 0.018, freq: 500, q: 0.4 });
-    if (tr.fx === 'waves' && beat === 0) noise(barLen * 0.9, { ...o, out: musicGain, vol: 0.03, freq: 380, q: 0.3 });
-    if (tr.fx === 'whisper' && beat === 2 && bar % 2 === 1) noise(eighth * 3, { ...o, out: musicGain, vol: 0.014, freq: 2400, q: 2 });
+    if (tr.fx === 'drip' && rnd() < 0.08) tone(midi(96 + Math.floor(rnd() * 8)), 0.12, { ...o, out: bus, type: 'sine', vol: 0.03, slide: midi(84) });
+    if (tr.fx === 'wind' && beat === 0 && bar % 2 === 0) noise(barLen * 1.6, { ...o, out: bus, vol: 0.018, freq: 500, q: 0.4 });
+    if (tr.fx === 'waves' && beat === 0) noise(barLen * 0.9, { ...o, out: bus, vol: 0.03, freq: 380, q: 0.3 });
+    if (tr.fx === 'whisper' && beat === 2 && bar % 2 === 1) noise(eighth * 3, { ...o, out: bus, vol: 0.014, freq: 2400, q: 2 });
   }
 
   DK.audio = {
@@ -303,8 +335,8 @@
       if (name === wantedTrack && seq) return;
       wantedTrack = name;
       if (!ctx) return;
-      if (!name || !/^(boss|danger|elite|boss_rage|boss_secret)$|:fight$/.test(name)) intensity = 0;
-      if (!name || hidden()) stopTrack(); else startTrack(name);
+      if (!name || !/^(boss|danger|elite|boss_rage|boss_secret|boss_synth|boss_synth_rage|horde)$|:fight$/.test(name)) intensity = 0;
+      if (!name || hidden()) stopTrack(name ? 0 : 0.8); else startTrack(name);
     },
     updateVolumes,
     /** v5.4: tensión de la música (0 = normal … 1 = máxima). El combate la ajusta con la vida de cada lado. */

@@ -57,7 +57,7 @@
       function wildOne() {
         const pick = U.weighted(zone.enemies);
         // Variocolor: la probabilidad base + el rastreo de esa especie (DK.tracking) y la corrupción
-        const w = DK.daskai.create(pick.species, lv(U.rand(zone.levels[0], zone.levels[1])), { wild: true, dual: U.chance(C().dual.wild), shiny: U.chance(DK.config.shinyChance + (DK.endgame ? DK.endgame.shiny(pick.species) : 0)) });
+        const w = DK.daskai.create(pick.species, lv(U.rand(zone.levels[0], zone.levels[1])), { wild: true, dual: U.chance(C().dual.wild), shiny: U.chance(DK.config.shinyChance + (DK.expedition.active() ? DK.expedition.kindDef().wildShiny || 0 : 0) + (DK.endgame ? DK.endgame.shiny(pick.species) : 0)) });
         DK.daskai.fullHeal(w);
         return w;
       }
@@ -512,7 +512,8 @@
 
       const blind = A.status && D.statuses[A.status] && D.statuses[A.status].accMult ? D.statuses[A.status].accMult : 1; // v5.4: cegado
       if (!U.chance((m.acc / 100 + (DK.gear.fxOf(A).acc || 0)) * blind)) { // v4.82: precisión del equipo
-        this.push(st, ev, { text: t('battle.missed'), kind: 'muted', anim: 'miss', side: other(side), cat: 'dmg' }); return; }
+        // v5.17: que se entienda que ha fallado por la precisión (no es un error del juego)
+        this.push(st, ev, { text: t('battle.missedAcc', { move: m.name, acc: Math.round(U.clamp((m.acc / 100 + (DK.gear.fxOf(A).acc || 0)) * blind, 0, 1) * 100) }), kind: 'muted', anim: 'miss', side: other(side), cat: 'dmg' }); return; }
 
       let dealt = 0;
       const gA = DK.gear.fxOf(A), gT = DK.gear.fxOf(T);

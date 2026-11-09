@@ -261,5 +261,20 @@ module.exports = {
       check(r.oldOk, 'un aspecto antiguo ha cambiado');
       check(r.armG >= 1, 'los brazos no van en su grupo (.dk-arm)');
     }),
+  }, {
+    name: 'v5.17: cofre con escenario, música electrónica para jefes/oleadas con fundido, avisos discretos',
+    views: ['desktop'],
+    run: (browser, view) => play(browser, view, async (p) => {
+      const r = await p.evaluate(() => { const E = DK.expedition; E.start({}); DK.curses.accept([]); DK.relics.choose(0);
+        const e = E.active(); const tn = e.map.rows.flat().find((n) => n.type === 'treasure') || Object.assign(e.map.rows[1][0], { type: 'treasure' }); e.pending = tn.id; DK.router.reset('expedition');
+        const stage = !!document.querySelector('.ev-stage.chest-stage .ev-bubble h3') && document.querySelectorAll('.chest-stage .loot-card').length > 0;
+        const tracks = ['boss_synth', 'boss_synth_rage', 'horde'].every((x) => DK.audio.has(x));
+        DK.ui.toast('prueba'); const tst = document.querySelector('.toast-host .toast'); const tw = tst ? tst.getBoundingClientRect().width : 999;
+        return { stage, tracks, tw };
+      });
+      check(r.stage, 'el cofre no usa el escenario');
+      check(r.tracks, 'faltan pistas electrónicas');
+      check(r.tw < 300, 'el aviso sigue siendo grande: ' + r.tw);
+    }),
   }],
 };

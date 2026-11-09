@@ -334,7 +334,7 @@
    * - Todos quedan en DK.ui.notices (historial de la sesión, campana de la barra superior).
    */
   // En el móvil: 1 aviso a la vez, más corto, encima de la barra inferior; se quita tocándolo
-  const toastMax = () => (isSheet() ? 1 : 2), toastMs = () => (isSheet() ? 2400 : 3000);
+  const toastMax = () => (isSheet() ? 1 : 2), toastMs = () => (isSheet() ? 2000 : 2500); // v5.17: un poco más breves
   const notices = [];
   let unread = 0, overflow = 0, moreEl = null, moreTimer = null;
   function hostEl() {

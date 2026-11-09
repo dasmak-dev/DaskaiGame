@@ -63,6 +63,9 @@
         h('div', { class: 'app-body' }, screenHost), dock);
       this.renderActions();
       this.favicon();
+      // v5.17: alto real de la barra de accesos (cambia según el dispositivo): las barras pegadas abajo
+      // (mercader, preparación…) se colocan justo encima en vez de quedar debajo de ella
+      if (window.ResizeObserver) new ResizeObserver(() => { const r = dock.getBoundingClientRect(); document.documentElement.style.setProperty('--dock-h', Math.ceil(r.height) + 'px'); }).observe(dock);
 
       // Reconstruir textos cuando cambian idioma o tema
       DK.on('settings:changed', ({ key }) => {

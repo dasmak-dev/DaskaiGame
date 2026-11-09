@@ -170,7 +170,7 @@
 
     // --- Daskai salvajes, jefes y variocolor ---
     wildStatMult: 0.9,    // los salvajes son un 10% más débiles (al vincularlos pierden la penalización)
-    shinyChance: 1 / 200, // probabilidad de variocolor
+    shinyChance: 1 / 450, // probabilidad de variocolor (v5.16: antes 1/200; en las expediciones de captura, más: kinds.captura.shiny / wildShiny)
     shinyStatMult: 1.1,   // +10% atributos
     bossHpMult: 2.4,      // vida de los jefes
     bossStatMult: 1.2,    // resto de atributos de los jefes (v5.0: antes 1.15)
@@ -225,7 +225,7 @@
       healCoins: { perHp: 3, perMp: 1.5, fainted: 200, perLevel: 0.03, round: 10 },
       kinds: {
         normal: { icon: 'compass', chance: 50, weights: {} },
-        captura: { icon: 'paw', chance: 16, sizes: ['short'], weights: { recruit: 6, fight: 1.3, elite: 0.3, event: 0.6, treasure: 0.6, shop: 0.7, shrine: 0.4, cave: 0 }, minRecruits: 6, multiRecruit: true, recruit: 1, shiny: 0.04, coins: -0.3 },
+        captura: { icon: 'paw', chance: 16, sizes: ['short'], weights: { recruit: 6, fight: 1.3, elite: 0.3, event: 0.6, treasure: 0.6, shop: 0.7, shrine: 0.4, cave: 0 }, minRecruits: 6, multiRecruit: true, recruit: 1, shiny: 0.035, wildShiny: 0.006, coins: -0.3 },
         combate: { icon: 'swords', chance: 16, weights: { fight: 2.4, elite: 2, event: 0.3, recruit: 0.4, treasure: 0.5, shop: 0.7, shrine: 0.6 }, minElites: 2, coins: 0.3, exp: 0.25 },
         // Tesoro: MUY rara (1%) pero muy buena: mínimo 5 cofres, cofres con +2 objetos, raros, reliquias épicas,
         // ×2,5 monedas y runa extra; +100% monedas en todo el mapa y +1 emblema por jefe
@@ -301,8 +301,9 @@
       secretFinalChance: 0.35, // si ya venciste al jefe oculto, probabilidad de que sea el jefe final del mapa
       modChance: 0.5,      // probabilidad de que un mapa traiga un modificador (data/mapMods.js)
       campfireKeep: 0.5,   // al volver a casa desde una hoguera te llevas este % del botín (y todos los daskai)
-      recruitChoices: 3,   // daskai entre los que eliges en un nodo de reclutamiento
-      recruitShinyChance: 0.04, // probabilidad de que un candidato a recluta sea variocolor
+      recruitChoices: 2,   // daskai entre los que eliges en un nodo de reclutamiento (v5.16: 2; la mejora «eleccion» sube hasta 5)
+      recruitChoicesMax: 5, // tope con mejoras (las expediciones de captura suman +1 por encima)
+      recruitShinyChance: 0.012, // probabilidad de que un candidato a recluta sea variocolor (v5.16: antes 0,04)
       directToBag: ['batalla', 'mejora'], // categorías que van directas a la bolsa (usables ya); el resto espera al final
       chestRelicChance: 0.25, // probabilidad de reliquia en un cofre
       restHeal: 0.5,       // descanso: cura el 50% de vida y maná

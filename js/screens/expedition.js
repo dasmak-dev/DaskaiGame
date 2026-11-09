@@ -556,8 +556,8 @@
     const who = o.npc
       ? h('button', { class: 'ev-npc', type: 'button', style: { '--npc': o.npc.color }, tip: t('exp.npcLook'), 'aria-label': t('exp.npcLook'), onClick: () => npcZoom(o.npc, o.role || o.title) },
         h('span', { class: 'ev-npc-glow' }), V.npc(o.npc.key, Object.assign({}, o.npc, { size: 150 })), h('span', { class: 'ev-npc-hint' }, DK.icon('search', 12)))
-      : h('span', { class: 'ev-emblem' }, h('span', { class: 'ev-emblem-ring' }), DK.icon(o.icon || 'question', 46));
-    return h('div', { class: 'card ev-stage' + (o.special ? ' special' : '') + (o.result ? ' is-result tone-' + (o.tone || 'good') : ''), style: { '--z1': z.colors[0], '--z2': z.colors[1] } },
+      : h('span', { class: 'ev-emblem' + (o.art ? ' has-art' : '') }, h('span', { class: 'ev-emblem-ring' }), o.art || DK.icon(o.icon || 'question', 46));
+    return h('div', { class: 'card ev-stage' + (o.cls ? ' ' + o.cls : '') + (o.special ? ' special' : '') + (o.result ? ' is-result tone-' + (o.tone || 'good') : ''), style: { '--z1': z.colors[0], '--z2': z.colors[1] } },
       h('div', { class: 'ev-scene' },
         h('span', { class: 'ev-sky' }), h('span', { class: 'ev-ground' }), h('span', { class: 'ev-motes' }, Array.from({ length: 10 }, (_, i) => h('i', { style: { left: (i * 37) % 96 + 2 + '%', animationDelay: (-i * 1.3) + 's' } }))),
         o.special ? h('span', { class: 'ev-ribbon' }, DK.icon('star', 12), t('exp.special.tag')) : null,
@@ -615,18 +615,17 @@
     }
 
     if (n.type === 'treasure') {
+      // v5.16: el cofre se abre nada más entrar (sin esperar), con un sonido suave, y el botín entra en cascada
+      let justOpened = false;
       if (!e.result) {
-        // v5.5: el cofre se abre solo al llegar (sin pulsar y sin sonido al mostrar el botín)
-        const open = () => { if (e.result || E().active() !== e || e.pending !== n.id || DK.router.current().id !== 'expedition') return; const r = E().openTreasure(); e.result = { key: 'treasure', items: r.items, coins: r.coins, recipe: r.recipe, relic: r.relic, runes: r.runes }; DK.store.save(); refresh(); };
-        setTimeout(open, 650);
-        return h('div', { class: 'card stack chest-panel' }, head('treasure', t('exp.node.treasure'), t('exp.treasureText')),
-          h('div', { class: 'chest-big closed', 'aria-hidden': 'true' }, DK.icon('gift', 64), h('span', { class: 'chest-glow' })));
+        const r = E().openTreasure(); e.result = { key: 'treasure', items: r.items, coins: r.coins, recipe: r.recipe, relic: r.relic, runes: r.runes }; DK.store.save();
+        justOpened = true; DK.audio.sfx('chestSoft');
       }
       enterCont();
       // Botín del cofre en tarjetas: lo que es, para qué sirve y adónde va (mochila: ya; botín: al volver)
       const counts = {}; (e.result.items || []).forEach((id) => (counts[id] = (counts[id] || 0) + 1));
       let k = 0;
-      const delay = () => ({ animationDelay: (k++ * 0.12) + 's' });
+      const delay = () => ({ animationDelay: ((justOpened ? 0.28 : 0) + k++ * 0.12) + 's' }); // (tras el «pop» del cofre)
       const cards = [
         e.result.coins ? h('div', { class: 'loot-card coins', style: delay() }, h('span', { class: 'loot-icon' }, DK.icon('coin', 34)), h('b', null, '+' + e.result.coins.toLocaleString(DK.i18n.lang)), h('small', null, t('hub.coins')), h('span', { class: 'loot-dest loot' }, DK.icon('gift', 11), t('exp.destLoot'))) : null,
         ...Object.entries(counts).map(([id, n]) => {
@@ -641,9 +640,11 @@
         ...(e.result.runes || []).map((id) => { return h('div', { class: 'loot-card rune ' + V.runeRarity(id), style: delay(), tip: t('rune.help'), tipNode: () => V.infoCard('rune', id) }, h('span', { class: 'loot-icon' }, V.runeGem(id, 52)), h('b', null, V.runeName(id)), h('small', { class: 'muted' }, V.runeEffect(id)), ...V.runeAffixes(id).map((x) => h('small', { class: 'rune-aff' }, x)), h('span', { class: 'loot-dest rune' }, DK.icon('rune', 11), t('rune.dest'))); }),
         e.result.recipe ? (() => { const it = D.items[D.recipes.find((r) => r.id === e.result.recipe).result]; return h('div', { class: 'loot-card recipe', style: delay() }, h('span', { class: 'loot-icon' }, DK.icon('scroll', 34)), h('b', null, t('exp.newRecipe', { item: it.name })), h('small', { class: 'muted' }, t('exp.recipeShort')), h('span', { class: 'loot-dest relic' }, DK.icon('anvil', 11), t('nav.craft'))); })() : null,
       ];
-      return h('div', { class: 'card stack chest-panel' }, head('treasure', t('exp.node.treasure'), t('exp.chestOpened')),
-        h('div', { class: 'chest-big open', 'aria-hidden': 'true' }, DK.icon('gift', 48), h('span', { class: 'chest-glow' })),
-        h('div', { class: 'loot-grid', style: { '--n': cards.filter(Boolean).length || 1 } }, cards), // v4.68: filas equilibradas y centradas
+      // v5.17: el cofre con el mismo escenario que los sucesos (título grande, el cofre a la izquierda y el botín debajo)
+      const nItems = cards.filter(Boolean).length;
+      return stage({ art: h('span', { class: 'chest-big open' + (justOpened ? ' just' : ''), 'aria-hidden': 'true' }, DK.nodeArt && DK.nodeArt.has('treasure') ? DK.nodeArt('treasure') : DK.icon('gift', 56), h('span', { class: 'chest-glow' })),
+        title: t('exp.node.treasure'), text: t('exp.chestFound', { n: nItems }), cls: 'chest-stage' },
+        h('div', { class: 'loot-grid', style: { '--n': nItems || 1 } }, cards), // v4.68: filas equilibradas y centradas
         h('p', { class: 'muted small chest-legend', tip: t('exp.destBagHelp') + ' · ' + t('exp.destLootHelp') }, h('span', { class: 'loot-dest bag' }, DK.icon('bag', 11), t('exp.destBag')), ' ', h('span', { class: 'loot-dest loot' }, DK.icon('gift', 11), t('exp.destLoot')), ' ', DK.icon('info', 12)),
         cont(refresh));
     }

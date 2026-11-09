@@ -357,6 +357,50 @@ Se carga la última y sólo sobrescribe: paleta (piedra oscura, bronce, oro `--g
 - **Expedición:** al entrar en el mapa, el equipo, la mochila o un combate durante una expedición, `#zone-backdrop` (creado en `screens/expedition.js` con `screen:enter`) pinta detrás de todo la escena de la zona actual, oscurecida; `body.in-exp`.
 - **Combate:** la arena usa la escena de la zona (`components/scenes.js`, ahora con árboles muertos, ruinas, tumbas, cristales o tentáculos según la zona) y los **jefes tienen su propio fondo**: `DK.scenes.bossScene(zona, secreto)` → `boss_<escena>` (menhires bajo luna roja, bosque muerto, naufragio con tormenta, bosque de cristales, forja de lava, santuario con estatua, fauces del abismo, ruinas entre rayos) y `boss_secret` (cripta) para los jefes ocultos.
 
+### Cambios de la v5.17 — cofre con escenario, música con fundido y electrónica, avisos discretos
+
+- **Combate (fallo que parecía un error)**: se probaron unos 6.600 turnos simulados (todas las especies; oleadas y relevos) y 8 combates jugados por la pantalla sin ningún error. El caso más probable era un ataque que **falla por precisión**: el texto flotante decía «Fallo», que parecía un error del juego.
+  - Ahora flota «No acierta».
+  - El registro dice `battle.missedAcc`: «{move} no acierta (precisión {acc} %): esta vez no hace daño».
+- **Cofre** (`screens/expedition.js`): usa el escenario de los sucesos `stage()`, que acepta ahora `o.art` (dibujo propio en el medallón) y `o.cls`.
+  - Muestra el título grande «Cofre», el texto `exp.chestFound` y el botín debajo.
+  - El medallón lleva el cofre: con relieve en Clásico y Exilio, icono de línea grande en Limpio (`.chest-stage`).
+- **Mercader**: la barra «Seguir el camino» (`.mr-foot`, pegada abajo) se quedaba debajo de la barra de accesos en algunos anchos.
+  - `core/app.js` mide la barra con un `ResizeObserver` y define `--dock-h`.
+  - La barra del mercader va a `bottom: calc(var(--dock-h) + 8px)`.
+- **Avisos más discretos**: pastilla pequeña arriba a la derecha (en el móvil, centrada), del ancho del texto, con icono pequeño y sin brillo. Duran 2,5 s (2 s en el móvil). Están al final de `juice.css`.
+- **Música** (`systems/audio.js`):
+  - Cada pista suena por su propio bus (`seq.bus`) y se cambia con un **fundido cruzado**: `stopTrack(fade)` apaga la anterior poco a poco.
+    - Al salir del combate: 1,6 s de salida y 2,2 s de entrada.
+    - Cambios normales: 0,9 s.
+    - Dentro del combate (furia, peligro): 0,35 s con un redoble.
+  - **Pistas electrónicas nuevas**:
+    - `boss_synth` (140 bpm);
+    - `boss_synth_rage` (152 bpm);
+    - `horde` (136 bpm), para los combates contra varios rivales seguidos (`st.wave` o `p.wave`).
+  - Capas nuevas: `arp` (arpegio a semicorcheas), `bass` (bajo en contratiempo), lead `synth` y batería `edm` (bombo a negras, palmas y charles).
+  - `battleTrack` usa la versión electrónica para los jefes de volcán, cielo, abismo, glaciar, cueva y templo, y para el abismo.
+- Pruebas: v5.17 en `juice.test.js`. Las pruebas del cofre crean un nodo de cofre si el mapa no tiene ninguno.
+
+### Cambios de la v5.16 — cofre al entrar, reclutas con mejora, menos variocolor y arreglos del resumen
+
+- **Cofre** (`screens/expedition.js`, nodo `treasure`): se abre en el mismo pintado en que entras, sin el `setTimeout` de antes.
+  - Suena `chestSoft` (`systems/audio.js`): un clic de cerradura y dos notas suaves, más discreto que `chest`.
+  - El cofre da un salto (`.chest-big.open.just` y `chestPop`) con un aro de luz, y las tarjetas del botín entran en cascada tras él (retraso de +0,28 s).
+- **Candidatos de reclutamiento**:
+  - `config.expedition.recruitChoices = 2` y `recruitChoicesMax = 5`.
+  - Mejora nueva **`eleccion`** («Ojo de reclutador», `data/upgrades.js`, 3 niveles a 2/4/7 emblemas): +1/+2/+3 candidatos.
+  - Las expediciones de captura suman su `recruit: 1` por encima del tope (hasta 6).
+  - `reclutador` ya solo da los niveles extra; ya no da un candidato más.
+- **Variocolor**:
+  - `shinyChance` pasa de 1/200 a 1/450 y `recruitShinyChance` de 0,04 a 0,012.
+  - En las expediciones de captura: `kinds.captura.shiny` = 0,035 en los reclutas y `wildShiny` = 0,006 en los combates (`battle.js` lo suma con `kindDef().wildShiny`).
+- **Resumen** (`screens/expSummary.js`):
+  - El equipo es un `flex` que ocupa todo el ancho (`.sum-team .st-grid`): las fichas se estiran, pero el dibujo mantiene su tamaño.
+  - Los rivales son botones: al pulsarlos se abre un modal `.sf-zoom` con el dibujo en grande (280 px), el nivel, cuántas veces apareció y si era jefe, élite o variocolor. No muestra atributos.
+- **Tamaño de interfaz** (`uiScale`, zoom en `<html>`): `#bgfx` medía `100vw`/`100vh` y encogía con el zoom, así que el fondo no llegaba al borde. `settings.apply()` define `--uiz` y el lienzo mide `calc(100vw / var(--uiz))`.
+- Prueba nueva en `expedition.test.js` (v5.16).
+
 ### Cambios de la v5.15 — más alas y piezas, brazos que se mueven y patas bien colocadas
 
 - **Alas** (`epicWingsSvg(kind, P, layer, glow, scale)`):

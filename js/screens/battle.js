@@ -21,14 +21,17 @@
   const { t } = DK;
 
   /** v4.88: pista del combate: la de la zona más rápida, élite, jefe; con poca vida, latido; jefe herido, furia. */
+  // v5.17: algunos jefes (según la zona: estable) y los combates contra varios rivales seguidos llevan música electrónica rápida
+  const SYNTH_ZONES = new Set(['volcano', 'sky', 'abyss', 'glacier', 'cave', 'temple']);
   function battleTrack(st, p) {
     const boss = st ? st.boss || st.secret : p.boss || p.secret, secret = st ? st.secret : p.secret, elite = st ? st.elite : p.elite;
-    const zone = D.zones[st ? st.zoneId : p.zone];
-    const base = boss ? (secret ? 'boss_secret' : 'boss') : elite ? 'elite' : (zone ? zone.scene : 'menu') + ':fight';
+    const zone = D.zones[st ? st.zoneId : p.zone], wave = st ? !!st.wave : !!p.wave;
+    const synth = boss && !secret && zone && (SYNTH_ZONES.has(zone.scene) || (p && p.abyssRound != null));
+    const base = boss ? (secret ? 'boss_secret' : synth ? 'boss_synth' : 'boss') : elite ? 'elite' : wave ? 'horde' : (zone ? zone.scene : 'menu') + ':fight';
     if (!st || st.outcome) return base;
     const a = DK.battle.ally(st), e = st.enemy;
     if (a && !DK.daskai.isFainted(a) && DK.daskai.hpPct(a) < 0.3) return 'danger';
-    if (boss && e && DK.daskai.hpPct(e) < 0.35) return 'boss_rage';
+    if (boss && e && DK.daskai.hpPct(e) < 0.35) return synth ? 'boss_synth_rage' : 'boss_rage';
     return base;
   }
 

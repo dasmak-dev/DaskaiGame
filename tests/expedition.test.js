@@ -62,5 +62,25 @@ module.exports = {
       check(r.route === 'expSummary' && r.sum, 'no se abre el resumen: ' + JSON.stringify(r));
       check(r.lost > 0, 'no salen las piezas perdidas');
     }),
+  }, {
+    name: 'v5.16: cofre abierto al entrar, reclutas 2→5 (+1 en captura), menos variocolor y fondo con zoom',
+    views: ['desktop'],
+    run: (browser, view) => play(browser, view, async (p) => {
+      const r = await p.evaluate(() => { const E = DK.expedition; E.start({}); DK.curses.accept([]); DK.relics.choose(0);
+        const e = E.active(); const tn = e.map.rows.flat().find((n) => n.type === 'treasure') || Object.assign(e.map.rows[1][0], { type: 'treasure' }); e.pending = tn.id; DK.router.reset('expedition');
+        const opened = !!e.result && document.querySelectorAll('.loot-card').length > 0;
+        const node = { row: 2 }; e.kind = 'normal'; const c0 = E.makeCandidates(node).length; e.kind = 'captura'; const cCap = E.makeCandidates(node).length; e.kind = 'normal';
+        DK.store.state.emblems = 99; let bought = 0; while (DK.camp.buy('eleccion')) bought++;
+        const cMax = E.makeCandidates(node).length; e.kind = 'captura'; const cMaxCap = E.makeCandidates(node).length; e.kind = 'normal';
+        return { opened, c0, cCap, cMax, cMaxCap, bought, shiny: DK.config.shinyChance, rShiny: DK.config.expedition.recruitShinyChance, capShiny: E.kindDef('captura').shiny };
+      });
+      check(r.opened, 'el cofre no se abre al entrar');
+      check(r.c0 === 2 && r.cCap === 3, 'candidatos de base: ' + JSON.stringify(r));
+      check(r.cMax === 5 && r.cMaxCap === 6 && r.bought === 3, 'candidatos con la mejora: ' + JSON.stringify(r));
+      check(r.shiny < 1 / 300 && r.rShiny < 0.02 && r.capShiny > 0, 'variocolor demasiado frecuente');
+      // fondo con la interfaz reducida: el lienzo cubre la pantalla
+      const cover = await p.evaluate(() => { DK.settings.set('uiScale', 0.9); DK.settings.apply(); const c = document.getElementById('bgfx'); const w = parseFloat(getComputedStyle(c).width) * 0.9; DK.settings.set('uiScale', 1); DK.settings.apply(); return Math.round(w) >= innerWidth - 2; });
+      check(cover, 'el fondo no cubre la pantalla con la interfaz reducida');
+    }),
   }],
 };

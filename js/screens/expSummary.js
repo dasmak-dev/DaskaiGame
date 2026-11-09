@@ -137,7 +137,13 @@
       h('div', { class: 'panel-head' }, h('h3', null, t('sum5.foes')), h('span', { class: 'muted small' }, t('sum5.foesHint', { n: foes.length, k: list.length }))),
       h('div', { class: 'sf-grid' }, list.map((g, i) => {
         const sp = D.species[g.species]; if (!sp) return null;
-        return h('div', { class: 'sf-card' + (g.boss ? ' boss' : g.elite ? ' elite' : '') + (g.won ? '' : ' lost'), style: { '--i': i }, tip: `${sp.name} · ${t('common.lvl')} ${g.max}` },
+        // v5.16: al pulsarlo se ve en grande (sólo el dibujo: sin atributos)
+        const zoom = () => DK.ui.modal({ title: sp.name, closeX: true, cls: 'sf-zoom', content: h('div', { class: 'sfz-wrap' + (g.boss ? ' boss' : '') },
+          h('div', { class: 'sfz-art', style: { '--c': D.houseColor(sp.house || (D.species[sp.evolvedFrom] || {}).house) } }, V.sprite(g.species, { look: g.look, shiny: g.shiny, size: 280, flip: true, cls: 'alive' })),
+          h('div', { class: 'sfz-meta' }, h('span', null, `${t('common.lvl')} ${g.max}`), g.n > 1 ? h('span', null, '×' + g.n) : null,
+            g.boss ? h('span', { class: 'sf-tag boss' }, DK.icon('crown', 11), t('battle.boss')) : g.elite ? h('span', { class: 'sf-tag elite' }, DK.icon('skull', 11), t('exp.node.elite')) : null,
+            g.shiny ? h('span', { class: 'sf-tag cap' }, DK.icon('sparkles', 11), t('common.shiny')) : null)) });
+        return h('button', { type: 'button', class: 'sf-card' + (g.boss ? ' boss' : g.elite ? ' elite' : '') + (g.won ? '' : ' lost'), style: { '--i': i }, tip: `${sp.name} · ${t('common.lvl')} ${g.max}`, onClick: zoom },
           h('span', { class: 'sf-art' }, V.sprite(g.species, { look: g.look, shiny: g.shiny, size: g.boss ? 76 : 60, flip: true, cls: 'alive' })),
           h('b', null, sp.name), h('small', { class: 'muted' }, `${t('common.lvl')} ${g.max}`),
           g.n > 1 ? h('span', { class: 'sf-n' }, '×' + g.n) : null,

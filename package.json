@@ -1,6 +1,6 @@
 {
   "name": "daskai",
-  "version": "5.15.0",
+  "version": "5.17.0",
   "private": true,
   "description": "Daskai: roguelike de combates por turnos estilo Pokémon (HTML + JavaScript, sin compilación).",
   "scripts": {

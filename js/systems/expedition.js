@@ -1022,7 +1022,8 @@
      */
     makeCandidates(node) {
       const e = this.active(), zone = D.zones[e.zone];
-      const n = DK.config.expedition.recruitChoices + (DK.camp.level('reclutador') ? 1 : 0) + (this.kindDef().recruit || 0);
+      // v5.16: 2 de base, +1/+2/+3 con la mejora «Ojo de reclutador» (máx. 5) y +1 en las expediciones de captura
+      const C = DK.config.expedition, n = Math.min(C.recruitChoicesMax, C.recruitChoices + DK.camp.value('eleccion')) + (this.kindDef().recruit || 0);
       const species = [];
       for (let i = 0; i < 20 && species.length < n; i++) {
         const sp = U.weighted(zone.enemies).species;

@@ -22,7 +22,9 @@
  *   cartografo  1: la reliquia inicial puede ser rara · 2: también
  *               épica y empiezas con una común gratis (siempre entre
  *               las reliquias desbloqueadas)                       (expedition.start)
- *   reclutador  +1 candidato y +N niveles en los reclutas         (expedition.makeCandidates)
+ *   reclutador  +N niveles en los reclutas                        (expedition.makeCandidates)
+ *   eleccion    +N candidatos en los nodos de reclutamiento (base 2,
+ *               máx. 5; en las expediciones de captura, +1 más)    (expedition.makeCandidates)
  *   hoguera     +% de curación en las hogueras del mapa           (expedition.rest)
  *   comercio    ofertas extra en cada mercader                    (expedition.makeOffers)
  *   fenix       salvaciones extra de la muerte por expedición     (rules.maxRevives)
@@ -49,6 +51,7 @@
     { id: 'provisiones', icon: 'flask', group: 'expedition', levels: L([1, 2], [1, 3], [2, 5]) },
     { id: 'cartografo', icon: 'amulet', group: 'expedition', levels: L([2, 1], [4, 2]) },
     { id: 'reclutador', icon: 'paw', group: 'expedition', levels: L([1, 1], [3, 3]) },
+    { id: 'eleccion', icon: 'users', group: 'expedition', levels: L([2, 1], [4, 2], [7, 3]) }, // v5.16
     { id: 'hoguera', icon: 'campfire', group: 'expedition', levels: L([1, 0.15], [2, 0.3]) },
     { id: 'comercio', icon: 'shop', group: 'expedition', levels: L([1, 1], [2, 2]) },
     { id: 'fenix', icon: 'sparkles', group: 'expedition', levels: L([4, 1], [8, 2]) },
