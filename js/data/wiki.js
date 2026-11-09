@@ -59,7 +59,7 @@
     { id: 'nightmare', group: 'endgame', icon: 'demon', when: () => Object.keys(D.zones).some((z) => DK.nightmare.available(z)),
       stat: () => DK.t('wiki.s.zones', { n: Object.keys(D.zones).filter((z) => DK.nightmare.available(z)).length }) },
     { id: 'abyss', group: 'endgame', icon: 'cave', when: () => DK.abyss.unlocked(),
-      stat: () => DK.t('wiki.s.floor', { n: DK.abyss.best() }), vars: () => ({ n: D.endgame.abyss.every }) },
+      stat: () => DK.t('abyss.best', { n: DK.abyss.best() }), vars: () => ({ n: D.endgame.abyss.bosses }) },
     { id: 'ascension', group: 'endgame', icon: 'arrowUp', when: () => DK.party.all().some((d) => d.level >= C().maxLevel || (d.stars || 0) > 0),
       stat: () => DK.t('wiki.s.stars', { n: DK.party.all().reduce((a, d) => a + (d.stars || 0), 0) }), vars: () => ({ max: C().maxLevel, n: D.endgame.ascension.maxStars, p: Math.round(D.endgame.ascension.statPerStar * 100) }) },
     { id: 'variants', group: 'endgame', icon: 'evolve', when: () => DK.bag.count('fragmento_abisal') > 0 || DK.party.all().some((d) => d.variant),

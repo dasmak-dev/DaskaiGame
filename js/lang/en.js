@@ -263,7 +263,7 @@ DK.i18n.register('en', {
     inExp: 'What you brought and what you find to use right away. When you return, what is left goes back to your bag; if you lose, it is lost.',
     loot: 'Loot (when you finish):', lootTip: 'Loot: handed over when the expedition ends',
     title: 'Prepare the expedition', text: 'Choose what to take from your bag. During the expedition you can only use what is in your backpack and what you find.',
-    bag: 'Your bag', backpack: 'Backpack', lead: 'Goes first into battle', addOne: 'Take another {name}', emptyHint: 'Room for {n} items: potions, food and more for the road.', cap: '{n}/{max}', full: 'The backpack is full', suggest: 'Suggest', clear: 'Empty', repeat: 'Repeat last',
+    slotRemove: 'Click to put it back in the bag', search: 'Search item…', inPack: '{n} packed', modalHint: 'Click an item to pack one (Shift: as many as fit); click a slot above to take it out.', noMatch: 'No item matches', done: 'Done · {n}/{max}', bag: 'Your bag', backpack: 'Backpack', lead: 'Goes first into battle', addOne: 'Take another {name}', emptyHint: 'Room for {n} items: potions, food and more for the road.', cap: '{n}/{max}', full: 'The backpack is full', suggest: 'Suggest', clear: 'Empty', repeat: 'Repeat last',
     empty: 'Empty backpack', emptyText: 'Add potions and other items from your bag.', nothing: 'You have no items to take',
     nothingText: 'You can leave anyway: you will find items along the way.', free: '+{n} free potions (Provisions)',
     go: 'Set off', goDesc: '{n} items in the backpack', risk: 'If you lose, you lose the backpack and everything you found.', back: 'Back',
@@ -365,8 +365,9 @@ DK.i18n.register('en', {
     rested: 'Your team rests and recovers {n}% HP and MP.', trained: '{name} trains and gains {n} experience.',
     shopText: 'A travelling merchant with their best deals: {n}% cheaper than the shop.',
     yourCoins: 'Your coins', sold: 'Bought', normalPrice: 'Normal price: {n}',
-    node: { shrine: 'Shrine', recruit: 'Recruit', fight: 'Battle', elite: 'Mini boss', boss: 'Boss', event: 'Event', shop: 'Merchant', rest: 'Campfire', treasure: 'Chest', cave: 'Cave', shortcut: 'Shortcut', secretBoss: 'Hidden boss' },
+    node: { aboss: 'Abyss boss', shrine: 'Shrine', recruit: 'Recruit', fight: 'Battle', elite: 'Mini boss', boss: 'Boss', event: 'Event', shop: 'Merchant', rest: 'Campfire', treasure: 'Chest', cave: 'Cave', shortcut: 'Shortcut', secretBoss: 'Hidden boss' },
     nodeDesc: {
+      aboss: 'One of the Abyss boss series. Between bosses you can pick a campfire or a merchant.', abossOf: 'Boss {i} of {n}: {title} ({zone}).',
       cave: 'A dark cave: it may hide the zone\'s hidden boss or a treasure.', shortcut: 'A hidden path: skip several floors at the cost of some HP.',
       shrine: 'Bless a daskai: it will be saved from death once.',
       recruit: 'Pick a wild daskai to join your team (it stays if you beat the boss).', 
@@ -465,8 +466,10 @@ DK.i18n.register('en', {
     nextHint: 'Beat a map boss like this to open Corruption {n}.', help: 'Tougher rivals and better rewards. Open up to {n}.', helpMax: 'You have opened every Corruption level.',
   },
   abyss: {
-    title: 'The Abyss', normal: 'Expedition', enter: 'Abyss', best: 'Record: floor {n}', help: 'endless short floors, each harder; reward every {n} floors',
-    reward: 'Abyss floor {n} cleared! Reward: emblems, runes and coins.', floor: 'Abyss · floor {n}',
+    title: 'The Abyss', normal: 'Expedition', enter: 'Abyss', best: 'Record: {n} bosses in a row', help: 'the bosses of this zone and the previous ones, back to back; campfire or merchant in between',
+    reward: 'Abyss round {n} cleared! Reward: emblems, runes and coins.', floor: 'Abyss · round {n}',
+    series: 'Boss series', rounds: '{n} full rounds', locked: 'Beat this zone\'s boss to open its Abyss.', bossKill: 'Abyss boss {n} down: +{e} emblem',
+    seriesTip: 'Lv. {lv} · {zone}', first: 'First round: abyssal shard guaranteed',
   },
   endgameBox: { title: 'Adventure rules', sub: 'They change the whole expedition: more danger, better rewards.', harder: 'Harder', rewards: 'Rewards' },
   nightmare: { title: 'Nightmare version', on: 'On', off: 'Off', desc: 'Rivals +{lv} lv. and +{n}% · +{c}% coins · +{e} emblem per boss.' },
@@ -721,6 +724,7 @@ DK.i18n.register('en', {
 
   notices: { title: 'Notifications', more: '+{n} more', view: 'View', empty: 'No notifications', emptyText: 'Notifications from this session show up here: achievements, missions, items...', clear: 'Clear' },
   gear: {
+    forgedOne: 'Piece forged!', forgedN: '{n} pieces forged!', forgedAffixes: '{n} affixes', forgedAffix1: '1 affix', forgedBest: 'Best tier: N{n} (of 5)', forgedNoAffix: 'No affixes: you can add some in Upgrade.', forgedNote: 'In Upgrade you can change an affix, raise its tier or add new ones.', forgedKeep: 'Keep', forgedToForge: 'Take to Upgrade',
     rarity: { normal: 'Normal', magico: 'Magic', raro: 'Rare', legendario: 'Legendary' },
     rareA: 'Fury|Echo|Shadow|Dawn|Fang|Storm|Ember|Tide|Root|Star|Howl|Flame|Frost|Peak|Abyss|Gleam|Thorn|Warden|Pact|Lament',
     rareB: 'of Dusk|of Ash|of Dawn|of Iron|of the Abyss|of the Tide|of Thunder|of Frost|of Blood|of the Ancients|of the Eclipse|of the Void|of the Summit|of Mist|of Amber|of the Wolf|of the Storm|of Obsidian|of the Oath|of Embers',
@@ -981,7 +985,7 @@ DK.i18n.register('en', {
       secretBosses: { t: 'Hidden bosses', b: 'Some caves hide a secret boss, much tougher than the zone one. They give good loot and count for the Codex.' },
       corruption: { t: 'Corruption', b: 'There are {n} corruption levels and they stack: each raises rival levels and stats and adds a new rule (half campfires, bosses with more health, pricier merchant, no shortcuts).\nIn exchange it gives more emblems, coins, shinies and high-tier runes. To open the next level, beat a boss with the current one active.' },
       nightmare: { t: 'Zone Nightmare mode', b: 'With a zone\'s Codex at 100% you can play its nightmare version: rivals with more level and stats, but more coins and emblems per boss.' },
-      abyss: { t: 'The Abyss', b: 'Endless chained short maps, each floor harder than the last. Every {n} floors there is a reward (emblems, runes, coins and abyssal shards). Size and type runes do not work here.' },
+      abyss: { t: 'The Abyss', b: 'The extreme mode of each zone: you face its boss and those of the previous zones (up to 5) back to back, all levelled up; between bosses you pick a campfire or a merchant. Each boss gives 1 emblem; each full round gives emblems, high-tier runes, coins and, the first time in each zone (then every 3 rounds), an abyssal shard. You can go on with a harder round. Opens after beating {n} zone bosses; size and type runes do nothing here.' },
       ascension: { t: 'Ascension', b: 'A daskai at level {max} can ascend: it goes back to level 1 with a star that gives {p}% more stats forever. Up to {n} stars.' },
       variants: { t: 'Abyssal forms', b: 'With an abyssal shard you turn a final-form daskai into its abyssal variant: new colours and more stats.' },
       tracking: { t: 'Shiny tracking', b: 'Each rival of a species you defeat slightly raises the chance that its recruits are shiny, up to {cap}% extra.' },
@@ -1064,7 +1068,7 @@ DK.i18n.register('en', {
     forge: {
       tab: 'Forge', fuseTab: 'Fuse', pick: 'Pick a rune to work on', none: 'You have no runes yet: they drop from chests, elites and bosses on expeditions.',
       prefixes: 'Prefixes · map', suffixes: 'Suffixes · rewards', selHint: 'Tap a modifier to change it, max it out or remove it.', pickMod: 'Pick a modifier first',
-      reagents: 'Reagents', reagentsHint: 'Each reagent comes from exploring its zone; the ascension glyph and rune heart also from elites and bosses.', from: 'From: {zone}', addP: 'Add prefix', addS: 'Add suffix', pool: 'Modifiers that can roll',
+      reagents: 'Reagents', from: 'From: {zone}', addP: 'Add prefix', addS: 'Add suffix', pool: 'Modifiers that can roll',
       x: '×{n} alike', changeRune: 'Change rune', coins: 'coins', src: { tier: 'elites, bosses and high explorations', legend: 'bosses and very high explorations' },
       g2: { rarity: 'Rarity', tier: 'Tier', reroll: 'Reroll', mod: 'One modifier' }, g: { size: 'Size', kind: 'Kind', bonus: 'Bonus' }, change: 'Change', max: 'Max out', remove: 'Remove', noMods: 'Normal rune: no modifiers.', ops: { tier: 'Tier up', legend: 'Rare → legendary', up: 'Normal → magic', alter: 'Reroll (magic)', add: 'Add modifier',
         change: 'Change one', rare: 'Magic → rare', values: 'Reroll values', chaos: 'Reroll (rare)', max: 'Max one out', remove: 'Remove one' } },
@@ -1104,7 +1108,7 @@ DK.i18n.register('en', {
     small: { name: 'Small map', desc: 'Short expedition: {n} floors including the boss. 1 campfire on the way. Each boss gives 1 emblem.' },
     medium: { name: 'Medium map', desc: 'Medium expedition: {n} floors including the boss. 2 campfires, more caves and shortcuts. Each boss gives 2 emblems.' },
     xl: { name: 'XL map', desc: 'Long expedition: {n} floors including the boss. 3 campfires and lots of caves and shortcuts. Each boss gives 3 emblems. Pack well.' },
-    abyss: { name: 'Abyss floor', desc: '{n} floors with the boss, no campfires or shortcuts.' },
+    abyss: { name: 'Abyss', desc: 'A series of bosses back to back, with a campfire or merchant in between.' },
     short: { name: 'Short map', desc: 'Quick expedition: {n} floors with the boss and one campfire. Each boss gives 1 emblem.' },
   },
   draw: {

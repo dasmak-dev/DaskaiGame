@@ -53,7 +53,7 @@
       return DK.fx.cover({ colors: z.colors, kind: 'battle' }, go);
     },
     render(params) {
-      if (!params.state) params.state = B().start(params.zone, params.leaderUid, { boss: params.boss, elite: params.elite, secret: params.secret, final: params.final });
+      if (!params.state) params.state = B().start(params.zone, params.leaderUid, { boss: params.boss, elite: params.elite, secret: params.secret, final: params.final, abyssRound: params.abyssRound });
       return buildBattle(params);
     },
     onLeave(params) { if (params._ctl) params._ctl.stop(); },

@@ -8,7 +8,7 @@
  *                rule         regla nueva de ese nivel (se suman las anteriores)
  *                emblems/coins/shiny/tier  premios: + emblemas por jefe, +% de
  *                monedas, + variocolor en reclutas, + prob. de runa de tier más alto
- *  abyss       El Abismo: mapas cortos encadenados sin fin, cada uno más duro.
+ *  abyss       El Abismo (v5.1): jefes de la zona y de las anteriores seguidos (boss rush), por rondas cada vez más duras.
  *  nightmare   Versión pesadilla de una zona con el códice al 100%.
  *  ascension   Ascender al nivel máximo: vuelve al 1 con una estrella.
  *  variants    Formas alternativas (objeto que transforma una forma final).
@@ -30,11 +30,17 @@
       bossHp: 1.3, restMult: 0.5, shopMult: 2,
     },
     abyss: {
-      bosses: 5,          // jefes de zona vencidos para abrirlo
-      depthLevel: 4,      // + niveles de los rivales por cada piso del abismo (además de lo normal)
-      depthStat: 0.04,    // +% de atributos por piso
-      every: 5,           // premio cada N pisos
-      reward: (floor) => ({ emblems: 2 + Math.floor(floor / 5), rune: Math.min(3, 1 + Math.floor(floor / 10)), coins: 400 * floor, abisal: floor % 10 === 0 }),
+      // v5.1: el Abismo es un «boss rush» de cada zona: sus jefes y los de las zonas anteriores, seguidos,
+      // con una hoguera o un mercader entre jefe y jefe; al acabar la serie puedes seguir con otra ronda más dura.
+      bosses: 5,          // jefes de zona vencidos para abrirlo (y además hay que haber vencido al de esa zona)
+      series: 5,          // jefes por ronda: los de las (series - 1) zonas anteriores y, al final, el de la zona
+      baseLevel: 4,       // + niveles sobre el jefe de la zona para todos los jefes de la serie
+      roundLevel: 2,      // + niveles por cada jefe de la serie (el último, el más duro)
+      depthLevel: 6,      // + niveles por cada ronda superada (DK.expedition.levelBonus)
+      depthStat: 0.06,    // +% de atributos por ronda
+      every: 1,           // premio de ronda: cada ronda completa
+      perBoss: (round) => ({ emblems: 1, coins: 150 * round }),
+      reward: (round) => ({ emblems: 3 + round, rune: Math.min(3, 1 + Math.floor(round / 2)), coins: 800 * round, abisal: round % 3 === 0 }),
     },
     nightmare: { levels: 8, stat: 0.2, coins: 0.4, emblems: 1 },
     ascension: { maxStars: 5, statPerStar: 0.06 },

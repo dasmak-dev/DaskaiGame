@@ -70,9 +70,11 @@ module.exports = {
       check(r.id === 'zones' && r.prep, 'Preparar debería estar en la pantalla de Batalla: ' + JSON.stringify(r));
       check(r.pills >= 4 && r.team >= 1, 'faltan el tipo de expedición o el equipo');
       await p.click('.pk-empty'); await sleep(400);
-      check(await p.$('.drawer .pk-pack') && await p.$('.drawer .pk-bag'), 'el panel de objetos no muestra mochila y bolsa');
-      await p.click('.drawer .pk-bag .pk-btn.add'); await sleep(300);
-      await p.keyboard.press('Escape'); await sleep(300);
+      // v5.2: ventana centrada con los huecos de la mochila arriba y la bolsa en tarjetas
+      check(await p.$('.pm-modal .pm-slots') && await p.$('.pm-modal .pm-card'), 'la ventana de la mochila no muestra huecos y bolsa');
+      await p.click('.pm-modal .pm-card-main:not([disabled])'); await sleep(300);
+      check((await p.$$('.pm-modal .pm-slot:not(.empty)')).length === 1, 'el objeto elegido no ocupa un hueco');
+      await p.click('.pm-modal .pm-foot .btn'); await sleep(400);
       check((await p.$$('.pk-row:not(.add)')).length === 1, 'el objeto elegido no aparece en la mochila');
       // v4.98: equipo en 3+3 y su ficha rápida al pulsarlo
       check((await p.$$('.bt-team6 > .bt-mon')).length === 6, 'el equipo no sale en dos columnas de tres');

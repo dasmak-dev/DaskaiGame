@@ -116,5 +116,22 @@ module.exports = {
       check(r.a === 'clean' && r.b === 'classic', 'el estilo no cambia: ' + JSON.stringify(r));
       check(r.clean === '1px' && r.classic !== '1px', 'el estilo limpio debería tener bordes finos y el clásico no: ' + JSON.stringify(r));
     }),
+  }, {
+    name: 'v5.2: forjar equipo enseña su ficha (afijos con nivel) con Equipar y Llevar a Mejorar; lo que no se puede construir va en gris',
+    views: ['desktop'],
+    run: (browser, view) => play(browser, view, async (p) => {
+      await p.evaluate(() => { const r = DK.data.recipes.find((x) => x.result === 'garra_afilada'); Object.entries(r.ingredients).forEach(([id, n]) => DK.bag.addHome({ [id]: n })); DK.bag.addHome({ fragmento_forja: 60 }); DK.router.reset('craft', { tab: 'equip', sel: r.id }); });
+      await sleep(600);
+      const g = await p.evaluate(() => { const m = [...document.querySelectorAll('.wb-tile.s-missing')]; return { n: m.length, grey: m.length && getComputedStyle(m[0]).filter.includes('grayscale'), ready: getComputedStyle(document.querySelector('.wb-tile.s-ready')).filter }; });
+      check(g.n > 0 && g.grey && !String(g.ready).includes('grayscale'), 'las recetas sin materiales deberían ir en gris: ' + JSON.stringify(g));
+      await p.evaluate(() => document.querySelector('.wb-rarseg button:last-child').click()); await sleep(200);
+      await p.evaluate(() => document.querySelector('.wb-forge').click()); await sleep(700);
+      const r = await p.evaluate(() => ({ modal: !!document.querySelector('.forged-modal'), tip: !!document.querySelector('.forged-modal .gear-tip'), tiers: document.querySelectorAll('.forged-modal .fr-tiers .gt-tier').length, aff: document.querySelectorAll('.forged-modal .gt-affix').length, btns: [...document.querySelectorAll('.forged-modal .fr-actions .btn')].map((b) => b.textContent.trim()) }));
+      check(r.modal && r.tip && r.aff >= 1 && r.tiers === r.aff, 'la ventana de la pieza forjada debería enseñar sus afijos y su nivel: ' + JSON.stringify(r));
+      check(r.btns.length === 3, 'faltan los botones Guardar · Llevar a Mejorar · Equipar: ' + JSON.stringify(r.btns));
+      await p.evaluate(() => document.querySelectorAll('.forged-modal .fr-actions .btn')[1].click()); await sleep(800);
+      const f = await p.evaluate(() => ({ id: DK.router.current().id, tab: DK.router.current().params && DK.router.current().params.tab, fp: DK.router.current().params && DK.router.current().params.fp }));
+      check(f.id === 'craft' && f.tab === 'forge' && f.fp, '«Llevar a Mejorar» debería abrir la pieza en Mejorar: ' + JSON.stringify(f));
+    }),
   }],
 };

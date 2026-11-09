@@ -357,6 +357,31 @@ Se carga la última y sólo sobrescribe: paleta (piedra oscura, bronce, oro `--g
 - **Expedición:** al entrar en el mapa, el equipo, la mochila o un combate durante una expedición, `#zone-backdrop` (creado en `screens/expedition.js` con `screen:enter`) pinta detrás de todo la escena de la zona actual, oscurecida; `body.in-exp`.
 - **Combate:** la arena usa la escena de la zona (`components/scenes.js`, ahora con árboles muertos, ruinas, tumbas, cristales o tentáculos según la zona) y los **jefes tienen su propio fondo**: `DK.scenes.bossScene(zona, secreto)` → `boss_<escena>` (menhires bajo luna roja, bosque muerto, naufragio con tormenta, bosque de cristales, forja de lava, santuario con estatua, fauces del abismo, ruinas entre rayos) y `boss_secret` (cripta) para los jefes ocultos.
 
+### Cambios de la v5.3 — Mejorar runas: reactivos sólo con una runa elegida
+
+- `V.runeBench` (`components/runeBench.js`): sin runa elegida sólo se ve la lista de runas (`.rune-bench.browse.no-sel`); la columna de reactivos aparece al pulsar una. Se quita la nota «Cada reactivo sale explorando su zona…» (y su texto `rune.forge.reagentsHint`).
+
+### Cambios de la v5.2 — Crafteo más claro, ficha de la pieza forjada, nueva ventana de la mochila y runas más compactas
+
+- **Crafteo** (`screens/craft.js`, `grim.css`):
+  - El panel de la receta (`.wb-side`) termina por encima de la barra de abajo (`body[data-nav="on"]`: −96 px más) y su pie con «Forjar» va fijo abajo (`position: sticky`), también en la hoja del móvil.
+  - Las recetas a las que les falta **algún** material (`.wb-tile.s-missing`) van en gris (escala de grises y menos opacidad); las que se pueden construir llevan brillo verde y una esquina verde.
+  - **Tras forjar equipo** (`V.craftedReveal(uids)`): ventana con la ficha completa de la pieza (`V.gearTip`: atributos, prefijos y sufijos con su rango y su nivel N1–N5), un resumen de sus afijos con los niveles y el mejor, y los botones **Guardar**, **Llevar a Mejorar** (abre la pieza en la pestaña Mejorar, `params.fp`) y **Equipar** (`V.equipPicker`). Si forjas varias a la vez, arriba eliges cuál ver (y al equipar una pasa a la siguiente).
+- **Mochila** (`V.packModal` en `screens/expPrepare.js`, `.pm-*`): ventana centrada (ya no el panel lateral). Arriba la mochila como una fila de huecos (uno por objeto; pulsar uno lo devuelve) con Sugerir / Repetir / Vaciar; debajo la bolsa en tarjetas con filtros por categoría (sólo las que tienes) y buscador; pulsar = uno más (Mayús = todos los que quepan), la franja dorada de la tarjeta dice cuántos llevas y su «−» lo quita. En el móvil, huecos en filas de 5 y filtros deslizables.
+- **Runas de expedición**: sin el texto «Al azar» cuando no hay ninguna puesta; huecos de 38 px (gema 28) con 14 px de separación.
+- Tests: `craft` (gris, ventana de la pieza forjada y «Llevar a Mejorar») y `boxes` (nueva ventana de la mochila).
+
+### Cambios de la v5.1 — El Abismo como «boss rush» de cada zona
+
+- **Qué es ahora** (`DK.abyss`, `data/endgame.js → abyss`): el modo extremo de una zona. Se elige en la preparación (Reglas de la aventura → Abismo) para la zona seleccionada; hace falta el Abismo abierto (5 jefes de zona vencidos) **y** haber vencido al jefe de esa zona (`DK.abyss.available(zona)`).
+- **Serie de jefes** (`DK.abyss.series(zona)`): los jefes de las 4 zonas anteriores y, al final, el de la zona (máx. `series: 5`). Todos suben al nivel de la serie (`bossLevel(zona, i)` = jefe de la zona + `baseLevel` − (último − i) × `roundLevel`; el último, el más duro).
+- **Mapa** (`abyssMap` en `systems/expedition.js`): una fila por jefe y, entre jefe y jefe, una fila con hoguera y mercader (elige uno). Los jefes intermedios son nodos `aboss` (tipo nuevo en `TYPES`, morado, con el dibujo del jefe y su título debajo); el último es el `boss` normal de la zona. Cada jefe se pelea en el fondo de su propia zona (`battle` con `zone: bossZone`, `final: false`, `abyssRound`) y con sus fases.
+- **Rondas:** al vencer al último, la decisión de seguir lleva a otra ronda de la **misma zona** sin clima: +`depthLevel` (6) niveles y +`depthStat` (6 %) por ronda (la primera sin extra).
+- **Premios:** cada jefe → 1 emblema y monedas (`perBoss`, `DK.abyss.onBoss` desde `battle.finish`); cada ronda → emblemas, 2 runas de tier alto, monedas y fragmento abisal la primera ronda de cada zona y luego cada 3 (`reward`, `onFloor`).
+- **Récords** (`state.abyss.zones[zona] = { best, rounds, done }` y `state.abyss.best`): jefes seguidos en una bajada y rondas completas, por zona; se ven en la preparación junto a la serie de jefes (con su nivel).
+- Interfaz: sin etiquetas de tamaño ni de tipo en el Abismo (sólo «Abismo · ronda N»); la tarjeta de seguir muestra el nivel de los jefes de la siguiente ronda. Wiki y textos actualizados.
+- Test `endgame`: serie hasta el Volcán, mapa jefe/descanso, nivel de los jefes, récord, premios y ronda siguiente.
+
 ### Cambios de la v5.0 — 5 runas, selector ancho, Corrupción mínima I, rivales más duros y dos zonas nuevas
 
 - **Runas** (`config.expedition.runes.slots: 5`, antes 4): cinco huecos en la preparación, más pequeños (46 px, gema de 34). El selector (`runePicker`, `.rune-modal`) es más ancho en pantallas ≥ 700 px (hasta 1080 px) y enseña 4 runas por fila.

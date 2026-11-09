@@ -84,9 +84,10 @@
     const reagentsCol = h('div', { class: 'fb-col fb-stones rb-reagents' },
       Object.entries(GROUPS).map(([g, ops]) => { const its = R().reagents().filter((x) => D.items[x] && ops.includes(R().opOf(x)));
         return its.length ? h('div', { class: 'fb-group' }, h('span', { class: 'fb-group-h' }, t('rune.forge.g2.' + g)), h('div', { class: 'fs-grid' }, its.map(reagentBtn))) : null; }),
-      h('p', { class: 'muted small fb-buy' }, DK.icon('compass', 12), ' ', t('rune.forge.reagentsHint')));
+      null); // v5.3: sin la nota de dónde sale cada reactivo
 
-    if (!p) return h('div', { class: 'forge-bench rune-bench browse' }, listCol, narrow ? null : reagentsCol);
+    // v5.3: sin runa elegida sólo se ve la lista; los reactivos aparecen al pulsar una runa
+    if (!p) return h('div', { class: 'forge-bench rune-bench browse no-sel' }, listCol);
 
     /* ---- Mesa ---- */
     const sl = R().slotsOf(id), fx = params._rfx && params._rfx.to === id ? params._rfx : null;

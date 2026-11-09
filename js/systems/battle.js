@@ -47,7 +47,9 @@
       const secret = o.secret && D.secretBosses ? D.secretBosses[zoneId] : null;
       const bossInfo = secret || (o.boss ? zone.boss : null);
       if (o.boss && bossInfo) {
-        enemy = DK.daskai.create(bossInfo.species, lv(bossInfo.level), { boss: true, shiny: false, dual: U.chance(secret ? C().dual.secret : C().dual.boss) });
+        // v5.1: en el Abismo todos los jefes de la serie van al nivel de la zona elegida (y suben jefe a jefe)
+        const ex = DK.expedition.active(), abyssLv = !secret && o.abyssRound != null && ex && ex.kind === 'abismo' ? DK.abyss.bossLevel(ex.startZone || ex.zone, o.abyssRound) : 0;
+        enemy = DK.daskai.create(bossInfo.species, lv(Math.max(bossInfo.level, abyssLv)), { boss: true, shiny: false, dual: U.chance(secret ? C().dual.secret : C().dual.boss) });
       } else if (o.elite) {
         const pick = U.weighted(zone.enemies);
         enemy = DK.daskai.create(pick.species, lv(zone.levels[1] + C().eliteLevelBonus), { wild: true, elite: true, dual: U.chance(C().dual.elite) });
@@ -787,6 +789,8 @@
       } else { out.drops.forEach((id) => DK.bag.add(id)); DK.wallet.add(out.coins, { silent: true }); }
 
       DK.store.state.stats.wins++;
+      // v5.1: Abismo → cada jefe vencido cuenta para el récord y da un pequeño premio
+      if (st.boss && st.expedition && DK.abyss && DK.abyss.on()) out.abyss = DK.abyss.onBoss();
       // Jefe del final del mapa: progreso de la zona
       if (st.boss && st.final) {
         DK.world.boss(st.zoneId).defeated++;

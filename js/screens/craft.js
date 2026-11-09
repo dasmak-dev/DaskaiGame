@@ -117,6 +117,40 @@
     return p ? V.equipPicker(p.uid) : Promise.resolve(false);
   };
 
+  /**
+   * v5.2: ventana tras forjar equipo: la ficha completa de la pieza (atributos, prefijos y sufijos con su
+   * nivel N1–N5 y su rango) y un resumen de la calidad de sus afijos; botones Guardar · Llevar a Mejorar · Equipar.
+   * Si forjas varias a la vez, arriba se elige cuál ver.
+   */
+  V.craftedReveal = (uids) => {
+    let cur = 0;
+    return DK.ui.modal({
+      title: uids.length > 1 ? t('gear.forgedN', { n: uids.length }) : t('gear.forgedOne'), icon: 'hammer', cls: 'forged-modal',
+      content: (close) => {
+        const box = h('div', { class: 'fr-body' });
+        const draw = () => {
+          const x = DK.gear.find(uids[cur]); if (!x) { close(false); return; }
+          const p = x.p, tiers = p.affixes.map((a) => a.t), best = tiers.length ? Math.max(...tiers) : 0;
+          const sumTier = tiers.length ? h('div', { class: 'fr-sum' },
+            h('span', { class: 'fr-sum-l' }, DK.icon('sparkles', 13), t(p.affixes.length === 1 ? 'gear.forgedAffix1' : 'gear.forgedAffixes', { n: p.affixes.length })),
+            h('span', { class: 'fr-tiers' }, p.affixes.map((a) => h('span', { class: 'gt-tier t' + a.t, tip: `${DK.gear.affixText(a)} · ${t('gear.tierTip', { n: a.t })}` }, 'N' + a.t))),
+            h('small', { class: 'muted' }, t('gear.forgedBest', { n: best }))) : h('div', { class: 'fr-sum' }, h('small', { class: 'muted' }, t('gear.forgedNoAffix')));
+          box.replaceChildren(
+            uids.length > 1 ? h('div', { class: 'fr-pick' }, uids.map((u, i) => { const q = DK.gear.find(u); return q ? h('button', { class: 'fr-pick-b' + (i === cur ? ' on' : ''), type: 'button', 'aria-pressed': i === cur, onClick: () => { cur = i; draw(); } }, V.gearIcon(q.p, 30)) : null; })) : null,
+            V.gearTip(p),
+            sumTier,
+            h('p', { class: 'muted small fr-note' }, DK.icon('anvil', 13), t('gear.forgedNote')),
+            h('div', { class: 'fr-actions' },
+              btn({ label: t('gear.forgedKeep'), variant: 'ghost', onClick: () => close(false) }),
+              btn({ icon: 'anvil', label: t('gear.forgedToForge'), variant: 'tone', onClick: () => { close(false); DK.router.reset('craft', { tab: 'forge', fp: p.uid }); } }),
+              DK.party.all().length ? btn({ icon: 'gem', label: t('inv.equip'), variant: 'primary', onClick: async () => { const ok = await V.equipPicker(p.uid); if (ok) { if (uids.length > 1 && cur < uids.length - 1) { cur++; draw(); } else close(true); } } }) : null));
+        };
+        draw();
+        return box;
+      },
+    });
+  };
+
   /* ---------------- Mesa de trabajo (detalle de receta) ---------------- */
   const GROUPS = { consum: ['consumable', 'tonic', 'forge'], equip: ['move', 'passive', 'stats'] };
   const groupOf = (r) => (GROUPS.equip.includes(kindOf(r)) ? 'equip' : 'consum');
@@ -151,13 +185,15 @@
     const fragNeed = magic ? DK.gear.magicCost * times : 0, fragHave = DK.bag.count('fragmento_forja'), fragOk = fragHave >= fragNeed;
     const doCraft = async () => {
       if (!fragOk) { DK.audio.sfx('error'); toast(t('gear.craftMagicNo', { n: fragNeed }), { icon: 'x', kind: 'bad' }); return; }
+      const before = new Set(DK.gear.list().map((q) => q.uid));
       const ok = direct ? C().craft(r, times, { magic }) : C().runPlan(plan, { magic });
       if (!ok) return;
       DK.audio.sfx('craft');
-      toast(t('craft.done', { item: it.name, n: r.qty * times }), { icon: it.icon, kind: 'good' });
       ctx.redraw();
-      // Equipo recién forjado: se ofrece equiparlo (también con el botón «Equipar» del detalle)
-      if (it.category === 'equipo' && DK.party.active().length) { await V.equipChooser(it.id); ctx.redraw(); }
+      // v5.2: equipo recién forjado → primero su ficha completa (afijos y su nivel); desde ahí, equipar o llevar a Mejorar
+      const fresh = it.category === 'equipo' ? DK.gear.list().filter((q) => !before.has(q.uid)).map((q) => q.uid) : [];
+      if (fresh.length) { await V.craftedReveal(fresh).promise; ctx.redraw(); }
+      else toast(t('craft.done', { item: it.name, n: r.qty * times }), { icon: it.icon, kind: 'good' });
     };
     const canEquip = it.category === 'equipo' && DK.bag.count(it.id) > 0 && DK.party.active().length > 0;
 

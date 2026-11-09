@@ -155,7 +155,7 @@ module.exports = {
       check(await p.evaluate(() => DK.expedition.nextStart().corruption >= 1 && DK.corruption.set(0) === 1), 'con la Corrupción abierta debería ir siempre el nivel I como mínimo');
     }),
   }, {
-    name: 'El Abismo: pisos cortos encadenados, récord y premio cada 5 pisos',
+    name: 'El Abismo (v5.1): boss rush de la zona con los jefes anteriores, descansos entre medias, récord y premios',
     run: (browser, view) => p0(browser, view),
   }, {
     name: 'Ascensión, forma abisal, reliquias grabadas, rastreo de variocolores y marcos por casa',
@@ -230,22 +230,34 @@ function p0(browser, view) {
   return play(browser, view, async (p) => {
     const r = await p.evaluate((B) => {
       eval(B);
-      const out = { unlocked: DK.abyss.unlocked() };
-      DK.store.state.nextExpedition = { zone: 'pradera', seed: 'ab', size: 'small', kind: 'normal', mod: null };
-      DK.abyss.set(true);
+      const out = { unlocked: DK.abyss.unlocked(), lockedZone: !DK.abyss.available('templo'), open: DK.abyss.available('volcan') };
+      DK.store.state.nextExpedition = { zone: 'volcan', seed: 'ab', size: 'small', kind: 'normal', mod: null };
+      out.set = DK.abyss.set(true);
       DK.expedition.start({});
-      const e = DK.expedition.active();
-      out.kind = e.kind; out.size = e.size; out.floors = e.total;
-      const lb1 = DK.expedition.levelBonus();
-      const em0 = DK.camp.emblems();
-      for (let i = 1; i <= 5; i++) { DK.expedition.bossCleared(); if (i < 5) DK.expedition.continueRun(); }
-      out.depth = e.depth; out.best = DK.abyss.best(); out.lb5 = DK.expedition.levelBonus(); out.lb1 = lb1;
-      out.reward = DK.camp.emblems() - em0;
+      const e = DK.expedition.active(), rows = e.map.rows;
+      out.kind = e.kind; out.size = e.size;
+      out.series = DK.abyss.series('volcan').join(',');
+      out.shape = rows.map((r) => r.map((n) => n.type + (n.bossZone ? ':' + n.bossZone : '')).join('|')).join(' / ');
+      // el primer jefe de la serie va al nivel de la serie de la zona elegida, no al suyo
+      const d = DK.party.aliveActive()[0];
+      const st = DK.battle.start('pradera', d.uid, { boss: true, final: false, abyssRound: 0 });
+      out.lv0 = st.enemy.level; out.need0 = DK.abyss.bossLevel('volcan', 0); out.pradera = DK.data.zones.pradera.boss.level;
+      out.title = st.bossInfo.title === DK.data.zones.pradera.boss.title;
+      const lb1 = DK.expedition.levelBonus(), em0 = DK.camp.emblems(), ab0 = DK.bag.home().fragmento_abisal || 0;
+      for (let i = 0; i < 5; i++) DK.abyss.onBoss();
+      DK.expedition.bossCleared();
+      out.best = DK.abyss.best('volcan'); out.rounds = DK.abyss.rounds('volcan');
+      out.emblems = DK.camp.emblems() - em0; out.abisal = (DK.bag.home().fragmento_abisal || 0) - ab0;
+      out.nextZone = e.next.zone;
+      DK.expedition.continueRun();
+      out.depth = e.depth; out.lb2 = DK.expedition.levelBonus(); out.lb1 = lb1; out.zone2 = e.zone;
       return out;
     }, bosses(5));
-    check(r.unlocked && r.kind === 'abismo' && r.size === 'abyss', 'debería empezar en el Abismo: ' + JSON.stringify(r));
-    check(r.best === 5 && r.depth === 5, 'el récord debería ser el piso 5: ' + JSON.stringify(r));
-    check(r.lb5 > r.lb1 + 10, 'cada piso debería ser más duro: ' + JSON.stringify(r));
-    check(r.reward >= 3, 'el piso 5 debería dar premio de emblemas: ' + JSON.stringify(r));
+    check(r.unlocked && r.open && r.lockedZone && r.set && r.kind === 'abismo', 'debería poder bajar al Abismo del Volcán (y no al del Templo): ' + JSON.stringify(r));
+    check(r.series === 'pradera,bosque,costa,cavernas,volcan', 'la serie debería ser los 5 jefes hasta el Volcán: ' + r.series);
+    check(/^aboss:pradera \/ (rest\|shop|shop\|rest) \/ aboss:bosque .* boss:volcan$/.test(r.shape), 'mapa de jefes con descansos: ' + r.shape);
+    check(r.lv0 >= r.need0 && r.need0 > r.pradera && r.title, 'los jefes de la serie deberían subir al nivel de la zona: ' + JSON.stringify(r));
+    check(r.best === 5 && r.rounds === 1 && r.emblems >= 9 && r.abisal === 1, 'récord, ronda y premios: ' + JSON.stringify(r));
+    check(r.nextZone === 'volcan' && r.zone2 === 'volcan' && r.depth === 2 && r.lb2 >= r.lb1 + 6, 'la siguiente ronda es más dura y en la misma zona: ' + JSON.stringify(r));
   });
 }

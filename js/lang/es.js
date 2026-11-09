@@ -264,7 +264,7 @@ DK.i18n.register('es', {
     inExp: 'Lo que te llevaste y lo que encuentras para usar ya. Al volver, lo que quede regresa a tu bolsa; si pierdes, se pierde.',
     loot: 'Botín (al terminar):', lootTip: 'Botín: se entrega al terminar la expedición',
     title: 'Preparar la expedición', text: 'Elige qué te llevas de tu bolsa. Durante la expedición sólo podrás usar lo que lleves en la mochila y lo que encuentres.',
-    bag: 'Tu bolsa', backpack: 'Mochila', lead: 'Sale primero al combate', addOne: 'Llevar otro {name}', emptyHint: 'Caben {n} objetos: pociones, comida y más para el camino.', cap: '{n}/{max}', full: 'La mochila está llena', suggest: 'Sugerir', clear: 'Vaciar', repeat: 'Repetir la última',
+    slotRemove: 'Pulsa para devolverlo a la bolsa', search: 'Buscar objeto…', inPack: '{n} en la mochila', modalHint: 'Pulsa un objeto para meter uno (Mayús: todos los que quepan); pulsa un hueco de arriba para sacarlo.', noMatch: 'Ningún objeto coincide', done: 'Listo · {n}/{max}', bag: 'Tu bolsa', backpack: 'Mochila', lead: 'Sale primero al combate', addOne: 'Llevar otro {name}', emptyHint: 'Caben {n} objetos: pociones, comida y más para el camino.', cap: '{n}/{max}', full: 'La mochila está llena', suggest: 'Sugerir', clear: 'Vaciar', repeat: 'Repetir la última',
     empty: 'Mochila vacía', emptyText: 'Añade pociones y otros objetos desde tu bolsa.', nothing: 'No tienes objetos que llevar',
     nothingText: 'Puedes salir igualmente: encontrarás objetos por el camino.', free: '+{n} pociones gratis (Provisiones)',
     go: 'Partir', goDesc: '{n} objetos en la mochila', risk: 'Si pierdes, pierdes la mochila y todo lo encontrado.', back: 'Volver',
@@ -366,8 +366,9 @@ DK.i18n.register('es', {
     rested: 'Tu equipo descansa y recupera un {n}% de vida y maná.', trained: '{name} entrena y gana {n} puntos de experiencia.',
     shopText: 'Un mercader ambulante con sus mejores ofertas: un {n}% más barato que en la tienda.',
     yourCoins: 'Tus monedas', sold: 'Comprado', normalPrice: 'Precio normal: {n}',
-    node: { shrine: 'Santuario', recruit: 'Reclutar', fight: 'Combate', elite: 'Mini jefe', boss: 'Jefe', event: 'Suceso', shop: 'Mercader', rest: 'Hoguera', treasure: 'Cofre', cave: 'Cueva', shortcut: 'Atajo', secretBoss: 'Jefe oculto' },
+    node: { aboss: 'Jefe del Abismo', shrine: 'Santuario', recruit: 'Reclutar', fight: 'Combate', elite: 'Mini jefe', boss: 'Jefe', event: 'Suceso', shop: 'Mercader', rest: 'Hoguera', treasure: 'Cofre', cave: 'Cueva', shortcut: 'Atajo', secretBoss: 'Jefe oculto' },
     nodeDesc: {
+      aboss: 'Un jefe de la serie del Abismo. Entre jefe y jefe podrás elegir hoguera o mercader.', abossOf: 'Jefe {i} de {n}: {title} ({zone}).',
       cave: 'Una cueva oscura: puede esconder al jefe oculto de la zona o un tesoro.', shortcut: 'Un paso escondido: salta varios pisos a cambio de algo de vida.',
       shrine: 'Bendice a un daskai: se salvará de la muerte una vez.',
       recruit: 'Elige un daskai salvaje que se una a tu equipo (se queda si derrotas al jefe).', 
@@ -466,8 +467,10 @@ DK.i18n.register('es', {
     nextHint: 'Vence al jefe de un mapa así para abrir la Corrupción {n}.', help: 'Rivales más duros y mejores premios. Abierto hasta el {n}.', helpMax: 'Has abierto todos los niveles de Corrupción.',
   },
   abyss: {
-    title: 'El Abismo', normal: 'Expedición', enter: 'Abismo', best: 'Récord: piso {n}', help: 'pisos cortos sin fin, cada uno más duro; premio cada {n} pisos',
-    reward: '¡Piso {n} del Abismo superado! Premio: emblemas, runas y monedas.', floor: 'Abismo · piso {n}',
+    title: 'El Abismo', normal: 'Expedición', enter: 'Abismo', best: 'Récord: {n} jefes seguidos', help: 'los jefes de esta zona y de las anteriores, uno tras otro; hoguera o mercader entre medias',
+    reward: '¡Ronda {n} del Abismo superada! Premio: emblemas, runas y monedas.', floor: 'Abismo · ronda {n}',
+    series: 'Serie de jefes', rounds: '{n} rondas completas', locked: 'Vence al jefe de esta zona para abrir su Abismo.', bossKill: 'Jefe {n} del Abismo vencido: +{e} emblema',
+    seriesTip: 'Nv. {lv} · {zone}', first: 'Primera ronda: fragmento abisal asegurado',
   },
   endgameBox: { title: 'Reglas de la aventura', sub: 'Cambian toda la expedición: más peligro, mejores premios.', harder: 'Más difícil', rewards: 'Premios' },
   nightmare: { title: 'Versión pesadilla', on: 'Activada', off: 'Desactivada', desc: 'Rivales +{lv} Nv. y +{n}% · +{c}% monedas · +{e} emblema por jefe.' },
@@ -724,6 +727,7 @@ DK.i18n.register('es', {
 
   notices: { title: 'Avisos', more: '+{n} avisos más', view: 'Ver', empty: 'Sin avisos', emptyText: 'Aquí verás los avisos de esta sesión: logros, misiones, objetos...', clear: 'Borrar' },
   gear: {
+    forgedOne: '¡Pieza forjada!', forgedN: '¡{n} piezas forjadas!', forgedAffixes: '{n} afijos', forgedAffix1: '1 afijo', forgedBest: 'Mejor nivel: N{n} (de 5)', forgedNoAffix: 'Sin afijos: puedes añadírselos en Mejorar.', forgedNote: 'En Mejorar puedes cambiar un afijo, subir su nivel o añadir otros.', forgedKeep: 'Guardar', forgedToForge: 'Llevar a Mejorar',
     rarity: { normal: 'Normal', magico: 'Mágico', raro: 'Raro', legendario: 'Legendario' },
     rareA: 'Furia|Eco|Sombra|Aurora|Colmillo|Tormenta|Ceniza|Marea|Raíz|Astro|Grito|Llama|Escarcha|Cumbre|Abismo|Destello|Espina|Vigía|Pacto|Lamento',
     rareB: 'del ocaso|de ceniza|del alba|de hierro|del abismo|de la marea|del trueno|de escarcha|de sangre|de los ancestros|del eclipse|del vacío|de la cumbre|de la niebla|de ámbar|del lobo|de la tormenta|de obsidiana|del juramento|de las brasas',
@@ -985,7 +989,7 @@ DK.i18n.register('es', {
       secretBosses: { t: 'Jefes ocultos', b: 'Algunas cuevas esconden un jefe oculto, mucho más duro que el de la zona. Dan buen botín y cuentan para el Códice.' },
       corruption: { t: 'Corrupción', b: 'Hay {n} niveles de corrupción y son acumulativos: cada nivel sube el nivel y los atributos de los rivales y añade una regla nueva (hogueras a medias, jefes con más vida, mercader más caro, sin atajos).\nA cambio da más emblemas, monedas, variocolores y runas de tier alto. Para abrir el siguiente nivel vence a un jefe con el actual activo.' },
       nightmare: { t: 'Modo Pesadilla de zona', b: 'Con el Códice de una zona al 100% puedes jugarla en versión pesadilla: rivales con más nivel y atributos, pero más monedas y emblemas por jefe.' },
-      abyss: { t: 'El Abismo', b: 'Mapas cortos encadenados sin fin, cada piso más duro que el anterior. Cada {n} pisos hay premio (emblemas, runas, monedas y fragmentos abisales). Las runas de tamaño y tipo no sirven aquí.' },
+      abyss: { t: 'El Abismo', b: 'El modo extremo de cada zona: te enfrentas seguidos a su jefe y a los de las zonas anteriores (hasta 5), todos subidos de nivel; entre jefe y jefe eliges hoguera o mercader. Cada jefe da 1 emblema; cada ronda completa, emblemas, runas de tier alto, monedas y, la primera vez en cada zona (y luego cada 3 rondas), un fragmento abisal. Puedes seguir con otra ronda más dura. Se abre al vencer a {n} jefes de zona; las runas de tamaño y tipo no sirven aquí.' },
       ascension: { t: 'Ascensión', b: 'Un daskai al nivel {max} puede ascender: vuelve al nivel 1 con una estrella que le da un {p}% más de atributos para siempre. Como mucho {n} estrellas.' },
       variants: { t: 'Formas abisales', b: 'Con un fragmento abisal transformas a un daskai en su forma final en su variante abisal: otros colores y más atributos.' },
       tracking: { t: 'Rastreo de variocolores', b: 'Cada rival de una especie que derrotas sube un poco la probabilidad de que sus reclutas salgan variocolores, hasta un {cap}% extra.' },
@@ -1068,7 +1072,7 @@ DK.i18n.register('es', {
     forge: {
       tab: 'Forjar', fuseTab: 'Fundir', pick: 'Elige una runa para trabajarla', none: 'Aún no tienes runas: caen en cofres, élites y jefes de las expediciones.',
       prefixes: 'Prefijos · mapa', suffixes: 'Sufijos · recompensas', selHint: 'Pulsa un modificador para cambiarlo, llevarlo al máximo o quitarlo.', pickMod: 'Elige un modificador primero',
-      reagents: 'Reactivos', reagentsHint: 'Cada reactivo sale explorando su zona; el glifo de ascenso y el corazón rúnico, también en élites y jefes.', from: 'De: {zone}', addP: 'Añadir prefijo', addS: 'Añadir sufijo', pool: 'Modificadores que pueden salir',
+      reagents: 'Reactivos', from: 'De: {zone}', addP: 'Añadir prefijo', addS: 'Añadir sufijo', pool: 'Modificadores que pueden salir',
       x: '×{n} iguales', changeRune: 'Cambiar de runa', coins: 'monedas', src: { tier: 'élites, jefes y exploraciones altas', legend: 'jefes y exploraciones muy altas' },
       g2: { rarity: 'Rareza', tier: 'Tier', reroll: 'Volver a tirar', mod: 'Un modificador' }, g: { size: 'Tamaño', kind: 'Tipo', bonus: 'Bonus' }, change: 'Cambiar', max: 'Al máximo', remove: 'Quitar', noMods: 'Runa normal: sin modificadores.', ops: { tier: 'Sube de tier', legend: 'Rara → legendaria', up: 'Normal → mágica', alter: 'Re-tirar (mágica)', add: 'Añadir modificador',
         change: 'Cambiar uno', rare: 'Mágica → rara', values: 'Re-tirar valores', chaos: 'Re-tirar (rara)', max: 'Uno al máximo', remove: 'Quitar uno' } },
@@ -1108,7 +1112,7 @@ DK.i18n.register('es', {
     small: { name: 'Mapa pequeño', desc: 'Expedición corta: {n} pisos con el jefe. 1 hoguera en el camino. Cada jefe da 1 emblema.' },
     medium: { name: 'Mapa mediano', desc: 'Expedición media: {n} pisos con el jefe. 2 hogueras, más cuevas y atajos. Cada jefe da 2 emblemas.' },
     xl: { name: 'Mapa XL', desc: 'Expedición larga: {n} pisos con el jefe. 3 hogueras y muchas cuevas y atajos. Cada jefe da 3 emblemas. Prepara bien la mochila.' },
-    abyss: { name: 'Piso del abismo', desc: '{n} pisos con el jefe, sin hogueras ni atajos.' },
+    abyss: { name: 'Abismo', desc: 'Serie de jefes seguidos, con hoguera o mercader entre medias.' },
     short: { name: 'Mapa corto', desc: 'Expedición rápida: {n} pisos con el jefe y una hoguera. Cada jefe da 1 emblema.' },
   },
   draw: {

@@ -78,6 +78,7 @@
     shrine: { icon: 'sparkles', battle: false },
     cave: { icon: 'cave', battle: false },
     shortcut: { icon: 'shortcut', battle: false },
+    aboss: { icon: 'crown', battle: true }, // v5.1: jefe de la serie del Abismo (no es el del final)
   };
 
   /**
@@ -86,7 +87,26 @@
    * Las conexiones van al nodo "de enfrente" (y a veces al vecino) para
    * que no se crucen, y se garantiza que todo nodo tenga entrada y salida.
    */
+  /**
+   * v5.1: mapa del Abismo (boss rush). Una fila por jefe de la serie (DK.abyss.series) y, entre jefe y jefe,
+   * una fila para elegir hoguera o mercader. El último es el jefe de la zona (tipo 'boss').
+   */
+  function abyssMap(zoneId, seed) {
+    const rnd = U.seeded(seed), list = DK.abyss.series(zoneId), rows = [];
+    list.forEach((bz, i) => {
+      const last = i === list.length - 1, r = rows.length;
+      rows.push([{ id: `${r}-0`, row: r, x: 0.5, type: last ? 'boss' : 'aboss', bossZone: bz, round: i, links: [] }]);
+      if (!last) {
+        const flip = rnd() < 0.5, a = flip ? 'shop' : 'rest', b = flip ? 'rest' : 'shop';
+        rows.push([{ id: `${r + 1}-0`, row: r + 1, x: 0.36, type: a, links: [] }, { id: `${r + 1}-1`, row: r + 1, x: 0.64, type: b, links: [] }]);
+      }
+    });
+    for (let r = 0; r < rows.length - 1; r++) rows[r].forEach((n) => { n.links = rows[r + 1].map((x) => x.id); });
+    return { rows, size: 'abyss', mod: null, kind: 'abismo' };
+  }
+
   function generate(zoneId, seed, size = 'small', mod = null, kind = 'normal', extra = {}) {
+    if (kind === 'abismo' && DK.abyss) return abyssMap(zoneId, seed);
     const rnd = U.seeded(seed);
     const pick = (weights) => U.weightedKey(weights, rnd, 'fight');
     // Tamaño del mapa (config.expedition.sizes): pisos, cuevas, atajos y hogueras
@@ -543,8 +563,9 @@
       DK.corruption.onBoss();
       if (e.kind === 'abismo') { const ab = DK.abyss.onFloor(e.depth || 1); if (ab) e.log.abyss = (e.log.abyss || []).concat(ab); }
       e.awaitingChoice = true;
-      const zone = this.pickZone(e.depth + 1, e.zone, Math.random, e.startZone);
-      e.next = { zone, seed: `${zone}-${Date.now()}`, size: this.pickSize(Math.random, e.kind), mod: this.pickMod() };
+      // v5.1: en el Abismo la siguiente ronda es de la misma zona, sin clima
+      const zone = e.kind === 'abismo' ? (e.startZone || e.zone) : this.pickZone(e.depth + 1, e.zone, Math.random, e.startZone);
+      e.next = { zone, seed: `${zone}-${Date.now()}`, size: e.kind === 'abismo' ? 'abyss' : this.pickSize(Math.random, e.kind), mod: e.kind === 'abismo' ? null : this.pickMod() };
       const s = st().stats;
       s.expeditions++;
       s.bestDepth = Math.max(s.bestDepth || 0, e.depth);

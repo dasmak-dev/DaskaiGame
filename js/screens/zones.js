@@ -194,16 +194,6 @@
    *     «Elegir objetos» abre el editor completo en un panel deslizante),
    *   - avisos en una línea y el botón «Partir».
    */
-  function packDrawer(params, refresh) {
-    const holder = h('div', { class: 'pk-editor' });
-    const draw = () => {
-      const ed = V.packEditor(params, () => { draw(); refresh(); });
-      holder.replaceChildren(...[h('div', { class: 'pk-editor-grid' }, ed.packPanel, ed.bagPanel), ed.goalsPanel].filter(Boolean));
-    };
-    draw();
-    DK.ui.drawer({ id: 'pack', title: t('pack.chooseTitle'), icon: 'bag', size: 'wide', content: holder, actions: [{ label: t('camp.closeMenu'), icon: 'check', variant: 'primary' }] });
-  }
-
   function prepCard(params, refresh) {
     const E = DK.expedition;
     const pv = E.preview(), z = D.zones[pv.zone];
@@ -233,17 +223,17 @@
     const sockets = Array.from({ length: N }, (_, i) => {
       const id = slots[i];
       if (!id) return h('button', { class: 'rune-socket empty', type: 'button', 'aria-label': t('rune.add'), tip: DK.runes.total() ? t('rune.add') : t('rune.none'),
-        onClick: () => runePicker(refresh) }, h('span', { class: 'rune-socket-ring' }, DK.icon('plus', 13)));
+        onClick: () => runePicker(refresh) }, h('span', { class: 'rune-socket-ring' }, DK.icon('plus', 11)));
       return h('button', { class: 'rune-socket full g-' + DK.runes.get(id).group, type: 'button', style: { '--rc': look(id)[0] }, 'aria-label': t('rune.remove', { name: V.runeName(id) }),
         tip: `${V.runeTip(id)} · ${t('rune.tapOff')}`,
         onClick: () => { DK.runes.unsocket(i); DK.audio.sfx('click'); refresh(); } },
-        h('span', { class: 'rune-socket-ring' }, V.runeGem(id, 34)), h('span', { class: 'rune-socket-x' }, DK.icon('x', 10)));
+        h('span', { class: 'rune-socket-ring' }, V.runeGem(id, 28)), h('span', { class: 'rune-socket-x' }, DK.icon('x', 10)));
     });
     // Sin la mejora «Taller de runas» no hay huecos (se compra con emblemas tras el primer jefe)
     const runeBox = !DK.runes.enabled() ? null : h('div', { class: 'bt-runes' },
       h('div', { class: 'bt-runes-text' },
         h('span', { class: 'bt-label' }, t('rune.title')),
-        h('span', { class: 'small muted' }, slots.length ? slots.map(V.runeEffect).join(' · ') : t('rune.random')),
+        slots.length ? h('span', { class: 'small muted' }, slots.map(V.runeEffect).join(' · ')) : null, // v5.2: sin «Al azar»
         h('button', { class: 'bt-runes-help', type: 'button', tip: t('rune.help'), 'aria-label': t('rune.help'), onClick: () => DK.ui.toast(t('rune.help'), { icon: 'info' }) }, DK.icon('info', 12), ' ', t('rune.have', { n: DK.runes.total() }))),
       h('div', { class: 'rune-sockets' }, sockets));
 
@@ -270,7 +260,7 @@
     // icono, nombre, efecto y «− ×N +»; vacía, una zona grande para elegir objetos.
     const chosen = Object.keys(pack).filter((id) => pack[id] > 0);
     const last = V.lastPack();
-    const openPack = () => packDrawer(params, refresh);
+    const openPack = () => { V.packModal(params, null).promise.then(() => refresh()); }; // v5.2: ventana centrada (antes un panel a la derecha)
     const home = DK.bag.home();
     const step = (id, n) => {
       const cur = pack[id] || 0, k = Math.max(0, Math.min(cur + n, home[id] || 0, cur + cap - used));
@@ -403,13 +393,21 @@
       h('div', { class: 'egx-main' }, h('b', null, title), desc ? h('small', null, desc) : null),
       h('div', { class: 'egx-ctl' }, control),
       extra ? h('div', { class: 'egx-extra' }, extra) : null);
-    // El Abismo: mapas cortos encadenados sin fin
+    // El Abismo (v5.1): boss rush de la zona elegida; enseña la serie de jefes con su nivel
     if (DK.abyss.unlocked()) {
-      const on = n.kind === 'abismo';
-      rows.push(row('abyss', 'moon', t('abyss.title'), `${t('abyss.best', { n: DK.abyss.best() })} · ${t('abyss.help', { n: G.abyss.every })}`,
+      const can = DK.abyss.available(n.zone);
+      if (n.kind === 'abismo' && !can) DK.abyss.set(false); // al cambiar a una zona sin su jefe vencido
+      const on = n.kind === 'abismo' && can;
+      const zr = DK.abyss.best(n.zone), rounds = DK.abyss.rounds(n.zone);
+      const series = on ? h('div', { class: 'abx-series' },
+        h('span', { class: 'abx-lbl' }, DK.icon('crown', 12), t('abyss.series'), rounds ? h('small', null, ' · ' + t('abyss.rounds', { n: rounds })) : h('small', { class: 'good-text' }, ' · ' + t('abyss.first'))),
+        h('div', { class: 'abx-row' }, DK.abyss.series(n.zone).map((z, i, a) => { const b = D.zones[z].boss, last = i === a.length - 1;
+          return h('div', { class: 'abx-boss' + (last ? ' last' : ''), tip: `${b.title} · ${t('abyss.seriesTip', { lv: DK.abyss.bossLevel(n.zone, i) + E.levelBonus(1), zone: D.zones[z].name })}` },
+            h('span', { class: 'abx-n' }, i + 1), V.sprite(b.species, { size: 46 }), h('b', null, b.title), h('small', null, `${t('common.lvl')} ${DK.abyss.bossLevel(n.zone, i) + E.levelBonus(1)}`)); }))) : null;
+      rows.push(row('abyss', 'moon', t('abyss.title'), can ? `${t('abyss.best', { n: zr })} · ${t('abyss.help')}` : t('abyss.locked'),
         h('div', { class: 'egx-seg' },
           h('button', { class: on ? '' : 'on', type: 'button', 'aria-pressed': String(!on), onClick: () => { DK.abyss.set(false); refresh(); } }, t('abyss.normal')),
-          h('button', { class: on ? 'on' : '', type: 'button', 'aria-pressed': String(on), onClick: () => { DK.abyss.set(true); DK.audio.sfx('select'); refresh(); } }, DK.icon('moon', 12), t('abyss.enter'))), on));
+          h('button', { class: on ? 'on' : '', type: 'button', disabled: !can, tip: can ? null : t('abyss.locked'), 'aria-pressed': String(on), onClick: () => { DK.abyss.set(true); DK.audio.sfx('select'); refresh(); } }, DK.icon(can ? 'moon' : 'lock', 12), t('abyss.enter'))), on, series));
     }
     // Corrupción: niveles 1-5 (se ven tras el jefe de la 3ª zona)
     if (C.visible()) {

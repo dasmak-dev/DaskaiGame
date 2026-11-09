@@ -2,7 +2,7 @@
  * systems/endgame.js — Final del juego (data/endgame.js).
  *
  *   DK.corruption  Niveles de Corrupción (state.corruption = { max })
- *   DK.abyss       El Abismo: récord y premios por piso (state.abyss = { best, rewarded })
+ *   DK.abyss       El Abismo (v5.1, boss rush por zona): series de jefes, récords y premios (state.abyss)
  *   DK.nightmare   Versión pesadilla de una zona con el códice completo
  *   DK.ascension   Ascender (d.stars) · DK.variants (d.variant)
  *   DK.tracking    Rastreo de variocolores (state.tracking = { especie: derrotas })
@@ -73,40 +73,78 @@
     },
   };
 
-  /* ---------------- El Abismo ---------------- */
+  /* ---------------- El Abismo (v5.1: boss rush de cada zona) ----------------
+   * state.abyss = { best, rewarded, zones: { zona: { best, rounds, done } } }
+   *   best   → más jefes seguidos en una sola bajada (de cualquier zona)
+   *   zones  → por zona: récord de jefes seguidos, rondas completas y si ya diste el premio de la primera ronda
+   * La expedición en curso apunta en e.abyssKills los jefes vencidos en esta bajada. */
+  const order = () => Object.keys(D.zones).filter((z) => !D.zones[z].secretZone);
   DK.abyss = {
     unlocked() { return !!st() && Object.keys(D.zones).filter((z) => DK.world.boss(z).defeated > 0).length >= G().abyss.bosses; },
+    /** ¿Se puede bajar al Abismo de esta zona? (Abismo abierto y su jefe vencido) */
+    available(zoneId) { return this.unlocked() && !!D.zones[zoneId] && !!D.zones[zoneId].boss && DK.world.boss(zoneId).defeated > 0; },
     on() { const e = exp(); return !!(e && e.kind === 'abismo'); },
-    best() { return (st() && st().abyss && st().abyss.best) || 0; },
-    /** Pisos del abismo: cada mapa superado es un piso. */
+    rec() { const s = st(); s.abyss = s.abyss || { best: 0, rewarded: 0 }; s.abyss.zones = s.abyss.zones || {}; return s.abyss; },
+    best(zoneId) { if (!st()) return 0; const r = this.rec(); return zoneId ? ((r.zones[zoneId] || {}).best || 0) : (r.best || 0); },
+    rounds(zoneId) { return st() ? ((this.rec().zones[zoneId] || {}).rounds || 0) : 0; },
+    /** Ronda actual (1, 2, 3…): cada mapa del Abismo es una ronda. */
     floor() { const e = exp(); return e && e.kind === 'abismo' ? (e.depth || 1) : 0; },
-    /** Prepara la próxima expedición como Abismo (o la devuelve a normal). */
+    /** Jefes de la serie de una zona, del primero al último (el último es el de la propia zona). */
+    series(zoneId) {
+      const all = order(), i = all.indexOf(zoneId);
+      if (i < 0) return [zoneId];
+      return all.slice(Math.max(0, i - G().abyss.series + 1), i + 1).filter((z) => D.zones[z].boss);
+    },
+    /** Nivel de un jefe de la serie (antes de la bonificación por ronda de la expedición). */
+    bossLevel(zoneId, idx) {
+      const A = G().abyss, top = (D.zones[zoneId] && D.zones[zoneId].boss.level) || 1;
+      const n = this.series(zoneId).length, i = idx == null ? n - 1 : Math.max(0, Math.min(n - 1, idx));
+      return top + A.baseLevel - (n - 1 - i) * A.roundLevel;
+    },
+    /** Prepara la próxima expedición como Abismo de su zona (o la devuelve a normal). */
     set(on) {
       const n = DK.expedition.nextStart();
-      if (on && !this.unlocked()) return false;
+      if (on && !this.available(n.zone)) return false;
       if (on) {
         n.abyssPrev = n.abyssPrev || { kind: n.kind, size: n.size };
-        n.kind = 'abismo'; n.size = 'abyss';
+        n.kind = 'abismo'; n.size = 'abyss'; n.abyssMod = n.mod; n.mod = null; // sin clima en el Abismo
         n.runeSlots = DK.runes.slots().filter((id) => DK.runes.get(id).group === 'bonus');
       } else if (n.kind === 'abismo') {
         const p = n.abyssPrev || {}; n.kind = p.kind && p.kind !== 'abismo' ? p.kind : 'normal'; n.size = p.size && p.size !== 'abyss' ? p.size : 'small'; delete n.abyssPrev;
+        if (n.abyssMod !== undefined) { n.mod = n.abyssMod; delete n.abyssMod; }
         DK.runes.apply(n);
       }
       n.seed = `${n.zone}-${Date.now()}`; DK.store.save();
       return on;
     },
-    /** Tras vencer al jefe de un piso: récord y premio cada N pisos. */
-    onFloor(depth) {
-      const s = st(); s.abyss = s.abyss || { best: 0, rewarded: 0 };
-      if (depth > s.abyss.best) s.abyss.best = depth;
-      if (depth % G().abyss.every !== 0 || depth <= (s.abyss.rewarded || 0)) return null;
-      s.abyss.rewarded = depth;
-      const r = G().abyss.reward(depth), got = { floor: depth, emblems: r.emblems, coins: r.coins, runes: [], abisal: !!r.abisal };
-      DK.camp.addEmblems(r.emblems);
-      DK.expedition.addLoot([], r.coins);
-      for (let i = 0; i < 2 && DK.runes.enabled(); i++) { const id = DK.runes.roll1(DK.runes.roll(1)[0], r.rune); DK.runes.add(id); got.runes.push(id); }
-      if (r.abisal) DK.bag.addHome({ fragmento_abisal: 1 });
-      DK.ui.toast(t('abyss.reward', { n: depth }), { icon: 'gift', kind: 'good' });
+    /** Tras vencer a un jefe en el Abismo: premio pequeño y récords. */
+    onBoss() {
+      const e = exp(); if (!e || e.kind !== 'abismo') return null;
+      e.abyssKills = (e.abyssKills || 0) + 1;
+      const r = this.rec(), z = e.startZone || e.zone, zr = r.zones[z] = r.zones[z] || { best: 0, rounds: 0 };
+      if (e.abyssKills > zr.best) zr.best = e.abyssKills;
+      if (e.abyssKills > (r.best || 0)) r.best = e.abyssKills;
+      const pb = G().abyss.perBoss(e.depth || 1);
+      DK.camp.addEmblems(pb.emblems);
+      DK.expedition.addLoot([], pb.coins);
+      DK.ui.toast(t('abyss.bossKill', { n: e.abyssKills, e: pb.emblems }), { icon: 'crown', kind: 'good' });
+      DK.store.save();
+      return { kills: e.abyssKills, emblems: pb.emblems, coins: pb.coins };
+    },
+    /** Tras completar una ronda (el jefe de la zona, al final del mapa): premio grande. */
+    onFloor(round) {
+      const e = exp(), r = this.rec(), z = (e && (e.startZone || e.zone)) || '', zr = r.zones[z] = r.zones[z] || { best: 0, rounds: 0 };
+      zr.rounds = (zr.rounds || 0) + 1;
+      if (round > (r.rewarded || 0)) r.rewarded = round;
+      const A = G().abyss, rw = A.reward(round), first = !zr.done;
+      zr.done = true;
+      const got = { floor: round, emblems: rw.emblems, coins: rw.coins, runes: [], abisal: !!rw.abisal || first };
+      DK.camp.addEmblems(rw.emblems);
+      DK.expedition.addLoot([], rw.coins);
+      for (let i = 0; i < 2 && DK.runes.enabled(); i++) { const id = DK.runes.roll1(DK.runes.roll(1)[0], rw.rune); DK.runes.add(id); got.runes.push(id); }
+      // Fragmento abisal: la primera ronda completa de cada zona y luego cada 3 rondas
+      if (got.abisal) DK.bag.addHome({ fragmento_abisal: 1 });
+      DK.ui.toast(t('abyss.reward', { n: round }), { icon: 'gift', kind: 'good' });
       return got;
     },
   };
@@ -166,7 +204,7 @@
     enemyStat(d) {
       const e = exp(); if (!e) return 0;
       const c = DK.corruption.def(e.corruption || 0);
-      let m = (c ? c.stat : 0) + (DK.nightmare.on() ? G().nightmare.stat : 0) + (e.kind === 'abismo' ? (e.depth || 1) * G().abyss.depthStat : 0);
+      let m = (c ? c.stat : 0) + (DK.nightmare.on() ? G().nightmare.stat : 0) + (e.kind === 'abismo' ? ((e.depth || 1) - 1) * G().abyss.depthStat : 0);
       return m;
     },
     bossHp(d) { const e = exp(); return e && d.boss && DK.corruption.has('bossHp', e.corruption || 0) ? G().corruption.bossHp : 1; },
@@ -176,7 +214,7 @@
       const c = DK.corruption.def(lv);
       const e = n ? null : exp();
       const night = n ? !!(n.nightmare && n.nightmare === n.zone) : DK.nightmare.on();
-      const abyss = n ? (n.kind === 'abismo' ? 1 : 0) : (e && e.kind === 'abismo' ? e.depth || 1 : 0);
+      const abyss = n ? 0 : (e && e.kind === 'abismo' ? (e.depth || 1) - 1 : 0); // v5.1: la 1.ª ronda sin extra (los jefes ya van subidos)
       return (c ? c.levels : 0) + (night ? G().nightmare.levels : 0) + abyss * G().abyss.depthLevel;
     },
     coins() { const c = DK.corruption.def(); return (c ? c.coins : 0) + (DK.nightmare.on() ? G().nightmare.coins : 0); },

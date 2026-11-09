@@ -19,6 +19,7 @@
   /** Etiqueta del tamaño de un mapa: «Mediano · 20 pisos». */
   V.sizeChip = (size, { big = false } = {}) => {
     size = size || 'small';
+    if (size === 'abyss') return null; // v5.1: el Abismo no tiene tamaño (es una serie de jefes)
     const sz = DK.config.expedition.sizes[size];
     return h('span', { class: 'chip size-chip s-' + size + (big ? ' big' : ''), tip: t('size.' + size + '.desc', { n: E().sizeFloors(size) }) },
       DK.icon(sz.icon, big ? 16 : 13), t('size.label', { name: t('size.' + size + '.name'), n: E().sizeFloors(size) }));
@@ -77,6 +78,12 @@
   // Posición del mapa al dibujar (para no saltar al nodo disponible en cada trazo)
   let keepScroll = null;
 
+  /** v5.1: texto de un jefe de la serie del Abismo («Jefe 2 de 5: …»). */
+  function abossText(n) {
+    const e = E().active(), list = DK.abyss.series(e.startZone || e.zone), b = D.zones[n.bossZone].boss;
+    return t('exp.nodeDesc.abossOf', { i: (n.round || 0) + 1, n: list.length, title: b.title, zone: D.zones[n.bossZone].name });
+  }
+
   /** Daskai que luchará en el siguiente combate (el elegido o el primero en pie). */
   function fighter() {
     const e = E().active(), alive = DK.party.aliveActive();
@@ -91,7 +98,9 @@
     const type = kind || n.type;
     // 'secret' = el jefe oculto de la cueva; el jefe final también puede serlo (n.secret)
     const secret = type === 'secret' || (type === 'boss' && !!n.secret);
-    DK.router.go('battle', { zone: e.zone, leaderUid: d.uid, boss: type === 'boss' || type === 'secret', secret, final: type === 'boss', elite: type === 'elite', node: n.id });
+    // v5.1: jefes de la serie del Abismo (en el fondo de su propia zona, no son el jefe del final)
+    if (type === 'aboss') { DK.router.go('battle', { zone: n.bossZone, leaderUid: d.uid, boss: true, final: false, abyssRound: n.round, node: n.id }); return; }
+    DK.router.go('battle', { zone: e.zone, leaderUid: d.uid, boss: type === 'boss' || type === 'secret', secret, final: type === 'boss', elite: type === 'elite', node: n.id, abyssRound: n.round != null ? n.round : undefined });
   }
 
   /** Va a un nodo del mapa. */
@@ -314,9 +323,11 @@
       const b = h('button', {
         class: `exp-node t-${n.type} s-${state}` + (e.pos === n.id ? ' here' : '') + (n.secret ? ' secret' : ''), type: 'button',
         style: { left: xOf(n) * 100 + '%', top: yOf(n.row) + 'px' }, disabled: state !== 'open',
-        tip: n.secret ? `${t('exp.node.secretBoss')} — ${D.secretBosses[e.zone].title}` : `${t('exp.node.' + n.type)} — ${t('exp.nodeDesc.' + n.type)}`, 'aria-label': t('exp.node.' + n.type),
+        tip: n.secret ? `${t('exp.node.secretBoss')} — ${D.secretBosses[e.zone].title}` : n.bossZone ? abossText(n) : `${t('exp.node.' + n.type)} — ${t('exp.nodeDesc.' + n.type)}`, 'aria-label': t('exp.node.' + n.type),
         onClick: () => go(n.id, refresh),
-      }, DK.icon(state === 'done' ? 'check' : ty.icon, n.type === 'boss' ? 40 : 28),
+      }, n.bossZone && state !== 'done' ? V.sprite(D.zones[n.bossZone].boss.species, { size: n.type === 'boss' ? 64 : 50 }) : DK.icon(state === 'done' ? 'check' : ty.icon, n.type === 'boss' ? 40 : 28),
+      // v5.1: en el Abismo cada jefe lleva su nombre debajo
+      n.bossZone ? h('span', { class: 'node-boss-lbl' }, D.zones[n.bossZone].boss.title) : null,
       key >= 0 && key < 9 ? h('kbd', { class: 'hotkey' }, key + 1) : null,
       // Los mini jefes (élite) dan una reliquia: se marca en el mapa
       n.type === 'elite' && state !== 'done' ? h('span', { class: 'node-relic' }, DK.icon('amulet', 12)) : null);
@@ -464,7 +475,7 @@
   /** Tras derrotar al jefe de un mapa: continuar más profundo o terminar y cobrar. */
   function choicePanel(refresh) {
     const c = E().choiceInfo();
-    const nz = D.zones[c.next.zone];
+    const nz = D.zones[c.next.zone], ab = E().active() && E().active().kind === 'abismo';
     const goOn = () => { E().continueRun(); DK.audio.sfx('select'); refresh(); };
     const stop = () => { const s = E().complete(); DK.ui.toast(t('exp.cashed', { coins: s.coins }), { icon: 'coin', kind: 'good' }); DK.router.reset('expSummary'); };
     DK.keys.on('1', goOn); DK.keys.on('2', stop);
@@ -474,9 +485,11 @@
       V.questResult(c.quest),
       h('div', { class: 'exp-choice-grid' },
         h('div', { class: 'exp-choice-card go', style: { '--z1': nz.colors[0], '--z2': nz.colors[1] } },
-          h('span', { class: 'muted small' }, t('exp.nextMap', { n: c.depth + 1 })),
+          h('span', { class: 'muted small' }, ab ? t('abyss.floor', { n: c.depth + 1 }) : t('exp.nextMap', { n: c.depth + 1 })),
           h('h3', null, DK.icon(nz.icon, 20), ' ', nz.name),
-          h('div', { class: 'chips' }, V.sizeChip(c.next.size, { big: true }), V.modChip(c.next.mod, { big: true }), h('span', { class: 'chip' }, `${t('common.lvl')} ${nz.levels[0] + c.nextBonus}-${nz.levels[1] + c.nextBonus}`),
+          h('div', { class: 'chips' }, V.sizeChip(c.next.size, { big: true }), V.modChip(c.next.mod, { big: true }),
+            // v5.1: en el Abismo, el nivel de los jefes de la siguiente ronda
+            h('span', { class: 'chip' }, ab ? `${t('abyss.series')} · ${t('common.lvl')} ${DK.abyss.bossLevel(c.next.zone, 0) + c.nextBonus}-${DK.abyss.bossLevel(c.next.zone) + c.nextBonus}` : `${t('common.lvl')} ${nz.levels[0] + c.nextBonus}-${nz.levels[1] + c.nextBonus}`),
             c.nextBonus ? h('span', { class: 'chip neg' }, DK.icon('skull', 12), t('exp.levelPlus', { n: c.nextBonus })) : null,
             h('span', { class: 'chip pos' }, DK.icon('amulet', 12), t('exp.newRelic')),
             h('span', { class: 'chip pos', tip: t('brief.rewardTip') }, DK.icon('emblem', 12), t('brief.rewardValue', { n: E().bossEmblems(c.next.size) }))),
@@ -524,7 +537,7 @@
 
     if (E().TYPES[n.type].battle) {
       DK.keys.on('Enter', () => fight());
-      return h('div', { class: 'card stack-s' }, head(n.type, t('exp.node.' + n.type), t('exp.nodeDesc.' + n.type)),
+      return h('div', { class: 'card stack-s' }, head(n.type, t('exp.node.' + n.type), n.bossZone ? abossText(n) : t('exp.nodeDesc.' + n.type)),
         btn({ icon: 'swords', label: t('exp.fightNow'), variant: 'primary', hotkey: '↵', cls: 'exp-cont', onClick: () => fight() }));
     }
 

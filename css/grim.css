@@ -2860,3 +2860,106 @@ button.gt-affix:hover { border-color: rgba(255, 255, 255, .12); background: rgba
 /* Selector de runas: más columnas en pantallas grandes */
 @media (min-width: 701px) { .modal.rune-modal { width: min(1080px, 94vw); max-width: min(1080px, 94vw); } }
 .rune-modal .rune-pick-grid { grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr)); }
+
+/* v5.1 — El Abismo: serie de jefes en la preparación */
+.abx-series { display: grid; gap: 6px; }
+.abx-lbl { display: inline-flex; align-items: center; gap: 5px; font-size: .7rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #c4b5fd; }
+.abx-lbl small { text-transform: none; letter-spacing: 0; font-weight: 600; }
+.abx-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 6px; }
+.abx-boss { position: relative; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px 4px 5px; border-radius: 10px; border: 1px solid rgba(167, 139, 250, .3); background: radial-gradient(90% 70% at 50% 35%, rgba(124, 58, 237, .2), rgba(0, 0, 0, .25)); text-align: center; min-width: 0; }
+.abx-boss.last { border-color: rgba(251, 191, 36, .55); background: radial-gradient(90% 70% at 50% 35%, rgba(251, 191, 36, .18), rgba(0, 0, 0, .25)); }
+.abx-boss b { font-size: .7rem; line-height: 1.1; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.abx-boss small { font-size: .65rem; color: var(--muted); }
+.abx-n { position: absolute; top: 4px; left: 6px; font-size: .62rem; font-weight: 800; color: #c4b5fd; }
+.abx-boss.last .abx-n { color: #fbbf24; }
+.exp-node.t-aboss { --nc: #a78bfa; }
+.exp-node .node-boss-lbl { position: absolute; top: calc(100% + 3px); left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: .62rem; font-weight: 700; color: #ddd6fe; text-shadow: 0 1px 2px #000; pointer-events: none; }
+.exp-node.t-aboss { width: 72px; height: 72px; border-radius: 18px; border-color: #1e0b3b; color: #ede9fe; background: linear-gradient(180deg, #7c3aed, #2e1065); box-shadow: inset 0 0 0 3px #a78bfa, inset 0 4px 0 rgba(255, 255, 255, .2), inset 0 -6px 0 rgba(0, 0, 0, .4), 0 6px 0 rgba(0, 0, 0, .5), 0 0 22px rgba(139, 92, 246, .45); }
+.exp-node.t-aboss .sprite, .exp-node.t-boss .sprite { pointer-events: none; }
+.exp-map.compact .exp-node.t-aboss { width: 48px; height: 48px; border-radius: 12px; }
+@media (max-width: 600px) {
+  .abx-row { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+  .abx-boss { padding: 14px 2px 4px; }
+  .abx-boss b { display: none; }
+  .abx-boss .sprite { width: 40px !important; height: 40px !important; }
+}
+
+/* v5.2 — Crafteo: el panel de la receta termina por encima de la barra de abajo y «Construir» queda siempre a la vista */
+body[data-nav="on"] .wb-side { max-height: calc(100vh - 96px - 96px); }
+.wb-side .wb-foot { position: sticky; bottom: -16px; z-index: 3; margin: 0 -16px -16px; padding: 12px 16px 16px; background: linear-gradient(180deg, rgba(15, 10, 8, 0), #0f0a08 30%); }
+:root[data-theme="light"] .wb-side .wb-foot { background: linear-gradient(180deg, transparent, var(--surface) 30%); }
+.cr-sheet .wb-foot { position: sticky; bottom: 0; z-index: 3; padding-top: 10px; background: linear-gradient(180deg, transparent, var(--surface, #15100c) 30%); }
+
+/* v5.2 — De un vistazo: lo que NO puedes construir (le falta aunque sea 1 material) va en gris; lo que sí, a color y con brillo verde */
+.wb-tile.s-missing { opacity: .5; filter: grayscale(.9) brightness(.85); background: rgba(0, 0, 0, .2); }
+.wb-tile.s-missing:hover, .wb-tile.s-missing.sel { opacity: .85; filter: grayscale(.4); }
+.wb-tile.s-missing .wb-tag.near { background: rgba(120, 113, 108, .3); color: #d6d3d1; }
+.wb-tile.s-ready { background: linear-gradient(180deg, rgba(34, 197, 94, .1), transparent 60%), var(--surface-2); }
+.wb-tile.s-ready::after { content: ''; position: absolute; top: -1px; right: -1px; width: 0; height: 0; border-style: solid; border-width: 0 18px 18px 0; border-color: transparent #22c55e transparent transparent; border-top-right-radius: 10px; }
+/* v5.2 — Ventana tras forjar: ficha completa y acciones */
+.forged-modal .fr-body { display: grid; gap: 12px; }
+.forged-modal .gear-tip { animation: frIn .45s cubic-bezier(.2, .9, .3, 1.2); }
+@keyframes frIn { from { opacity: 0; transform: scale(.94) translateY(8px); } }
+.fr-pick { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.fr-pick-b { padding: 4px; border-radius: 10px; border: 1px solid var(--border); background: rgba(0, 0, 0, .25); cursor: var(--cur-pointer); }
+.fr-pick-b.on { border-color: var(--gold, #e7c27a); box-shadow: 0 0 0 1px var(--gold, #e7c27a); }
+.fr-sum { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border); background: rgba(0, 0, 0, .2); }
+.fr-sum-l { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; font-size: .82rem; }
+.fr-tiers { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+.fr-sum small { margin-left: auto; }
+.fr-note { display: flex; align-items: center; gap: 6px; margin: 0; }
+.fr-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+@media (max-width: 600px) { .fr-actions { display: grid; grid-template-columns: 1fr 1fr; } .fr-actions > :last-child { grid-column: 1 / -1; } }
+
+/* v5.2 — Ventana de la mochila (centrada) */
+@media (min-width: 701px) { .modal.pm-modal { width: min(940px, 94vw); max-width: min(940px, 94vw); } }
+.pm-body { display: grid; gap: 12px; }
+.pm-top { display: grid; gap: 8px; padding: 12px; border-radius: 14px; border: 1px solid rgba(231, 194, 122, .3); background: radial-gradient(120% 140% at 50% 0%, rgba(231, 194, 122, .1), rgba(0, 0, 0, .25)); }
+.pm-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.pm-cap { display: inline-flex; align-items: center; gap: 8px; color: var(--gold, #e7c27a); }
+.pm-cap b { font-size: .95rem; }
+.pm-capn { font-weight: 800; font-variant-numeric: tabular-nums; color: var(--text); padding: 1px 8px; border-radius: 999px; background: rgba(0, 0, 0, .35); border: 1px solid var(--border); }
+.pm-capn.full { color: #fbbf24; border-color: rgba(251, 191, 36, .6); }
+.pm-tools { display: flex; gap: 4px; flex-wrap: wrap; }
+.pm-slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 6px; }
+.pm-slot { --rc: #a8a29e; aspect-ratio: 1; display: grid; place-items: center; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--rc) 55%, var(--border)); background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--rc) 22%, transparent), rgba(0, 0, 0, .35)); cursor: var(--cur-pointer); padding: 0; animation: pmPop .2s ease-out; }
+.pm-slot:hover { border-color: #f87171; box-shadow: 0 0 0 1px #f87171 inset; }
+.pm-slot.empty { border-style: dashed; border-color: rgba(231, 194, 122, .2); background: rgba(0, 0, 0, .2); cursor: default; animation: none; }
+@keyframes pmPop { from { transform: scale(.7); opacity: 0; } }
+.pm-slot.r-raro, .pm-card.r-raro { --rc: #3b82f6; } .pm-slot.r-epico, .pm-card.r-epico { --rc: #a855f7; } .pm-slot.r-legendario, .pm-card.r-legendario { --rc: #f59e0b; }
+.pm-hint { font-size: .72rem; }
+.pm-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pm-filters { display: flex; gap: 4px; flex-wrap: wrap; flex: 1; }
+.pm-filter { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--border); background: rgba(0, 0, 0, .2); color: var(--muted); font: inherit; font-size: .78rem; cursor: var(--cur-pointer); }
+.pm-filter b { font-size: .7rem; opacity: .8; }
+.pm-filter.on { color: var(--text); border-color: var(--gold, #e7c27a); background: rgba(231, 194, 122, .12); }
+.pm-search { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--border); background: rgba(0, 0, 0, .25); color: var(--muted); }
+.pm-search input { border: 0; background: none; color: var(--text); font: inherit; font-size: .82rem; width: 150px; outline: none; }
+.pm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(250px, 100%), 1fr)); gap: 8px; max-height: min(46vh, 440px); overflow-y: auto; padding-right: 4px; scrollbar-width: thin; }
+.pm-card { --rc: #a8a29e; position: relative; display: flex; flex-direction: column; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--rc) 35%, var(--border)); background: linear-gradient(135deg, color-mix(in srgb, var(--rc) 10%, transparent), rgba(0, 0, 0, .2)); overflow: hidden; }
+.pm-card.in { border-color: var(--gold, #e7c27a); box-shadow: 0 0 0 1px rgba(231, 194, 122, .35); }
+.pm-card.out { opacity: .55; }
+.pm-card-main { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 0; background: none; color: var(--text); font: inherit; text-align: left; cursor: var(--cur-pointer); }
+.pm-card-main:hover:not(:disabled) { background: rgba(255, 255, 255, .05); }
+.pm-card-main:disabled { cursor: default; }
+.pm-ico { flex: none; width: 38px; height: 38px; display: grid; place-items: center; }
+.pm-txt { flex: 1; min-width: 0; display: grid; line-height: 1.2; }
+.pm-txt b { font-size: .85rem; }
+.pm-txt small { font-size: .72rem; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.pm-have { flex: none; font-weight: 800; font-size: .8rem; color: #fde68a; font-variant-numeric: tabular-nums; }
+.pm-in { display: flex; align-items: center; gap: 6px; padding: 4px 10px; background: rgba(231, 194, 122, .12); border-top: 1px solid rgba(231, 194, 122, .25); font-size: .72rem; color: var(--gold, #e7c27a); }
+.pm-in button { width: 22px; height: 22px; display: grid; place-items: center; border-radius: 6px; border: 1px solid var(--border); background: rgba(0, 0, 0, .3); color: var(--text); cursor: var(--cur-pointer); }
+.pm-in button:hover { border-color: #f87171; color: #f87171; }
+.pm-foot { display: flex; justify-content: flex-end; }
+@media (max-width: 600px) { .pm-slots { grid-template-columns: repeat(auto-fill, minmax(38px, 1fr)); } .pm-search { flex: 1; } .pm-search input { width: 100%; } .pm-grid { max-height: none; } .pm-foot .btn { width: 100%; } }
+@media (max-width: 600px) {
+  .pm-bar { flex-direction: column; align-items: stretch; }
+  .pm-filters { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .pm-filter { flex: none; }
+  .pm-slots { grid-template-columns: repeat(5, 1fr); }
+}
+/* v5.2 — Runas de expedición: huecos más pequeños y más separados */
+.rune-sockets { gap: 14px; }
+.rune-socket { width: 38px; height: 38px; }
+.rune-socket-ring { width: 100%; height: 100%; }
+@media (max-width: 600px) { .rune-socket { width: 38px; height: 38px; } .rune-sockets { gap: 12px; justify-content: flex-start; } }

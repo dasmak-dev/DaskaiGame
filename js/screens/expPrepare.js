@@ -47,7 +47,8 @@
       .map(([ic, label, bad]) => h('span', { class: 'chip ' + (bad ? 'neg' : 'pos') }, DK.icon(ic, 12), label));
   };
   /** Chip con el tipo de una expedición. */
-  V.kindChip = (kind) => { const k = DK.expedition.kindDef(kind); return h('span', { class: 'chip kind-chip k-' + k.id, tip: t('kind.' + k.id + '.desc') }, DK.icon(k.icon, 13), t('kind.' + k.id + '.name')); };
+  V.kindChip = (kind) => { if (kind === 'abismo') return null; // v5.1: ya lo dice la etiqueta «Abismo · ronda N»
+    const k = DK.expedition.kindDef(kind); return h('span', { class: 'chip kind-chip k-' + k.id, tip: t('kind.' + k.id + '.desc') }, DK.icon(k.icon, 13), t('kind.' + k.id + '.name')); };
   /** Selector de tipo de expedición (tarjetas). onPick(id) al elegir uno. */
   V.kindPicker = (current, onPick) => h('div', { class: 'kind-picker', role: 'radiogroup', 'aria-label': t('kind.title') },
     DK.expedition.kinds().map((k) => h('button', { class: 'kind-card k-' + k.id + (k.id === current ? ' on' : '') + (k.locked ? ' locked' : ''), type: 'button', role: 'radio', 'aria-checked': String(k.id === current), disabled: k.locked,
@@ -141,6 +142,73 @@
           : h('div', { class: 'warning good' }, DK.icon('check', 16), h('span', null, t('craft.goalsAllReady')))) : null;
 
       return { packPanel, bagPanel, goalsPanel, used, cap };
+  };
+
+  /**
+   * v5.2: ventana centrada para elegir la mochila. Arriba, la mochila como una fila de huecos (uno por
+   * objeto: se ve de un vistazo cuánto cabe y qué llevas; pulsar uno lo devuelve) con Sugerir / Repetir /
+   * Vaciar; debajo, tu bolsa en tarjetas con filtros por categoría y buscador: pulsar = 1 más, Mayús = todos
+   * los que quepan, y el «−» de la tarjeta lo quita. params.pack = { id: n }.
+   */
+  V.packModal = (params, onChange) => {
+    params.pack = params.pack || {};
+    params.cat = params.cat || 'all';
+    let q = '';
+    return DK.ui.modal({
+      title: t('pack.chooseTitle'), icon: 'bag', size: 'wide', cls: 'pm-modal',
+      content: (close) => {
+        const box = h('div', { class: 'pm-body' });
+        const draw = () => {
+          const pack = params.pack, home = DK.bag.home(), cap = E().packCapacity(), used = E().packSize(pack);
+          const left = (id) => (home[id] || 0) - (pack[id] || 0);
+          const move = (id, n) => {
+            const cur = pack[id] || 0, k = Math.max(0, Math.min(cur + n, home[id] || 0, cur + cap - E().packSize(pack)));
+            if (k === cur) { if (n > 0) { DK.audio.sfx('error'); DK.ui.toast(E().packSize(pack) >= cap ? t('pack.full') : t('pack.noMore'), { icon: 'bag', kind: 'bad' }); } return; }
+            if (k) pack[id] = k; else delete pack[id];
+            DK.audio.sfx(n > 0 ? 'select' : 'click'); draw(); onChange && onChange();
+          };
+          const setAll = (o) => { Object.keys(pack).forEach((k) => delete pack[k]); Object.assign(pack, o); DK.audio.sfx('select'); draw(); onChange && onChange(); };
+          const cats = DK.config.expedition.packCategories;
+          const order = (a, b) => cats.indexOf(D.items[a].category) - cats.indexOf(D.items[b].category) || D.rarities[D.items[a].rarity].order - D.rarities[D.items[b].rarity].order || D.items[a].name.localeCompare(D.items[b].name);
+          // Huecos de la mochila: uno por unidad
+          const units = Object.keys(pack).sort(order).flatMap((id) => Array(pack[id]).fill(id));
+          const slots = h('div', { class: 'pm-slots', style: { '--n': cap } }, Array.from({ length: cap }, (_, i) => {
+            const id = units[i]; if (!id) return h('span', { class: 'pm-slot empty' });
+            const it = D.items[id];
+            return h('button', { class: 'pm-slot r-' + it.rarity, type: 'button', tip: `${it.name} · ${effectOf(it)}\n${t('pack.slotRemove')}`, 'aria-label': t('pack.tapRemove', { name: it.name }), onClick: () => move(id, -1) }, V.itemIcon(it, 26));
+          }));
+          const last = lastPack();
+          const head = h('div', { class: 'pm-head' },
+            h('div', { class: 'pm-cap' }, DK.icon('bag', 18), h('b', null, t('pack.backpack')), h('span', { class: 'pm-capn' + (used >= cap ? ' full' : '') }, `${used}/${cap}`)),
+            h('div', { class: 'pm-tools' },
+              btn({ icon: 'sparkles', label: t('pack.suggest'), size: 'sm', variant: 'ghost', onClick: () => setAll(E().suggestPack()) }),
+              Object.keys(last).length ? btn({ icon: 'repeat', label: t('pack.repeat'), size: 'sm', variant: 'ghost', onClick: () => setAll(last) }) : null,
+              used ? btn({ icon: 'x', label: t('pack.clear'), size: 'sm', variant: 'ghost', onClick: () => setAll({}) }) : null));
+          // Bolsa
+          const all = Object.keys(home).filter((id) => home[id] > 0 && E().canPack(id)).sort(order);
+          const countIn = (c) => all.filter((id) => c === 'all' || D.items[id].category === c).length;
+          const filters = h('div', { class: 'pm-filters', role: 'tablist' }, [['all', 'layers', t('pack.all')], ...cats.map((c) => [c, D.categories[c].icon, DK.tr('categories', D.categories[c])])].filter(([id]) => id === 'all' || countIn(id)).map(([id, icon, label]) =>
+            h('button', { class: 'pm-filter' + (params.cat === id ? ' on' : ''), type: 'button', role: 'tab', 'aria-selected': params.cat === id, onClick: () => { params.cat = id; draw(); } }, DK.icon(icon, 14), h('span', null, label), h('b', null, String(countIn(id))))));
+          const search = h('label', { class: 'pm-search' }, DK.icon('search', 14), h('input', { type: 'search', placeholder: t('pack.search'), value: q, onInput: (e) => { q = e.target.value; const pos = e.target.selectionStart; draw(); const inp = box.querySelector('.pm-search input'); if (inp) { inp.focus(); inp.setSelectionRange(pos, pos); } } }));
+          const qq = q.trim().toLowerCase();
+          const shown = all.filter((id) => (params.cat === 'all' || D.items[id].category === params.cat) && (!qq || D.items[id].name.toLowerCase().includes(qq) || String(effectOf(D.items[id])).toLowerCase().includes(qq)));
+          const card = (id) => { const it = D.items[id], inP = pack[id] || 0, av = left(id);
+            return h('div', { class: 'pm-card r-' + it.rarity + (inP ? ' in' : '') + (!av ? ' out' : '') },
+              h('button', { class: 'pm-card-main', type: 'button', disabled: !av || used >= cap, tip: t('pack.tipAdd2'), onClick: (e) => move(id, e.shiftKey ? 99 : 1) },
+                h('span', { class: 'pm-ico' }, V.itemIcon(it, 30)),
+                h('span', { class: 'pm-txt' }, h('b', null, it.name), h('small', null, effectOf(it))),
+                h('span', { class: 'pm-have', tip: t('pack.haveTip') }, '×' + av)),
+              inP ? h('span', { class: 'pm-in' }, h('button', { type: 'button', 'aria-label': t('pack.less'), onClick: () => move(id, -1) }, DK.icon('minus', 12)), h('b', null, t('pack.inPack', { n: inP }))) : null); };
+          box.replaceChildren(
+            h('div', { class: 'pm-top' }, head, slots, h('small', { class: 'muted pm-hint' }, t('pack.modalHint'))),
+            h('div', { class: 'pm-bar' }, filters, search),
+            shown.length ? h('div', { class: 'pm-grid' }, shown.map(card)) : DK.ui.empty('bag', all.length ? t('pack.noMatch') : t('pack.nothing'), all.length ? '' : t('pack.nothingText')),
+            h('div', { class: 'pm-foot' }, btn({ icon: 'check', label: t('pack.done', { n: used, max: cap }), variant: 'primary', onClick: () => close(true) })));
+        };
+        draw();
+        return box;
+      },
+    });
   };
 
   // Enlaces antiguos a «Preparar»: ahora todo está en Batalla
