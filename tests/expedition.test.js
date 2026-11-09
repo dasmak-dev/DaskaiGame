@@ -46,5 +46,21 @@ module.exports = {
       if (card) { if (view.touch) await card.tap(); else await card.click(); await sleep(200); }
       check(await p.$('.exp-map-card[data-mark="1"]'), 'elegir quién lucha repinta el mapa');
     }),
+  }, {
+    name: 'Volver a casa desde la hoguera con equipo perdido abre el resumen (v5.14.1)',
+    views: ['desktop'],
+    run: (browser, view) => play(browser, view, async (p) => {
+      await p.evaluate(() => { DK.expedition.start({}); DK.curses.accept([]); DK.relics.choose(0);
+        const e = DK.expedition.active(); const base = Object.keys(DK.data.gear.typeOf)[0];
+        for (let i = 0; i < 6; i++) DK.gear.found().push(DK.gear.create(base, { rarity: i % 2 ? 'raro' : 'legendario' }));
+        e.loot.coins = 200; DK.config.expedition.campfireKeep = 0.01; // casi todo se pierde
+        e.pending = e.map.rows.flat().find((n) => n.type === 'rest').id; DK.store.save(); DK.router.reset('expedition'); });
+      await sleep(600);
+      await p.keyboard.press('3'); await sleep(500);
+      await (await p.$('.modal .btn-primary')).click(); await sleep(1200);
+      const r = await p.evaluate(() => ({ route: DK.router.current().id, sum: !!document.querySelector('.sum-screen .sum-hero'), lost: document.querySelectorAll('.lt-gear.lost').length }));
+      check(r.route === 'expSummary' && r.sum, 'no se abre el resumen: ' + JSON.stringify(r));
+      check(r.lost > 0, 'no salen las piezas perdidas');
+    }),
   }],
 };

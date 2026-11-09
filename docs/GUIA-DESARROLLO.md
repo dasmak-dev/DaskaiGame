@@ -357,6 +357,47 @@ Se carga la última y sólo sobrescribe: paleta (piedra oscura, bronce, oro `--g
 - **Expedición:** al entrar en el mapa, el equipo, la mochila o un combate durante una expedición, `#zone-backdrop` (creado en `screens/expedition.js` con `screen:enter`) pinta detrás de todo la escena de la zona actual, oscurecida; `body.in-exp`.
 - **Combate:** la arena usa la escena de la zona (`components/scenes.js`, ahora con árboles muertos, ruinas, tumbas, cristales o tentáculos según la zona) y los **jefes tienen su propio fondo**: `DK.scenes.bossScene(zona, secreto)` → `boss_<escena>` (menhires bajo luna roja, bosque muerto, naufragio con tormenta, bosque de cristales, forja de lava, santuario con estatua, fauces del abismo, ruinas entre rayos) y `boss_secret` (cripta) para los jefes ocultos.
 
+### Cambios de la v5.15 — más alas y piezas, brazos que se mueven y patas bien colocadas
+
+- **Alas** (`epicWingsSvg(kind, P, layer, glow, scale)`):
+  - Rediseñadas:
+    - **dragón**: membrana con húmero, codo y 4 dedos, borde festoneado entre los dedos (`membrane(elbow, tips, depth, …)`) y garra en el codo;
+    - **demonio**: 5 dedos, borde rasgado con pinchos (`jag`), garra curva y agujeros en la membrana.
+  - Nuevas:
+    - libélula (`dragonfly`);
+    - hojas (`leaf`; otoñales en fuego y oscuridad);
+    - aleta (`finwing`);
+    - fénix (`phoenix`, plumas de fuego curvadas);
+    - noche estrellada (`cosmic`);
+    - humo (`shadow`).
+  - Todas están en `REG.wings` y en los sesgos de cada casa.
+  - **Alitas en la 3.ª forma**: `regalia()` añade `wings3` al final del sorteo, sin cambiar lo que ya salía. El 32 % de los que tendrán alas las llevan ya en la 3.ª forma, a escala 0,62.
+  - La caja del dibujo crece hasta que caben las alas (`wingTop`): ya no se cortan por arriba.
+- **Piezas nuevas** solo para semillas **NEW9** (`0xab`, la que usa `rollLook` desde ahora; `isNew8` incluye NEW9). Los aspectos anteriores no cambian:
+  - `EARS9`: penachos de búho, branquias, orejas de antena, orejas gachas, orejas de fuego y orejas de concha;
+  - `ARMS9`: guadañas, enredaderas, guanteletes, manos de algodón y garfio;
+  - `MARKS9`: moteado, lomo oscuro, antifaz, trazos tribales y calcetines.
+  - El sorteo de brazos de siempre usa `ARMS_ROLL`; `ARMS_ALL`, el catálogo completo, incluye los nuevos.
+  - Tienen nombre en es/en y sílabas en `names.js`.
+- **Brazos que se mueven**: `armSvg` envuelve el brazo (`armShape`) en `<g class="dk-arm dk-arm-near|far">` con `transform-origin` en el hombro.
+  - Un tercio de los individuos (`(seed >>> 11) % 3 === 0`) llevan `arm-idle` y los balancean solos.
+  - `life.js`: los que tienen brazos pueden hacer `ia-wave`, `ia-cheer` e `ia-flex` (y `ca-wave` y `ca-cheer` en la hoguera).
+  - CSS en `juice.css`. Se respeta `data-motion="reduced"`. En pixel art no se mueven, porque el dibujo es una imagen.
+- **Patas** (`legsSvg`): `P.bottom = hullBottom(pts)` es el borde de abajo real del cuerpo.
+  - Cada pata sale de ese borde en su x (`Yb(x)`), así que no quedan huecos en cuerpos de escudo, cometa o reloj de arena.
+  - Si en esa x el cuerpo queda muy alto, la pata se acerca al centro (`LX`).
+- Pruebas: v5.15 en `juice.test.js`. La de v5.6 acepta ahora también la marca NEW9.
+
+### Cambios de la v5.14.1 — arreglo: volver a casa desde la hoguera
+
+- **Fallo**: al volver a casa desde la hoguera habiendo perdido equipo raro o legendario, el resumen fallaba al pintarse. El problema estaba en las fichas de botín de la v5.11: `V.gearIcon` recibía la foto de la pieza (`gearSnap`, sin `attrs` ni `nm`) y `DK.gear.name` leía `p.nm[0]`.
+  - Como el fallo ocurría a mitad del pintado, el panel de Mejoras (que se abre con un `setTimeout`) sí aparecía, pero la pantalla seguía en la hoguera. La expedición ya había terminado, así que «Volver a casa» no hacía nada y el jugador se quedaba atrapado.
+- **Arreglo**:
+  - `V.gearIcon` usa `p.name` cuando la pieza no tiene `attrs`.
+  - `DK.gear.name` devuelve `p.name` si la pieza no tiene `nm`.
+- **Red de seguridad** (`core/router.js`, `render`): si una pantalla lanza un error al pintarse, se registra en consola y se va a un sitio seguro: la expedición si sigue activa y, si no, el campamento (`hub`). También se avisa con `common.screenError`.
+- Prueba nueva en `expedition.test.js`.
+
 ### Cambios de la v5.14 — más siluetas y cuerpos que cambian al evolucionar
 
 - **12 siluetas nuevas** (`BODIES9`, `PRESET`, `BODY_PATH`): hogaza (`loaf`), jorobado (`hunch`), reloj de arena, cacahuete, escudo, pirámide, hexagonal, rocoso (`crag`), inclinado (`tiltegg`), cometa de cola (`comet`), de dos jorobas (`camel`) y bruto (`brute`).

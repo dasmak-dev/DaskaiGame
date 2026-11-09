@@ -56,7 +56,8 @@
     if (!list.length) return;
     const pool = list.length > 1 ? list.filter((el) => el !== lastActor) : list;
     const el = pool[Math.floor(Math.random() * pool.length)]; lastActor = el;
-    const act = el.classList.contains('asleep') ? 'snuggle' : CAMP_ACTS[Math.floor(Math.random() * CAMP_ACTS.length)];
+    const cpool = el.querySelector('.dk-arm') ? CAMP_ACTS.concat(['wave', 'cheer']) : CAMP_ACTS;
+    const act = el.classList.contains('asleep') ? 'snuggle' : cpool[Math.floor(Math.random() * cpool.length)];
     el._acting = true; el.classList.add('ca-' + act);
     // a veces dos se saludan a la vez
     if (act === 'hop' && list.length > 2 && Math.random() < 0.35) { const o = list.find((x) => x !== el && !x.classList.contains('asleep')); if (o) { o._acting = true; o.classList.add('ca-hop'); setTimeout(() => { o.classList.remove('ca-hop'); o._acting = false; }, 900); } }
@@ -68,6 +69,7 @@
    * de vez en cuando: mirar a un lado, ladear la cabeza, saltito, contonearse, estirarse.
    */
   const ACTS = ['look', 'tilt', 'hop', 'wiggle', 'stretch', 'peek'];
+  const ARM_ACTS = ['wave', 'wave', 'cheer', 'flex'];
   setInterval(() => {
     if (quiet()) return;
     const list = [...document.querySelectorAll('.sprite.alive')].filter((el) => !el.closest('.camp-mon') && !el._acting && !el.classList.contains('asleep') && inView(el));
@@ -75,7 +77,8 @@
     for (let k = 0; k < n && list.length; k++) {
       const el = list.splice(Math.floor(Math.random() * list.length), 1)[0];
       if (el.closest('.arena') && (el.classList.contains('hit') || el.classList.contains('faint') || el.classList.contains('charge'))) continue;
-      const act = ACTS[Math.floor(Math.random() * ACTS.length)];
+      const pool = el.querySelector('.dk-arm') ? ACTS.concat(ARM_ACTS) : ACTS; // v5.15: con brazos, a veces saludan o los levantan
+      const act = pool[Math.floor(Math.random() * pool.length)];
       el._acting = true; el.classList.add('ia-' + act);
       setTimeout(() => { el.classList.remove('ia-' + act); el._acting = false; }, 1200);
     }

@@ -64,7 +64,8 @@
   V.gearIcon = (p, size = 22) => {
     const el = V.itemIcon(D.items[p.base], size, { ring: p.rarity === 'normal' ? null : D.gear.rarities[p.rarity].color });
     el.classList.add('gear-ico', 'g-' + p.rarity);
-    el.dataset.tip = `${DK.gear.name(p)} · ${V.gearLine(p)}`;
+    // v5.14.1: también para las fotos del resumen (sin atributos ni semillas del nombre: equipo perdido o vendido)
+    el.dataset.tip = p.attrs ? `${DK.gear.name(p)} · ${V.gearLine(p)}` : (p.name || '');
     el.style.width = el.style.height = size + 'px'; // tamaño fijo (no el de la caja .item-icon)
     return el;
   };

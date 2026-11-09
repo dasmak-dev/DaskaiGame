@@ -127,7 +127,7 @@ module.exports = {
       const r = await p.evaluate(() => {
         const L = DK.looks, out = { grad: 0, eyes: 0, mouth: 0, skins: new Set(), tag: 0 };
         for (let i = 0; i < 300; i++) {
-          const look = L.rollLook('pyrex'); if ((look.s & 0xff) === 0xaa) out.tag++;
+          const look = L.rollLook('pyrex'); if ([0xaa, 0xab].includes(look.s & 0xff)) out.tag++; // v5.15: NEW9 (0xab) incluye todo lo de NEW8
           const ind = L.ind('pyrex', look);
           if (ind.grad) out.grad++; if (['twinkle', 'brows', 'almond', 'dewy'].includes(ind.eyes)) out.eyes++; if (['fang1', 'blep', 'ohno', 'beam'].includes(ind.mouth)) out.mouth++;
           out.skins.add(ind.skin.slice(0, 4));
@@ -238,6 +238,28 @@ module.exports = {
       check(r.top.every((n) => n >= 9), 'las especies no tienen una silueta propia: ' + JSON.stringify(r.top));
       check(r.changed.n / r.changed.of > 0.6, 'los cuerpos casi no cambian al madurar: ' + JSON.stringify(r.changed));
       check(r.nBody >= 50, 'faltan cuerpos en el catálogo: ' + r.nBody);
+    }),
+  }, {
+    name: 'v5.15: alas, orejas, brazos y dibujos nuevos; brazos que se mueven',
+    views: ['desktop'],
+    run: (browser, view) => play(browser, view, async (p) => {
+      const r = await p.evaluate(() => {
+        const seen = { wings: new Set(), ears: new Set(), arms: new Set(), mark: new Set() }, NEWW = ['dragonfly', 'leaf', 'finwing', 'phoenix', 'cosmic', 'shadow'], NEWE = ['owl', 'gills', 'dish', 'lop', 'flameears', 'shellears'], NEWA = ['scythe', 'vine', 'gauntlet', 'fluff', 'hook'], NEWM = ['dapple', 'saddlemark', 'mask', 'tribal', 'socks'];
+        let w3 = 0, n = 0;
+        ['lumino', 'umbrix', 'aquelo', 'terron', 'pyrex', 'nocturin'].forEach((sid, a) => { for (let j = 0; j < 60; j++) { const i = DK.looks.ind(sid, { s: ((((j * 7919 + a * 104729 + 13) & 0xffffff) << 8) | 0xab) >>> 0 }); const reg = DK.looks.regalia(i);
+          seen.wings.add(reg.wings); seen.ears.add(i.ears); seen.arms.add(i.arms); seen.mark.add(i.mark); n++; if (reg.wings3 !== 'none') w3++; } });
+        // las semillas de antes no cambian de orejas/brazos/dibujos nuevos
+        const old = DK.looks.ind('lumino', { s: ((12345 << 8) | 0xaa) >>> 0 });
+        // brazos en grupos que giran en el hombro
+        const d = DK.daskai.create('lumino', 5); let armG = 0;
+        for (let j = 0; j < 30 && !armG; j++) { d.look = { s: ((((j + 3) * 7919) & 0xffffff) << 8 | 0xab) >>> 0 }; const el = DK.views.dSprite(Object.assign({}, d, { forms: 4, form: 1 }), { size: 80 }); armG = el.querySelectorAll('.dk-arm').length; }
+        return { w: NEWW.filter((k) => seen.wings.has(k)).length, e: NEWE.filter((k) => seen.ears.has(k)).length, a: NEWA.filter((k) => seen.arms.has(k)).length, m: NEWM.filter((k) => seen.mark.has(k)).length, w3: w3 / n,
+          oldOk: !NEWE.includes(old.ears) && !NEWA.includes(old.arms) && !NEWM.includes(old.mark), armG };
+      });
+      check(r.w >= 5 && r.e >= 5 && r.a >= 4 && r.m >= 4, 'faltan piezas nuevas: ' + JSON.stringify(r));
+      check(r.w3 > 0.15 && r.w3 < 0.5, 'alitas de la 3.ª forma: ' + r.w3);
+      check(r.oldOk, 'un aspecto antiguo ha cambiado');
+      check(r.armG >= 1, 'los brazos no van en su grupo (.dk-arm)');
     }),
   }],
 };

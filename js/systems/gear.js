@@ -254,7 +254,8 @@
       if (typeof p === 'string') return D.items[p] ? D.items[p].name : p;
       const base = D.items[p.base].name;
       if (p.rarity === 'legendario') return DK.tr('passives', D.passives[this.passive(p) || 'leg_' + p.base]) || base;
-      if (p.rarity === 'raro' || p.rarity === 'legendario') {
+      if (!p.nm && p.name) return p.name; // foto de una pieza (resumen de la expedición)
+      if ((p.rarity === 'raro' || p.rarity === 'legendario') && p.nm) {
         const A = t('gear.rareA').split('|'), B = t('gear.rareB').split('|');
         return `${A[p.nm[0] % A.length]} ${B[p.nm[1] % B.length]}`;
       }

@@ -863,3 +863,27 @@ html:root[data-style="classic"][data-theme="light"] .oe-plate { border-color: #f
   html:root[data-skin="exile"]:not([data-theme="light"]) .sum-emblem .oe-plate { width: 90px; height: 90px; }
 }
 :root[data-motion="reduced"] .sum-emblem, :root[data-motion="reduced"] .sum-emblem * , :root[data-motion="reduced"] .sum-emblem *::after { animation: none !important; }
+
+/* =============================================================
+ * v5.15 — Brazos que se mueven. Cada brazo es un <g class="dk-arm dk-arm-near|far"> con el giro en el hombro.
+ *   · arm-idle: algunos daskai los balancean solos, despacio
+ *   · gestos (life.js): ia-wave / ca-wave saludan, ia-cheer / ca-cheer levantan los dos, ia-flex los flexionan
+ * El brazo de delante (izquierda) sube girando a la derecha; el de detrás, al revés.
+ * ============================================================= */
+.sprite .dk-arm { transition: rotate .3s ease; }
+.sprite .dk-arm.arm-idle.dk-arm-near { animation: armSwayN 3.6s ease-in-out infinite; }
+.sprite .dk-arm.arm-idle.dk-arm-far { animation: armSwayF 3.6s ease-in-out -1.8s infinite; }
+@keyframes armSwayN { 0%, 100% { rotate: 0deg; } 50% { rotate: 9deg; } }
+@keyframes armSwayF { 0%, 100% { rotate: 0deg; } 50% { rotate: -8deg; } }
+.sprite:is(.ia-wave, .ca-wave) .dk-arm-near { animation: armWave 1.15s ease-in-out; }
+@keyframes armWave { 0%, 100% { rotate: 0deg; } 18% { rotate: 105deg; } 34% { rotate: 80deg; } 50% { rotate: 108deg; } 66% { rotate: 80deg; } 82% { rotate: 100deg; } }
+.sprite:is(.ia-cheer, .ca-cheer) .dk-arm-near { animation: armCheerN 1.1s cubic-bezier(.3,.7,.4,1); }
+.sprite:is(.ia-cheer, .ca-cheer) .dk-arm-far { animation: armCheerF 1.1s cubic-bezier(.3,.7,.4,1); }
+.sprite:is(.ia-cheer, .ca-cheer) > svg { animation: iaHop .9s cubic-bezier(.3,.7,.4,1) .15s; }
+@keyframes armCheerN { 0%, 100% { rotate: 0deg; } 25%, 70% { rotate: 125deg; } }
+@keyframes armCheerF { 0%, 100% { rotate: 0deg; } 25%, 70% { rotate: -120deg; } }
+.sprite.ia-flex .dk-arm-near { animation: armFlexN 1.1s ease-in-out; }
+.sprite.ia-flex .dk-arm-far { animation: armFlexF 1.1s ease-in-out; }
+@keyframes armFlexN { 0%, 100% { rotate: 0deg; } 30% { rotate: 60deg; } 45% { rotate: 50deg; } 60% { rotate: 62deg; } }
+@keyframes armFlexF { 0%, 100% { rotate: 0deg; } 30% { rotate: -55deg; } 45% { rotate: -45deg; } 60% { rotate: -57deg; } }
+:root[data-motion="reduced"] .sprite .dk-arm { animation: none !important; }

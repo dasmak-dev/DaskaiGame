@@ -55,7 +55,18 @@
     DK.keys.resetBase();
     DK.ui.hideTip();
     const ctx = { params: entry.params, refresh: () => DK.router.refresh(), entry };
-    const el = def.render(entry.params, ctx);
+    let el;
+    try { el = def.render(entry.params, ctx); } catch (err) {
+      // v5.14.1: si una pantalla falla al pintarse, nunca te quedas atrapado en la anterior
+      console.error('Error al pintar la pantalla', entry.id, err);
+      const safe = entry.id === 'hub' ? null : (DK.expedition && DK.expedition.active() ? 'expedition' : 'hub');
+      if (safe && safe !== entry.id && !render.failing) {
+        render.failing = true;
+        try { stack.length = 0; stack.push({ id: safe, params: {} }); render('fade'); } finally { render.failing = false; }
+        if (DK.ui && DK.ui.toast) DK.ui.toast(DK.t ? DK.t('common.screenError') : 'Error', { icon: 'info', kind: 'bad' });
+      }
+      return;
+    }
     DK.app.mount(el, def, entry, stack.length > 1 && def.back !== false, dir);
     if (def.onEnter) def.onEnter(entry.params, ctx);
     if (def.music && DK.audio) DK.audio.music(typeof def.music === 'function' ? def.music(entry.params) : def.music);
