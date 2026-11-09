@@ -357,6 +357,22 @@ Se carga la última y sólo sobrescribe: paleta (piedra oscura, bronce, oro `--g
 - **Expedición:** al entrar en el mapa, el equipo, la mochila o un combate durante una expedición, `#zone-backdrop` (creado en `screens/expedition.js` con `screen:enter`) pinta detrás de todo la escena de la zona actual, oscurecida; `body.in-exp`.
 - **Combate:** la arena usa la escena de la zona (`components/scenes.js`, ahora con árboles muertos, ruinas, tumbas, cristales o tentáculos según la zona) y los **jefes tienen su propio fondo**: `DK.scenes.bossScene(zona, secreto)` → `boss_<escena>` (menhires bajo luna roja, bosque muerto, naufragio con tormenta, bosque de cristales, forja de lava, santuario con estatua, fauces del abismo, ruinas entre rayos) y `boss_secret` (cripta) para los jefes ocultos.
 
+### Cambios de la v5.17.1 — transiciones de música más suaves
+
+- **Problema**: el fundido de la v5.17 bajaba el volumen del bus de la pista anterior, pero paraba su secuenciador al momento. Como casi todas sus notas son cortas (percusión, arpegios), la pista se cortaba en ~0,3 s aunque el volumen siguiera bajando. Las grabaciones lo confirmaban: se oía un bache de silencio.
+- **Arreglo** (`systems/audio.js`):
+  - `playStep(S, step, delay)` recibe la pista. El temporizador de la pista que se va sigue programando notas, cada vez más bajas, hasta que termina su fundido.
+  - Cada bus pasa por un **filtro paso bajo**: el de la pista que se va se cierra hasta 320 Hz (suena «alejándose») y el de la que entra se abre de 450 Hz a 18 kHz.
+  - Los fundidos usan **curvas de igual potencia** (`eqCurve`, `setValueCurveAtTime`).
+  - Duraciones:
+    - al salir del combate: 3,2 s de salida y 3,6 s de entrada;
+    - entre pistas normales: 2,6 s y 3 s;
+    - al entrar en combate: 1,4 s y 1,6 s;
+    - furia o peligro dentro del combate: 0,5 s y 0,7 s.
+  - La pista nueva empieza un poco después de que la vieja empiece a irse, así que se solapan.
+  - **Introducción**: los 2 primeros compases de una pista nueva suenan sin percusión, arpegio ni bajo, y con el 40 % de la melodía.
+  - Si una pista arranca menos de 4 s después de que otra se parase (por ejemplo, tras una pantalla sin música), también entra despacio.
+
 ### Cambios de la v5.17 — cofre con escenario, música con fundido y electrónica, avisos discretos
 
 - **Combate (fallo que parecía un error)**: se probaron unos 6.600 turnos simulados (todas las especies; oleadas y relevos) y 8 combates jugados por la pantalla sin ningún error. El caso más probable era un ataque que **falla por precisión**: el texto flotante decía «Fallo», que parecía un error del juego.

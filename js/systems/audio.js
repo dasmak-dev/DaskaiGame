@@ -217,53 +217,79 @@
   /** v5.4: tensión del combate (0–1): capas de percusión extra que entran poco a poco. */
   let intensity = 0;
   /*
-   * v5.17: cada pista suena por su propio bus (GainNode → musicGain). Al cambiar de pista, la anterior se apaga
-   * poco a poco y la nueva entra subiendo (fundido cruzado), en vez del corte en seco de antes. En mitad de un
-   * combate (furia, peligro) el cambio es rápido y con un redoble; al salir del combate, más largo.
+   * v5.17/v5.17.1: cada pista suena por su propio bus (GainNode → filtro paso bajo → musicGain). Al cambiar de
+   * pista, la anterior se apaga poco a poco mientras su filtro se cierra (suena «alejándose») y la nueva entra
+   * subiendo con el filtro abriéndose, con curvas de igual potencia (sin bache de volumen). La nueva además
+   * empieza con 2 compases de introducción (sin percusión y con menos melodía). En mitad de un combate (furia,
+   * peligro) el cambio es corto y con redoble; al salir del combate, el más largo.
    */
+  let lastStop = 0;
+  const FIGHT_RE = /^(boss|danger|elite|boss_rage|boss_secret|boss_synth|boss_synth_rage|horde)$|:fight$/;
+  /** Curva de igual potencia (de 0 a 1 o de 1 a 0) para setValueCurveAtTime. */
+  const eqCurve = (up, from = 1) => { const n = 64, c = new Float32Array(n); for (let i = 0; i < n; i++) { const x = i / (n - 1); c[i] = Math.max(0.0001, from * (up ? Math.sin(x * Math.PI / 2) : Math.cos(x * Math.PI / 2))); } return c; };
   function startTrack(name) {
     const prev = seq;
     const tr = trackOf(name);
-    const fightish = (n) => /^(boss|danger|elite|boss_rage|boss_secret|boss_synth|boss_synth_rage|horde)$|:fight$/.test(n || '');
+    const fightish = (n) => FIGHT_RE.test(n || '');
     const swap = prev && fightish(prev.name) && /^(boss_rage|danger|boss_synth_rage)$/.test(name);
     const leavingFight = prev && fightish(prev.name) && !fightish(name);
-    const fadeOut = !prev ? 0 : swap ? 0.35 : leavingFight ? 1.6 : 0.9, fadeIn = !prev ? 0.25 : swap ? 0.5 : leavingFight ? 2.2 : 0.9;
+    const enteringFight = prev && !fightish(prev.name) && fightish(name);
+    // ¿Venimos de otra pista hace nada (p. ej. una pantalla sin música entre medias)? → entrada larga también
+    const recent = !prev && ctx && lastStop && ctx.currentTime - lastStop < 4;
+    const fadeOut = !prev ? 0 : swap ? 0.5 : leavingFight ? 3.2 : enteringFight ? 1.4 : 2.6;
+    const fadeIn = swap ? 0.7 : leavingFight ? 3.6 : enteringFight ? 1.6 : prev || recent ? 3 : 1.2;
     stopTrack(fadeOut);
     if (!tr || !ctx) return;
     const eighth = 60 / tr.bpm / 2;
-    const bus = ctx.createGain(); bus.connect(musicGain);
-    const t0 = ctx.currentTime, lead = swap ? 0.1 + 3 * eighth : leavingFight ? 0.45 : prev ? 0.15 : 0.1;
-    bus.gain.setValueAtTime(0.0001, t0); bus.gain.setValueAtTime(0.0001, t0 + lead * 0.5); bus.gain.linearRampToValueAtTime(1, t0 + lead * 0.5 + fadeIn);
+    const filt = ctx.createBiquadFilter(); filt.type = 'lowpass'; filt.Q.value = 0.5; filt.connect(musicGain);
+    const bus = ctx.createGain(); bus.connect(filt);
+    // La nueva entra un poco después de que la vieja empiece a irse (se solapan, sin hueco ni choque)
+    const t0 = ctx.currentTime, lead = swap ? 0.1 + 3 * eighth : prev ? Math.min(1.2, fadeOut * 0.35) : recent ? 0.3 : 0.1;
+    bus.gain.setValueAtTime(0.0001, t0);
+    bus.gain.setValueCurveAtTime(eqCurve(true), t0 + lead * 0.6, fadeIn);
+    filt.frequency.setValueAtTime(swap ? 2500 : 450, t0);
+    filt.frequency.setValueAtTime(swap ? 2500 : 450, t0 + lead * 0.6);
+    filt.frequency.exponentialRampToValueAtTime(18000, t0 + lead * 0.6 + fadeIn * 1.1);
     if (swap) [0, 1, 2, 3, 4, 5].forEach((i) => noise(0.08, { out: musicGain, vol: 0.03 + i * 0.012, freq: 300 + i * 40, q: 0.8, delay: 0.1 + i * eighth / 2 }));
-    seq = { tr, name, step: 0, next: t0 + lead, eighth, bus };
-    seq.timer = setInterval(() => {
-      if (!ctx || !seq) return;
-      while (seq.next < ctx.currentTime + 0.3) { playStep(seq.step, seq.next - ctx.currentTime); seq.next += seq.eighth; seq.step++; }
+    seq = { tr, name, step: 0, next: t0 + lead, eighth, bus, filt, intro: swap ? 0 : 16 };
+    const me = seq;
+    me.timer = setInterval(() => {
+      if (!ctx) return;
+      // (la pista que se está yendo sigue sonando mientras se apaga: si no, sus notas cortas se cortaban en seco)
+      while (me.next < ctx.currentTime + 0.3) { playStep(me, me.step, me.next - ctx.currentTime); me.next += me.eighth; me.step++; }
     }, 90);
   }
-  /** Para la pista: con fade (segundos) se apaga poco a poco (las notas ya programadas se desvanecen). */
+  /** Para la pista: con fade (segundos) se va apagando y su filtro se cierra (las notas programadas se desvanecen). */
   function stopTrack(fade = 0) {
     if (!seq) return;
-    clearInterval(seq.timer);
-    const bus = seq.bus; seq = null;
+    const old = seq, { bus, filt } = old; seq = null;
+    if (!bus || !ctx || !(fade > 0)) clearInterval(old.timer);
+    else setTimeout(() => clearInterval(old.timer), fade * 1000); // sigue tocando (cada vez más bajo) hasta apagarse
     if (!bus || !ctx) return;
-    const t0 = ctx.currentTime, g = bus.gain;
-    g.cancelScheduledValues(t0); g.setValueAtTime(Math.max(0.0001, g.value), t0);
-    if (fade > 0) g.linearRampToValueAtTime(0.0001, t0 + fade); else g.setValueAtTime(0.0001, t0);
-    setTimeout(() => { try { bus.disconnect(); } catch (e) { /* ya desconectado */ } }, (fade + 0.6) * 1000);
+    const t0 = ctx.currentTime, g = bus.gain, v = Math.max(0.0001, g.value);
+    lastStop = t0;
+    g.cancelScheduledValues(t0); g.setValueAtTime(v, t0);
+    if (fade > 0) {
+      g.setValueCurveAtTime(eqCurve(false, v), t0 + 0.01, fade);
+      if (filt) { filt.frequency.cancelScheduledValues(t0); filt.frequency.setValueAtTime(Math.max(500, filt.frequency.value), t0); filt.frequency.exponentialRampToValueAtTime(320, t0 + fade); }
+    } else g.setValueAtTime(0.0001, t0);
+    setTimeout(() => { try { bus.disconnect(); if (filt) filt.disconnect(); } catch (e) { /* ya desconectado */ } }, (fade + 0.8) * 1000);
   }
 
   /** Nota de la escala (grado g, puede pasar de 7) sobre la tónica. */
   const deg = (tr, g) => tr.root + tr.scale[((g % 7) + 7) % 7] + 12 * Math.floor(g / 7);
 
   /** Toca un paso (corchea) de la pista activa. */
-  function playStep(step, delay) {
-    const { tr: tr0, eighth, name } = seq, bus = seq.bus || musicGain;
+  function playStep(S, step, delay) {
+    const { tr: tr0, eighth, name } = S, bus = S.bus || musicGain;
     const barN = Math.floor(step / 8), beat = step % 8;
     // v4.88: la pista evoluciona por secciones de 8 compases: A · B (progresión rotada, melodía arriba) · C (calma) · D
     const sect = Math.floor(barN / 8) % 4;
-    const tr = sect === 1 || sect === 3 ? Object.assign({}, tr0, { prog: tr0.prog.slice(2).concat(tr0.prog.slice(0, 2)), up: sect === 1 ? 12 : 0, density: tr0.density * (sect === 3 ? 1.15 : 1) })
+    let tr = sect === 1 || sect === 3 ? Object.assign({}, tr0, { prog: tr0.prog.slice(2).concat(tr0.prog.slice(0, 2)), up: sect === 1 ? 12 : 0, density: tr0.density * (sect === 3 ? 1.15 : 1) })
       : sect === 2 ? Object.assign({}, tr0, { density: tr0.density * 0.45, drums: tr0.drums === 'war' || tr0.drums === 'heart' ? tr0.drums : 'none', pulse: 0 }) : tr0;
+    // v5.17.1: introducción de 2 compases al entrar una pista (sin percusión ni capas rítmicas, melodía escasa)
+    const intro = S.intro && step < S.intro;
+    if (intro) Object.assign(tr === tr0 ? (tr = Object.assign({}, tr0)) : tr, { drums: 'none', arp: 0, bass: 0, pulse: 0, density: tr0.density * 0.4 });
     const bar = barN % tr.prog.length;
     const g0 = tr.prog[bar];
     const o = { delay: Math.max(0, delay), out: bus };
