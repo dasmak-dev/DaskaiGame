@@ -1,228 +1,1236 @@
 {
   "pradera": {
     "name": "Pradera Verde",
-    "levels": [1,5],
+    "levels": [
+      1,
+      5
+    ],
     "icon": "leaf",
-    "colors": ["#86efac","#16a34a"],
+    "colors": [
+      "#86efac",
+      "#16a34a"
+    ],
     "scene": "meadow",
     "desc": "Campos abiertos donde los daskai jóvenes juegan al sol.",
-    "enemies": [["brotin",3],["chispon",3],["gotin",3],["plumin",2],["ratonchi",2],["charquito",2],["buhito",2],["nubecita",2]],
+    "enemies": [
+      [
+        "brotin",
+        3
+      ],
+      [
+        "chispon",
+        3
+      ],
+      [
+        "gotin",
+        3
+      ],
+      [
+        "plumin",
+        2
+      ],
+      [
+        "ratonchi",
+        2
+      ],
+      [
+        "charquito",
+        2
+      ],
+      [
+        "buhito",
+        2
+      ],
+      [
+        "nubecita",
+        2
+      ],
+      [
+        "lobrillo",
+        2
+      ]
+    ],
     "boss": {
       "species": "hojaral",
       "level": 8,
       "title": "Guardián de la Pradera",
       "coins": 120,
-      "drops": [["amuleto_arcano",1],["polvo_brillante",1],["superpocion",0.6]],
-      "phases": [{"at":0.5,"type":"enrage"}]
+      "drops": [
+        [
+          "amuleto_arcano",
+          1
+        ],
+        [
+          "polvo_brillante",
+          1
+        ],
+        [
+          "superpocion",
+          0.6
+        ]
+      ],
+      "phases": [
+        {
+          "at": 0.5,
+          "type": "enrage"
+        }
+      ]
     },
     "secretBoss": {
       "species": "ratonix",
       "level": 11,
       "title": "Rey de las Madrigueras",
       "coins": 200,
-      "drops": [["tonico_viento",1],["amuleto_arcano",0.6],["superpocion",1]],
-      "phases": [{"at":0.6,"type":"frenzy"},{"at":0.3,"type":"enrage"}]
+      "drops": [
+        [
+          "tonico_viento",
+          1
+        ],
+        [
+          "amuleto_arcano",
+          0.6
+        ],
+        [
+          "superpocion",
+          1
+        ]
+      ],
+      "phases": [
+        {
+          "at": 0.6,
+          "type": "frenzy"
+        },
+        {
+          "at": 0.3,
+          "type": "enrage"
+        }
+      ]
     }
   },
   "bosque": {
     "name": "Bosque Susurrante",
-    "levels": [5,10],
+    "levels": [
+      5,
+      10
+    ],
     "icon": "leaf",
-    "colors": ["#4ade80","#14532d"],
+    "colors": [
+      "#4ade80",
+      "#14532d"
+    ],
     "scene": "forest",
     "unlock": "pradera",
     "desc": "Un bosque denso donde los árboles parecen hablar.",
-    "enemies": [["musguin",3],["sombrilo",2],["hojaral",3],["lucibicho",2],["setabruja",2],["ardillama",2],["cachorrel",2],["llamarin",1],["nubecita",1]],
+    "enemies": [
+      [
+        "musguin",
+        3
+      ],
+      [
+        "sombrilo",
+        2
+      ],
+      [
+        "hojaral",
+        3
+      ],
+      [
+        "lucibicho",
+        2
+      ],
+      [
+        "setabruja",
+        2
+      ],
+      [
+        "ardillama",
+        2
+      ],
+      [
+        "cachorrel",
+        2
+      ],
+      [
+        "llamarin",
+        1
+      ],
+      [
+        "nubecita",
+        1
+      ],
+      [
+        "raptil",
+        2
+      ]
+    ],
     "boss": {
       "species": "sombrilo",
       "level": 13,
       "title": "Sombra del Bosque",
       "coins": 220,
-      "drops": [["velo_mistico",1],["esencia_sombria",1],["cristal_vinculo",0.6]],
-      "phases": [{"at":0.5,"type":"regen"}]
+      "drops": [
+        [
+          "velo_mistico",
+          1
+        ],
+        [
+          "esencia_sombria",
+          1
+        ],
+        [
+          "cristal_vinculo",
+          0.6
+        ]
+      ],
+      "phases": [
+        {
+          "at": 0.5,
+          "type": "regen"
+        }
+      ]
     },
     "secretBoss": {
       "species": "hongoscuro",
       "level": 16,
       "title": "Seta Ancestral",
       "coins": 340,
-      "drops": [["tonico_magia",1],["esencia_sombria",1],["velo_mistico",0.5]],
-      "phases": [{"at":0.6,"type":"regen"},{"at":0.3,"type":"frenzy"}]
+      "drops": [
+        [
+          "tonico_magia",
+          1
+        ],
+        [
+          "esencia_sombria",
+          1
+        ],
+        [
+          "velo_mistico",
+          0.5
+        ]
+      ],
+      "phases": [
+        {
+          "at": 0.6,
+          "type": "regen"
+        },
+        {
+          "at": 0.3,
+          "type": "frenzy"
+        }
+      ]
     }
   },
   "costa": {
     "name": "Costa Marea",
-    "levels": [10,16],
+    "levels": [
+      10,
+      16
+    ],
     "icon": "droplet",
-    "colors": ["#7dd3fc","#0369a1"],
+    "colors": [
+      "#7dd3fc",
+      "#0369a1"
+    ],
     "scene": "beach",
     "unlock": "bosque",
     "desc": "Playas y arrecifes golpeados por las olas.",
-    "enemies": [["coralin",3],["cangrejon",2],["salpicon",3],["gaviolux",2],["medusina",2],["tortuarena",2],["ratonix",1],["tintillo",2],["copito",2],["serpentola",1],["sapolodo",1]],
+    "enemies": [
+      [
+        "coralin",
+        3
+      ],
+      [
+        "cangrejon",
+        2
+      ],
+      [
+        "salpicon",
+        3
+      ],
+      [
+        "gaviolux",
+        2
+      ],
+      [
+        "medusina",
+        2
+      ],
+      [
+        "tortuarena",
+        2
+      ],
+      [
+        "ratonix",
+        1
+      ],
+      [
+        "tintillo",
+        2
+      ],
+      [
+        "copito",
+        2
+      ],
+      [
+        "serpentola",
+        1
+      ],
+      [
+        "sapolodo",
+        1
+      ],
+      [
+        "conchin",
+        2
+      ]
+    ],
     "boss": {
       "species": "cangrejon",
       "level": 19,
       "title": "Rey de la Marea",
       "coins": 340,
-      "drops": [["escama_dura",1],["perla_marina",0.8],["superpocion",1]],
-      "phases": [{"at":0.6,"type":"shield"}]
+      "drops": [
+        [
+          "escama_dura",
+          1
+        ],
+        [
+          "perla_marina",
+          0.8
+        ],
+        [
+          "superpocion",
+          1
+        ]
+      ],
+      "phases": [
+        {
+          "at": 0.6,
+          "type": "shield"
+        }
+      ]
     },
     "secretBoss": {
       "species": "tortumonte",
       "level": 22,
       "title": "Tortuga Milenaria",
       "coins": 500,
-      "drops": [["tonico_mana",1],["perla_marina",1],["superpocion",1]],
-      "phases": [{"at":0.66,"type":"shield"},{"at":0.33,"type":"regen"}]
+      "drops": [
+        [
+          "tonico_mana",
+          1
+        ],
+        [
+          "perla_marina",
+          1
+        ],
+        [
+          "superpocion",
+          1
+        ]
+      ],
+      "phases": [
+        {
+          "at": 0.66,
+          "type": "shield"
+        },
+        {
+          "at": 0.33,
+          "type": "regen"
+        }
+      ]
     }
   },
   "cavernas": {
     "name": "Cavernas Umbrías",
-    "levels": [16,24],
+    "levels": [
+      16,
+      24
+    ],
     "icon": "mountain",
-    "colors": ["#a78bfa","#1e1b4b"],
+    "colors": [
+      "#a78bfa",
+      "#1e1b4b"
+    ],
     "scene": "cave",
     "unlock": "costa",
     "desc": "Túneles oscuros iluminados por cristales.",
-    "enemies": [["murcisombra",3],["rocadon",2],["gemolito",2],["lavagusano",3],["topazio",2],["aranuria",2],["hongoscuro",1],["cuarcito",3],["velita",2],["arbolon",1]],
+    "enemies": [
+      [
+        "murcisombra",
+        3
+      ],
+      [
+        "rocadon",
+        2
+      ],
+      [
+        "gemolito",
+        2
+      ],
+      [
+        "lavagusano",
+        3
+      ],
+      [
+        "topazio",
+        2
+      ],
+      [
+        "aranuria",
+        2
+      ],
+      [
+        "hongoscuro",
+        1
+      ],
+      [
+        "cuarcito",
+        3
+      ],
+      [
+        "velita",
+        2
+      ],
+      [
+        "arbolon",
+        1
+      ],
+      [
+        "escorpix",
+        2
+      ]
+    ],
     "boss": {
       "species": "gemolito",
       "level": 27,
       "title": "Corazón de Cristal",
       "coins": 480,
-      "drops": [["nucleo_arcano",1],["corazon_roca",0.8],["cristal_mayor",0.4]],
-      "phases": [{"at":0.6,"type":"shield"},{"at":0.3,"type":"enrage"}]
+      "drops": [
+        [
+          "nucleo_arcano",
+          1
+        ],
+        [
+          "corazon_roca",
+          0.8
+        ],
+        [
+          "cristal_mayor",
+          0.4
+        ]
+      ],
+      "phases": [
+        {
+          "at": 0.6,
+          "type": "shield"
+        },
+        {
+          "at": 0.3,
+          "type": "enrage"
+        }
+      ]
     },
     "secretBoss": {
       "species": "golemar",
       "level": 30,
       "title": "Golem de las Profundidades",
       "coins": 700,
-      "drops": [["tonico_hierro",1],["nucleo_arcano",1],["cristal_mayor",0.6]],
-      "phases": [{"at":0.66,"type":"frenzy"},{"at":0.33,"type":"shield"}]
+      "drops": [
+        [
+          "tonico_hierro",
+          1
+        ],
+        [
+          "nucleo_arcano",
+          1
+        ],
+        [
+          "cristal_mayor",
+          0.6
+        ]
+      ],
+      "phases": [
+        {
+          "at": 0.66,
+          "type": "frenzy"
+        },
+        {
+          "at": 0.33,
+          "type": "shield"
+        }
+      ]
     }
   },
   "volcan": {
     "name": "Volcán Ígneo",
-    "levels": [24,34],
+    "levels": [
+      24,
+      34
+    ],
     "icon": "flame",
-    "colors": ["#fdba74","#7f1d1d"],
+    "colors": [
+      "#fdba74",
+      "#7f1d1d"
+    ],
     "scene": "volcano",
     "unlock": "cavernas",
     "desc": "Ríos de lava y ceniza ardiente.",
-    "enemies": [["magmon",3],["cenizon",2],["ignisaurio",3],["obsidiano",2],["salamandrox",2],["geyseron",2],["fogardilla",1],["vaporin",2],["draguijarro",2],["llamarin",1]],
+    "enemies": [
+      [
+        "magmon",
+        3
+      ],
+      [
+        "cenizon",
+        2
+      ],
+      [
+        "ignisaurio",
+        3
+      ],
+      [
+        "obsidiano",
+        2
+      ],
+      [
+        "salamandrox",
+        2
+      ],
+      [
+        "geyseron",
+        2
+      ],
+      [
+        "fogardilla",
+        1
+      ],
+      [
+        "vaporin",
+        2
+      ],
+      [
+        "draguijarro",
+        2
+      ],
+      [
+        "llamarin",
+        1
+      ],
+      [
+        "raptorex",
+        2
+      ]
+    ],
     "boss": {
       "species": "ignisaurio",
       "level": 37,
       "title": "Señor de la Lava",
       "coins": 650,
-      "drops": [["anillo_brasas",1],["coraza_obsidiana",0.5],["nucleo_arcano",1]],
-      "phases": [{"at":0.6,"type":"enrage"},{"at":0.3,"type":"frenzy"}]
+      "drops": [
+        [
+          "anillo_brasas",
+          1
+        ],
+        [
+          "coraza_obsidiana",
+          0.5
+        ],
+        [
+          "nucleo_arcano",
+          1
+        ]
+      ],
+      "phases": [
+        {
+          "at": 0.6,
+          "type": "enrage"
+        },
+        {
+          "at": 0.3,
+          "type": "frenzy"
+        }
+      ]
     },
     "secretBoss": {
       "species": "llamasanta",
       "level": 41,
       "title": "Llama Sagrada",
       "coins": 950,
-      "drops": [["tonico_fuerza",1],["anillo_brasas",1],["coraza_obsidiana",0.6]],
-      "phases": [{"at":0.66,"type":"enrage"},{"at":0.33,"type":"frenzy"}]
+      "drops": [
+        [
+          "tonico_fuerza",
+          1
+        ],
+        [
+          "anillo_brasas",
+          1
+        ],
+        [
+          "coraza_obsidiana",
+          0.6
+        ]
+      ],
+      "phases": [
+        {
+          "at": 0.66,
+          "type": "enrage"
+        },
+        {
+          "at": 0.33,
+          "type": "frenzy"
+        }
+      ]
     }
   },
   "templo": {
     "name": "Templo Áureo",
-    "levels": [34,46],
+    "levels": [
+      34,
+      42
+    ],
     "icon": "sun",
-    "colors": ["#fde68a","#a16207"],
+    "colors": [
+      "#fde68a",
+      "#a16207"
+    ],
     "scene": "temple",
     "unlock": "volcan",
     "desc": "Ruinas sagradas bañadas en luz dorada.",
-    "enemies": [["aurelion",2],["guardian_solar",3],["esfinxa",2],["llamasanta",3],["sacerdon",2],["golemar",2],["tortumonte",1],["escarabito",2],["nevalis",1],["cangrejarca",1]],
+    "enemies": [
+      [
+        "aurelion",
+        2
+      ],
+      [
+        "guardian_solar",
+        3
+      ],
+      [
+        "esfinxa",
+        2
+      ],
+      [
+        "llamasanta",
+        3
+      ],
+      [
+        "sacerdon",
+        2
+      ],
+      [
+        "golemar",
+        2
+      ],
+      [
+        "tortumonte",
+        1
+      ],
+      [
+        "escarabito",
+        2
+      ],
+      [
+        "nevalis",
+        1
+      ],
+      [
+        "cangrejarca",
+        1
+      ],
+      [
+        "aguijonyx",
+        1
+      ],
+      [
+        "lobaurum",
+        2
+      ]
+    ],
     "boss": {
       "species": "aurelion",
-      "level": 49,
+      "level": 45,
       "title": "León del Sol",
       "coins": 850,
-      "drops": [["orbe_solar",1],["amuleto_vida",0.5],["hiperpocion",1]],
-      "phases": [{"at":0.66,"type":"regen"},{"at":0.33,"type":"shield"}]
+      "drops": [
+        [
+          "orbe_solar",
+          1
+        ],
+        [
+          "amuleto_vida",
+          0.5
+        ],
+        [
+          "hiperpocion",
+          1
+        ]
+      ],
+      "phases": [
+        {
+          "at": 0.66,
+          "type": "regen"
+        },
+        {
+          "at": 0.33,
+          "type": "shield"
+        }
+      ]
     },
     "secretBoss": {
       "species": "celestor",
       "level": 54,
       "title": "Celestor Ascendido",
       "coins": 1250,
-      "drops": [["tonico_espiritu",1],["orbe_solar",1],["hiperpocion",1]],
-      "phases": [{"at":0.7,"type":"shield"},{"at":0.4,"type":"regen"},{"at":0.2,"type":"enrage"}]
+      "drops": [
+        [
+          "tonico_espiritu",
+          1
+        ],
+        [
+          "orbe_solar",
+          1
+        ],
+        [
+          "hiperpocion",
+          1
+        ]
+      ],
+      "phases": [
+        {
+          "at": 0.7,
+          "type": "shield"
+        },
+        {
+          "at": 0.4,
+          "type": "regen"
+        },
+        {
+          "at": 0.2,
+          "type": "enrage"
+        }
+      ]
+    }
+  },
+  "pantano": {
+    "name": "Pantano Brumoso",
+    "levels": [
+      42,
+      52
+    ],
+    "icon": "droplet",
+    "colors": [
+      "#65a30d",
+      "#1a2e05"
+    ],
+    "scene": "swamp",
+    "unlock": "templo",
+    "desc": "Ciénagas cubiertas de niebla donde las setas brillan y algo se mueve bajo el agua.",
+    "enemies": [
+      [
+        "hongoscuro",
+        3
+      ],
+      [
+        "setabruja",
+        2
+      ],
+      [
+        "tejenoche",
+        2
+      ],
+      [
+        "sapolodo",
+        2
+      ],
+      [
+        "arbolon",
+        2
+      ],
+      [
+        "aguijonyx",
+        2
+      ],
+      [
+        "nubarron",
+        2
+      ],
+      [
+        "espectron",
+        1
+      ],
+      [
+        "fuegofatuo",
+        1
+      ],
+      [
+        "nocturnis",
+        1
+      ],
+      [
+        "geyseron",
+        1
+      ]
+    ],
+    "boss": {
+      "species": "kraknoir",
+      "level": 55,
+      "title": "Señor del Fango",
+      "coins": 1000,
+      "drops": [
+        [
+          "colmillo_vampiro",
+          1
+        ],
+        [
+          "ambar_fosil",
+          0.6
+        ],
+        [
+          "hiperpocion",
+          1
+        ]
+      ],
+      "phases": [
+        {
+          "at": 0.7,
+          "type": "regen"
+        },
+        {
+          "at": 0.4,
+          "type": "shield"
+        },
+        {
+          "at": 0.2,
+          "type": "enrage"
+        }
+      ]
     }
   },
   "abismo": {
     "name": "Abismo Eterno",
-    "levels": [46,62],
+    "levels": [
+      52,
+      62
+    ],
     "icon": "moon",
-    "colors": ["#6366f1","#020617"],
+    "colors": [
+      "#6366f1",
+      "#020617"
+    ],
     "scene": "abyss",
-    "unlock": "templo",
+    "unlock": "pantano",
     "desc": "Profundidades donde nunca ha llegado la luz.",
-    "enemies": [["abisalto",3],["nocturnis",2],["espectron",2],["leviatan",2],["kraknoir",2],["fuegofatuo",2],["dentolin",3],["tejenoche",2],["nubarron",1]],
+    "enemies": [
+      [
+        "abisalto",
+        3
+      ],
+      [
+        "nocturnis",
+        2
+      ],
+      [
+        "espectron",
+        2
+      ],
+      [
+        "leviatan",
+        2
+      ],
+      [
+        "kraknoir",
+        2
+      ],
+      [
+        "fuegofatuo",
+        2
+      ],
+      [
+        "dentolin",
+        3
+      ],
+      [
+        "tejenoche",
+        2
+      ],
+      [
+        "nubarron",
+        1
+      ],
+      [
+        "caracolon",
+        2
+      ]
+    ],
     "boss": {
       "species": "leviatan",
       "level": 65,
       "title": "Leviatán Primordial",
       "coins": 1100,
-      "drops": [["colmillo_umbrio",1],["lagrima_estelar",0.6],["elixir",0.5]],
-      "phases": [{"at":0.66,"type":"frenzy"},{"at":0.33,"type":"shield"}]
+      "drops": [
+        [
+          "colmillo_umbrio",
+          1
+        ],
+        [
+          "lagrima_estelar",
+          0.6
+        ],
+        [
+          "elixir",
+          0.5
+        ]
+      ],
+      "phases": [
+        {
+          "at": 0.66,
+          "type": "frenzy"
+        },
+        {
+          "at": 0.33,
+          "type": "shield"
+        }
+      ]
     },
     "secretBoss": {
       "species": "vacuo",
       "level": 70,
       "title": "El Vacío",
       "coins": 1600,
-      "drops": [["tonico_vida",1],["lagrima_estelar",0.8],["colmillo_umbrio",0.6]],
-      "phases": [{"at":0.7,"type":"frenzy"},{"at":0.4,"type":"shield"},{"at":0.2,"type":"enrage"}]
+      "drops": [
+        [
+          "tonico_vida",
+          1
+        ],
+        [
+          "lagrima_estelar",
+          0.8
+        ],
+        [
+          "colmillo_umbrio",
+          0.6
+        ]
+      ],
+      "phases": [
+        {
+          "at": 0.7,
+          "type": "frenzy"
+        },
+        {
+          "at": 0.4,
+          "type": "shield"
+        },
+        {
+          "at": 0.2,
+          "type": "enrage"
+        }
+      ]
+    }
+  },
+  "glaciar": {
+    "name": "Glaciar Eterno",
+    "levels": [
+      62,
+      76
+    ],
+    "icon": "sparkle",
+    "colors": [
+      "#7dd3fc",
+      "#0c1a2e"
+    ],
+    "scene": "glacier",
+    "unlock": "abismo",
+    "desc": "Un mar de hielo antiguo. El viento corta y la aurora no se apaga nunca.",
+    "enemies": [
+      [
+        "auroris",
+        3
+      ],
+      [
+        "nevalis",
+        2
+      ],
+      [
+        "tempestis",
+        2
+      ],
+      [
+        "abisalto",
+        2
+      ],
+      [
+        "caracolon",
+        2
+      ],
+      [
+        "lobaurum",
+        2
+      ],
+      [
+        "celestor",
+        1
+      ],
+      [
+        "titanor",
+        1
+      ],
+      [
+        "leviatan",
+        1
+      ],
+      [
+        "copito",
+        1
+      ]
+    ],
+    "boss": {
+      "species": "auroris",
+      "level": 79,
+      "title": "Aurora Helada",
+      "coins": 1500,
+      "drops": [
+        [
+          "corona_celeste",
+          0.7
+        ],
+        [
+          "lagrima_glaciar",
+          0.7
+        ],
+        [
+          "elixir",
+          1
+        ]
+      ],
+      "phases": [
+        {
+          "at": 0.75,
+          "type": "shield"
+        },
+        {
+          "at": 0.45,
+          "type": "regen"
+        },
+        {
+          "at": 0.2,
+          "type": "frenzy"
+        }
+      ]
     }
   },
   "cumbre": {
     "name": "Cumbre Celeste",
-    "levels": [62,90],
+    "levels": [
+      76,
+      90
+    ],
     "icon": "star",
-    "colors": ["#e0f2fe","#4338ca"],
+    "colors": [
+      "#e0f2fe",
+      "#4338ca"
+    ],
     "scene": "sky",
-    "unlock": "abismo",
+    "unlock": "glaciar",
     "desc": "La cima del mundo, morada de los daskai legendarios.",
-    "enemies": [["celestor",2],["draconyx",2],["titanor",2],["vacuo",2],["tempestis",2],["auroris",2],["petrodraco",2],["polillux",1],["tejenoche",1]],
+    "enemies": [
+      [
+        "celestor",
+        2
+      ],
+      [
+        "draconyx",
+        2
+      ],
+      [
+        "titanor",
+        2
+      ],
+      [
+        "vacuo",
+        2
+      ],
+      [
+        "tempestis",
+        2
+      ],
+      [
+        "auroris",
+        2
+      ],
+      [
+        "petrodraco",
+        2
+      ],
+      [
+        "polillux",
+        1
+      ],
+      [
+        "tejenoche",
+        1
+      ],
+      [
+        "tiranox",
+        2
+      ]
+    ],
     "boss": {
       "species": "draconyx",
       "level": 90,
       "title": "Dragón de la Cumbre",
       "coins": 2000,
-      "drops": [["corona_celeste",1],["lagrima_estelar",1],["elixir",1]],
-      "phases": [{"at":0.75,"type":"shield"},{"at":0.5,"type":"enrage"},{"at":0.25,"type":"frenzy"}]
+      "drops": [
+        [
+          "corona_celeste",
+          1
+        ],
+        [
+          "lagrima_estelar",
+          1
+        ],
+        [
+          "elixir",
+          1
+        ]
+      ],
+      "phases": [
+        {
+          "at": 0.75,
+          "type": "shield"
+        },
+        {
+          "at": 0.5,
+          "type": "enrage"
+        },
+        {
+          "at": 0.25,
+          "type": "frenzy"
+        }
+      ]
     },
     "secretBoss": {
       "species": "kraknoir",
       "level": 94,
       "title": "Kraken de la Tormenta",
       "coins": 2800,
-      "drops": [["tonico_fuerza",1],["tonico_hierro",1],["lagrima_estelar",1]],
-      "phases": [{"at":0.75,"type":"shield"},{"at":0.5,"type":"frenzy"},{"at":0.25,"type":"enrage"}]
+      "drops": [
+        [
+          "tonico_fuerza",
+          1
+        ],
+        [
+          "tonico_hierro",
+          1
+        ],
+        [
+          "lagrima_estelar",
+          1
+        ]
+      ],
+      "phases": [
+        {
+          "at": 0.75,
+          "type": "shield"
+        },
+        {
+          "at": 0.5,
+          "type": "frenzy"
+        },
+        {
+          "at": 0.25,
+          "type": "enrage"
+        }
+      ]
     }
   },
   "vacio": {
     "name": "Corazón del Vacío",
-    "levels": [82,92],
+    "levels": [
+      82,
+      92
+    ],
     "icon": "moon",
-    "colors": ["#4c1d95","#0b0414"],
+    "colors": [
+      "#4c1d95",
+      "#0b0414"
+    ],
     "scene": "abyss",
     "secretZone": true,
     "desc": "Donde terminan los mapas. Sólo se abre a quien ha vencido a todos los jefes ocultos.",
-    "enemies": [["vacuo",3],["kraknoir",2],["draconyx",2],["titanor",2],["celestor",1],["tempestis",1]],
-    "drops": [["fragmento_vacio",0.35],["corazon_vacio",0.03]],
+    "enemies": [
+      [
+        "vacuo",
+        3
+      ],
+      [
+        "kraknoir",
+        2
+      ],
+      [
+        "draconyx",
+        2
+      ],
+      [
+        "titanor",
+        2
+      ],
+      [
+        "celestor",
+        1
+      ],
+      [
+        "tempestis",
+        1
+      ]
+    ],
+    "drops": [
+      [
+        "fragmento_vacio",
+        0.35
+      ],
+      [
+        "corazon_vacio",
+        0.03
+      ]
+    ],
     "boss": {
       "species": "vacuo",
       "level": 98,
       "title": "El Devorador del Vacío",
       "coins": 4000,
-      "drops": [["corazon_vacio",1],["fragmento_abisal",1],["fragmento_vacio",1]],
-      "phases": [{"at":0.8,"type":"shield"},{"at":0.6,"type":"enrage"},{"at":0.4,"type":"frenzy"},{"at":0.2,"type":"enrage"}]
+      "drops": [
+        [
+          "corazon_vacio",
+          1
+        ],
+        [
+          "fragmento_abisal",
+          1
+        ],
+        [
+          "fragmento_vacio",
+          1
+        ]
+      ],
+      "phases": [
+        {
+          "at": 0.8,
+          "type": "shield"
+        },
+        {
+          "at": 0.6,
+          "type": "enrage"
+        },
+        {
+          "at": 0.4,
+          "type": "frenzy"
+        },
+        {
+          "at": 0.2,
+          "type": "enrage"
+        }
+      ]
     }
   }
 }

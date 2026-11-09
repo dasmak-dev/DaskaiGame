@@ -31,11 +31,11 @@
 .a-lectern { --dur: 3.6s; } .a-board { --dur: 2.2s; }
 
 /* ---------- 2. Lugares del campamento ---------- */
-/* v4.93: la mochila no se anima sola; al pasar el ratón abre sus bolsillos (fotogramas 0 → 3) y se queda abierta */
+/* v4.95: el baúl no se anima solo; al pasar el ratón la tapa se levanta un poco (fotogramas 0 → 2) y se queda abierta */
 .camp-anim.a-tent .fr { animation: none; opacity: 0; }
 .camp-anim.a-tent .fr0 { opacity: 1; }
-:is(.s-tent:hover, .s-tent:focus-visible, .s-tent.is-pressed) .a-tent .fr { opacity: 0; animation: bagFrame .11s steps(1, end) none; animation-delay: calc(var(--i) * .11s); }
-:is(.s-tent:hover, .s-tent:focus-visible, .s-tent.is-pressed) .a-tent .fr3 { animation-fill-mode: forwards; animation-name: bagFrameLast; }
+:is(.s-tent:hover, .s-tent:focus-visible, .s-tent.is-pressed) .a-tent .fr { opacity: 0; animation: bagFrame .12s steps(1, end) none; animation-delay: calc(var(--i) * .12s); }
+:is(.s-tent:hover, .s-tent:focus-visible, .s-tent.is-pressed) .a-tent .fr2 { animation-fill-mode: forwards; animation-name: bagFrameLast; }
 @keyframes bagFrame { from { opacity: 1; } to { opacity: 1; } }
 @keyframes bagFrameLast { from { opacity: 1; } to { opacity: 1; } }
 .s-dummy:hover .camp-anim, .s-dummy.is-pressed .camp-anim { transform-origin: 50% 100%; animation: dummyHit .6s ease-out; }
@@ -105,3 +105,14 @@ body.bgfx-on #bgfx { opacity: var(--bgfx-op); }
 :root[data-motion="reduced"] :is(.camp-anim, .camp-anim .fr, .hud-pill, .hud-pill b, .hud-pill .icon svg, .topbar-bell .icon svg, .nav-dot, .dock-slot .icon svg, .train-slot, .panel-head > .icon svg, .is-pressed .icon svg, .screen > *, .camp-spot .camp-art, .btn-primary::after) { animation: none !important; }
 :root[data-motion="reduced"] .camp-anim .fr:not(.fr0) { opacity: 0; }
 @media (prefers-reduced-motion: reduce) { .camp-anim .fr { animation: none !important; } .camp-anim .fr:not(.fr0) { opacity: 0; } }
+/* v4.96: el códice al pasar el ratón: pasa las hojas deprisa, brilla más, las chispas se avivan y aparece un círculo mágico que gira */
+.s-lectern:is(:hover, :focus-visible, .is-pressed) .a-lectern { --dur: 1.3s; }
+.s-lectern:is(:hover, :focus-visible, .is-pressed) .camp-anim { animation: codexHoverGlow 1.2s ease-in-out infinite !important; }
+@keyframes codexHoverGlow { 0%, 100% { filter: drop-shadow(0 0 6px rgba(167, 139, 250, .85)); } 50% { filter: drop-shadow(0 0 16px rgba(196, 181, 253, 1)) brightness(1.15); } }
+.s-lectern:is(:hover, :focus-visible) .codex-sparks i { animation-duration: 1.2s !important; }
+.camp-scene .s-lectern .camp-art::after { content: ''; position: absolute; left: 50%; top: 4%; width: 118%; aspect-ratio: 1; border-radius: 50%; pointer-events: none; z-index: -1;
+  border: 2px dashed rgba(196, 181, 253, .75); box-shadow: 0 0 14px rgba(139, 92, 246, .55), inset 0 0 14px rgba(139, 92, 246, .4);
+  transform: translateX(-50%) scaleY(.32) rotate(0deg) scale(.6); opacity: 0; transition: opacity .25s, transform .3s; }
+.camp-scene .s-lectern:is(:hover, :focus-visible) .camp-art::after { opacity: 1; animation: codexRing 4s linear infinite; }
+@keyframes codexRing { from { transform: translateX(-50%) scaleY(.32) rotate(0deg) scale(1); } to { transform: translateX(-50%) scaleY(.32) rotate(360deg) scale(1); } }
+:root[data-motion="reduced"] .camp-scene .s-lectern .camp-art::after { animation: none !important; }

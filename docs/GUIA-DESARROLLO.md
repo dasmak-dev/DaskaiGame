@@ -357,6 +357,63 @@ Se carga la última y sólo sobrescribe: paleta (piedra oscura, bronce, oro `--g
 - **Expedición:** al entrar en el mapa, el equipo, la mochila o un combate durante una expedición, `#zone-backdrop` (creado en `screens/expedition.js` con `screen:enter`) pinta detrás de todo la escena de la zona actual, oscurecida; `body.in-exp`.
 - **Combate:** la arena usa la escena de la zona (`components/scenes.js`, ahora con árboles muertos, ruinas, tumbas, cristales o tentáculos según la zona) y los **jefes tienen su propio fondo**: `DK.scenes.bossScene(zona, secreto)` → `boss_<escena>` (menhires bajo luna roja, bosque muerto, naufragio con tormenta, bosque de cristales, forja de lava, santuario con estatua, fauces del abismo, ruinas entre rayos) y `boss_secret` (cripta) para los jefes ocultos.
 
+### Cambios de la v5.0 — 5 runas, selector ancho, Corrupción mínima I, rivales más duros y dos zonas nuevas
+
+- **Runas** (`config.expedition.runes.slots: 5`, antes 4): cinco huecos en la preparación, más pequeños (46 px, gema de 34). El selector (`runePicker`, `.rune-modal`) es más ancho en pantallas ≥ 700 px (hasta 1080 px) y enseña 4 runas por fila.
+- **Corrupción**: una vez desbloqueada ya no hay «sin corrupción»: el selector enseña I–V y `DK.expedition.nextStart()` pone el nivel I si no hay ninguno; `DK.corruption.set` no baja de 1. El desafío semanal sigue sin corrupción (`nextExpedition.weekly`).
+- **Balance** (medido con `scratch/sim99.js`: duelos 1 contra 1 a nivel de zona, sin y con equipo/talentos/tónicos):
+  - `config.enemyScale = { base: 1.03, perLevel: 0.0033 }`: salvajes y jefes ×(1,03 + 0,0033 × nivel) → Nv. 5 ×1,05 · Nv. 30 ×1,13 · Nv. 60 ×1,23 · Nv. 90 ×1,33 (el principio casi igual; lo que más crece es el final, donde se acumulan equipo, talentos y tónicos).
+  - Élites: vida ×1,75 (antes 1,6) y atributos ×1,22 (antes 1,2). Jefes: atributos ×1,2 (antes 1,15).
+  - Resultado con equipo completo: los combates normales dejan ~65–75 % de vida (antes ~80 %); un solo daskai gana ~40–70 % de las élites y ~10–30 % de los jefes (con 6 en el equipo siguen siendo asequibles).
+- **Zonas nuevas** (`data/zones.json`, en orden): **Pantano Brumoso** (Nv. 42–52, tras el Templo; jefe Señor del Fango, Kraknoir Nv. 55) y **Glaciar Eterno** (Nv. 62–76, tras el Abismo; jefe Aurora Helada, Auroris Nv. 79). Se reajustan los niveles: Templo 34–42 (jefe 45), Abismo 52–62, Cumbre 76–90. Escenas `swamp` / `glacier` y de jefe `boss_swamp` / `boss_glacier` (cañas y auroras en `components/scenes.js`), música propia (`audio.js`), hallazgos de exploración (`explore.finds`: sin reactivo; ámbar fósil y lágrima de glaciar, objetos de experiencia nuevos).
+- **Partidas antiguas** (`store.migrate`): una zona nueva se abre sola si ya habías vencido al jefe anterior o tenías abierta la siguiente.
+- Tests: `data` (zonas nuevas, migración y escalado), `kinds` (5 huecos) y `endgame` (Corrupción sin nivel 0).
+
+### Cambios de la v4.99 — Corro en la hoguera, exploraciones y preparación de la expedición
+
+- **Campamento** (`camp.js`): el equipo se sienta en corro alrededor de la hoguera con seis sitios simétricos (`ring`: dentro, lejos/atrás y delante a cada lado, del centro hacia fuera; en el móvil la fila de «lejos» va detrás de la hoguera). Los de delante tapan a los de atrás (`zIndex` según la fila) y miran hacia la hoguera. Daskai de 84 px (44 en el móvil). Comprobado a 390, 768, 1024, 1366 y 1920 px sin pisar la hoguera, su cartel ni los lugares.
+- **Exploraciones** (`screens/training.js`, `.ex-who-*` en `grim.css`):
+  - «Quién va» son tres tarjetas grandes (dibujo de 100 px, 70 en el móvil, nombre, nivel y naturaleza) que llenan la zona junto a las zonas; al pulsar una sale su ficha rápida (`V.quickStats`, como en la hoguera); la «×» de la esquina la quita del grupo; los huecos vacíos abren la lista.
+  - «Ocultar lista» va dentro del bloque de la lista (barra del buscador); con la lista cerrada, «Elegir daskai (n)» aparece en la cabecera de «Quién va».
+  - La duración (30 min / 2 h / 8 h) está al lado de «Mandar (…)».
+- **Preparar expedición** (`screens/zones.js` → `prepCard`):
+  - **Tu equipo** en dos columnas de tres (`.bt-team6`): dibujo, nombre, barra de vida y «Nv. · vida»; los huecos libres llevan a Equipo; al pulsar uno sale su ficha rápida (antes iba a la pantalla de Equipo).
+  - **Mochila** en lista del mismo alto que el equipo (`.pk-list-wrap` con la lista en `position: absolute` para que no estire la fila; scroll si hay muchos): icono, nombre, efecto y «− ×N +» (sumar uno de la bolsa sin abrir el editor); vacía, una zona grande «Elegir objetos» con la capacidad. Sugerir / Repetir / Vaciar siguen debajo.
+- Tests: `boxes` (3+3, ficha al pulsar, lista de la mochila) y `shop` («Quién va» con tarjetas y ficha).
+
+### Cambios de la v4.98 — Ojos, boca y pelo al azar en las siluetas
+
+- `harmonize` ya no elige ojos, boca ni pelo según la silueta (se quitan `ARCH_EYES`, `ARCH_MOUTH` y `ARCH_HAIR`): son totalmente aleatorios, para que haya dinosaurios, escorpiones, bestias y conchas muy distintos entre sí. Se mantienen las orejas por silueta (tapaban sus piezas), las reglas de patas y el toque de la casa (`HOUSE7`).
+
+### Cambios de la v4.97 — Criterio al generar daskai (siluetas, patas de raptor, placas)
+
+- **`harmonize(ind)`** (`systems/looks.js`): tras el sorteo de las semillas NEW7 (y siempre en las especies con `sprite.arch`) se arreglan las combinaciones que se veían mal y, a veces, se eligen rasgos que pegan. Usa su propio azar (`seed ^ 0x2f6b8d33`, calentado 5 pasos: semillas parecidas daban lo mismo).
+  - **Siempre:** las siluetas llevan orejas de su lista (`ARCH_EARS`: dinosaurio cresta/cuernos/púas…, escorpión antenas, bestia orejas de gato/zorro/oso…, concha antenas/brotes) y pelo compatible (`ARCH_HAIR`); fantasmas y serpientes nunca llevan silueta (salía la cola de dinosaurio en un fantasma); patas de raptor sólo en cuerpos que se sostienen (`RAPTOR_OK`, si no: ave/garras/digitígradas); corazón, estrella y cometa (acaban en punta) sólo con patas que encajan (`BODY_LEGS`).
+  - **A veces:** ojos y bocas de la silueta (`ARCH_EYES`/`ARCH_MOUTH`, ~50 %), placas del color de los cuernos de la casa, patas típicas de seta y barril (60 %), brazos cortos con patas de raptor, un toque de la casa (`HOUSE7`, 15 %: agua babosa/tiburón/ventosa, oscuridad ojos de vacío/serpiente, luz gema…), y sombreros con orejas o antenas altas se cambian casi siempre por bufanda, pajarita, aura o melena.
+- **Dibujo:** el muslo de delante de las patas de raptor va más atrás y nunca sube por encima de la boca (la tapaba); las placas del dinosaurio sólo en la mitad trasera del lomo, curvadas hacia atrás, del color de la piel con brillo, y bajando por la cola; la cola del dinosaurio se acorta para no salirse del recuadro en los grandes; el caparazón empieza detrás de los ojos y sus placas se escalan con él.
+- Probabilidad de silueta al azar 12 % → 10 %.
+- Test en `tests/stats.test.js`: 4.000 semillas sin silueta en fantasmas, sin raptor en cuerpos altos, cuerpos en punta con sus patas y orejas válidas en las siluetas.
+
+### Cambios de la v4.96 — Talentos cada 25 niveles, siluetas nuevas de daskai, arcón y códice animado
+
+- **Talentos** (`data/talents.js`, `config.talentEvery: 25`, `talentChoices: 3`): ahora sólo a los niveles **25, 50, 75 y 100**, eligiendo **1 de 3**. Hay **20 talentos fuertes** (verdugo, archimago, coloso, muralla, relámpago, vampiro, fénix, espinas, halcón, linaje, cazador, furia, pozo, equilibrio, tirano, inquebrantable, toxina, sombra, emboscada, fortuna) con `mods` (% de atributos), `regen` (% vida/turno) y `fx` (los mismos efectos de combate que los afijos; `DK.gear.fxOf` los suma antes de aplicar los topes). `talentOptions` excluye los ya elegidos en otros niveles.
+- **Recomendación**: `DK.daskai.talentProfile(d)` (físico/mágico por atributos y movimientos, tanque/frágil, rápido, estados) y `talentFit(d, id)` → `{ score, why }`. La ventana (`components/talentViews.js`, `.tl-*` en `grim.css`) muestra el retrato, chips de perfil, la pista 25/50/75/100, tres cartas grandes con estrellas de afinidad, cinta «Recomendado» en la mejor y el motivo, y debajo el comparador de atributos.
+- **Por qué a veces no salía la ventana**: sólo se abría desde el diálogo de subida de nivel del daskai que combatía; las subidas por experiencia compartida del banquillo o con objetos desde la Bolsa (modo silencioso) sólo daban un aviso. Ahora `levelUp` apunta en una cola a todo daskai que llega a un nivel de talento y `V.talentFlush()` abre la ventana al volver a una pantalla tranquila (sin ventanas abiertas, fuera del combate y del menú principal; en `screen:enter` y tras `afterLevel`).
+- **Partidas antiguas** (`store.migrate`, `talentsV: 2`): los talentos de niveles que no son múltiplo de 25 se devuelven; aviso único `talent.reset`.
+- **Aspectos** (`systems/looks.js`, etiqueta `NEW7_TAG = 0xa9`): **siluetas** (`ARCH`: dinosaurio con cola y placas, escorpión con cola segmentada y aguijón, bestia cuadrúpeda con cola peluda, concha hexagonal), 12% de probabilidad sesgada por casa (`ARCH_HOUSE`) o fija con `sprite.arch`; cuerpos `heart, star5, mushroom, barrel, kite`; patas `raptor`, `slime`; ojos `void, gemeye, snake, pixel, sclera`; bocas `shark, sucker, goofy, whiskers, underbite`; tamaños extremos `xxs` (0.6–0.74) y `xxl` (1.26–1.42). Nueva categoría «Silueta» en la colección de rasgos.
+- **Especies nuevas** (`data/species.json` + `zones.json`): Raptil → Raptorex (16) → Tiranox (36) (fuego, dino); Escorpix → Aguijonyx (30) (tierra, escorpión); Conchín → Caracolón (28) (agua, concha); Lobrillo → Lobaurum (25) (luz, bestia).
+- **Inventario** (`campArt.tent`): **arcón** alargado y robusto (50×32, `base 30`): tapa abombada, tres flejes de hierro remachados, cantoneras, patas de hierro y cerradura dorada; al pasar el ratón la tapa se levanta y sale el brillo.
+- **Códice**: al pasar el ratón pasa las páginas más rápido, brilla más, las chispas aceleran y gira un círculo mágico discontinuo bajo el atril (`codexRing`, `motion.css`; respeta movimiento reducido).
+- Tests: talentos (3 opciones, recomendación, `fx`, cola) y siluetas en `tests/stats.test.js`.
+
+### Cambios de la v4.95 — Guantelete con volumen, baúl viejo, una sola llama, atril del códice y campamento sin solapes
+
+- **Cursor** (`tools/cursors.js`): guantelete rehecho con volumen: mano derecha vista por el dorso, **índice estirado en tres placas** que se solapan, corazón/anular/meñique **doblados** (se ven sus nudillos), **pulgar recogido** a un lado, placa del dorso con remache-gema y brazal acampanado con remaches. Degradados de metal con luz arriba a la izquierda (`PAL.gold` / `PAL.teal`), reflejos y **sombra proyectada** (`feDropShadow`, también en texto y agarrar).
+- **Inventario** (`campArt.tent`): **baúl viejo y cuadrado** (tablones gastados con grietas y nudos, esquina astillada, herrajes oxidados, candado). 3 fotogramas: al pasar el ratón la tapa se levanta un poco y asoma un brillo dorado con monedas y una gema (`.a-tent .fr2` se queda).
+- **Hoguera**: **una sola llama** grande en gota: los bordes ondulan hacia arriba, la punta se mece, el cuerpo respira y sube un corazón claro; dos lengüecitas a los lados.
+- **Códice**: vuelve el **atril** de madera (tablero, columna torneada y pie) bajo el grimorio (lienzo 40×38, `base 24`).
+- **Campamento sin solapes**: en el Inicio la escena usa siempre las posiciones medianas (`mid = … || o.compact`; antes a ≥ 1800 px todo se pisaba y las antorchas quedaban encima del portal y el códice); nuevas posiciones para el equipo junto a la hoguera, la mochila/códice/yunque/exploraciones en el móvil, antorchas del móvil en los bordes y daskai del móvil a 46 px. Comprobado a 390, 768, 1024, 1366 y 1920 px.
+
 ### Cambios de la v4.94 — Cursor de guantelete, mochila más pequeña y hoguera más grande
 
 - **Cursor** (`tools/cursors.js` → `css/cursor.css`): la flecha pasa a ser un **guantelete de metal con el índice apuntando** arriba a la izquierda (se dibuja derecho y se gira −38°; punta en 2,2). **Dorado** el normal y **turquesa** sobre lo que se puede pulsar (`--cur-pointer`); ayuda, prohibido, espera y lupa llevan su insignia abajo a la izquierda. Texto (barra dorada) y agarrar (mano) igual.

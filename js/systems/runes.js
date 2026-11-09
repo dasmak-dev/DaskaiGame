@@ -4,7 +4,7 @@
  * Caen durante las expediciones (cofres, élites y jefes:
  * config.expedition.runes.drop) y se guardan para siempre en
  * state.runes = { id: n }. Al preparar la próxima expedición
- * (Batalla) se engastan en 4 huecos (nextExpedition.runeSlots):
+ * (Batalla) se engastan en 5 huecos (config.expedition.runes.slots; nextExpedition.runeSlots):
  * como mucho UNA de tamaño (pequeño, mediano, XL) y UNA de tipo
  * (captura, combate, desafío), que los fijan (sin ellas salen al
  * azar), y las de bonificación (oro, saber) que quieras. Se gastan

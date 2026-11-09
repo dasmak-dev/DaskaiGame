@@ -408,6 +408,8 @@
       if (!n.kind || !cfg().kinds[n.kind]) { n.kind = this.pickKind(); n.size = this.pickSize(Math.random, n.kind); DK.store.save(); }
       if (!n.size) { n.size = this.pickSize(); DK.store.save(); } // vistas previas guardadas antes de los tamaños
       if (n.mod === undefined) { n.mod = this.pickMod(); DK.store.save(); }
+      // v5.0: con la Corrupción desbloqueada siempre se sale, como mínimo, con el nivel I (ya no hay «sin corrupción»)
+      if (DK.corruption && !n.weekly && DK.corruption.max() > 0 && !(n.corruption > 0)) { n.corruption = 1; DK.store.save(); }
       return n;
     },
     /** Mapa de la próxima expedición (vista previa en Batalla). */

@@ -150,7 +150,9 @@ module.exports = {
       check(Math.abs(r.shop - 2) < 0.05, 'con Corrupción IV los mercaderes deberían cobrar el doble: ' + r.shop);
       check(r.levels === 5, 'debería haber 5 niveles');
       await p.evaluate(() => { DK.store.state.expedition = null; DK.router.reset('zones'); }); await sleep(400);
-      check(await p.evaluate(() => document.querySelectorAll('.egx-levels button').length === 6), 'la preparación debería enseñar el selector de Corrupción');
+      // v5.0: desbloqueada, sin botón «sin corrupción» (5 niveles) y la próxima expedición sale con el nivel I como mínimo
+      check(await p.evaluate(() => document.querySelectorAll('.egx-levels button').length === 5), 'la preparación debería enseñar el selector de Corrupción (5 niveles)');
+      check(await p.evaluate(() => DK.expedition.nextStart().corruption >= 1 && DK.corruption.set(0) === 1), 'con la Corrupción abierta debería ir siempre el nivel I como mínimo');
     }),
   }, {
     name: 'El Abismo: pisos cortos encadenados, récord y premio cada 5 pisos',

@@ -240,6 +240,8 @@
         Object.entries(this.fx(p)).forEach(([k, v]) => { if (k !== 'regen') out[k] = (out[k] || 0) + v; });
         const lp = this.passive(p); if (lp && D.passives[lp].fx) Object.entries(D.passives[lp].fx).forEach(([k, v]) => (out[k] = (out[k] || 0) + v));
       });
+      // v4.96: efectos de combate de los talentos elegidos
+      Object.values((d && d.talents) || {}).forEach((id) => { const tl = D.talents && D.talents[id]; if (tl && tl.fx) Object.entries(tl.fx).forEach(([k, v]) => (out[k] = (out[k] || 0) + v)); });
       Object.keys(out).forEach((k) => { if (G().caps[k] != null) out[k] = Math.min(G().caps[k], out[k]); });
       return out;
     },

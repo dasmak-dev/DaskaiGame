@@ -121,6 +121,7 @@
     for (const m of info.pending) await V.learnMovePrompt(d, m);
     if (info.evolveReady && !o.quiet) await V.evolveDialog(d);
     else if (info.evolveReady) DK.ui.toast(`${DK.daskai.name(d)} · ${t('evo.ready')}`, { icon: 'evolve', kind: 'good' });
+    if (o.quiet && V.talentFlush) V.talentFlush(); // v4.96: también al subir con objetos de la Bolsa
   };
 
   /** Chips de ingredientes con "tengo/necesito". */

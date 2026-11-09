@@ -67,7 +67,7 @@
       if (DK.expedition.active() || !this.unlocked()) return null;
       const w = this.def(), s = DK.store.state;
       const prev = s.nextExpedition ? JSON.parse(JSON.stringify(s.nextExpedition)) : null;
-      s.nextExpedition = { zone: w.zone, seed: w.seed, size: w.size, kind: w.kind, mod: w.mod, runeSlots: [], corruption: 0, nightmare: null };
+      s.nextExpedition = { zone: w.zone, seed: w.seed, size: w.size, kind: w.kind, mod: w.mod, runeSlots: [], corruption: 0, nightmare: null, weekly: true };
       const e = DK.expedition.start(pack);
       s.nextExpedition = prev;
       e.weekly = w.id;

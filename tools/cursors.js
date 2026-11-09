@@ -1,24 +1,47 @@
 // Genera css/cursor.css: guantelete de metal que señala (dorado; turquesa sobre lo que se puede pulsar)
 const fs = require('fs');
-const defs = `<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff6cf"/><stop offset=".35" stop-color="#e9c46a"/><stop offset=".7" stop-color="#b07d2b"/><stop offset="1" stop-color="#6b4513"/></linearGradient>
-<linearGradient id="m" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#eafffd"/><stop offset=".35" stop-color="#6fe0d8"/><stop offset=".7" stop-color="#1f8f96"/><stop offset="1" stop-color="#0d4650"/></linearGradient></defs>`;
-// v4.94: GUANTELETE de metal con el índice apuntando arriba a la izquierda (punta en 2,2).
-// Se dibuja derecho (punta del dedo en 8,0) y se gira -38° y se escala.
-const metal = { gold: 'g', teal: 'm' };
+const defs = () => `<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff6cf"/><stop offset=".35" stop-color="#e9c46a"/><stop offset=".7" stop-color="#b07d2b"/><stop offset="1" stop-color="#6b4513"/></linearGradient>
+${metal('gold')}${metal('teal')}<filter id="sh" x="-20%" y="-20%" width="150%" height="150%"><feDropShadow dx="1.3" dy="1.6" stdDeviation=".9" flood-color="#000" flood-opacity=".55"/></filter></defs>`;
+// v4.95: GUANTELETE con volumen: mano derecha vista por el dorso, índice estirado (3 placas),
+// corazón/anular/meñique doblados (sólo se ven sus nudillos), pulgar recogido a un lado,
+// placa del dorso con remache-gema y brazal acampanado. Luz arriba a la izquierda, sombra
+// proyectada (feDropShadow) y reflejos. Se dibuja derecho (punta del dedo en 9,0), se gira -36°.
+const PAL = {
+  gold: { hi: '#fff4c8', a: '#f3d27a', b: '#c9973c', c: '#8a5a1c', d: '#4a2c0c', line: '#3a220a', gem: ['#ffd1d1', '#e0413a', '#7a1010'] },
+  teal: { hi: '#e8fffd', a: '#8fe9e2', b: '#2fb4b0', c: '#16737a', d: '#0a3a40', line: '#06282d', gem: ['#fff6c8', '#f2b632', '#7a4f08'] },
+};
+const metal = (k) => `<linearGradient id="${k}m" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${PAL[k].hi}"/><stop offset=".3" stop-color="${PAL[k].a}"/><stop offset=".65" stop-color="${PAL[k].b}"/><stop offset="1" stop-color="${PAL[k].c}"/></linearGradient>
+<linearGradient id="${k}s" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${PAL[k].a}"/><stop offset=".45" stop-color="${PAL[k].b}"/><stop offset="1" stop-color="${PAL[k].d}"/></linearGradient>
+<radialGradient id="${k}g" cx=".35" cy=".35" r=".7"><stop offset="0" stop-color="${PAL[k].gem[0]}"/><stop offset=".45" stop-color="${PAL[k].gem[1]}"/><stop offset="1" stop-color="${PAL[k].gem[2]}"/></radialGradient>`;
 const gauntlet = (tone = 'gold') => {
-  const F = `url(#${metal[tone]})`, O = '#1a0f0a', HL = tone === 'teal' ? '#e9fffd' : '#fff8dc', SH = tone === 'teal' ? '#0b3a42' : '#5b3a10';
-  return `<g transform="translate(2 2) scale(.85) rotate(-38) translate(-8 0)" stroke-linejoin="round">
-  <path d="M5.5 24 L20.5 24 L23 32 L3.5 32 Z" fill="${F}" stroke="${O}" stroke-width="1.5"/>
-  <path d="M4.6 27.6 L21.8 27.6" stroke="${SH}" stroke-width="1"/><circle cx="8" cy="30" r=".9" fill="${HL}"/><circle cx="13.3" cy="30" r=".9" fill="${HL}"/><circle cx="18.6" cy="30" r=".9" fill="${HL}"/>
-  <circle cx="13.6" cy="12.6" r="2.5" fill="${F}" stroke="${O}" stroke-width="1.3"/><circle cx="17.2" cy="12.9" r="2.5" fill="${F}" stroke="${O}" stroke-width="1.3"/><circle cx="20.6" cy="13.8" r="2.4" fill="${F}" stroke="${O}" stroke-width="1.3"/>
-  <path d="M3.5 14 Q3.5 11.2 6.5 11.2 L19.5 11.4 Q23 11.6 23 15.2 L23 21 Q23 25 19 25 L7.2 25 Q3.5 25 3.5 21.2 Z" fill="${F}" stroke="${O}" stroke-width="1.5"/>
-  <path d="M12 14 V20.5 M15.6 14 V20.8 M19.2 14.4 V20.6" stroke="${SH}" stroke-width=".9" stroke-linecap="round"/>
-  <path d="M5 2.6 Q5 0 8 0 Q11 0 11 2.6 L11 14.5 L5 14.5 Z" fill="${F}" stroke="${O}" stroke-width="1.5"/>
-  <path d="M5.4 5.6 H10.6 M5.4 10 H10.6" stroke="${SH}" stroke-width=".9"/><path d="M6.4 1.8 V13" stroke="${HL}" stroke-opacity=".8" stroke-width="1" stroke-linecap="round"/>
-  <path d="M3.6 16.2 Q8.4 15.2 12.4 18 Q13.4 20.8 10.6 21.3 Q7 20.4 3.6 20.6 Z" fill="${F}" stroke="${O}" stroke-width="1.3"/>
-  <path d="M4.6 17 Q8 16.4 11 18.2" fill="none" stroke="${HL}" stroke-opacity=".75" stroke-width=".9" stroke-linecap="round"/>
-  <path d="M7 24.6 L19.4 24.6" stroke="${HL}" stroke-opacity=".5" stroke-width=".8"/>
-</g>`;
+  const P = PAL[tone], M = `url(#${tone}m)`, S = `url(#${tone}s)`, O = P.line, sw = 1.1;
+  const plate = (x, y, w, h, r) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${r}" fill="${S}" stroke="${O}" stroke-width="${sw}"/><path d="M${x + 1.1} ${y + r} V${y + h - 1}" stroke="${P.hi}" stroke-opacity=".85" stroke-width=".9" stroke-linecap="round"/>`;
+  return `<g filter="url(#sh)"><g transform="translate(2 2) scale(.8) rotate(-36) translate(-9 0)" stroke-linejoin="round" stroke-linecap="round">
+  <!-- brazal acampanado -->
+  <path d="M5 25.5 L23.5 25.5 L26.5 35 L2 35 Z" fill="${M}" stroke="${O}" stroke-width="${sw}"/>
+  <path d="M4.6 28.4 L24.4 28.4" stroke="${P.d}" stroke-width="1"/><path d="M3 33.6 L25.6 33.6" stroke="${P.hi}" stroke-opacity=".6" stroke-width=".8"/>
+  <circle cx="7.5" cy="31" r=".95" fill="${P.hi}" stroke="${P.d}" stroke-width=".4"/><circle cx="14.2" cy="31" r=".95" fill="${P.hi}" stroke="${P.d}" stroke-width=".4"/><circle cx="20.9" cy="31" r=".95" fill="${P.hi}" stroke="${P.d}" stroke-width=".4"/>
+  <!-- nudillos de los dedos doblados (corazón, anular, meñique) -->
+  <path d="M12 17 Q12 11.2 14.6 11.2 Q17.2 11.2 17.2 16 Z" fill="${S}" stroke="${O}" stroke-width="${sw}"/>
+  <path d="M16.6 17 Q16.6 11.8 19.1 11.8 Q21.6 11.8 21.6 16.4 Z" fill="${S}" stroke="${O}" stroke-width="${sw}"/>
+  <path d="M21 17.4 Q21 13.2 23 13.2 Q25 13.2 25 17.4 Z" fill="${S}" stroke="${O}" stroke-width="${sw}"/>
+  <path d="M13.3 12.8 Q14.4 12 15.6 12.6 M17.9 13.4 Q19 12.6 20.2 13.2 M22 14.6 Q22.9 14 23.8 14.5" fill="none" stroke="${P.hi}" stroke-opacity=".9" stroke-width=".8"/>
+  <!-- dorso de la mano -->
+  <path d="M5.2 16 Q5 14.4 6.8 14.4 L23.8 15.6 Q25.6 15.8 25.4 17.8 L24.4 25 Q24.2 26.6 22.4 26.6 L7 26.6 Q5.2 26.6 5.2 24.8 Z" fill="${M}" stroke="${O}" stroke-width="${sw}"/>
+  <path d="M7.4 16.4 L22.6 17.2" stroke="${P.hi}" stroke-opacity=".7" stroke-width=".9"/>
+  <path d="M15.2 17.4 L14.8 25.6" stroke="${P.d}" stroke-opacity=".55" stroke-width=".8"/>
+  <path d="M6.2 22.6 Q15 24 24.4 22.2" fill="none" stroke="${P.d}" stroke-opacity=".5" stroke-width=".8"/>
+  <circle cx="15" cy="20.6" r="2.1" fill="url(#${tone}g)" stroke="${O}" stroke-width=".8"/><circle cx="14.3" cy="19.9" r=".6" fill="#fff"/>
+  <!-- pulgar recogido a la izquierda -->
+  <path d="M5.8 25 Q2 23.6 1.6 19.6 Q1.4 16.6 4 15.8 Q6 15.4 6.8 17.6 Q7.6 20.4 8.4 22.4 Z" fill="${S}" stroke="${O}" stroke-width="${sw}"/>
+  <path d="M2.6 19.4 Q2.8 17.2 4.3 16.8" fill="none" stroke="${P.hi}" stroke-opacity=".9" stroke-width=".8"/><path d="M2.4 21 Q4.4 20.4 6.4 21.2" fill="none" stroke="${P.d}" stroke-opacity=".6" stroke-width=".7"/>
+  <!-- índice estirado: tres placas que se solapan (la de la punta, redondeada) -->
+  ${plate(6.6, 10, 6, 7.6, 1.6)}
+  ${plate(6.2, 5.2, 6.4, 5.8, 1.6)}
+  <path d="M6 2.8 Q6 0 9.2 0 Q12.4 0 12.4 2.8 L12.4 6.4 L6 6.4 Z" fill="${S}" stroke="${O}" stroke-width="${sw}"/>
+  <path d="M7.1 2.6 Q7.4 1.1 9 1" fill="none" stroke="${P.hi}" stroke-width=".9"/>
+  <path d="M6.4 6.3 H12.2 M6.8 11 H12.4" stroke="${P.d}" stroke-width=".8"/>
+</g></g>`;
 };
 // Insignia abajo a la izquierda (el hueco que deja el guantelete)
 const badge = (inner) => `<g transform="translate(-15.8 1.5)"><circle cx="23.5" cy="23.5" r="6.6" fill="#1a1020" stroke="#e9c46a" stroke-width="1.5"/>${inner}</g>`;
@@ -29,12 +52,12 @@ const C = {
   help: [arrow() + badge(`<path d="M21 21.2c0-1.6 1.2-2.6 2.6-2.6s2.6 1 2.6 2.4c0 1.9-2.4 1.9-2.4 3.7" fill="none" stroke="#fde68a" stroke-width="1.8" stroke-linecap="round"/><circle cx="23.8" cy="27.4" r="1.1" fill="#fde68a"/>`), 2, 2, 'help'],
   notAllowed: [arrow() + badge(`<circle cx="23.5" cy="23.5" r="4.2" fill="none" stroke="#ef4444" stroke-width="1.8"/><path d="M20.6 26.4 L26.4 20.6" stroke="#ef4444" stroke-width="1.8"/>`), 2, 2, 'not-allowed'],
   wait: [arrow() + badge(`<path d="M20.5 19.5h6M20.5 27.5h6M21.2 19.5c0 3 4.6 3 4.6 4s-4.6 1-4.6 4M25.8 19.5c0 3-4.6 3-4.6 4s4.6 1 4.6 4" fill="none" stroke="#fde68a" stroke-width="1.3" stroke-linecap="round"/>`), 2, 2, 'progress'],
-  grab: [`<path d="M9 14V7.5a1.6 1.6 0 0 1 3.2 0V13V5.6a1.6 1.6 0 0 1 3.2 0V13V6.6a1.6 1.6 0 0 1 3.2 0V13.6V9a1.6 1.6 0 0 1 3.2 0v8.6c0 5-3 8.4-7.6 8.4c-3.4 0-5.2-1.6-6.8-4.2l-3-5a1.7 1.7 0 0 1 2.8-1.9z" fill="url(#g)" stroke="#1a0f0a" stroke-width="1.5" stroke-linejoin="round"/>`, 14, 14, 'grab'],
-  grabbing: [`<path d="M8 15.5v-3a1.6 1.6 0 0 1 3.2 0V12a1.6 1.6 0 0 1 3.2 0v-.4a1.6 1.6 0 0 1 3.2 0v.6a1.6 1.6 0 0 1 3.2 0v5.8c0 5-3 8.4-7.6 8.4c-3.4 0-5.6-1.6-7-4.4z" fill="url(#g)" stroke="#1a0f0a" stroke-width="1.5" stroke-linejoin="round"/>`, 14, 14, 'grabbing'],
-  text: [`<path d="M12 5h3l1 1 1-1h3M16 6v20M12 27h3l1-1 1 1h3" fill="none" stroke="#1a0f0a" stroke-width="3.6" stroke-linecap="round"/><path d="M12 5h3l1 1 1-1h3M16 6v20M12 27h3l1-1 1 1h3" fill="none" stroke="url(#g)" stroke-width="1.8" stroke-linecap="round"/>`, 16, 16, 'text'],
+  grab: [`<g filter="url(#sh)"><path d="M9 14V7.5a1.6 1.6 0 0 1 3.2 0V13V5.6a1.6 1.6 0 0 1 3.2 0V13V6.6a1.6 1.6 0 0 1 3.2 0V13.6V9a1.6 1.6 0 0 1 3.2 0v8.6c0 5-3 8.4-7.6 8.4c-3.4 0-5.2-1.6-6.8-4.2l-3-5a1.7 1.7 0 0 1 2.8-1.9z" fill="url(#g)" stroke="#1a0f0a" stroke-width="1.5" stroke-linejoin="round"/></g>`, 14, 14, 'grab'],
+  grabbing: [`<g filter="url(#sh)"><path d="M8 15.5v-3a1.6 1.6 0 0 1 3.2 0V12a1.6 1.6 0 0 1 3.2 0v-.4a1.6 1.6 0 0 1 3.2 0v.6a1.6 1.6 0 0 1 3.2 0v5.8c0 5-3 8.4-7.6 8.4c-3.4 0-5.6-1.6-7-4.4z" fill="url(#g)" stroke="#1a0f0a" stroke-width="1.5" stroke-linejoin="round"/></g>`, 14, 14, 'grabbing'],
+  text: [`<g filter="url(#sh)"><path d="M12 5h3l1 1 1-1h3M16 6v20M12 27h3l1-1 1 1h3" fill="none" stroke="#1a0f0a" stroke-width="3.6" stroke-linecap="round"/><path d="M12 5h3l1 1 1-1h3M16 6v20M12 27h3l1-1 1 1h3" fill="none" stroke="url(#g)" stroke-width="1.8" stroke-linecap="round"/></g>`, 16, 16, 'text'],
   zoom: [arrow() + badge(`<circle cx="22.8" cy="22.8" r="3" fill="none" stroke="#fde68a" stroke-width="1.6"/><path d="M25 25l2.4 2.4" stroke="#fde68a" stroke-width="1.8" stroke-linecap="round"/>`), 2, 2, 'zoom-in'],
 };
-const url = (body) => `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">${defs}${body}</svg>`).replace(/'/g, '%27')}")`;
+const url = (body) => `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">${defs()}${body}</svg>`).replace(/'/g, '%27')}")`;
 const vars = Object.entries(C).map(([k, [b, x, y, fb]]) => `  --cur-${k}: ${url(b)} ${x} ${y}, ${fb};`).join('\n');
 const nat = Object.entries(C).map(([k, [, , , fb]]) => `--cur-${k}: ${fb};`).join(' ');
 const css = `/* =============================================================

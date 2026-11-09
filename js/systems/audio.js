@@ -149,6 +149,8 @@
     volcano: { bpm: 92, root: 45, scale: PHRY, prog: [0, 1, 5, 6], lead: 'brass', pad: 0.4, drone: 1, drums: 'war', fx: 'none', density: 0.5 },
     temple: { bpm: 62, root: 52, scale: HARM, prog: [0, 3, 4, 0], lead: 'bell', pad: 1, drone: 0.7, drums: 'soft', fx: 'whisper', density: 0.35 },
     abyss: { bpm: 52, root: 41, scale: PHRY, prog: [0, 1, 6, 1], lead: 'bell', pad: 0.9, drone: 1.2, drums: 'none', fx: 'whisper', density: 0.22 },
+    swamp: { bpm: 58, root: 43, scale: DOR, prog: [0, 6, 1, 5], lead: 'harp', pad: 0.9, drone: 1.1, drums: 'soft', fx: 'drip', density: 0.3 }, // v5.0
+    glacier: { bpm: 60, root: 55, scale: AEOL, prog: [0, 3, 5, 4], lead: 'bell', pad: 1.1, drone: 0.7, drums: 'none', fx: 'wind', density: 0.3 }, // v5.0
     sky: { bpm: 66, root: 54, scale: DOR, prog: [0, 6, 3, 4], lead: 'harp', pad: 1, drone: 0.6, drums: 'soft', fx: 'wind', density: 0.45 },
     // Jefes: tambores de guerra y metales graves
     boss: { bpm: 118, root: 45, scale: HARM, prog: [0, 5, 1, 4], lead: 'brass', pad: 0.6, drone: 1.1, drums: 'war', fx: 'none', density: 0.7 },

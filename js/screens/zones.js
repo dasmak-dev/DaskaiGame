@@ -233,11 +233,11 @@
     const sockets = Array.from({ length: N }, (_, i) => {
       const id = slots[i];
       if (!id) return h('button', { class: 'rune-socket empty', type: 'button', 'aria-label': t('rune.add'), tip: DK.runes.total() ? t('rune.add') : t('rune.none'),
-        onClick: () => runePicker(refresh) }, h('span', { class: 'rune-socket-ring' }, DK.icon('plus', 16)));
+        onClick: () => runePicker(refresh) }, h('span', { class: 'rune-socket-ring' }, DK.icon('plus', 13)));
       return h('button', { class: 'rune-socket full g-' + DK.runes.get(id).group, type: 'button', style: { '--rc': look(id)[0] }, 'aria-label': t('rune.remove', { name: V.runeName(id) }),
         tip: `${V.runeTip(id)} · ${t('rune.tapOff')}`,
         onClick: () => { DK.runes.unsocket(i); DK.audio.sfx('click'); refresh(); } },
-        h('span', { class: 'rune-socket-ring' }, V.runeGem(id, 46)), h('span', { class: 'rune-socket-x' }, DK.icon('x', 10)));
+        h('span', { class: 'rune-socket-ring' }, V.runeGem(id, 34)), h('span', { class: 'rune-socket-x' }, DK.icon('x', 10)));
     });
     // Sin la mejora «Taller de runas» no hay huecos (se compra con emblemas tras el primer jefe)
     const runeBox = !DK.runes.enabled() ? null : h('div', { class: 'bt-runes' },
@@ -250,31 +250,45 @@
     // Final del juego: Abismo, Corrupción, versión pesadilla y reliquias grabadas
     const lateBox = endgameBox(refresh);
 
-    // Equipo: retratos con su vida
-    const teamStrip = h('div', { class: 'bt-team' }, team.map((d, i) => {
+    // Equipo (v4.98): dos columnas de tres con lo justo (dibujo, nombre, nivel y vida); al pulsar uno sale
+    // su ficha rápida, la misma que en la hoguera del campamento
+    const teamStrip = h('div', { class: 'bt-team bt-team6' }, Array.from({ length: DK.config.maxTeam }, (_, i) => {
+      const d = team[i];
+      if (!d) return h('button', { class: 'bt-mon empty', type: 'button', tip: t('home.manage'), 'aria-label': t('home.manage'), onClick: () => DK.router.go('team') }, DK.icon('plus', 16));
       const s = DK.daskai.stats(d), hp = DK.util.percent(d.cur.hp, s.hp);
-      return h('button', { class: 'bt-mon' + (DK.daskai.isFainted(d) ? ' ko' : ''), type: 'button', tip: `${DK.daskai.name(d)} · ${t('common.lvl')} ${d.level} · ${d.cur.hp}/${s.hp}`, onClick: () => DK.router.go('team', { uid: d.uid }) },
-        i === 0 ? h('span', { class: 'bt-mon-lead' }, DK.icon('crown', 10)) : null,
-        // v4.70: ficha más grande que llena el hueco (dibujo, nombre, nivel y vida con números)
-        h('span', { class: 'bt-mon-spr' }, V.dSprite(d, { size: 56 })),
+      return h('button', { class: 'bt-mon' + (DK.daskai.isFainted(d) ? ' ko' : ''), type: 'button', tip: `${DK.daskai.name(d)} · ${t('common.lvl')} ${d.level} · ${d.cur.hp}/${s.hp}`,
+        onClick: () => { DK.audio.sfx('select'); V.quickStats(d, { onChange: refresh }); } },
+        i === 0 ? h('span', { class: 'bt-mon-lead', tip: t('pack.lead') }, DK.icon('crown', 10)) : null,
+        h('span', { class: 'bt-mon-spr' }, V.dSprite(d, { size: 48 })),
         h('span', { class: 'bt-mon-info' },
-          h('span', { class: 'bt-mon-name' }, h('b', null, DK.daskai.name(d)), h('small', { class: 'bt-mon-lv' }, `${t('common.lvl')} ${d.level}`)),
+          h('span', { class: 'bt-mon-name' }, h('b', null, DK.daskai.name(d))),
           h('span', { class: 'bt-mon-hp' + (hp < 30 ? ' crit' : hp < 60 ? ' mid' : '') }, h('i', { style: { width: hp + '%' } })),
-          h('small', { class: 'bt-mon-num' }, `${d.cur.hp}/${s.hp}`)));
+          h('small', { class: 'bt-mon-num' }, h('span', { class: 'bt-mon-lv' }, `${t('common.lvl')} ${d.level}`), ` · ${d.cur.hp}/${s.hp}`)));
     }));
-    teamStrip.style.setProperty('--n', team.length);
 
-    // Mochila (v4.60b): cada objeto en su ficha (icono, nombre, ×N y «−» para quitar uno) y una
-    // ficha «+» que abre el editor completo; debajo, sugerir / repetir la última con su texto.
+    // Mochila (v4.98): lista que ocupa siempre lo mismo que el equipo (con scroll si hay muchos objetos):
+    // icono, nombre, efecto y «− ×N +»; vacía, una zona grande para elegir objetos.
     const chosen = Object.keys(pack).filter((id) => pack[id] > 0);
     const last = V.lastPack();
     const openPack = () => packDrawer(params, refresh);
-    const packTiles = h('div', { class: 'pk-tiles' },
-      chosen.map((id) => { const it = D.items[id]; return h('div', { class: 'pk-tile r-' + it.rarity, tip: `${it.name} · ${V.useText(it) || it.desc || ''}` },
-        h('span', { class: 'pk-tile-ico' }, V.itemIcon(it, 26)), h('span', { class: 'pk-tile-name' }, it.name), h('b', { class: 'pk-tile-n' }, '×' + pack[id]),
-        h('button', { class: 'pk-tile-x', type: 'button', tip: t('pack.tapRemove', { name: it.name }), 'aria-label': t('pack.tapRemove', { name: it.name }),
-          onClick: () => { pack[id]--; if (pack[id] <= 0) delete pack[id]; DK.audio.sfx('select'); refresh(); } }, DK.icon('minus', 12))); }),
-      h('button', { class: 'pk-tile add', type: 'button', onClick: openPack }, DK.icon(chosen.length ? 'plus' : 'bag', 20), h('span', null, chosen.length ? t('pack.addMore') : t('pack.choose'))));
+    const home = DK.bag.home();
+    const step = (id, n) => {
+      const cur = pack[id] || 0, k = Math.max(0, Math.min(cur + n, home[id] || 0, cur + cap - used));
+      if (k === cur) { if (n > 0) { DK.audio.sfx('error'); DK.ui.toast(used >= cap ? t('pack.full') : t('pack.noMore'), { icon: 'bag', kind: 'bad' }); } return; }
+      if (k) pack[id] = k; else delete pack[id];
+      DK.audio.sfx('select'); refresh();
+    };
+    const effect = (it) => (it.use ? V.useText(it) : it.desc) || '';
+    const packTiles = h('div', { class: 'pk-list-wrap' }, chosen.length ? h('div', { class: 'pk-list' },
+      chosen.map((id) => { const it = D.items[id]; return h('div', { class: 'pk-row r-' + it.rarity, tip: `${it.name} · ${effect(it)}` },
+        h('span', { class: 'pk-row-ico' }, V.itemIcon(it, 20)),
+        h('span', { class: 'pk-row-txt' }, h('b', null, it.name), h('small', null, effect(it))),
+        h('span', { class: 'pk-row-n' },
+          h('button', { class: 'pk-row-b', type: 'button', 'aria-label': t('pack.tapRemove', { name: it.name }), onClick: () => step(id, -1) }, DK.icon('minus', 12)),
+          h('b', null, '×' + pack[id]),
+          h('button', { class: 'pk-row-b', type: 'button', 'aria-label': t('pack.addOne', { name: it.name }), disabled: used >= cap || (home[id] || 0) <= pack[id], onClick: () => step(id, 1) }, DK.icon('plus', 12)))); }),
+      h('button', { class: 'pk-row add', type: 'button', onClick: openPack }, DK.icon('plus', 14), h('span', null, t('pack.addMore'))))
+      : h('button', { class: 'pk-empty', type: 'button', onClick: openPack }, DK.icon('bag', 28), h('b', null, t('pack.choose')), h('small', null, t('pack.emptyHint', { n: cap }))));
     const packTools = h('div', { class: 'pk-tools' },
       btn({ icon: 'sparkles', label: t('pack.suggestShort'), size: 'sm', variant: 'ghost', tip: t('pack.suggest'), onClick: () => { params.pack = E.suggestPack(); DK.audio.sfx('select'); refresh(); } }),
       Object.keys(last).length ? btn({ icon: 'repeat', label: t('pack.repeatShort'), size: 'sm', variant: 'ghost', tip: t('pack.repeat'), onClick: () => { params.pack = Object.assign({}, last); DK.audio.sfx('select'); refresh(); } }) : null,
@@ -412,7 +426,7 @@
           h('span', null, DK.icon('sparkles', 11), t('corruption.rewardShiny', { n: Math.round(def.shiny * 100) })), h('span', null, DK.icon('rune', 11), t('corruption.rewardTier', { n: Math.round(def.tier * 100) }))),
       ] : null;
       rows.push(row('cor', 'skull', t('corruption.title'), cur ? (cur === max && max < C.levels().length ? t('corruption.nextHint', { n: max + 1 }) : t('corruption.levelN', { n: cur })) : (max < C.levels().length ? t('corruption.help', { n: max }) : t('corruption.helpMax')),
-        h('div', { class: 'egx-levels' }, [0, 1, 2, 3, 4, 5].map(opt)), cur > 0, extra));
+        h('div', { class: 'egx-levels' }, (max > 0 ? [1, 2, 3, 4, 5] : [0, 1, 2, 3, 4, 5]).map(opt)), cur > 0, extra));
     }
     // Versión pesadilla de la zona (códice al 100%)
     if (DK.nightmare.available(n.zone) && n.kind !== 'abismo') {

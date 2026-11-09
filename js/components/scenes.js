@@ -108,6 +108,19 @@
     return s;
   }
 
+  /** v5.0: cañas y juncos del pantano. */
+  function reeds(y, color, n, seed) {
+    let s = '';
+    for (let i = 0; i < n; i++) {
+      const x = ((i + 0.5) / n) * W + Math.sin(seed + i * 1.9) * 18, hh = 30 + Math.abs(Math.sin(seed + i * 2.7)) * 60, d = Math.sin(seed + i) * 10;
+      s += `<path d="M${x} ${y} Q${x + d * 0.4} ${y - hh * 0.6} ${x + d} ${y - hh}" stroke="${color}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+      if (i % 3 === 0) s += `<ellipse cx="${x + d}" cy="${y - hh - 6}" rx="3.5" ry="9" fill="${color}"/>`;
+    }
+    return s;
+  }
+  /** v5.0: aurora (dos cortinas de luz). */
+  const aurora = (c1, c2) => `<path d="M0 110 C200 40 380 160 560 80 S880 30 ${W} 90 L${W} 170 C820 120 640 220 470 150 S160 160 0 200 Z" fill="${c1}"/><path d="M0 60 C240 120 420 20 640 70 S900 120 ${W} 50 L${W} 100 C840 150 620 80 420 110 S140 120 0 120 Z" fill="${c2}"/>`;
+
   const SCENES = {
     meadow: { far: (c) => hills(250, 60, 'rgba(255,255,255,.35)', 1) + hills(300, 40, 'rgba(22,101,52,.25)', 2), particles: { type: 'firefly', n: 10 } },
     forest: { far: () => trees(300, 'rgba(5,46,22,.35)', 9, 1, 55) + trees(330, 'rgba(5,46,22,.5)', 7, 3, 45), particles: { type: 'leaf', n: 10 } },
@@ -117,6 +130,9 @@
     temple: { far: () => pillars(320, 'rgba(120,80,10,.25)', 6), particles: { type: 'dust', n: 14 } },
     abyss: { far: () => peaks(330, 80, 'rgba(2,6,23,.6)', 7, 9), particles: { type: 'bubble', n: 14 } },
     sky: { far: () => hills(330, 30, 'rgba(255,255,255,.5)', 3, 5), particles: { type: 'cloud', n: 6 } },
+    // v5.0: Pantano Brumoso (cañas, árboles hundidos y charcas) y Glaciar Eterno (icebergs y aurora)
+    swamp: { far: () => trees(310, 'rgba(20,40,10,.4)', 6, 4, 50) + hills(330, 14, 'rgba(101,163,13,.22)', 6, 9) + reeds(360, 'rgba(26,46,5,.55)', 22, 3) + `<ellipse cx="300" cy="372" rx="120" ry="10" fill="rgba(190,242,100,.12)"/><ellipse cx="760" cy="384" rx="150" ry="12" fill="rgba(190,242,100,.1)"/>`, particles: { type: 'firefly', n: 14 } },
+    glacier: { far: () => aurora('rgba(94,234,212,.22)', 'rgba(167,139,250,.16)') + peaks(250, 130, 'rgba(224,242,254,.32)', 7, 5) + crystals(360, 'rgba(186,230,253,.35)', 8, 4), particles: { type: 'sparkle', n: 12 } },
 
     /* ---- Fondos de JEFE (uno por zona): DK.scenes.bossScene(zona) ---- */
     // Pradera: círculo de menhires bajo una luna roja
@@ -133,6 +149,10 @@
     boss_temple: { far: () => pillars(340, 'rgba(40,25,5,.6)', 6) + `<path d="M440 340 L450 160 Q500 100 550 160 L560 340 Z" fill="rgba(20,12,4,.85)"/><circle cx="500" cy="130" r="30" fill="rgba(20,12,4,.9)"/><circle cx="490" cy="126" r="4" fill="#facc15"/><circle cx="510" cy="126" r="4" fill="#facc15"/>`, particles: { type: 'dust', n: 18 } },
     // Abismo: fauces y tentáculos
     boss_abyss: { far: () => tentacles(420, 'rgba(10,6,30,.85)', 7, 2) + peaks(60, 60, 'rgba(2,2,10,.9)', 3, 14, true) + `<circle cx="500" cy="150" r="40" fill="rgba(99,102,241,.2)"/><circle cx="500" cy="150" r="14" fill="rgba(165,180,252,.7)"/>`, particles: { type: 'bubble', n: 18 } },
+    // Pantano: árbol gigante muerto con ojos en la niebla
+    boss_swamp: { far: () => moon(780, 100, 40, '#bef264', 0.15) + deadTrees(360, 'rgba(10,20,4,.9)', 4, 6, 260) + reeds(390, 'rgba(6,12,2,.95)', 26, 8) + [[300, 230], [340, 228], [640, 250], [676, 248]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="5" fill="rgba(217,249,157,.75)"/>`).join(''), particles: { type: 'firefly', n: 18 } },
+    // Glaciar: muralla de hielo con aurora y un trono helado
+    boss_glacier: { far: () => aurora('rgba(94,234,212,.35)', 'rgba(244,114,182,.22)') + crystals(380, 'rgba(14,30,50,.85)', 10, 9) + `<path d="M430 360 L450 200 L500 150 L550 200 L570 360 Z" fill="rgba(186,230,253,.25)"/><circle cx="500" cy="210" r="12" fill="rgba(224,242,254,.7)"/>`, particles: { type: 'sparkle', n: 18 } },
     // Cumbre: ruinas en las nubes y rayos
     boss_sky: { far: () => bolt(180, 0, '#fef08a') + bolt(820, 30, '#c7d2fe') + ruins(360, 'rgba(15,12,40,.75)', 2) + hills(360, 30, 'rgba(255,255,255,.18)', 3, 5), particles: { type: 'cloud', n: 8 } },
     // Jefe oculto (cuevas): cripta con tumbas
@@ -148,6 +168,8 @@
     temple: () => graves(380, 'rgba(60,40,5,.25)', 5, 9),
     abyss: () => tentacles(420, 'rgba(2,6,23,.45)', 4, 5),
     sky: () => ruins(380, 'rgba(30,30,80,.25)', 8),
+    swamp: () => deadTrees(330, 'rgba(10,25,5,.4)', 3, 9, 140),
+    glacier: () => crystals(410, 'rgba(8,20,40,.4)', 5, 7),
   };
   Object.entries(darker).forEach(([id, extra]) => { const sc = SCENES[id]; if (!sc) return; const far = sc.far; sc.far = (c) => far(c) + extra(c); });
 

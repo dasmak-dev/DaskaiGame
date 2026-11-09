@@ -78,7 +78,11 @@ module.exports = {
       check(ll.rows >= 6 && ll.mats >= 2 && ll.total > 2, 'la lista de lo que puede salir está incompleta: ' + JSON.stringify(ll));
       await p.evaluate(() => DK.ui.closeAll()); await sleep(200);
       await p.evaluate(() => document.querySelector('.ex-listtog').click()); await sleep(250);
-      const fold = await p.evaluate(() => ({ tiles: document.querySelectorAll('.ex-tile').length, chosen: document.querySelectorAll('.ex-pick:not(.empty)').length }));
+      const fold = await p.evaluate(() => ({ tiles: document.querySelectorAll('.ex-tile').length, chosen: document.querySelectorAll('.ex-who-card:not(.empty)').length }));
+      // v4.98: «Ocultar lista» vuelve a abrirla desde «Quién va»; pulsar a uno abre su ficha
+      await p.evaluate(() => document.querySelector('.ex-who-main').click()); await sleep(350);
+      check(await p.$('.modal-backdrop'), 'pulsar a uno de «Quién va» no abre su ficha');
+      await p.evaluate(() => DK.ui.closeAll()); await sleep(200);
       check(fold.tiles === 0 && fold.chosen === 2, 'la lista de daskai no se pliega o no se ven los elegidos: ' + JSON.stringify(fold));
       const w0 = await p.evaluate(() => ({ c: DK.wallet.get(), r: DK.bag.count('racion_viaje') }));
       await p.evaluate(() => document.querySelector('.ex-go .btn-primary').click()); await sleep(400);

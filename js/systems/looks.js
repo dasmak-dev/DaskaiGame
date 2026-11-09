@@ -59,6 +59,8 @@
     wide: ['wide', 'wide', 'squat', 'squat'], tower: ['tower', 'tower', 'tall', 'tall'], topheavy: ['topheavy', 'topheavy', 'topheavy', 'block'], bubble: ['bubble', 'bubble', 'cloud', 'chubby'], lumpy: ['lumpy', 'lumpy', 'blob', 'chubby'],
     saddle: ['saddle', 'saddle', 'saddle', 'wide'], pill: ['pill', 'pill', 'tall', 'tall'], spiky: ['spiky', 'spiky', 'spiky', 'cloud'], acorn: ['acorn', 'acorn', 'acorn', 'egg'], potato: ['potato', 'potato', 'chubby', 'squat'],
     gourd: ['gourd', 'gourd', 'gourd', 'pear'], gem: ['gem', 'gem', 'gem', 'block'], puff: ['puff', 'puff', 'cloud', 'chubby'], bell: ['bell', 'bell', 'bell', 'squat'], bulb: ['bulb', 'bulb', 'blob', 'chubby'],
+    heart: ['heart', 'heart', 'heart', 'heart'], star5: ['star5', 'star5', 'star5', 'star5'], mushroom: ['mushroom', 'mushroom', 'mushroom', 'mushroom'], barrel: ['barrel', 'barrel', 'barrel', 'block'], kite: ['kite', 'kite', 'kite', 'gem'],
+    dino: ['dino', 'dino', 'dino', 'dino'], scorpion: ['scorpion', 'scorpion', 'scorpion', 'scorpion'], beast: ['beast', 'beast', 'beast', 'beast'], shellb: ['shellb', 'shellb', 'shellb', 'shellb'],
   };
   const LEG_PATHS = { // patas en cada etapa
     stubby: [['stubby', 'paws', 'quad', 'quad'], 9], digi: [['stubby', 'digi', 'digi', 'pillars'], 6], paws: [['paws', 'paws', 'quad', 'pillars'], 8],
@@ -81,7 +83,8 @@
   // v4.62: los aspectos nuevos llevan NEW4_TAG: tienen los rasgos de la v4.56 y además los de la v4.62
   // v4.69: NEW5_TAG = además los rasgos de la v4.69 (brazos, ojos, bocas y accesorios nuevos)
   // v4.71: NEW6_TAG = además cuerpos, patas, bocas y cuernos/orejas nuevos
-  const isNew6 = (seed) => ((seed >>> 0) & 0xff) === NEW6_TAG;
+  const isNew7 = (seed) => ((seed >>> 0) & 0xff) === 0xa9;
+  const isNew6 = (seed) => ((seed >>> 0) & 0xff) === NEW6_TAG || isNew7(seed);
   const isNew5 = (seed) => ((seed >>> 0) & 0xff) === NEW5_TAG || isNew6(seed);
   const isNew4 = (seed) => ((seed >>> 0) & 0xff) === NEW4_TAG || isNew5(seed);
   const isNew3 = (seed) => ((seed >>> 0) & 0xff) === NEW3_TAG || isNew4(seed);
@@ -104,13 +107,28 @@
   const MOUTHS6 = { hook: 3, trunk: 2, mandible: 3, lick: 4, muzzle: 4 };
   const EARS6 = { curved: 4, nubs: 5, feelers: 4, fan: 3, fox: 5 };
   const BODIES3 = { gourd: 5, gem: 4, puff: 5, bell: 5, bulb: 4 };
+  // v4.96 (NEW7_TAG): cuerpos, patas, ojos y bocas nuevos, tamaños extremos y SILUETAS (dinosaurio, escorpión,
+  // bestia de cuatro patas y caparazón), que fuerzan cuerpo, patas y brazos y añaden piezas propias
+  const NEW7_TAG = 0xa9;
+  const BODIES7 = { heart: 3, star5: 3, mushroom: 4, barrel: 4, kite: 3 };
+  const LEGS7 = { raptor: [['raptor', 'raptor', 'raptor', 'raptor'], 2], slime: [['slime', 'slime', 'slime', 'slime'], 2], beast: [['quad', 'quad', 'quad', 'pillars'], 0.6] };
+  const EYES7 = { void: 3, gemeye: 3, snake: 4, pixel: 2, sclera: 3 };
+  const MOUTHS7 = { shark: 4, sucker: 2, goofy: 4, whiskers: 4, underbite: 4 };
+  const ARCH = {
+    dino: { body: 'dino', legs: 'raptor', arms: 'stubby', w: 1 },
+    scorpion: { body: 'scorpion', legs: 'insect', arms: 'pincer', w: 1 },
+    beast: { body: 'beast', legs: 'beast', arms: null, w: 1 },
+    shell: { body: 'shellb', legs: 'paws', arms: null, w: 1 },
+  };
+  const ARCH_HOUSE = { fuego: { dino: 3, beast: 1.5 }, tierra: { dino: 2, scorpion: 2.5, shell: 2 }, oscuridad: { scorpion: 3, beast: 2 }, luz: { beast: 3 }, agua: { shell: 3 } };
+  const ARCH_CHANCE = 0.1;
   const EYES3 = { sparkle: 5, crescent: 4, squint: 4, bug: 3, ringed: 4 };
   const MOUTHS3 = { stitch: 3, toothy: 4, gaptooth: 4, drool: 4, whistle: 4 };
   const EARS3 = { leafy: 4, plume: 4, devil: 4, bow: 4, crystals: 3 };
   const MARKS3 = { bolt: 4, chevron: 4, ring: 4, bloom: 4, triad: 4 };
   const HAIR3 = { bun: 4, afro: 3, swoop: 4, braids: 3, quiff: 4 };
   const LEGS3 = { hoof: [['stubby', 'hooves', 'hooves', 'hooves'], 5], frog: [['frog', 'frog', 'frog', 'frog'], 4], talon: [['stubby', 'talons', 'talons', 'talons'], 4], root: [['roots', 'roots', 'roots', 'roots'], 3], puff: [['puffs', 'puffs', 'puffs', 'puffs'], 3] };
-  const ALL_LEGS = Object.assign({}, LEG_PATHS, LEGS3, LEGS4, LEGS6);
+  const ALL_LEGS = Object.assign({}, LEG_PATHS, LEGS3, LEGS4, LEGS6, LEGS7);
   const EYES = { big: 10, sharp: 9, slit: 6, sleepy: 5, happy: 5, glow: 5, dot: 6, angry: 6, star: 3, button: 3, uneven: 2, cyclops: 1.5, three: 1.2, visor: 1.2 };
   const MOUTHS = { w: 7, smile: 8, open: 6, grin: 5, tiny: 6, flat: 4, fangs: 6, tusks: 3, buck: 3, tongue: 4, beak: 2, smirk: 4, wavy: 3, cat3: 4, sabre: 2, pout: 3 };
   const EARS = { cat: 9, bunny: 6, bear: 7, droopy: 5, horns: 7, unicorn: 2, antenna: 4, crest: 6, sprout: 4, fins: 5, spikes: 5, tuft: 6, none: 3, antlers: 3, ram: 3, mushroom: 2, flower: 3, mohawk: 4 };
@@ -132,7 +150,7 @@
   const GLOW_COLORS = ['#fde047', '#22d3ee', '#f472b6', '#a3e635', '#f87171', '#c4b5fd'];
 
   const rare = (table, k) => (table[k] || 99) <= 2;
-  const ALL = { body: Object.assign({}, BODIES, BODIES2, BODIES3, BODIES4, BODIES6), eyes: Object.assign({}, EYES, EYES2, EYES3, EYES4, EYES5), mouth: Object.assign({}, MOUTHS, MOUTHS2, MOUTHS3, MOUTHS4, MOUTHS5, MOUTHS6), arms: ARMS_ALL, ears: Object.assign({}, EARS, EARS2, EARS3, EARS6), mark: Object.assign({}, MARKS, MARKS2, MARKS3), hair: Object.assign({}, HAIR, HAIR3) };
+  const ALL = { body: Object.assign({}, BODIES, BODIES2, BODIES3, BODIES4, BODIES6, BODIES7, { dino: 1, scorpion: 1, beast: 1, shellb: 1 }), eyes: Object.assign({}, EYES, EYES2, EYES3, EYES4, EYES5, EYES7), mouth: Object.assign({}, MOUTHS, MOUTHS2, MOUTHS3, MOUTHS4, MOUTHS5, MOUTHS6, MOUTHS7), arms: ARMS_ALL, ears: Object.assign({}, EARS, EARS2, EARS3, EARS6), mark: Object.assign({}, MARKS, MARKS2, MARKS3), hair: Object.assign({}, HAIR, HAIR3) };
   function rng(seed) { let s = (seed >>> 0) || 1; return () => { s ^= s << 13; s >>>= 0; s ^= s >> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; }
   function pick(table, R, bias = {}) {
     const e = Object.entries(table).map(([k, w]) => [k, (Array.isArray(w) ? w[1] : w) * (bias[k] || 1)]);
@@ -197,8 +215,68 @@
       if (solid && ind.legs !== 'hover') sw('legs', LEGS6, 0.22); else R8();
       sw('mouth', MOUTHS6, 0.2); sw('ears', EARS6, 0.3);
     }
+    if (isNew7(seed)) { // v4.96: siluetas, cuerpos/patas/ojos/bocas nuevos y tamaños extremos
+      const R9 = rng(seed ^ 0x68e31da4), sw = (key, table, ch) => { if (R9() < ch) ind[key] = pick(table, R9); else R9(); };
+      const solid = !['ghost', 'long'].includes(ind.body);
+      if (solid) sw('body', BODIES7, 0.2); else R9();
+      if (solid && ind.legs !== 'hover') sw('legs', { raptor: 2, slime: 2 }, 0.14); else R9();
+      sw('eyes', EYES7, 0.18); sw('mouth', MOUTHS7, 0.18);
+      const z = R9(); if (z < 0.06) ind.size = 0.6 + R9() * 0.14; else if (z < 0.12) ind.size = 1.26 + R9() * 0.16; else R9();
+      if (solid && R9() < ARCH_CHANCE) applyArch(ind, pick(Object.fromEntries(Object.keys(ARCH).map((k) => [k, ((ARCH_HOUSE[house] || {})[k] || 1)])), R9)); else R9();
+    }
     { const R2 = rng(seed ^ 0x9e3779b9); ind.baby = R2() < 0.75 ? 0.82 + R2() * 0.14 : 1 + R2() * 0.12; } // 3 de cada 4 nacen pequeños
     ind.rare = rare(ALL.eyes, ind.eyes) || rare(ALL.mouth, ind.mouth) || rare(ALL.ears, ind.ears) || ind.size > 1.18 || ind.size < 0.82 || rare(ALL.body, ind.body);
+    return ind;
+  }
+
+  /*
+   * v4.96b: CRITERIO. Tras el sorteo se arreglan las combinaciones que se ven mal (siempre) y, a veces,
+   * se escogen patas que pegan con el cuerpo (ojos, boca y pelo quedan al azar) (sigue siendo aleatorio: ~la mitad de las veces).
+   * Sólo para semillas NEW7 (los aspectos anteriores no cambian).
+   */
+  const ARCH_EARS = {
+    dino: { crest: 4, horns: 3, spikes: 3, nubs: 3, none: 3, trihorn: 2, fins: 1, mohawk: 2, curved: 1 },
+    scorpion: { antenna: 4, feelers: 4, none: 3, nubs: 2, horns: 1 },
+    beast: { cat: 4, fox: 4, bear: 3, lynx: 3, droopy: 2, tuft: 2, horns: 1, ram: 1, mouse: 1, antlers: 1 },
+    shell: { antenna: 4, feelers: 3, nubs: 3, none: 3, sprout: 2, mushroom: 1 },
+  };
+  // patas de raptor sólo en cuerpos que «se sostienen» sobre ellas; si no, unas de ave
+  const RAPTOR_OK = new Set(['round', 'chubby', 'egg', 'bean', 'blob', 'drop', 'squat', 'pear', 'mound', 'potato', 'gourd', 'puff', 'bulb', 'heart', 'bubble', 'wide', 'lumpy', 'acorn', 'saddle', 'cloud', 'dino']);
+  const BODY_LEGS = { mushroom: { stubby: 3, paws: 2, root: 3, slime: 2 }, barrel: { stubby: 3, pillar: 3, boots: 3, peg: 2 }, heart: { stubby: 3, paws: 3, hover: 2, slime: 1 }, star5: { stubby: 3, spring: 3, peg: 2, hover: 1 }, kite: { bird: 3, talon: 3, stilts: 2, hover: 2 } };
+  const HOUSE7 = { agua: { legs: 'slime', mouth: ['shark', 'sucker'] }, tierra: { mouth: ['underbite'] }, oscuridad: { eyes: ['void', 'snake'] }, luz: { eyes: ['gemeye', 'sclera'] }, fuego: { mouth: ['shark'] } };
+  function harmonize(ind) {
+    const R = rng((ind.seed >>> 0) ^ 0x2f6b8d33), sometimes = (p) => R() < p, a = ind.arch;
+    for (let i = 0; i < 5; i++) R(); // calentar el generador (semillas parecidas daban lo mismo)
+    const fix = (k, table) => { if (!table[k]) return pick(table, R); return k; };
+    if (a) {
+      ind.ears = fix(ind.ears, ARCH_EARS[a]); // siempre: orejas que no tapan las piezas de la silueta
+      // ojos, boca y pelo: totalmente al azar (v4.98), para que haya dinosaurios, escorpiones… muy distintos
+      if (a === 'dino' && sometimes(0.5)) ind.plateC = (HOUSES[ind.house] || {}).horn || null; else R();
+    } else {
+      if (ind.legs === 'raptor' && !RAPTOR_OK.has(ind.body)) ind.legs = pick({ bird: 2, talon: 3, digi: 2 }, R);
+      // cuerpos acabados en punta (corazón, estrella, cometa): siempre patas que encajan; seta y barril, a veces
+      const must = ['heart', 'star5', 'kite'].includes(ind.body) && !BODY_LEGS[ind.body][ind.legs];
+      if (BODY_LEGS[ind.body] && (must || sometimes(0.6))) ind.legs = pick(BODY_LEGS[ind.body], R); else R();
+      if (ind.legs === 'raptor' && ['long', 'noodle', 'tentacle'].includes(ind.arms) && sometimes(0.7)) ind.arms = 'stubby'; else R();
+    }
+    const hb = HOUSE7[ind.house];
+    if (hb && sometimes(0.15)) {
+      if (hb.legs && !a && ind.legs !== 'hover' && !['ghost', 'long'].includes(ind.body) && (!BODY_LEGS[ind.body] || BODY_LEGS[ind.body][hb.legs])) ind.legs = hb.legs;
+      if (hb.mouth) ind.mouth = hb.mouth[Math.floor(R() * hb.mouth.length)];
+      if (hb.eyes) ind.eyes = hb.eyes[Math.floor(R() * hb.eyes.length)];
+    } else R();
+    // sombreros con orejas o antenas muy altas: casi siempre se cambian por algo que no vaya en la cabeza
+    if (['tophat', 'wizard', 'beanie', 'headphones'].includes(ind.final) && ['bunny', 'antlers', 'unicorn', 'feelers', 'antenna', 'crystals', 'trihorn', 'headwings'].includes(ind.ears) && sometimes(0.8)) ind.final = pick({ scarf: 3, bowtie: 3, aura: 2, mane: 2, runes: 1 }, R); else R();
+    // tamaños extremos: los diminutos no llevan ojos de un solo píxel ni bocas mínimas que no se verían
+    if (ind.size < 0.75 && ['pixel', 'tiny', 'dot'].includes(ind.eyes)) ind.eyes = 'big';
+    return ind;
+  }
+  /** v4.96: convierte el individuo en una silueta (dinosaurio, escorpión, bestia, caparazón). */
+  function applyArch(ind, a) {
+    const A = ARCH[a]; if (!A) return ind;
+    ind.arch = a; ind.body = A.body; ind.legs = A.legs;
+    if (A.arms !== undefined) ind.arms = A.arms;
+    if (a === 'scorpion' && ['visor'].includes(ind.eyes)) ind.eyes = 'sharp';
     return ind;
   }
 
@@ -221,10 +299,17 @@
     wide: { w: 1.38, h: 0.76, n: 2.6, pear: 0.05 }, tower: { w: 0.72, h: 1.32, n: 2.4, pear: 0.06 }, topheavy: { w: 1.02, h: 1.04, n: 2.2, pear: -0.32 },
     bubble: { w: 1.04, h: 0.98, n: 2, bump: 0.09, k: 5 }, lumpy: { w: 1.06, h: 0.96, n: 2, wob: 0.09, k: 7 },
     saddle: { w: 1.22, h: 0.88, n: 2.2, waist: 0.15 }, pill: { w: 0.84, h: 1.2, n: 3.4 }, spiky: { w: 1.02, h: 0.98, n: 2, bump: 0.13, k: 12 }, acorn: { w: 1.02, h: 1.06, n: 2.6, pear: -0.2, drop: 0.18 }, potato: { w: 1.14, h: 0.9, n: 2.1, wob: 0.06, k: 3, pear: 0.12 },
+    heart: { w: 1.06, h: 1.02, n: 2 }, star5: { w: 1.06, h: 1.04, n: 2, wob: 0.16, k: 5 }, mushroom: { w: 1.12, h: 1.02, n: 2.3, pear: -0.48, waist: 0.3 }, barrel: { w: 0.98, h: 1.12, n: 3.4, waist: -0.12 }, kite: { w: 0.98, h: 1.12, n: 1.3, pear: 0.14 },
+    dino: { w: 1.14, h: 0.92, n: 2.2, pear: 0.14 }, scorpion: { w: 1.22, h: 0.74, n: 2.6, pear: 0.05 }, beast: { w: 1.32, h: 0.8, n: 2.4, pear: 0.03 }, shellb: { w: 1.18, h: 0.9, n: 2.1, pear: -0.1 },
     gourd: { w: 0.98, h: 1.1, n: 2, waist: 0.2, pear: 0.18 }, gem: { w: 1.02, h: 1.1, n: 1.4 }, puff: { w: 1.06, h: 0.96, n: 2, bump: 0.05, k: 16 }, bell: { w: 1.02, h: 1.02, n: 3, pear: 0.5 }, bulb: { w: 1.04, h: 0.98, n: 2, wob: 0.11, k: 3 },
   };
   function bodyPath(kind, cx, cy, W, H, ind) {
     const P = PRESET[kind] || PRESET.round, N = 44, pts = [];
+    if (kind === 'heart') { // v4.96: corazón (curva clásica)
+      for (let i = 0; i < N; i++) { const t = (i / N) * Math.PI * 2, hx = Math.pow(Math.sin(t), 3), hy = (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) / 16;
+        pts.push([cx + W * hx, cy - H * (hy * 1.05 - 0.12)]); }
+      return smooth(pts);
+    }
     if (kind === 'ghost') { // cabeza redonda y faldón ondulado
       for (let i = 0; i <= 22; i++) { const a = Math.PI + (i / 22) * Math.PI; pts.push([cx + W * Math.cos(a), cy + H * 0.15 + H * 0.95 * Math.sin(a)]); }
       const yb = cy + H * 0.95, n = 4;
@@ -288,6 +373,13 @@
       case 'squint': return [[e1, 1], [e2, -1]].map(([[x, y], d]) => `<path d="M ${f(x - d * er * 0.8)} ${f(y - er * 0.7)} L ${f(x + d * er * 0.6)} ${f(y)} L ${f(x - d * er * 0.8)} ${f(y + er * 0.7)}" fill="none" ${STROKE(dk, 2.4)}/>`).join('');
       case 'bug': return [e1, e2].map(([x, y]) => `<ellipse cx="${f(x)}" cy="${f(y)}" rx="${f(er * 1.15)}" ry="${f(er * 1.3)}" fill="#1f1a2e" ${STROKE(dk, 1.4)}/>` + [[-0.4, -0.3], [0.25, -0.45], [-0.1, 0.25], [0.45, 0.2], [-0.5, 0.55], [0.1, 0.75]].map(([ox, oy]) => `<circle cx="${f(x + er * ox)}" cy="${f(y + er * oy)}" r="${f(er * 0.18)}" fill="${col === '#1b1b2f' ? '#4ade80' : col}" opacity=".55"/>`).join('') + `<ellipse cx="${f(x - er * 0.4)}" cy="${f(y - er * 0.55)}" rx="${f(er * 0.35)}" ry="${f(er * 0.22)}" fill="#fff" opacity=".85"/>`).join('');
       case 'ringed': return [e1, e2].map(([x, y]) => `<ellipse cx="${f(x)}" cy="${f(y)}" rx="${f(er)}" ry="${f(er * 1.08)}" fill="#fff" ${STROKE(dk, 1.4)}/><circle cx="${f(x - er * 0.08)}" cy="${f(y + er * 0.08)}" r="${f(er * 0.74)}" fill="${col}"/><circle cx="${f(x - er * 0.08)}" cy="${f(y + er * 0.08)}" r="${f(er * 0.52)}" fill="none" stroke="#fff" stroke-width="${f(er * 0.12)}" opacity=".7"/><circle cx="${f(x - er * 0.08)}" cy="${f(y + er * 0.08)}" r="${f(er * 0.24)}" fill="#0b0a12"/><circle cx="${f(x - er * 0.38)}" cy="${f(y - er * 0.35)}" r="${f(er * 0.16)}" fill="#fff"/>`).join('');
+      // v4.96
+      case 'void': return [e1, e2].map(([x, y]) => `<ellipse cx="${f(x)}" cy="${f(y)}" rx="${f(er * 1.05)}" ry="${f(er * 1.15)}" fill="#05040a" stroke="${col === '#1b1b2f' ? '#6d28d9' : col}" stroke-width="1.3"/><circle cx="${f(x + er * 0.15)}" cy="${f(y + er * 0.1)}" r="${f(er * 0.18)}" fill="#fff"/><circle cx="${f(x - er * 0.45)}" cy="${f(y - er * 0.5)}" r="${f(er * 0.12)}" fill="#fff" opacity=".6"/>`).join('');
+      case 'gemeye': return [e1, e2].map(([x, y]) => { const c = col === '#1b1b2f' ? '#a855f7' : col, r = er * 1.05; const pts = Array.from({ length: 6 }, (_, i) => { const a = Math.PI / 6 + (i * Math.PI) / 3; return f(x + r * Math.cos(a)) + ',' + f(y + r * Math.sin(a)); }).join(' ');
+        return `<polygon points="${pts}" fill="${c}" ${STROKE(dk, 1.4)}/><polygon points="${f(x)},${f(y - r * 0.55)} ${f(x + r * 0.5)},${f(y)} ${f(x)},${f(y + r * 0.55)} ${f(x - r * 0.5)},${f(y)}" fill="${shade(c, 0.45)}" opacity=".85"/><path d="M ${f(x - r * 0.85)} ${f(y - r * 0.5)} L ${f(x)} ${f(y - r * 0.55)} M ${f(x + r * 0.85)} ${f(y + r * 0.5)} L ${f(x)} ${f(y + r * 0.55)}" stroke="#fff" stroke-width=".8" opacity=".6"/><circle cx="${f(x - r * 0.3)}" cy="${f(y - r * 0.35)}" r="${f(r * 0.15)}" fill="#fff"/>`; }).join('');
+      case 'snake': return [e1, e2].map(([x, y], i) => `<path d="M ${f(x - er * 1.1)} ${f(y + er * 0.1)} Q ${f(x)} ${f(y - er * 1.2)} ${f(x + er * 1.1)} ${f(y - er * 0.1)} Q ${f(x)} ${f(y + er * 1.1)} ${f(x - er * 1.1)} ${f(y + er * 0.1)} Z" fill="${col === '#1b1b2f' ? '#eab308' : col}" ${STROKE(dk, 1.4)}/><ellipse cx="${f(x)}" cy="${f(y)}" rx="${f(er * 0.16)}" ry="${f(er * 0.75)}" fill="#0b0a12"/><circle cx="${f(x - er * 0.45)}" cy="${f(y - er * 0.2)}" r="${f(er * 0.14)}" fill="#fff"/><path d="M ${f(x - er * 1.2)} ${f(y - er * (i ? 1.25 : 0.95))} L ${f(x + er * 1.1)} ${f(y - er * (i ? 0.85 : 1.3))}" ${STROKE(dk, 2.2)}/>`).join('');
+      case 'pixel': return [e1, e2].map(([x, y]) => { const q = er * 0.62; return `<rect x="${f(x - q)}" y="${f(y - q)}" width="${f(q * 2)}" height="${f(q * 2)}" fill="#0b0a12"/><rect x="${f(x - q)}" y="${f(y - q)}" width="${f(q * 0.8)}" height="${f(q * 0.8)}" fill="#fff"/>`; }).join('');
+      case 'sclera': return [e1, e2].map(([x, y]) => `<ellipse cx="${f(x)}" cy="${f(y)}" rx="${f(er)}" ry="${f(er * 1.08)}" fill="#111018" ${STROKE(dk, 1.4)}/><circle cx="${f(x - er * 0.1)}" cy="${f(y + er * 0.08)}" r="${f(er * 0.62)}" fill="${col === '#1b1b2f' ? '#f43f5e' : col}"/><circle cx="${f(x - er * 0.1)}" cy="${f(y + er * 0.08)}" r="${f(er * 0.95)}" fill="${col === '#1b1b2f' ? '#f43f5e' : col}" opacity=".18"/><ellipse cx="${f(x - er * 0.1)}" cy="${f(y + er * 0.08)}" rx="${f(er * 0.14)}" ry="${f(er * 0.45)}" fill="#0b0a12"/><circle cx="${f(x - er * 0.4)}" cy="${f(y - er * 0.3)}" r="${f(er * 0.14)}" fill="#fff"/>`).join('');
       default: return big(e1) + big(e2);
     }
   }
@@ -338,7 +430,69 @@
       case 'gaptooth': return `<path d="M ${f(mx - w * 1.1)} ${f(my - 1)} Q ${f(mx)} ${f(my + w * 1.6)} ${f(mx + w * 1.1)} ${f(my - 1)} Z" fill="#4a0f1c" ${STROKE(dk, 1.6)}/><rect x="${f(mx - w * 0.5)}" y="${f(my - 0.8)}" width="${f(w * 0.45)}" height="${f(w * 0.55)}" rx=".6" fill="#fff"/><ellipse cx="${f(mx + w * 0.1)}" cy="${f(my + w * 0.85)}" rx="${f(w * 0.5)}" ry="${f(w * 0.25)}" fill="#f472b6"/>`;
       case 'drool': return `<path d="M ${f(mx - w)} ${f(my - 1)} Q ${f(mx)} ${f(my + w * 1.1)} ${f(mx + w)} ${f(my - 1)}" fill="none" ${STROKE(dk, 2)}/><path d="M ${f(mx + w * 0.85)} ${f(my)} q ${f(w * 0.35)} ${f(w * 0.7)} 0 ${f(w * 1.1)} q ${f(-w * 0.35)} ${f(-w * 0.4)} 0 ${f(-w * 1.1)} Z" fill="#bae6fd" stroke="#38bdf8" stroke-width=".8"/>`;
       case 'whistle': return `<ellipse cx="${f(mx)}" cy="${f(my + 1)}" rx="${f(w * 0.32)}" ry="${f(w * 0.36)}" fill="#4a0f1c" ${STROKE(dk, 1.5)}/><path d="M ${f(mx + w * 0.7)} ${f(my - 0.5)} l ${f(w * 0.6)} ${f(-w * 0.3)} M ${f(mx + w * 0.75)} ${f(my + 1.2)} l ${f(w * 0.7)} 0 M ${f(mx + w * 0.7)} ${f(my + 2.8)} l ${f(w * 0.6)} ${f(w * 0.3)}" stroke="${dk}" stroke-width="1" stroke-linecap="round" opacity=".6"/>`;
+      // v4.96
+      case 'shark': return `<path d="M ${f(mx - w * 1.4)} ${f(my - 1.5)} Q ${f(mx)} ${f(my + w * 1.6)} ${f(mx + w * 1.4)} ${f(my - 1.5)} Q ${f(mx)} ${f(my + w * 0.2)} ${f(mx - w * 1.4)} ${f(my - 1.5)} Z" fill="#3b0a14" ${STROKE(dk, 1.5)}/>` +
+        [-1, -0.5, 0, 0.5, 1].map((o) => `<path d="M ${f(mx + w * o * 1.15 - w * 0.22)} ${f(my - 1 + Math.abs(o) * -0.6 + w * 0.15)} l ${f(w * 0.22)} ${f(w * 0.55)} l ${f(w * 0.22)} ${f(-w * 0.55)} Z" fill="#fff"/>`).join('') +
+        [-0.6, 0, 0.6].map((o) => `<path d="M ${f(mx + w * o - w * 0.2)} ${f(my + w * 0.95)} l ${f(w * 0.2)} ${f(-w * 0.45)} l ${f(w * 0.2)} ${f(w * 0.45)} Z" fill="#fff"/>`).join('');
+      case 'sucker': return `<circle cx="${f(mx)}" cy="${f(my + w * 0.35)}" r="${f(w * 0.85)}" fill="#f9a8d4" ${STROKE(dk, 1.5)}/><circle cx="${f(mx)}" cy="${f(my + w * 0.35)}" r="${f(w * 0.45)}" fill="#3b0a14"/>` +
+        Array.from({ length: 8 }, (_, i) => { const a = (i / 8) * Math.PI * 2; return `<circle cx="${f(mx + Math.cos(a) * w * 0.62)}" cy="${f(my + w * 0.35 + Math.sin(a) * w * 0.62)}" r="${f(w * 0.12)}" fill="#fff"/>`; }).join('');
+      case 'goofy': return `<path d="M ${f(mx - w * 1.2)} ${f(my - 1)} Q ${f(mx)} ${f(my + w * 1.8)} ${f(mx + w * 1.2)} ${f(my - 1)} Z" fill="#4a0f1c" ${STROKE(dk, 1.6)}/><rect x="${f(mx - w * 0.1)}" y="${f(my - 1)}" width="${f(w * 0.55)}" height="${f(w * 0.6)}" rx=".6" fill="#fff" ${STROKE(dk, 0.7)}/><ellipse cx="${f(mx - w * 0.2)}" cy="${f(my + w * 0.9)}" rx="${f(w * 0.55)}" ry="${f(w * 0.28)}" fill="#f472b6"/>`;
+      case 'whiskers': return `<path d="M ${f(mx - w * 0.7)} ${f(my)} q ${f(w * 0.35)} ${f(w * 0.6)} ${f(w * 0.7)} 0 q ${f(w * 0.35)} ${f(w * 0.6)} ${f(w * 0.7)} 0" fill="none" ${STROKE(dk, 1.7)}/><ellipse cx="${f(mx)}" cy="${f(my - w * 0.4)}" rx="${f(w * 0.3)}" ry="${f(w * 0.2)}" fill="${dk}"/>` +
+        [[-1, -0.35], [-1, 0.15], [1, -0.35], [1, 0.15]].map(([d, oy]) => `<path d="M ${f(mx + d * w * 0.9)} ${f(my + w * oy)} l ${f(d * w * 1.9)} ${f(w * oy * 0.9 - w * 0.1)}" stroke="${dk}" stroke-width="1" stroke-linecap="round" opacity=".75"/>`).join('');
+      case 'underbite': return `<path d="M ${f(mx - w * 1.05)} ${f(my - 0.5)} Q ${f(mx)} ${f(my + w * 1.15)} ${f(mx + w * 1.05)} ${f(my - 0.5)}" fill="none" ${STROKE(dk, 2.2)}/><path d="M ${f(mx - w * 0.8)} ${f(my + w * 0.45)} l ${f(w * 0.12)} ${f(-w * 0.95)} l ${f(w * 0.36)} ${f(w * 0.8)} Z M ${f(mx + w * 0.8)} ${f(my + w * 0.45)} l ${f(-w * 0.12)} ${f(-w * 0.95)} l ${f(-w * 0.36)} ${f(w * 0.8)} Z" fill="#fffaf0" ${STROKE(dk, 0.9)}/>`;
       default: return `<path d="M ${f(mx - w)} ${f(my)} Q ${f(mx - w / 2)} ${f(my + w * 0.85)} ${f(mx)} ${f(my)} Q ${f(mx + w / 2)} ${f(my + w * 0.85)} ${f(mx + w)} ${f(my)}" fill="none" ${STROKE(dk, 2)}/>`;
+    }
+  }
+
+  /* ---------- v4.96: piezas de las siluetas (detrás del cuerpo y encima) ---------- */
+  function archSvg(ind, P, layer) {
+    const a = ind.arch; if (!a) return '';
+    const { cx, cy, W, H, skin, dk, s, top, hornC } = P, dark = shade(skin, -0.22), lite = shade(skin, 0.18);
+    const stroke = (d, c, w1, w2) => `<path d="${d}" fill="none" stroke="${dk}" stroke-width="${f(w1)}" stroke-linecap="round" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="${c}" stroke-width="${f(w2)}" stroke-linecap="round" stroke-linejoin="round"/>`;
+    switch (a) {
+      case 'dino': {
+        if (layer === 'back') {
+          // cola gruesa y afilada que sale por detrás y baja hacia el suelo
+          const x0 = cx + W * 0.7, y0 = cy + H * 0.05, tw = Math.min(W, (76 + VIEW_SIDE[P.stage] / 2 - 3 - cx) / 2.05); // v4.96b: la cola no se sale del recuadro
+          const tail = `<path d="M ${f(x0)} ${f(y0 - H * 0.35)} Q ${f(cx + tw * 1.55)} ${f(cy - H * 0.05)} ${f(cx + tw * 2.05)} ${f(cy + H * 0.7)} Q ${f(cx + tw * 1.45)} ${f(cy + H * 0.55)} ${f(x0)} ${f(y0 + H * 0.45)} Z" fill="${skin}" ${STROKE(dk, 2.2)}/><path d="M ${f(x0 + W * 0.1)} ${f(y0 + H * 0.25)} Q ${f(cx + tw * 1.4)} ${f(cy + H * 0.42)} ${f(cx + tw * 1.9)} ${f(cy + H * 0.66)}" fill="none" stroke="${dark}" stroke-width="${f(2 * s)}" opacity=".7"/>`;
+          // placas dorsales
+          // v4.96b: placas sólo en la mitad trasera del lomo (delante chocaban con orejas, pelo y sombreros),
+          // inclinadas hacia atrás, del color de la piel y bajando por la cola
+          const pc = ind.plateC || shade(skin, -0.2), pl = shade(pc, 0.35);
+          const plate = (x, y, hgt, w, tilt) => `<path d="M ${f(x - w)} ${f(y + 2)} Q ${f(x - w * 0.4)} ${f(y - hgt * 0.7)} ${f(x + tilt)} ${f(y - hgt)} Q ${f(x + w * 0.7)} ${f(y - hgt * 0.4)} ${f(x + w)} ${f(y + 2)} Z" fill="${pc}" ${STROKE(dk, 1.5)}/><path d="M ${f(x - w * 0.35)} ${f(y)} Q ${f(x)} ${f(y - hgt * 0.5)} ${f(x + tilt * 0.8)} ${f(y - hgt * 0.85)}" fill="none" stroke="${pl}" stroke-width="${f(1.1 * s)}" stroke-linecap="round" opacity=".8"/>`;
+          const plates = [0.2, 0.45, 0.68].map((o, i) => { const x = cx + W * o; return plate(x, top(x) + 2.5, (7.5 - i * 0.8) * s, 4 * s, 2.2 * s); }).join('') +
+            [1.0, 1.3, 1.58].map((o, i) => { const x = cx + tw * o, y = cy - H * (0.32 - i * 0.27); return plate(x, y + 1, (5.2 - i * 1.2) * s, 3.2 * s, 2 * s); }).join('');
+          return plates + tail;
+        }
+        return '';
+      }
+      case 'scorpion': {
+        if (layer !== 'back') return '';
+        // cola de segmentos que se arquea por encima del lomo y acaba en aguijón
+        const pts = Array.from({ length: 7 }, (_, i) => { const t = i / 6, ang = -0.25 + t * 2.75; return [cx + W * 0.75 + Math.cos(ang - Math.PI / 2) * W * 0.62 * (1 - t * 0.15) + W * 0.25 * (1 - t), cy - H * 0.2 - Math.sin(ang) * H * 1.15 - t * H * 0.25]; });
+        const segs = pts.map(([x, y], i) => `<ellipse cx="${f(x)}" cy="${f(y)}" rx="${f((7.8 - i * 0.55) * s)}" ry="${f((6.6 - i * 0.45) * s)}" fill="${i % 2 ? skin : lite}" ${STROKE(dk, 1.6)}/>`).reverse().join('');
+        const [tx, ty] = pts[pts.length - 1];
+        const sting = `<path d="M ${f(tx - 3 * s)} ${f(ty - 2 * s)} Q ${f(tx - 9 * s)} ${f(ty + 2 * s)} ${f(tx - 12 * s)} ${f(ty + 9 * s)} Q ${f(tx - 5 * s)} ${f(ty + 5 * s)} ${f(tx + 2 * s)} ${f(ty + 2 * s)} Z" fill="${hornC}" ${STROKE(dk, 1.5)}/><circle cx="${f(tx - 11.5 * s)}" cy="${f(ty + 8.5 * s)}" r="${f(1.2 * s)}" fill="#a3e635"/>`;
+        return segs + sting;
+      }
+      case 'beast': {
+        if (layer !== 'back') return '';
+        // cola peluda alzada
+        const x0 = cx + W * 0.85, y0 = cy - H * 0.05;
+        const d = `M ${f(x0)} ${f(y0 + 4)} Q ${f(x0 + 16 * s)} ${f(y0 + 2)} ${f(x0 + 20 * s)} ${f(y0 - 14 * s)} Q ${f(x0 + 24 * s)} ${f(y0 - 30 * s)} ${f(x0 + 10 * s)} ${f(y0 - 32 * s)} Q ${f(x0 + 16 * s)} ${f(y0 - 22 * s)} ${f(x0 + 8 * s)} ${f(y0 - 10 * s)} Q ${f(x0 + 4 * s)} ${f(y0 - 4)} ${f(x0 - 2)} ${f(y0 - 4)} Z`;
+        return `<path d="${d}" fill="${skin}" ${STROKE(dk, 2)}/><path d="M ${f(x0 + 18 * s)} ${f(y0 - 18 * s)} Q ${f(x0 + 19 * s)} ${f(y0 - 27 * s)} ${f(x0 + 11 * s)} ${f(y0 - 30 * s)}" fill="none" stroke="${P.inner}" stroke-width="${f(4 * s)}" stroke-linecap="round" opacity=".9"/>`;
+      }
+      case 'shell': {
+        if (layer !== 'front') return '';
+        // caparazón abombado sobre el lomo, con placas
+        const x0 = Math.max(cx - W * 0.15, P.fx + P.er * 2.3), x1 = cx + W * 1.08, yb = cy + H * 0.42, yt = cy - H * 1.12;
+        const shell = `M ${f(x0)} ${f(yb)} Q ${f(x0 - W * 0.12)} ${f(yt + H * 0.15)} ${f((x0 + x1) / 2)} ${f(yt)} Q ${f(x1 + W * 0.18)} ${f(yt + H * 0.25)} ${f(x1)} ${f(yb)} Q ${f((x0 + x1) / 2)} ${f(yb + H * 0.18)} ${f(x0)} ${f(yb)} Z`;
+        const C = hornC, mx2 = (x0 + x1) / 2, my2 = (yb + yt) / 2, sw = x1 - x0;
+        const plate = (x, y, r) => `<polygon points="${Array.from({ length: 6 }, (_, i) => { const a2 = (i * Math.PI) / 3; return f(x + r * Math.cos(a2)) + ',' + f(y + r * 0.8 * Math.sin(a2)); }).join(' ')}" fill="${shade(C, 0.18)}" stroke="${shade(C, -0.45)}" stroke-width="1.2"/>`;
+        return `<path d="${shell}" fill="${C}" ${STROKE(dk, 2.2)}/>` + plate(mx2, my2 - H * 0.15, sw * 0.19) + plate(mx2 - sw * 0.31, my2 + H * 0.12, sw * 0.13) + plate(mx2 + sw * 0.31, my2 + H * 0.1, sw * 0.13) + plate(mx2, my2 + H * 0.42, sw * 0.12) +
+          `<path d="M ${f(x0 + W * 0.05)} ${f(yb - 2)} Q ${f(mx2)} ${f(yb + H * 0.12)} ${f(x1 - W * 0.05)} ${f(yb - 2)}" fill="none" stroke="${shade(C, 0.35)}" stroke-width="${f(2.2 * s)}" opacity=".8"/>`;
+      }
+      default: return '';
     }
   }
 
@@ -471,11 +625,17 @@
       case 'talons': return layer === 'near' ? [cx - W * 0.3, cx + W * 0.25].map((x) => `<path d="M ${f(x)} ${f(y0 - 3)} L ${f(x - 1)} ${f(groundY - 3)}" stroke="${dk}" stroke-width="${f(6.4 * s)}" stroke-linecap="round"/><path d="M ${f(x)} ${f(y0 - 3)} L ${f(x - 1)} ${f(groundY - 3)}" stroke="${shade(skin, -0.15)}" stroke-width="${f(4 * s)}" stroke-linecap="round"/>` + [-1, 0, 1].map((i) => `<path d="M ${f(x - 1)} ${f(groundY - 3)} q ${f(i * 3 * s)} ${f(1)} ${f(i * 4.5 * s - 0.5)} ${f(3)}" fill="none" stroke="#1c1917" stroke-width="${f(1.8 * s)}" stroke-linecap="round"/>`).join('')).join('') : '';
       case 'roots': return layer === 'near' ? [-0.55, -0.2, 0.15, 0.5].map((o, i) => { const x = cx + W * o, d = o < 0 ? -1 : 1; return `<path d="M ${f(x)} ${f(y0 - 6)} Q ${f(x + d * 2)} ${f(groundY - 4)} ${f(x + d * (5 + i % 2 * 3) * s)} ${f(groundY)}" fill="none" stroke="#3b2414" stroke-width="${f(4.2 * s)}" stroke-linecap="round"/><path d="M ${f(x)} ${f(y0 - 6)} Q ${f(x + d * 2)} ${f(groundY - 4)} ${f(x + d * (5 + i % 2 * 3) * s)} ${f(groundY)}" fill="none" stroke="#8b5a2b" stroke-width="${f(2.4 * s)}" stroke-linecap="round"/>`; }).join('') : '';
       case 'puffs': return layer === 'near' ? [cx - W * 0.42, cx + W * 0.3].map((x) => [[-3.5, 0, 3.6], [0, -2.5, 4.4], [3.8, 0, 3.4]].map(([ox, oy, r]) => `<circle cx="${f(x + ox * s)}" cy="${f(groundY - 6 + oy * s)}" r="${f(r * s)}" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.1"/>`).join('')).join('') : '';
+      case 'raptor': return (layer === 'far' ? [cx + W * 0.5] : [cx + W * 0.04]).map((x) => { const c = layer === 'far' ? dark : skin, d = layer === 'far' ? shade(dk, 0.15) : dk;
+        // v4.96b: el muslo de delante va más atrás y nunca sube por encima de la boca (antes la tapaba)
+        const ry = 10 * s, ty = layer === 'far' ? y0 - 3 * s : Math.max(y0 - 2 * s, P.my + P.er * 1.3 + ry);
+        return `<ellipse cx="${f(x + 2 * s)}" cy="${f(ty)}" rx="${f(8.5 * s)}" ry="${f(ry)}" fill="${c}" ${STROKE(d, 1.8)}/><path d="M ${f(x + 5 * s)} ${f(y0 + 5 * s)} L ${f(x + 9 * s)} ${f(groundY - 9 * s)} L ${f(x + 2 * s)} ${f(groundY - 2.5)}" fill="none" stroke="${d}" stroke-width="${f(6.4 * s)}" stroke-linecap="round" stroke-linejoin="round"/><path d="M ${f(x + 5 * s)} ${f(y0 + 5 * s)} L ${f(x + 9 * s)} ${f(groundY - 9 * s)} L ${f(x + 2 * s)} ${f(groundY - 2.5)}" fill="none" stroke="${c}" stroke-width="${f(3.8 * s)}" stroke-linecap="round" stroke-linejoin="round"/>` +
+          [-1, 0, 1].map((i) => `<path d="M ${f(x + 2 * s)} ${f(groundY - 2.5)} q ${f(-4 * s + i * 3 * s)} ${f(0.5)} ${f(-6 * s + i * 4.5 * s)} ${f(2.4)}" fill="none" stroke="#f5f0e6" stroke-width="${f(1.7 * s)}" stroke-linecap="round"/>`).join(''); }).join('');
+      case 'slime': return layer === 'near' ? `<path d="M ${f(cx - W * 0.95)} ${f(groundY)} Q ${f(cx - W * 0.9)} ${f(y0 - 4)} ${f(cx - W * 0.4)} ${f(y0 - 2)} L ${f(cx + W * 0.5)} ${f(y0 - 2)} Q ${f(cx + W * 1)} ${f(y0 - 4)} ${f(cx + W * 1.05)} ${f(groundY)} Q ${f(cx + W * 0.6)} ${f(groundY + 2)} ${f(cx + W * 0.3)} ${f(groundY - 1)} Q ${f(cx)} ${f(groundY + 2.5)} ${f(cx - W * 0.35)} ${f(groundY - 0.5)} Q ${f(cx - W * 0.7)} ${f(groundY + 2)} ${f(cx - W * 0.95)} ${f(groundY)} Z" fill="${shade(skin, 0.12)}" fill-opacity=".92" ${STROKE(dk, 1.6)}/><ellipse cx="${f(cx - W * 0.5)}" cy="${f(groundY - 3)}" rx="${f(W * 0.18)}" ry="${f(1.6 * s)}" fill="#fff" opacity=".45"/>` : '';
       case 'tentacles': return layer === 'near' ? [-0.55, -0.15, 0.25, 0.6].map((o, i) => { const x = cx + W * o; return `<path d="M ${f(x - 3)} ${f(y0 - 6)} Q ${f(x - 6 + (i % 2) * 9)} ${f(groundY - 6)} ${f(x + (i % 2 ? 4 : -5))} ${f(groundY - 1)} Q ${f(x + (i % 2 ? 1 : -1))} ${f(groundY - 6)} ${f(x + 4)} ${f(y0 - 6)} Z" fill="${i % 2 ? dark : skin}" ${STROKE(dk, 1.6)}/>`; }).join('') : '';
       default: return '';
     }
   }
-  const LIFT = { none: 0, stubby: 0, paws: 4, quad: 9, pillars: 8, digi: 9, tall: 13, tentacles: 7, hover: 9, hooves: 9, frog: 3, talons: 11, roots: 6, puffs: 9, peg: 9, stilts: 16, webbed: 7, spring: 10, bigfoot: 7, wheels: 9, crab: 9, boots: 6, paddles: 2, insect: 12 };
+  const LIFT = { raptor: 13, slime: 3, none: 0, stubby: 0, paws: 4, quad: 9, pillars: 8, digi: 9, tall: 13, tentacles: 7, hover: 9, hooves: 9, frog: 3, talons: 11, roots: 6, puffs: 9, peg: 9, stilts: 16, webbed: 7, spring: 10, bigfoot: 7, wheels: 9, crab: 9, boots: 6, paddles: 2, insect: 12 };
 
   // Pelo / textura según la casa (recortado al cuerpo)
   function furSvg(ind, P, clip) {
@@ -707,11 +867,13 @@
       (o.focus ? '' : `<ellipse class="sprite-shadow" cx="${f(cx + (kind === 'long' ? W * 0.5 : 0))}" cy="${groundY + 1}" rx="${f(shadowRx)}" ry="5" fill="#000" opacity="${legKind === 'hover' ? 0.12 : 0.22}"/>`) +
       (isFinal ? finalSvg(ind, P, 'back') : '') +
       `<g transform="rotate(${f(ind.lean * 10)} ${f(cx)} ${groundY})">` +
-      (plain ? '' : tailSvg(o.tail, skin2 ? Object.assign({}, P, { skin: skin2 }) : P)) + wings + fur.back + hairSvg(ind, P, 'back') + earsSvg(ind, P, false) + segs +
+      (plain || ['dino', 'scorpion', 'beast'].includes(ind.arch) ? '' : tailSvg(o.tail, skin2 ? Object.assign({}, P, { skin: skin2 }) : P)) + archSvg(ind, P, 'back') + wings + fur.back + hairSvg(ind, P, 'back') + earsSvg(ind, P, false) + segs +
       legsSvg(legKind, P, 'far') + (plain ? '' : armSvg(ind, P, 'far')) +
       `<path d="${body}" fill="url(#b${id})"/>` +
       `<g clip-path="url(#c${id})">${skin2 ? `<path d="${body}" fill="url(#d2${id})"/>` : ''}${belly}${fur.clip}${markSvg(ind, P)}<path d="${body}" fill="url(#ao${id})"/><ellipse cx="${f(cx - W * 0.35)}" cy="${f(cy - H * 0.55)}" rx="${f(W * 0.42)}" ry="${f(H * 0.28)}" fill="url(#hl${id})"/></g>` +
       `<path d="${body}" fill="none" ${STROKE(dk, 2.4)}/>` +
+      (ind.arch === 'scorpion' ? [0.15, 0.45, 0.75].map((o) => `<path d="M ${f(cx + W * o)} ${f(top(cx + W * o) + 1.5)} Q ${f(cx + W * (o + 0.12))} ${f(cy)} ${f(cx + W * o)} ${f(cy + H * 0.9)}" fill="none" stroke="${dk}" stroke-width="1.4" opacity=".55"/>`).join('') : '') +
+      archSvg(ind, P, 'front') +
       legsSvg(legKind, P, 'near') + (plain ? '' : armSvg(ind, P, 'near')) + shinyMark + earsSvg(ind, P, true) +
       hairSvg(ind, P, 'front') + eyesSvg(ind, P) + cheeks + mouthSvg(ind, P) + (isFinal ? finalSvg(ind, P, 'front') : '') +
       `</g></g></g></svg>`;
@@ -754,8 +916,10 @@
     // La especie fija su cola y, en algunas, el cuerpo (fantasmas, serpientes sin patas)
     const sprite = (D.species[root] && D.species[root].sprite) || sp.sprite || {};
     r.tail = sprite.tail || 'none';
-    if (sprite.body === 'ghost') { r.body = 'ghost'; r.legs = 'hover'; }
-    else if (sprite.body === 'long' && sprite.legs === 'none') { r.body = 'long'; r.legs = 'slither'; }
+    if (sprite.arch && ARCH[sprite.arch]) applyArch(r, sprite.arch); // v4.96: especies con silueta fija
+    else if (sprite.body === 'ghost') { r.body = 'ghost'; r.legs = 'hover'; r.arch = null; } // v4.96b: sin silueta (salía la cola de dinosaurio en un fantasma)
+    else if (sprite.body === 'long' && sprite.legs === 'none') { r.body = 'long'; r.legs = 'slither'; r.arch = null; }
+    if (isNew7(seed) || sprite.arch) harmonize(r);
     const out = h2 ? withHouse2(r, h2) : r;
     if (indCache.size > 600) indCache.clear();
     indCache.set(key, out);
@@ -763,7 +927,7 @@
   }
   /** Aspecto nuevo al nacer (los jefes: el típico). */
   // v4.56: las semillas nuevas llevan la marca NEW3 en su byte bajo (pueden tener los rasgos nuevos)
-  function rollLook(sid, o = {}) { return o.boss ? null : { s: ((Math.floor(Math.random() * 16777216) << 8) | NEW6_TAG) >>> 0 }; }
+  function rollLook(sid, o = {}) { return o.boss ? null : { s: ((Math.floor(Math.random() * 16777216) << 8) | NEW7_TAG) >>> 0 }; }
   /** Aspecto de un daskai (las partidas antiguas: sale fijo de su uid). */
   function lookOf(d, form) {
     if (!d) return null;
@@ -824,12 +988,13 @@
   }
 
   /* ---------- Rasgos: lista, iconos y colección del Códice ---------- */
-  const CATS = { hair: Object.fromEntries(Object.entries(HAIR).filter(([k]) => k !== 'none')), wings: WINGS, body: ALL.body, legs: Object.fromEntries(Object.entries(ALL_LEGS).map(([k, v]) => [k, v[1]])), eyes: ALL.eyes, mouth: ALL.mouth, ears: ALL.ears, mark: ALL.mark, final: Object.assign({}, FINALS, FINALS4, FINALS5), arms: Object.fromEntries(Object.entries(ARMS_ALL).filter(([k]) => k !== 'none')) };
-  const CAT_ICON = { arms: 'hand', hair: 'sparkles', wings: 'feather', size: 'maximize', body: 'paw', legs: 'footprints', eyes: 'eye', mouth: 'smile', ears: 'sparkles', mark: 'star', final: 'crown' };
-  const sizeKey = (z) => (z < 0.86 ? 'xs' : z < 0.95 ? 's' : z <= 1.06 ? 'm' : z <= 1.15 ? 'l' : 'xl');
+  const CATS = { hair: Object.fromEntries(Object.entries(HAIR).filter(([k]) => k !== 'none')), wings: WINGS, body: ALL.body, legs: Object.fromEntries(Object.entries(ALL_LEGS).map(([k, v]) => [k, v[1]])), eyes: ALL.eyes, mouth: ALL.mouth, ears: ALL.ears, mark: ALL.mark, final: Object.assign({}, FINALS, FINALS4, FINALS5), arms: Object.fromEntries(Object.entries(ARMS_ALL).filter(([k]) => k !== 'none')), arch: { dino: 1, scorpion: 1, beast: 1, shell: 1 } };
+  const CAT_ICON = { arch: 'paw', arms: 'hand', hair: 'sparkles', wings: 'feather', size: 'maximize', body: 'paw', legs: 'footprints', eyes: 'eye', mouth: 'smile', ears: 'sparkles', mark: 'star', final: 'crown' };
+  const sizeKey = (z) => (z < 0.76 ? 'xxs' : z < 0.86 ? 'xs' : z < 0.95 ? 's' : z <= 1.06 ? 'm' : z <= 1.15 ? 'l' : z <= 1.24 ? 'xl' : 'xxl');
   /** Rasgos de un individuo, para pintarlos como iconos. */
   function traits(i, { final = true } = {}) {
     const out = [{ cat: 'size', key: sizeKey(i.size), rare: i.size > 1.18 || i.size < 0.82 }];
+    if (i.arch) out.push({ cat: 'arch', key: i.arch, rare: true }); // v4.96: silueta
     ['body', 'legs', 'arms', 'eyes', 'mouth', 'ears', 'hair', 'mark', 'final'].forEach((cat) => {
       const key = cat === 'body' ? i.body : i[cat];
       if ((cat === 'mark' || cat === 'final' || cat === 'hair' || cat === 'arms') && (key === 'none' || !key)) return;
@@ -858,8 +1023,9 @@
       case 'arms': out = draw(Object.assign(t, { arms: key, eyes: 'dot' }), 2, { focus: 'full', plain: false, armsIcon: true }); break;
       case 'body': out = draw(Object.assign(t, { body: key, bodyFixed: key, eyes: 'dot', legs: key === 'ghost' ? 'hover' : 'stubby' }), 1, { focus: 'full', plain: true }); break;
       case 'final': out = draw(Object.assign(t, { final: key, eyes: 'dot' }), 3, { focus: 'full', plain: true, final: true }); break;
+      case 'arch': out = draw(applyArch(Object.assign(t, { eyes: 'sharp' }), key), 2, { focus: 'full', plain: false }); break;
       case 'wings': out = draw(Object.assign(t, { winged: true, eyes: 'dot', house: WING_HOUSE[key] || 'luz', skin: (HOUSES[WING_HOUSE[key]] || HOUSES.luz).skins[0] }), 2, { focus: 'full', plain: true, wingsIcon: true }); break;
-      case 'size': { const z = { xs: 0.45, s: 0.6, m: 0.75, l: 0.88, xl: 1 }[key] || 0.75; out = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M2 22h20" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity=".5"/><ellipse cx="12" cy="${f(21 - 9 * z)}" rx="${f(10 * z)}" ry="${f(9 * z)}" fill="currentColor" opacity=".85"/><circle cx="${f(12 - 4 * z)}" cy="${f(19 - 11 * z)}" r="${f(1.3 * z + 0.5)}" fill="#0b0a12"/></svg>`; break; }
+      case 'size': { const z = { xxs: 0.34, xs: 0.45, s: 0.6, m: 0.75, l: 0.88, xl: 1, xxl: 1.1 }[key] || 0.75; out = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M2 22h20" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity=".5"/><ellipse cx="12" cy="${f(21 - 9 * z)}" rx="${f(10 * z)}" ry="${f(9 * z)}" fill="currentColor" opacity=".85"/><circle cx="${f(12 - 4 * z)}" cy="${f(19 - 11 * z)}" r="${f(1.3 * z + 0.5)}" fill="#0b0a12"/></svg>`; break; }
       default: out = '';
     }
     iconCache.set(ck, out);
@@ -895,7 +1061,7 @@
   const seenOf = (sid) => { const b = DK.store.state && DK.store.state.looks; return (b && b.seen[rootOf(sid)]) || []; };
   const traitSeen = (cat, key) => { const b = DK.store.state && DK.store.state.looks; return !!(b && b.traits[cat] && b.traits[cat][key]); };
   function collection() {
-    const cats = ['body', 'legs', 'arms', 'eyes', 'mouth', 'ears', 'hair', 'mark', 'final', 'wings'];
+    const cats = ['arch', 'body', 'legs', 'arms', 'eyes', 'mouth', 'ears', 'hair', 'mark', 'final', 'wings'];
     const list = cats.map((cat) => ({ cat, keys: allKeys(cat).map((key) => ({ key, seen: traitSeen(cat, key), rare: rare(CATS[cat], key) })) }));
     const total = list.reduce((a, c) => a + c.keys.length, 0), got = list.reduce((a, c) => a + c.keys.filter((k) => k.seen).length, 0);
     return { list, total, got };

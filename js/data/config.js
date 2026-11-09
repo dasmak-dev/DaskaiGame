@@ -39,7 +39,8 @@
     evolveBonus: { hp: 6, mp: 3, atk: 2, matk: 2, def: 2, mdef: 2, spd: 2 }, // puntos extra al evolucionar
     // Tónicos (mejora permanente de un atributo): cuánto da cada uno y cuántos admite cada daskai
     tonic: { per: { hp: 6, mp: 4, atk: 2, matk: 2, def: 2, mdef: 2, spd: 2 }, cap: 15 },
-    talentEvery: 10,      // cada cuántos niveles se elige un talento
+    talentEvery: 25,      // v4.96: cada cuántos niveles se elige un talento (25, 50, 75 y 100; antes 10)
+    talentChoices: 3,     // v4.96: entre cuántos se elige (antes 2)
     // Campo de entrenamiento (systems/training.js): entrena en tiempo real mientras no juegas
     training: {
       slots: 2,                                   // huecos base (+ mejora «Instructor»)
@@ -105,7 +106,9 @@
         cavernas: { reagent: 'cuarzo_eco', stone: 'piedra_cambio', gear: ['daga', 'yelmo'], rare: 'tonico_hierro' },
         volcan: { reagent: 'ceniza_runica', stone: 'piedra_nucleo', gear: ['garra', 'martillo'], rare: 'tonico_fuerza' },
         templo: { reagent: 'tinta_sagrada', stone: 'piedra_regia', gear: ['espada', 'corona'], rare: 'tonico_espiritu' },
+        pantano: { reagent: null, stone: 'piedra_alteracion', gear: ['daga', 'capa'], rare: 'ambar_fosil' }, // v5.0: zonas intermedias (sin reactivo propio)
         abismo: { reagent: 'tinta_abisal', stone: 'piedra_caos', gear: ['anillo', 'capa'], rare: 'tonico_magia' },
+        glaciar: { reagent: null, stone: 'piedra_templado', gear: ['escudo', 'coraza'], rare: 'lagrima_glaciar' },
         cumbre: { reagent: 'escarcha_celeste', stone: 'piedra_templado', gear: ['escudo', 'botas'], rare: 'tonico_viento' },
         vacio: { reagent: 'polvo_vacio', stone: 'sello_forja', gear: ['espada', 'coraza'], rare: 'esencia_ancestral' },
       },
@@ -168,7 +171,10 @@
     shinyChance: 1 / 200, // probabilidad de variocolor
     shinyStatMult: 1.1,   // +10% atributos
     bossHpMult: 2.4,      // vida de los jefes
-    bossStatMult: 1.15,   // resto de atributos de los jefes
+    bossStatMult: 1.2,    // resto de atributos de los jefes (v5.0: antes 1.15)
+    // v5.0: los rivales crecen con su nivel para compensar lo que acumula tu equipo (equipo, talentos, tónicos…):
+    // ×(base + perLevel × nivel) → Nv. 5 ×1.05 · Nv. 30 ×1.13 · Nv. 60 ×1.23 · Nv. 90 ×1.33 (el principio casi igual)
+    enemyScale: { base: 1.03, perLevel: 0.0033 },
 
     // --- Progreso ---
     // (La muerte permanente y la retirada dependen de la dificultad: data/difficulties.js)
@@ -274,7 +280,7 @@
         },
         tierScale: [1, 1.5, 2],
         fuseCost: [500, 2000],   // monedas por subir de tier con el glifo de ascenso (a tier II, a tier III); fundir ya no está en pantalla
-        slots: 4,   // huecos para engastar runas antes de partir (como mucho 1 de tamaño y 1 de tipo)
+        slots: 5,   // huecos para engastar runas antes de partir (como mucho 1 de tamaño y 1 de tipo; v5.0: 5, antes 4)
       },
       weights: { fight: 36, event: 20, elite: 10, recruit: 9, shop: 7, treasure: 8, rest: 5, shrine: 4, cave: 4 },
       // Atajos: nodos que permiten saltar `shortcutSkip` pisos (a cambio de vida del equipo)
@@ -322,8 +328,8 @@
     revealStatsAt: 3,     // … y para ver sus atributos
     guardMult: 0.5,       // «Defender»: el daño recibido ese turno se multiplica por esto
     guardMana: 0.08,      // y recupera este % de maná
-    eliteHpMult: 1.6,     // vida de los rivales de élite
-    eliteStatMult: 1.2,   // resto de atributos de élite
+    eliteHpMult: 1.75,    // vida de los rivales de élite (v5.0: antes 1.6)
+    eliteStatMult: 1.22,  // resto de atributos de élite (v5.0: antes 1.2)
     eliteLevelBonus: 2,   // niveles por encima del máximo de la zona
     lossHpPct: 0.25,      // tras perder, tu equipo vuelve con este % de vida
     expShare: 0.3,        // % de experiencia para los demás daskai del equipo (no debilitados)

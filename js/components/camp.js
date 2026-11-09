@@ -212,11 +212,11 @@
   const SPOTS = [
     { id: 'path', sprite: 'portal', screen: 'zones', nav: 'battle', x: 66, y: 54, xm: 66, ym: 53, xs: 72, ys: 54, label: () => t('scene.path'), main: true },
     { id: 'board', sprite: 'board', screen: 'progress', nav: 'progress', x: 40, y: 50, xm: 39, ym: 48, xs: 28, ys: 51, label: () => t('scene.board') },
-    { id: 'tent', sprite: 'tent', screen: 'inventory', nav: 'inventory', x: 16, y: 57, xm: 15, ym: 57, xs: 20, ys: 73, label: () => t('scene.tent') },
-    { id: 'anvil', sprite: 'anvil', screen: 'craft', nav: 'craft', x: 83, y: 71, xm: 84, ym: 71, xs: 84, ys: 74, label: () => t('scene.anvil') },
+    { id: 'tent', sprite: 'tent', screen: 'inventory', nav: 'inventory', x: 16, y: 57, xm: 15, ym: 57, xs: 20, ys: 68, label: () => t('scene.tent') },
+    { id: 'anvil', sprite: 'anvil', screen: 'craft', nav: 'craft', x: 83, y: 71, xm: 84, ym: 71, xs: 84, ys: 71, label: () => t('scene.anvil') },
     { id: 'fire', sprite: 'fire', screen: 'team', nav: 'team', x: 49, y: 82, xm: 48, ym: 82, xs: 52, ys: 85, label: () => t('scene.fire'), fire: true },
-    { id: 'lectern', sprite: 'lectern', screen: 'codex', nav: 'codex', x: 10, y: 92, xm: 12, ym: 93, xs: 16, ys: 93, label: () => t('scene.lectern') },
-    { id: 'dummy', sprite: 'dummy', screen: 'training', nav: 'training', x: 92, y: 93, xm: 91, ym: 95, xs: 85, ys: 96, label: () => t('scene.dummy'), unlock: 'training' },
+    { id: 'lectern', sprite: 'lectern', screen: 'codex', nav: 'codex', x: 10, y: 92, xm: 12, ym: 94, xs: 13, ys: 94, label: () => t('scene.lectern') },
+    { id: 'dummy', sprite: 'dummy', screen: 'training', nav: 'training', x: 92, y: 93, xm: 89, ym: 93, xs: 85, ys: 93, label: () => t('scene.dummy'), unlock: 'training' },
   ];
 
 
@@ -351,7 +351,7 @@
     const tod = o.tod || timeOfDay();
     const narrow = window.innerWidth <= 600;
     // v4.54: en el Inicio la escena va en una columna (o.compact) → dibujos y posiciones de pantalla mediana
-    const mid = !narrow && (window.innerWidth < 1100 || (o.compact && window.innerWidth < 1800));
+    const mid = !narrow && (window.innerWidth < 1100 || !!o.compact); // v4.95: en el Inicio la escena nunca es ancha (antes, a ≥1800 px se solapaba todo)
     const scale = narrow ? 2.8 : mid ? 4 : 5;
     const nav = Object.fromEntries(DK.menus.items('nav').map((it) => [it.id, it]));
     const spots = SPOTS.map((sp) => {
@@ -377,21 +377,25 @@
     // Tu equipo descansando junto a la hoguera
     const fire = SPOTS.find((sp) => sp.fire);
     const fx = narrow ? fire.xs : mid && fire.xm != null ? fire.xm : fire.x, fy = narrow ? fire.ys : mid && fire.ym != null ? fire.ym : fire.y;
-    // v4.77: sitio para los 6 del equipo (antes sólo cabían 5, y 4 en el móvil)
-    const offs = narrow ? [[-21, 0], [21, 0], [-12, -13], [12, -13], [-15, 12], [15, 12]] : [[-14, -3], [14, -3], [-25, 5], [25, 6], [-13, 13], [13, 14]];
-    const team = (o.team || []).slice(0, offs.length).map((d, i) => h('button', {
-      class: 'camp-mon', type: 'button', style: { left: fx + offs[i][0] + '%', top: fy + offs[i][1] + '%', animationDelay: (i * 0.4) + 's' },
+    // v4.98: el equipo en corro alrededor de la hoguera. Seis sitios fijos simétricos (dentro, lejos y delante a
+    // cada lado), que se llenan del centro hacia fuera; los de delante tapan a los de atrás. Comprobado a
+    // 390, 768, 1024, 1366 y 1920 px para no pisar la hoguera, su cartel ni los demás lugares.
+    const ring = narrow ? [[-15, -2], [15, -2], [-12, -12], [13, -12], [-17, 10], [17, 10]]
+      : [[-12, -4], [12, -4], [-24, -1], [24, -3], [-21, 12], [20, 12]];
+    const size = narrow ? 44 : 84;
+    const team = (o.team || []).slice(0, ring.length).map((d, i) => { const [dx, dy] = ring[i]; return h('button', {
+      class: 'camp-mon', type: 'button', style: { left: fx + dx + '%', top: fy + dy + '%', zIndex: 2 + Math.round(dy + 20), animationDelay: (i * 0.4) + 's' },
       'aria-label': DK.daskai.name(d), tip: `${DK.daskai.name(d)} · ${t('common.lvl')} ${d.level}`,
       // v4.67: el mismo resumen rápido que «Tu equipo» (antes llevaba a la pantalla de equipo)
       onClick: () => { DK.audio.sfx('select'); DK.views.quickStats(d, { onChange: o.onChange || (() => DK.router.refresh()) }); },
-    }, DK.views.sprite(d.species, { look: DK.looks.of(d), size: narrow ? 58 : 92, shiny: d.shiny, flip: offs[i][0] > 0 })));
+    }, DK.views.sprite(d.species, { look: DK.looks.of(d), size, shiny: d.shiny, flip: dx > 0 })); });
     // Ascuas que suben de la hoguera, niebla baja y antorchas
     const embers = h('div', { class: 'camp-embers', 'aria-hidden': 'true', style: { left: fx + '%', top: fy + '%' } }, Array.from({ length: 16 }, (_, i) => h('i', { style: { '--dx': ((i * 37) % 60 - 30) + 'px', left: ((i * 13) % 40 - 20) + 'px', animationDelay: (i * 0.35) + 's', animationDuration: (2.6 + (i % 5) * 0.5) + 's' } })));
     const fog = h('div', { class: 'camp-fog', 'aria-hidden': 'true' }, h('i'), h('i'));
     // v4.78: la luz de la hoguera parpadea en el suelo y motas de polvo flotan despacio
     const firelight = h('div', { class: 'camp-firelight', 'aria-hidden': 'true', style: { left: fx + '%', top: fy + '%' } });
     const motes = h('div', { class: 'camp-motes', 'aria-hidden': 'true' }, Array.from({ length: 14 }, (_, i) => h('i', { style: { left: ((i * 53) % 96 + 2) + '%', top: (40 + (i * 29) % 55) + '%', animationDelay: (i * 1.3).toFixed(1) + 's', animationDuration: (9 + (i % 5) * 2.5) + 's' } })));
-    const torches = (narrow ? [[40, 62], [96, 64]] : mid ? [[29, 56], [79, 52], [3, 78], [97, 78]] : [[31, 62], [74, 62], [3, 78], [97, 78]]).map(([x, y], i) =>
+    const torches = (narrow ? [[5, 58], [96, 62]] : mid ? [[29, 56], [79, 52], [3, 78], [97, 78]] : [[31, 62], [74, 62], [3, 78], [97, 78]]).map(([x, y], i) =>
       h('span', { class: 'camp-torch', 'aria-hidden': 'true', style: { left: x + '%', top: y + '%' } }, animArt('torch', scale * 0.8, i * 0.13) || pixSvg(SPRITES.torch(0), scale * 0.8)));
     return h('section', { class: 'camp-scene grim tod-' + tod, 'aria-label': t('scene.title') },
       backdrop(tod, narrow), firelight, fog, motes, ...torches, embers,

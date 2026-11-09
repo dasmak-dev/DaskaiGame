@@ -260,13 +260,40 @@
     /* ---------- Talentos (cada config.talentEvery niveles) ---------- */
     /** Niveles en los que se elige talento: 10, 20, 30… */
     talentTiers(d) { const n = Math.floor(d.level / DK.config.talentEvery); return Array.from({ length: n }, (_, i) => (i + 1) * DK.config.talentEvery); },
-    /** Las dos opciones de un nivel de talento (fijas para cada daskai). */
+    /** Las opciones de un nivel de talento (v4.96: tres, fijas para cada daskai y sin repetir las ya elegidas). */
     talentOptions(d, tier) {
-      const ids = Object.keys(D.talents);
-      let hsh = 0; for (const ch of d.uid + tier) hsh = (hsh * 31 + ch.charCodeAt(0)) >>> 0;
-      const a = ids[hsh % ids.length]; let b = ids[(hsh >>> 7) % ids.length];
-      if (b === a) b = ids[(ids.indexOf(a) + 1) % ids.length];
-      return [a, b];
+      const taken = Object.entries(d.talents || {}).filter(([k]) => Number(k) !== Number(tier)).map(([, v]) => v);
+      const ids = Object.keys(D.talents).filter((id) => !taken.includes(id));
+      let hsh = 0; for (const ch of d.uid + ':' + tier) hsh = (hsh * 31 + ch.charCodeAt(0)) >>> 0;
+      const out = [];
+      for (let i = 0; out.length < Math.min(DK.config.talentChoices || 3, ids.length) && i < 64; i++) {
+        hsh = (Math.imul(hsh ^ (hsh >>> 13), 0x5bd1e995) + i) >>> 0;
+        const id = ids[hsh % ids.length]; if (!out.includes(id)) out.push(id);
+      }
+      return out;
+    },
+    /**
+     * v4.96: perfil del daskai para recomendar talentos (0–1 cada rasgo):
+     * phys/mag (por sus ataques y su Ataque frente a su Ataque mágico), tank/frail (defensas),
+     * fast (Velocidad frente al resto), status (ataques que causan estados).
+     */
+    talentProfile(d) {
+      const s = api.stats(d), cl = (x) => Math.max(0, Math.min(1, x));
+      const dmg = (d.moves || []).map((m) => D.moves[m]).filter((m) => m && m.power > 0);
+      const physMoves = dmg.length ? dmg.filter((m) => m.kind === 'fisico').length / dmg.length : 0.5;
+      const phys = cl(0.5 * (s.atk / Math.max(1, s.atk + s.matk)) + 0.5 * physMoves);
+      const off = (s.atk + s.matk) / 2, dfn = (s.def + s.mdef) / 2;
+      const tank = cl((dfn / Math.max(1, off + dfn) - 0.35) / 0.3);
+      const fast = cl((s.spd / Math.max(1, (s.atk + s.matk + s.def + s.mdef) / 4) - 0.7) / 0.6);
+      const status = cl((d.moves || []).filter((m) => D.moves[m] && D.moves[m].effect && D.moves[m].effect.type === 'status').length / 2);
+      return { phys, mag: 1 - phys, tank, frail: 1 - tank, fast, status, all: 0.55, econ: 0.3 };
+    },
+    /** v4.96: cuánto le conviene un talento (0–1) y el rasgo que más pesa. */
+    talentFit(d, id, prof = api.talentProfile(d)) {
+      const f = (D.talents[id] || {}).fit || {}, tot = Object.values(f).reduce((a, b) => a + b, 0) || 1;
+      let score = 0, top = null, topV = -1;
+      Object.entries(f).forEach(([k, w]) => { const v = (prof[k] || 0) * w; score += v; if (v > topV) { topV = v; top = k; } });
+      return { score: score / tot, why: top };
     },
     talentsPending(d) { return api.talentTiers(d).filter((tier) => !(d.talents || {})[tier]); },
     chooseTalent(d, tier, id) {
@@ -334,6 +361,8 @@
       if (d.elite) m *= k === 'hp' ? C.eliteHpMult : C.eliteStatMult;
       // Dificultad: los rivales son más (o menos) fuertes
       if ((d.wild || d.boss) && DK.rules) m *= DK.rules.enemyMult();
+      // v5.0: los rivales escalan con su nivel (C.enemyScale)
+      if ((d.wild || d.boss) && C.enemyScale) m *= C.enemyScale.base + C.enemyScale.perLevel * (d.level || 1);
       // Final del juego: corrupción, pesadilla y abismo hacen más fuertes a los rivales
       if ((d.wild || d.boss) && DK.endgame) { m *= 1 + DK.endgame.enemyStat(d); if (k === 'hp') m *= DK.endgame.bossHp(d); }
       // Tus daskai: estrellas de ascensión y forma alternativa

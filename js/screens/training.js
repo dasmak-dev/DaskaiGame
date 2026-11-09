@@ -257,7 +257,9 @@
           wq ? h('span', { class: 'fp-count' }, `${shown.length}/${all.length}`) : null),
         DK.ui.segmented({ value: params.who, onChange: (v) => { params.who = v; params.wpage = 0; refresh(); },
           options: [{ value: 'all', label: t('train.whoAll', { n: all.length }) }, { value: 'team', label: t('train.whoTeam'), icon: 'users' }, { value: 'box', label: t('train.whoBox'), icon: 'grid' }] }),
-        h('button', { class: 'fp-sortbtn', type: 'button', tip: t('gear.bench.sortBy'), onClick: () => { params.wsort = sortNext[params.wsort] || 'lv'; refresh(); } }, DK.icon('swap', 14), h('span', { class: 'fp-sortlbl' }, t('explore.pk.sort.' + params.wsort)))),
+        h('button', { class: 'fp-sortbtn', type: 'button', tip: t('gear.bench.sortBy'), onClick: () => { params.wsort = sortNext[params.wsort] || 'lv'; refresh(); } }, DK.icon('swap', 14), h('span', { class: 'fp-sortlbl' }, t('explore.pk.sort.' + params.wsort))),
+        // v4.98: «Ocultar lista» dentro del bloque de la lista (antes quedaba suelto junto a «Quién va»)
+        h('button', { class: 'ex-listtog', type: 'button', 'aria-expanded': 'true', onClick: () => { params.listOpen = false; refresh(); } }, DK.icon('chevronDown', 14), t('explore.listHide'))),
       pageList.length ? h('div', { class: 'tr-grid ex-grid' }, pageList.map(tile)) : DK.ui.empty('users', wq ? t('gear.bench.noMatch') : t('explore.none'), ''),
       pages > 1 ? h('div', { class: 'ex-pager' },
         h('button', { class: 'icon-btn', type: 'button', 'aria-label': t('explore.pk.prev'), disabled: params.wpage <= 0, onClick: () => { params.wpage--; refresh(); } }, DK.icon('back', 14)),
@@ -266,18 +268,24 @@
         h('button', { class: 'icon-btn', type: 'button', 'aria-label': t('explore.pk.next'), disabled: params.wpage >= pages - 1, onClick: () => { params.wpage++; refresh(); } }, DK.icon('next', 14))) : null) : null;
     const zonesSec = h('div', { class: 'ex-sec ex-a-zones' }, h('span', { class: 'ex-h' }, t('explore.zone'), h('small', { class: 'muted' }, String(zones.length))),
       zones.length ? h('div', { class: 'ex-zgrid', role: 'radiogroup' }, zones.map(zoneTile)) : h('p', { class: 'muted' }, t('explore.pickZone')));
+    // v4.98: «Quién va» con tarjetas grandes que llenan su zona; al pulsar uno sale su ficha rápida (como en la hoguera)
+    const card = (d) => { const sp = DK.daskai.species(d), nat = C.natures[d.nature || 'equilibrada'];
+      return h('div', { class: 'ex-who-card', style: { '--c': D.houseColor(sp.house) } },
+        h('button', { class: 'ex-who-main', type: 'button', tip: t('explore.whoTip'), onClick: () => { DK.audio.sfx('select'); V.quickStats(d, { onChange: refresh }); } },
+          V.dSprite(d, { size: DK.ui.isNarrow() ? 70 : 100 }), h('b', null, DK.daskai.name(d)), h('small', null, `${t('common.lvl')} ${d.level}`),
+          nat ? h('span', { class: 'ex-nat' }, t('explore.nat.' + nat.key)) : null),
+        h('button', { class: 'ex-who-x', type: 'button', 'aria-label': t('explore.remove'), tip: t('explore.remove'), onClick: () => toggle(d) }, DK.icon('x', 12))); };
     const whoSec = h('div', { class: 'ex-pcol ex-a-who' },
-      h('div', { class: 'ex-sec' }, h('div', { class: 'ex-h' }, t('explore.who', { n: sel.length, max: C.partyMax })),
-        h('div', { class: 'ex-chosen' },
-          ds.map((d) => h('button', { class: 'ex-pick', type: 'button', tip: t('explore.whoHint'), onClick: () => toggle(d) }, V.dSprite(d, { size: 30 }), h('span', null, h('b', null, DK.daskai.name(d)), h('small', null, `${t('common.lvl')} ${d.level}`)), DK.icon('x', 12))),
-          Array.from({ length: C.partyMax - ds.length }, () => h('button', { class: 'ex-pick empty', type: 'button', 'aria-label': t('explore.listShow', { n: all.length }), onClick: () => { params.listOpen = true; refresh(); } }, DK.icon('plus', 14))),
-          h('button', { class: 'ex-listtog', type: 'button', 'aria-expanded': listOpen, onClick: () => { params.listOpen = !listOpen; refresh(); } },
-            DK.icon('chevronDown', 14), listOpen ? t('explore.listHide') : t('explore.listShow', { n: all.length }))),
-      ),
-      h('div', { class: 'ex-durrow' }, h('span', { class: 'ex-h' }, DK.icon('clock', 11), t('explore.dur')), durPills));
+      h('div', { class: 'ex-sec' }, h('div', { class: 'ex-h ex-who-h' }, h('span', null, t('explore.who', { n: sel.length, max: C.partyMax })),
+          !listOpen ? h('button', { class: 'ex-listtog', type: 'button', 'aria-expanded': 'false', onClick: () => { params.listOpen = true; refresh(); } }, DK.icon('chevronDown', 14), t('explore.listShow', { n: all.length })) : null),
+        h('div', { class: 'ex-who-grid' },
+          ds.map(card),
+          Array.from({ length: C.partyMax - ds.length }, () => h('button', { class: 'ex-who-card empty', type: 'button', 'aria-label': t('explore.listShow', { n: all.length }), onClick: () => { params.listOpen = true; refresh(); } }, DK.icon('plus', 22), h('small', null, t('explore.addOne')))))));
     const sumSec = h('div', { class: 'ex-pcol ex-a-sum' },
       summary || h('div', { class: 'ex-sum2 ex-sum-empty muted small' }, DK.icon('users', 16), t('explore.pickWho')),
       h('div', { class: 'ex-go' }, why && sel.length ? h('span', { class: 'small bad-text' }, why) : h('span'),
+        // v4.98: la duración, junto al botón de mandar
+        h('div', { class: 'ex-durrow' }, h('span', { class: 'ex-h' }, DK.icon('clock', 11), t('explore.dur')), durPills),
         btn({ icon: 'compass', label: t('explore.go', { t: dur(X().minutes(ds, params.dur)) }), variant: 'primary', disabled: !!why, tip: why, onClick: go })));
     return h('div', { class: 'panel ex-planner' },
       h('div', { class: 'ex-ph' }, DK.icon('compass', 18), h('h3', null, t('explore.newTitle')), h('span', { class: 'grow' }), btn({ icon: 'back', label: t('explore.back'), size: 'sm', variant: 'ghost', onClick: close })),

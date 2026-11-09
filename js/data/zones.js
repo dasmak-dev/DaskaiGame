@@ -6,7 +6,7 @@
  *    "name", "desc", "icon",
  *    "levels":  [mínimo, máximo]     nivel de los salvajes,
  *    "colors":  [claro, oscuro]      degradado de la zona,
- *    "scene":   "meadow"|"forest"|"beach"|"cave"|"volcano"|"temple"|"abyss"|"sky",
+ *    "scene":   "meadow"|"forest"|"beach"|"cave"|"volcano"|"temple"|"swamp"|"abyss"|"glacier"|"sky",
  *    "unlock":  zona que hay que superar antes,
  *    "enemies": [[especie, peso], ...]   aparición aleatoria por peso,
  *    "boss":    { species, level, title, coins, drops, phases: [{ at, type }] },

@@ -1054,5 +1054,29 @@
     "color": "#ff8a3d",
     "noShop": true,
     "desc": "Convierte una runa rara en LEGENDARIA: sus modificadores valen un 30% más, gana uno nuevo si cabe y da +1 emblema por jefe. Muy raro: jefes y exploraciones de las zonas más altas."
+  },
+  "ambar_fosil": {
+    "name": "Ámbar fósil",
+    "category": "mejora",
+    "rarity": "epico",
+    "icon": "gem",
+    "color": "#f59e0b",
+    "use": {
+      "exp": 2500
+    },
+    "noShop": true,
+    "desc": "Resina antigua con un recuerdo atrapado dentro: da 2.500 puntos de experiencia. Sólo se encuentra explorando el Pantano Brumoso y lo suelta su jefe."
+  },
+  "lagrima_glaciar": {
+    "name": "Lágrima de glaciar",
+    "category": "mejora",
+    "rarity": "epico",
+    "icon": "droplet",
+    "color": "#7dd3fc",
+    "use": {
+      "exp": 6000
+    },
+    "noShop": true,
+    "desc": "Agua que lleva helada desde el principio del mundo: da 6.000 puntos de experiencia. Sólo se encuentra explorando el Glaciar Eterno y la suelta su jefe."
   }
 }

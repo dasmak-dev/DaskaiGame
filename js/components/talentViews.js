@@ -1,50 +1,96 @@
 /* =============================================================
- * components/talentViews.js — Talentos (cada 10 niveles, 1 de 2).
+ * components/talentViews.js — Talentos (v4.96: cada 25 niveles, 1 de 3).
  *
- *   V.talentTab(d, changed)  → pestaña «Talentos» de la ficha
+ *   V.talentTab(d, changed)  → sección «Talentos» de la ficha (pista 25·50·75·100)
  *   V.talentDialog(d)        → ventana para elegir los talentos pendientes
- *   V.talentText(id)         → «+8% ataque»
+ *   V.talentText(id)         → «+18% ataque · +8% prob. de crítico»
+ *   V.talentFlush()          → abre la ventana a los que subieron a un nivel de talento
+ *                              fuera de la vista (banquillo, objetos de la Bolsa…)
+ *
+ * La ventana recomienda: DK.daskai.talentProfile(d) mide si pega físico o
+ * mágico, si aguanta, si es rápido y si usa estados; talentFit puntúa cada
+ * opción (3 estrellas = le encaja muy bien) y la mejor lleva «Recomendado».
  * ============================================================= */
 (function () {
-  const { h, btn } = DK.ui;
+  const { h } = DK.ui;
   const D = DK.data;
   const { t } = DK;
   const V = (DK.views = DK.views || {});
+  const pctTxt = (v) => Math.round(v * 100);
+  const queue = new Set(); // v4.96: daskai que subieron a un nivel de talento (V.talentFlush)
 
-  /** Efecto de un talento en texto corto. */
-  V.talentText = (id) => {
-    const tl = D.talents[id], parts = [];
+  /** Líneas de efecto de un talento: [{ txt, neg }] */
+  V.talentLines = (id) => {
+    const tl = D.talents[id], out = [];
     const mods = Object.entries(tl.mods || {});
-    if (mods.length === D.statKeys.length && mods.every(([, v]) => v === mods[0][1])) parts.push(t('talent.all', { n: Math.round(mods[0][1] * 100) }));
-    else mods.forEach(([k, v]) => parts.push(`${v > 0 ? '+' : ''}${Math.round(v * 100)}% ${DK.tr('stats', D.stats[k]).toLowerCase()}`));
-    if (tl.regen) parts.push(t('talent.regen', { n: tl.regen }));
-    return parts.join(' · ');
+    if (mods.length === D.statKeys.length && mods.every(([, v]) => v === mods[0][1])) out.push({ txt: t('talent.all', { n: pctTxt(mods[0][1]) }) });
+    else mods.forEach(([k, v]) => out.push({ txt: `${v > 0 ? '+' : ''}${pctTxt(v)}% ${DK.tr('stats', D.stats[k]).toLowerCase()}`, neg: v < 0 }));
+    if (tl.regen) out.push({ txt: t('talent.regen', { n: tl.regen }) });
+    Object.entries(tl.fx || {}).forEach(([k, v]) => out.push({ txt: t('talent.fx.' + k, { n: pctTxt(v) }) }));
+    return out;
+  };
+  /** Efecto de un talento en texto corto. */
+  V.talentText = (id) => V.talentLines(id).map((l) => l.txt).join(' · ');
+
+  /** Estrellas de encaje (1–3). */
+  const fitStars = (score) => (score >= 0.62 ? 3 : score >= 0.42 ? 2 : 1);
+
+  /** Tarjeta de un talento. o: { chosen, other, onPick, fit, best, big } */
+  const card = (id, o = {}) => {
+    const tl = D.talents[id], st = o.fit ? fitStars(o.fit.score) : 0;
+    return h(o.onPick ? 'button' : 'div', {
+      class: 'tl-card' + (o.chosen ? ' chosen' : '') + (o.other ? ' other' : '') + (o.onPick ? ' pickable' : '') + (o.best ? ' best' : '') + (o.big ? ' big' : ''),
+      type: o.onPick ? 'button' : null, onClick: o.onPick || null, style: { '--tc': tl.color || 'var(--accent)' } },
+      o.best ? h('span', { class: 'tl-ribbon' }, DK.icon('star', 11), t('talent.best')) : null,
+      h('span', { class: 'tl-ico' }, DK.icon(tl.icon, o.big ? 26 : 20)),
+      h('b', { class: 'tl-name' }, t(`talent.${id}.name`)),
+      h('span', { class: 'tl-desc' }, t(`talent.${id}.desc`)),
+      h('ul', { class: 'tl-fx' }, V.talentLines(id).map((l) => h('li', { class: l.neg ? 'neg' : '' }, l.txt))),
+      o.fit ? h('span', { class: 'tl-fit f' + st, tip: t('talent.fitLv.' + st) },
+        h('span', { class: 'tl-stars' }, [1, 2, 3].map((i) => DK.icon('star', 12, i <= st ? 'on' : ''))),
+        h('small', null, t('talent.fitLv.' + st), o.fit.why && st >= 2 ? ': ' + t('talent.why.' + o.fit.why) : '')) : null,
+      o.chosen ? h('span', { class: 'tl-check' }, DK.icon('check', 14)) : null,
+      o.onPick && o.big ? h('span', { class: 'tl-pick' }, t('talent.pick')) : null);
   };
 
-  /** Tarjeta de un talento (elegible o ya elegido). */
-  const card = (id, { chosen, other, onPick } = {}) => h(onPick ? 'button' : 'div', {
-    class: 'talent-card' + (chosen ? ' chosen' : '') + (other ? ' other' : '') + (onPick ? ' pickable' : ''), type: onPick ? 'button' : null, onClick: onPick || null },
-    h('span', { class: 'talent-icon' }, DK.icon(D.talents[id].icon, 20)),
-    h('span', { class: 'talent-main' }, h('b', null, t(`talent.${id}.name`)), h('span', { class: 'small' }, V.talentText(id)), h('span', { class: 'muted small' }, t(`talent.${id}.desc`))),
-    chosen ? DK.icon('check', 16) : null);
+  /** Perfil del daskai (chips con barras): por qué se le recomienda lo que se le recomienda. */
+  const profileChips = (d) => {
+    const P = DK.daskai.talentProfile(d);
+    return h('div', { class: 'tl-prof' }, h('small', { class: 'muted' }, t('talent.profile')),
+      ['phys', 'mag', 'tank', 'fast', 'status'].map((k) => h('span', { class: 'tl-pchip' + (P[k] >= 0.6 ? ' hi' : ''), tip: Math.round(P[k] * 100) + '%' },
+        t('talent.prof.' + k), h('i', null, h('i', { style: { width: Math.round(P[k] * 100) + '%' } })))));
+  };
 
-  /** Fila de un nivel de talento: las dos opciones. */
+  /** Pista de niveles de talento (25 · 50 · 75 · 100) con lo elegido. */
+  const track = (d) => {
+    const every = DK.config.talentEvery, tiers = [];
+    for (let l = every; l <= DK.config.maxLevel; l += every) tiers.push(l);
+    return h('div', { class: 'tl-track', 'aria-label': t('talent.track') }, tiers.map((lv) => {
+      const id = (d.talents || {})[lv], open = d.level >= lv && !id;
+      return h('span', { class: 'tl-node' + (id ? ' done' : open ? ' open' : ''), style: id ? { '--tc': D.talents[id].color } : null,
+        tip: id ? `${t(`talent.${id}.name`)} · ${V.talentText(id)}` : `${t('common.lvl')} ${lv}` },
+        h('span', { class: 'tl-dot' }, id ? DK.icon(D.talents[id].icon, 14) : open ? DK.icon('star', 13) : DK.icon('lock', 11)),
+        h('small', null, id ? t(`talent.${id}.name`) : `${t('common.lvl')} ${lv}`));
+    }));
+  };
+
+  /** Opciones de un nivel con su encaje y la recomendada. */
+  const optionsOf = (d, tier) => {
+    const ids = DK.daskai.talentOptions(d, tier), prof = DK.daskai.talentProfile(d);
+    const fits = ids.map((id) => DK.daskai.talentFit(d, id, prof));
+    const bestI = fits.reduce((bi, f, i) => (f.score > fits[bi].score ? i : bi), 0);
+    return { ids, fits, bestI };
+  };
+
+  /** Fila de un nivel de talento pendiente: sus tres opciones. */
   function tierRow(d, tier, onPick) {
-    const [a, b] = DK.daskai.talentOptions(d, tier);
-    const chosen = (d.talents || {})[tier];
-    const unlocked = d.level >= tier;
-    return h('div', { class: 'talent-tier' + (unlocked ? '' : ' locked') + (unlocked && !chosen ? ' pending' : '') },
-      h('span', { class: 'talent-lvl' }, h('span', null, t('common.lvl'), ' ', h('b', null, tier))),
-      h('div', { class: 'talent-pair' }, [a, b].map((id) => card(id, {
-        chosen: chosen === id, other: chosen && chosen !== id,
-        onPick: unlocked && !chosen ? () => onPick(tier, id) : null,
-      }))));
+    const { ids, fits, bestI } = optionsOf(d, tier);
+    return h('div', { class: 'tl-tier pending' },
+      h('span', { class: 'tl-lvl' }, t('common.lvl'), ' ', h('b', null, tier)),
+      h('div', { class: 'tl-row' }, ids.map((id, i) => card(id, { fit: fits[i], best: i === bestI, onPick: () => onPick(tier, id) }))));
   }
 
-  /**
-   * Sección de talentos de la ficha (pestaña Atributos): los pendientes con
-   * sus dos opciones, los elegidos en una línea y el próximo nivel.
-   */
+  /** Sección de talentos de la ficha (pestaña Atributos). */
   V.talentTab = (d, changed) => {
     const every = DK.config.talentEvery;
     const next = (Math.floor(d.level / every) + 1) * every;
@@ -55,44 +101,46 @@
       changed();
     };
     const pending = DK.daskai.talentsPending(d);
-    const chosen = Object.entries(d.talents || {}).sort((a, b) => a[0] - b[0]);
     return h('div', { class: 'stack-s talent-section' },
       h('h4', { class: 'row gap-s' }, DK.icon('star', 16), t('talent.tab'), h('span', { class: 'muted small', tip: t('talent.help', { n: every }) }, DK.icon('info', 13))),
-      pending.length ? h('div', { class: 'talent-list' }, pending.map((tier) => tierRow(d, tier, pick))) : null,
-      chosen.length ? h('div', { class: 'chips' }, chosen.map(([tier, id]) => h('span', { class: 'chip talent-chip', tip: `${t('common.lvl')} ${tier} · ${V.talentText(id)}\n${t(`talent.${id}.desc`)}` }, DK.icon(D.talents[id].icon, 13), t(`talent.${id}.name`)))) : null,
+      track(d),
+      pending.length ? h('div', { class: 'tl-list' }, pending.map((tier) => tierRow(d, tier, pick))) : null,
       next <= DK.config.maxLevel ? h('p', { class: 'muted small' }, DK.icon('clock', 12), ' ', t('talent.next', { n: next })) : null);
   };
 
-  /**
-   * Atributos del daskai ahora y con cada talento (v4.52): para elegir sabiendo qué cambia.
-   * Columnas: Ahora · con A · con B (la mejora en verde y la mejor de las dos resaltada).
-   */
-  V.talentCompare = (d, tier, a, b) => {
+  /** Atributos ahora y con cada opción (la mayor mejora resaltada). */
+  V.talentCompare = (d, tier, ...ids) => {
     const withT = (id) => { const c = JSON.parse(JSON.stringify(d)); c.talents = Object.assign({}, c.talents, { [tier]: id }); return DK.daskai.stats(c); };
-    const now = DK.daskai.stats(d), sa = withT(a), sb = withT(b);
-    const cell = (v, base, best) => { const dlt = v - base; return h('td', { class: 'tc-v' + (best && dlt > 0 ? ' best' : '') }, h('b', null, String(v)), dlt ? h('small', { class: dlt > 0 ? 'up' : 'down' }, (dlt > 0 ? '+' : '') + dlt) : null); };
-    const head = (id) => h('th', { tip: `${t(`talent.${id}.name`)} · ${V.talentText(id)}` }, DK.icon(D.talents[id].icon, 14), h('span', null, t(`talent.${id}.name`)));
-    return h('div', { class: 'tc-box' },
-      h('div', { class: 'tc-who' }, V.dSprite(d, { size: 64 }),
-        h('div', null, h('b', null, DK.daskai.name(d)), h('div', { class: 'muted small' }, `${t('common.lvl')} ${d.level} · `, DK.tr('natures', D.natures[d.nature])))),
-      h('table', { class: 'tc-table' },
-        h('thead', null, h('tr', null, h('th', null, t('detail.stats')), h('th', null, t('talent.now')), head(a), head(b))),
-        h('tbody', null, D.statKeys.map((k) => h('tr', null,
-          h('td', { class: 'tc-k' }, DK.icon(D.stats[k].icon, 14), DK.tr('stats', D.stats[k], 'short')),
-          h('td', { class: 'tc-v' }, h('b', null, String(now[k]))),
-          cell(sa[k], now[k], sa[k] - now[k] > sb[k] - now[k]), cell(sb[k], now[k], sb[k] - now[k] > sa[k] - now[k]))))));
+    const now = DK.daskai.stats(d), all = ids.map(withT);
+    const keys = D.statKeys.filter((k) => all.some((s) => s[k] !== now[k]));
+    if (!keys.length) return null;
+    return h('div', { class: 'tl-cmp-wrap' }, h('table', { class: 'tc-table tl-cmp' },
+      h('thead', null, h('tr', null, h('th', null, t('talent.compare')), h('th', null, t('talent.now')),
+        ids.map((id) => h('th', { style: { color: D.talents[id].color } }, DK.icon(D.talents[id].icon, 13), h('span', null, t(`talent.${id}.name`)))))),
+      h('tbody', null, keys.map((k) => {
+        const deltas = all.map((s) => s[k] - now[k]), max = Math.max(...deltas);
+        return h('tr', null, h('td', { class: 'tc-k' }, DK.icon(D.stats[k].icon, 14), DK.tr('stats', D.stats[k], 'short')), h('td', { class: 'tc-v' }, h('b', null, String(now[k]))),
+          all.map((s, i) => h('td', { class: 'tc-v' + (deltas[i] > 0 && deltas[i] === max ? ' best' : '') }, h('b', null, String(s[k])),
+            deltas[i] ? h('small', { class: deltas[i] > 0 ? 'up' : 'down' }, (deltas[i] > 0 ? '+' : '') + deltas[i]) : null)));
+      }))));
   };
 
-  /** Ventana para elegir los talentos pendientes (tras subir de nivel). */
+  /** Ventana para elegir los talentos pendientes (rediseñada en la v4.96). */
   V.talentDialog = async (d) => {
+    queue.delete(d.uid);
     while (DK.daskai.talentsPending(d).length) {
       const tier = DK.daskai.talentsPending(d)[0];
-      const [a, b] = DK.daskai.talentOptions(d, tier);
+      const { ids, fits, bestI } = optionsOf(d, tier);
       const id = await DK.ui.modal({
-        title: t('talent.title', { name: DK.daskai.name(d), level: tier }), icon: 'star', cls: 'talent-modal',
-        content: (close) => h('div', { class: 'stack-s' }, h('p', { class: 'muted' }, t('talent.choose')),
-          h('div', { class: 'talent-pair big' }, [a, b].map((x) => card(x, { onPick: () => close(x) }))),
-          V.talentCompare(d, tier, a, b)),
+        title: t('talent.title', { name: DK.daskai.name(d), level: tier }), icon: 'star', cls: 'talent-modal tl-modal', size: 'wide',
+        content: (close) => h('div', { class: 'tl-dlg' },
+          h('div', { class: 'tl-head' }, V.dSprite(d, { size: 72, cls: 'float' }),
+            h('div', { class: 'tl-head-t' }, h('b', null, DK.daskai.name(d)), h('small', { class: 'muted' }, `${t('common.lvl')} ${d.level} · `, DK.tr('natures', D.natures[d.nature])),
+              profileChips(d)),
+            track(d)),
+          h('p', { class: 'muted small tl-hint' }, DK.icon('info', 13), ' ', t('talent.choose')),
+          h('div', { class: 'tl-row big' }, ids.map((x, i) => card(x, { fit: fits[i], best: i === bestI, big: true, onPick: () => close(x) }))),
+          V.talentCompare(d, tier, ...ids)),
         actions: [{ label: t('talent.later'), icon: 'clock', variant: 'ghost', value: null }],
       }).promise;
       if (!id) return;
@@ -101,4 +149,35 @@
       DK.ui.toast(t('talent.chosen', { name: DK.daskai.name(d), talent: t(`talent.${id}.name`) }), { icon: D.talents[id].icon, kind: 'good' });
     }
   };
+
+  /*
+   * v4.96: ¿por qué a veces no salía la ventana? Sólo se abría desde la ventana de subida de nivel
+   * del daskai que combatía. Si subía otro del equipo (experiencia compartida del banquillo), o con
+   * un objeto desde la Bolsa (modo silencioso), sólo salía un aviso. Ahora cada subida a un nivel de
+   * talento queda apuntada y, al volver a una pantalla tranquila (sin ventanas abiertas y fuera del
+   * combate), se abre la ventana de los que tengan talentos por elegir.
+   */
+  let busy = false;
+  DK.on('levelUp', ({ d, level }) => { if (d && !d.temp && level % DK.config.talentEvery === 0) queue.add(d.uid); });
+  V.talentFlush = async () => {
+    if (busy || !queue.size || !DK.store.state) return;
+    if (document.querySelector('.modal-backdrop')) return;
+    const cur = DK.router && DK.router.current && DK.router.current();
+    if (cur && ['battle', 'mainMenu'].includes(cur.id)) return;
+    busy = true;
+    try {
+      for (const uid of [...queue]) {
+        queue.delete(uid);
+        const d = DK.party.get(uid);
+        if (d && DK.daskai.talentsPending(d).length) await V.talentDialog(d);
+      }
+    } finally { busy = false; }
+    if (DK.router && DK.router.refresh) DK.router.refresh();
+  };
+  DK.on('screen:enter', () => setTimeout(() => {
+    // v4.96: aviso único si la partida tenía talentos del sistema antiguo (se devolvieron al cargar)
+    const st = DK.store.state;
+    if (st && st.talentReset) { delete st.talentReset; DK.ui.toast(t('talent.reset'), { icon: 'star', kind: 'good', duration: 7000 }); DK.store.save(); }
+    V.talentFlush();
+  }, 450));
 })();

@@ -138,6 +138,26 @@
       if (!s.looks && DK.looks) { s.looks = { seen: {}, traits: {} }; (s.party || []).forEach((d) => DK.looks.see(d)); }
       if (s.coins == null) s.coins = DK.config.startingCoins; // partidas de la v1 no tenían monedas
       s.bosses = s.bosses || {};
+      // v4.96: talentos cada 25 niveles y pool nuevo → los de los niveles 10, 20… (o de talentos que ya no existen) se devuelven
+      if (!s.talentsV && DK.data.talents) {
+        (s.party || []).forEach((d) => {
+          if (!d.talents) return;
+          const keep = {}; Object.entries(d.talents).forEach(([tier, id]) => { if (Number(tier) % DK.config.talentEvery === 0 && DK.data.talents[id]) keep[tier] = id; });
+          if (Object.keys(keep).length !== Object.keys(d.talents).length) s.talentReset = true;
+          d.talents = keep;
+        });
+        s.talentsV = 2;
+      }
+      // v5.0: zonas intermedias nuevas (Pantano Brumoso y Glaciar Eterno). Si ya habías pasado de ellas
+      // (la zona siguiente estaba abierta o su jefe anterior vencido) se abren directamente.
+      if (s.zones && DK.data.zones) {
+        Object.values(DK.data.zones).forEach((z) => {
+          if (!z.unlock || (s.zones[z.id] && s.zones[z.id].unlocked)) return;
+          const after = Object.values(DK.data.zones).find((n) => n.unlock === z.id);
+          const prevBeat = s.bosses && s.bosses[z.unlock] && s.bosses[z.unlock].defeated > 0;
+          if (prevBeat || (after && s.zones[after.id] && s.zones[after.id].unlocked)) s.zones[z.id] = Object.assign({ wins: 0 }, s.zones[z.id], { unlocked: true });
+        });
+      }
       s.favorites = s.favorites || [];
       s.graveyard = s.graveyard || [];
       s.essences = s.essences || [];      // esencias de caídos (DK.legacy)

@@ -31,9 +31,9 @@
     def(lv = this.current()) { return lv > 0 ? this.levels()[lv - 1] : null; },
     /** Suma de un valor de los niveles 1..lv (los niveles se acumulan en reglas; los números son los del nivel). */
     has(rule, lv = this.current()) { return this.levels().slice(0, lv).some((l) => l.rule === rule); },
-    /** Elige el nivel de la próxima expedición (0 = sin corrupción). */
+    /** Elige el nivel de la próxima expedición (0 = sin corrupción, sólo antes de desbloquearla). */
     set(lv) {
-      lv = Math.max(0, Math.min(this.max(), lv | 0));
+      lv = Math.max(this.max() > 0 ? 1 : 0, Math.min(this.max(), lv | 0)); // v5.0: desbloqueada, como mínimo el nivel I
       const n = DK.expedition.nextStart();
       if ((n.corruption || 0) === lv) return lv;
       n.corruption = lv; n.seed = `${n.zone}-${Date.now()}`;
