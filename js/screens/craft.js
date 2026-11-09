@@ -128,7 +128,18 @@
       title: uids.length > 1 ? t('gear.forgedN', { n: uids.length }) : t('gear.forgedOne'), icon: 'hammer', cls: 'forged-modal',
       content: (close) => {
         const box = h('div', { class: 'fr-body' });
+        let intro = !(DK.settings.reducedMotion() || DK.settings.get('skipAnims'));
         const draw = () => {
+          // v5.4: chispas de forja y la pieza gira hasta quedar de frente (sólo la primera vez)
+          if (intro) {
+            intro = false;
+            const f = DK.gear.find(uids[0]); if (!f) { close(false); return; }
+            const rc = D.gear.rarities[f.p.rarity].color;
+            box.replaceChildren(h('div', { class: 'fr-forging', style: { '--g': rc } }, h('span', { class: 'fr-anvil' }, DK.icon('anvil', 54)), h('span', { class: 'fr-sparks' }, Array.from({ length: 14 }, (_, i) => h('i', { style: { '--a': (i * 360) / 14 + 'deg', '--d': (i % 4) * 60 + 'ms' } })))));
+            DK.audio.sfx('forge'); DK.vibrate([20, 100, 20, 100, 40]);
+            setTimeout(() => { draw(); box.classList.add('fr-reveal'); if (uids.some((u) => { const q = DK.gear.find(u); return q && q.p.rarity === 'legendario'; })) { box.classList.add('fr-legend'); DK.audio.sfx('legend'); } }, 950);
+            return;
+          }
           const x = DK.gear.find(uids[cur]); if (!x) { close(false); return; }
           const p = x.p, tiers = p.affixes.map((a) => a.t), best = tiers.length ? Math.max(...tiers) : 0;
           const sumTier = tiers.length ? h('div', { class: 'fr-sum' },

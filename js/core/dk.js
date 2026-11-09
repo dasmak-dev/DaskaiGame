@@ -11,7 +11,7 @@
 (function () {
   const DK = (window.DK = window.DK || {});
   DK.data = DK.data || {};
-  DK.version = '5.3.0';
+  DK.version = '5.14.0';
 
   DK.util = {
     /** Entero aleatorio entre min y max (ambos incluidos). */
@@ -34,6 +34,14 @@
 
     /** Promesa que se resuelve tras `ms` milisegundos. */
     sleep(ms) { return new Promise((r) => setTimeout(r, ms)); },
+    /** v5.4: la cifra de `el` corre de `from` a `to` (contadores de monedas, experiencia, emblemas). */
+    countTo(el, from, to, ms = 600, fmt = (n) => Math.round(n).toLocaleString(DK.i18n ? DK.i18n.lang : undefined)) {
+      if (!el) return;
+      if (from === to || (DK.settings && (DK.settings.reducedMotion() || DK.settings.get('skipAnims')))) { el.textContent = fmt(to); return; }
+      const t0 = performance.now();
+      const step = (now) => { const p = Math.min(1, (now - t0) / ms); el.textContent = fmt(from + (to - from) * (1 - Math.pow(1 - p, 3))); if (p < 1) requestAnimationFrame(step); };
+      requestAnimationFrame(step);
+    },
 
     /** Copia profunda de un objeto serializable. */
     clone(o) { return JSON.parse(JSON.stringify(o)); },

@@ -26,7 +26,9 @@
     growth: { level: [1, 3], natureBonus: [0, 1], naturePenalty: [0, 1], min: 0, max: 5 },
     // Ritmo de crecimiento de cada atributo al subir de nivel (systems/daskai.js → growthWeight):
     //   especie (sus atributos fuertes crecen más) + pasivas (+/-) → multiplica los puntos por nivel
-    growthBias: { species: 0.7, passive: 1.5, min: 0.5, max: 1.6 },
+    // v5.4: techo de la vida propia de tus daskai (sin el equipo): base + perLevel × nivel (Nv. 40 → 300 · Nv. 100 → 600; sube 5 por nivel como mucho)
+    hpCap: { base: 100, perLevel: 5 },
+    growthBias: { species: 0.7, passive: 1.5, min: 0.5, max: 1.4 }, // v5.4: máx. 1.4 (antes 1.6; la vida crecía demasiado)
     // Formas (v4.51): cada daskai sortea al nacer cuántas formas tendrá (1-4); el inicial siempre 4.
     //   levels: niveles para pasar a la forma siguiente · power: fuerza base de cada forma respecto a la
     //   primera de su línea (todas acaban igual; con menos formas empiezas más fuerte) · vis: etapa del dibujo.
@@ -187,6 +189,16 @@
        weights = probabilidad relativa de cada tipo de nodo (el piso 1 siempre es combate). */
     expedition: {
       rows: 10, eliteFrom: 2, branchChance: 0.45,
+      /**
+       * v5.5: pisos especiales (probabilidad por nodo desde `fromRow`):
+       *   fight → 'chain' (oleada: al caer uno entra otro, 3 seguidos) o 'swap' (relevo: a media vida se cambia por
+       *           otro con la vida llena; luego vuelve el primero) · recompensa ×`rewardMult`
+       *   event → 'rare' (personaje especial que regala uno de 3 objetos especiales)
+       *   shop  → 'curio' (mercader de rarezas: vende objetos especiales) o 'gift' (te regala uno a elegir)
+       */
+      specialItems: ['tonico_fuerza', 'tonico_magia', 'tonico_hierro', 'tonico_espiritu', 'tonico_viento', 'tonico_vida', 'tonico_mana', 'cristal_sabio', 'esencia_ancestral', 'pluma_fenix', 'elixir',
+        'piedra_divina', 'piedra_exaltacion', 'piedra_alquimia', 'piedra_templado', 'sello_forja', 'ambar_fosil', 'lagrima_glaciar', 'hiperpocion'],
+      specials: { fromRow: 2, fight: 0.14, event: 0.22, shop: 0.4, chainSize: 3, rewardMult: { chain: 2.2, swap: 1.8 } },
       // Tamaños de mapa (al azar cada vez que se genera uno): `rows` pisos normales
       // + hoguera + jefe → pequeño 12, mediano 20 y XL 31 (30 + jefe).
       // caves / shortcuts / rests = cuevas mínimas, atajos [mín, máx] y hogueras fijas por el camino

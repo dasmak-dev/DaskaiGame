@@ -53,10 +53,13 @@
       } else if (o.elite) {
         const pick = U.weighted(zone.enemies);
         enemy = DK.daskai.create(pick.species, lv(zone.levels[1] + C().eliteLevelBonus), { wild: true, elite: true, dual: U.chance(C().dual.elite) });
-      } else {
+      } else enemy = wildOne();
+      function wildOne() {
         const pick = U.weighted(zone.enemies);
         // Variocolor: la probabilidad base + el rastreo de esa especie (DK.tracking) y la corrupción
-        enemy = DK.daskai.create(pick.species, lv(U.rand(zone.levels[0], zone.levels[1])), { wild: true, dual: U.chance(C().dual.wild), shiny: U.chance(DK.config.shinyChance + (DK.endgame ? DK.endgame.shiny(pick.species) : 0)) });
+        const w = DK.daskai.create(pick.species, lv(U.rand(zone.levels[0], zone.levels[1])), { wild: true, dual: U.chance(C().dual.wild), shiny: U.chance(DK.config.shinyChance + (DK.endgame ? DK.endgame.shiny(pick.species) : 0)) });
+        DK.daskai.fullHeal(w);
+        return w;
       }
       DK.daskai.fullHeal(enemy);
       const known = DK.codex.fought(zoneId, enemy.species) > 0; // ¿hemos peleado antes contra él?
@@ -74,6 +77,15 @@
         phases: o.boss ? (secret ? secret.phases.map((p) => Object.assign({}, p)) : this.bossPhases(zoneId)) : [], phase: 0, shield: 0, frenzy: false, bossRegen: 0, guarding: false,
         breakMax: o.boss ? C().breakGauge.boss : o.elite ? C().breakGauge.elite : 0, breakVal: 0, broken: 0, brokeAt: 0, breaks: 0,
       };
+      // v5.5: combates especiales. 'chain' = oleada (al caer uno entra el siguiente) · 'swap' = relevo
+      // (a media vida el rival se retira y entra otro con la vida llena; a media vida de éste vuelve el primero)
+      if (o.wave && !o.boss && !o.elite) {
+        const SP = DK.config.expedition.specials || {};
+        const n = o.wave === 'chain' ? Math.max(2, SP.chainSize || 3) : 2;
+        const others = Array.from({ length: n - 1 }, () => wildOne());
+        others.forEach((x) => { DK.codex.seeEnemy(zoneId, x.species); DK.looks.see(x); });
+        st.wave = { kind: o.wave, total: n, queue: others, beaten: 0, all: [enemy].concat(others), swapped: {}, mult: (SP.rewardMult || {})[o.wave] || 1.5 };
+      }
       // Pacto «Frenesí»: el rival empieza más rápido
       if (st.expedition && DK.curses.effect('enemySpd')) st.stages.enemy.spd = Math.min(3, DK.curses.effect('enemySpd'));
       // Pasivas «al entrar» (mirada fiera, arranque…): efectos temporales de los dos
@@ -153,7 +165,8 @@
     stageMult(stage) { const s = C().stageStep; return stage >= 0 ? 1 + s * stage : 1 / (1 + s * -stage); },
     /** Atributo en combate (con mejoras/reducciones y efectos temporales de pasivas). */
     stat(st, side, k) {
-      const base = DK.daskai.stats(this.get(st, side))[k] * this.timedMult(st, side, k);
+      const dd = this.get(st, side), sm = k === 'spd' && dd.status && D.statuses[dd.status] && D.statuses[dd.status].spdMult ? D.statuses[dd.status].spdMult : 1; // v5.4: parálisis
+      const base = DK.daskai.stats(dd)[k] * this.timedMult(st, side, k) * sm;
       return st.stages[side][k] != null ? base * this.stageMult(st.stages[side][k]) : base;
     },
 
@@ -443,7 +456,7 @@
     /** Foto de vida/maná/estado para la interfaz. */
     snap(st) {
       const a = this.ally(st), e = st.enemy;
-      return { aHp: a.cur.hp, aMp: a.cur.mp, aStatus: a.status, eHp: e.cur.hp, eMp: e.cur.mp, eStatus: e.status, aUid: a.uid, bVal: st.breakVal || 0, bMax: st.breakMax || 0, broken: st.broken || 0 };
+      return { aHp: a.cur.hp, aMp: a.cur.mp, aStatus: a.status, eHp: e.cur.hp, eMp: e.cur.mp, eStatus: e.status, aUid: a.uid, eUid: e.uid, bVal: st.breakVal || 0, bMax: st.breakMax || 0, broken: st.broken || 0 };
     },
     push(st, ev, o) { ev.push(Object.assign({ cat: 'sys' }, o, { snap: this.snap(st) })); },
 
@@ -467,16 +480,38 @@
     },
 
     /* ---------------- Ejecutar un ataque ---------------- */
+    /**
+     * v5.4: ¿el estado le impide actuar este turno? (congelado, dormido, paralizado).
+     * Congelado/dormido: cada turno puede pasarse (thaw) y como mucho maxTurns; paralizado: skip de probabilidad.
+     */
+    blockedBy(st, side, ev) {
+      const A = this.get(st, side), S = A.status && D.statuses[A.status];
+      if (!S || !S.skip) return false;
+      const name = this.name(st, side);
+      if (S.thaw != null) {
+        A.statusT = (A.statusT || 0) + 1;
+        if (A.statusT > (S.maxTurns || 3) || U.chance(S.thaw)) {
+          const was = A.status; A.status = null; A.statusT = 0;
+          this.push(st, ev, { text: t(was === 'sueno' ? 'battle.woke' : 'battle.thawed', { name: cap(name) }), kind: 'good', anim: 'cured', side, cat: 'dmg' });
+          return false;
+        }
+      } else if (!U.chance(S.skip)) return false;
+      this.push(st, ev, { text: t('battle.blocked.' + A.status, { name: cap(name) }), kind: 'warn', anim: 'blocked', side, status: A.status, cat: 'dmg' });
+      return true;
+    },
+
     act(st, side, moveId, ev) {
       const A = this.get(st, side), T = this.get(st, other(side));
       const m = D.moves[moveId];
+      if (this.blockedBy(st, side, ev)) return;
       const house = m.house || (m.kind === 'fisico' ? null : D.species[A.species].house);
       if (m.kind === 'magico' && m.mp) A.cur.mp = Math.max(0, A.cur.mp - this.mpCost(A, moveId));
       if (side === 'enemy') DK.codex.recordMove(st.zoneId, A.species, moveId);
       else st.lastMove = moveId;
       this.push(st, ev, { text: t('battle.uses', { name: this.name(st, side), move: m.name }), anim: 'attack', side, cat: 'dmg', move: moveId, house, kind: m.kind });
 
-      if (!U.chance(m.acc / 100 + (DK.gear.fxOf(A).acc || 0))) { // v4.82: precisión del equipo
+      const blind = A.status && D.statuses[A.status] && D.statuses[A.status].accMult ? D.statuses[A.status].accMult : 1; // v5.4: cegado
+      if (!U.chance((m.acc / 100 + (DK.gear.fxOf(A).acc || 0)) * blind)) { // v4.82: precisión del equipo
         this.push(st, ev, { text: t('battle.missed'), kind: 'muted', anim: 'miss', side: other(side), cat: 'dmg' }); return; }
 
       let dealt = 0;
@@ -496,6 +531,11 @@
         T.cur.hp = Math.max(0, T.cur.hp - r.dmg);
         DK.emit('damage', { side: other(side), amount: dealt, crit: r.crit });
         this.push(st, ev, { anim: 'hit', side: other(side), amount: r.dmg, crit: r.crit, eff: r.eff, house, kind: m.kind, cat: 'dmg' });
+        // v5.4: un golpe despierta al dormido; el fuego descongela
+        if (T.cur.hp > 0 && T.status && ((T.status === 'sueno' && D.statuses.sueno.wakeOnHit) || (T.status === 'congelacion' && house === 'fuego'))) {
+          const was = T.status; T.status = null; T.statusT = 0;
+          this.push(st, ev, { text: t(was === 'sueno' ? 'battle.woke' : 'battle.thawed', { name: cap(this.name(st, other(side))) }), kind: 'muted', anim: 'cured', side: other(side), cat: 'dmg' });
+        }
         if (r.crit) this.push(st, ev, { text: t('battle.crit'), kind: 'warn', cat: 'dmg' });
         if (r.eff === 'strong') this.push(st, ev, { text: t('battle.strong'), kind: 'good', cat: 'dmg' });
         if (r.eff === 'weak') this.push(st, ev, { text: t('battle.weak'), kind: 'muted', cat: 'dmg' });
@@ -542,7 +582,7 @@
       } else if (e.type === 'status' && lucky && T.cur.hp > 0) {
         // v4.81: amuletos: pueden evitar el estado
         if (!T.status && gT.statusRes && U.chance(gT.statusRes)) this.push(st, ev, { text: t('battle.warded', { name: this.name(st, other(side)) }), kind: 'muted', cat: 'dmg' });
-        else if (!T.status) { T.status = e.status; this.push(st, ev, { text: t('battle.gotStatus', { name: this.name(st, other(side)), status: statusName(e.status) }), kind: 'warn', anim: 'status', side: other(side), cat: 'dmg' }); }
+        else if (!T.status) { T.status = e.status; T.statusT = 0; this.push(st, ev, { text: t('battle.gotStatus', { name: this.name(st, other(side)), status: statusName(e.status) }), kind: 'warn', anim: 'status', status: e.status, side: other(side), cat: 'dmg' }); }
         else if (!m.power) this.push(st, ev, { text: t('battle.noEffect'), kind: 'muted', cat: 'dmg' });
       } else if ((e.type === 'buff' || e.type === 'debuff') && lucky) {
         const tgt = e.type === 'buff' ? side : other(side);
@@ -663,7 +703,11 @@
         const d = this.get(st, side);
         if (d.cur.hp <= 0) continue;
         const s = DK.daskai.stats(d);
-        if (d.status) {
+        // v5.4: la ceguera se pasa sola (maxTurns); los estados sin daño no hacen nada más aquí
+        if (d.status && !D.statuses[d.status].dot) {
+          const info = D.statuses[d.status];
+          if (!info.skip && info.maxTurns) { d.statusT = (d.statusT || 0) + 1; if (d.statusT >= info.maxTurns) { d.status = null; d.statusT = 0; this.push(st, ev, { text: t('battle.cured', { name: cap(this.name(st, side)), status: DK.tr('statuses', info).toLowerCase() }), kind: 'good', anim: 'cured', side, cat: 'dmg' }); } }
+        } else if (d.status) {
           const info = D.statuses[d.status];
           const dmg = Math.max(1, Math.round(s.hp * info.dot));
           d.cur.hp = Math.max(0, d.cur.hp - dmg);
@@ -686,7 +730,24 @@
       const a = this.ally(st), e = st.enemy;
       if (e.cur.hp <= 0) {
         this.push(st, ev, { text: t('battle.enemyFainted', { name: this.name(st, 'enemy') }), kind: 'good', anim: 'faint', side: 'enemy' });
+        // v5.5: oleada / relevo: si queda otro rival, entra sin salir del combate
+        const W = st.wave;
+        if (W && a.cur.hp > 0) {
+          W.beaten++;
+          const next = W.queue.shift();
+          if (next) { this.enemyIn(st, next, ev, W.kind === 'swap' ? 'back' : 'next'); return true; }
+        }
         st.outcome = 'won';
+        return true;
+      }
+      // v5.5: relevo: a media vida el rival se retira y entra el otro (cada uno se retira una sola vez)
+      const W = st.wave;
+      if (W && W.kind === 'swap' && a.cur.hp > 0 && W.queue.length && !W.swapped[e.uid] && e.cur.hp / DK.daskai.stats(e).hp <= 0.5) {
+        W.swapped[e.uid] = true;
+        const next = W.queue.shift();
+        W.queue.push(e);
+        this.push(st, ev, { text: t('battle.wave.retreat', { name: cap(this.name(st, 'enemy')) }), kind: 'warn', anim: 'enemyOut', side: 'enemy', cat: 'dmg' });
+        this.enemyIn(st, next, ev, W.swapped[next.uid] ? 'back' : 'swap');
         return true;
       }
       if (a.cur.hp <= 0) {
@@ -698,6 +759,16 @@
         return true;
       }
       return false;
+    },
+
+    /** v5.5: entra un rival nuevo (oleada o relevo): sus mejoras/efectos empiezan de cero. */
+    enemyIn(st, d, ev, how = 'next') {
+      st.enemy = d; st.stages.enemy = zeroStages(); if (st.timed) st.timed.enemy = [];
+      st.known = DK.codex.fought(st.zoneId, d.species) > 0;
+      const W = st.wave, n = W ? W.all.indexOf(d) + 1 : 1;
+      this.push(st, ev, { text: t('battle.wave.' + how, { name: cap(this.name(st, 'enemy')), n, total: W ? W.total : 1 }), kind: 'warn', anim: 'enemyIn', side: 'enemy', uid: d.uid, cat: 'dmg' });
+      this.applyEntry(st, 'enemy', ev);
+      st.intent = this.enemyChoice(st);
     },
 
     /** Cambia el daskai aliado. */
@@ -723,7 +794,7 @@
       const ally = this.ally(st), e = st.enemy, sp = D.species[e.species], zone = D.zones[st.zoneId];
       const out = { exp: 0, coins: 0, drops: [], unlocked: null, captured: st.outcome === 'captured', boss: st.boss, toLoot: st.expedition };
       const gF = DK.gear.fxOf(ally); // v4.82: sufijos de experiencia y monedas
-      out.exp = Math.round(C().expGain(sp.exp, e.level) * (st.boss ? 2 : st.elite ? 1.5 : 1) * (1 + DK.camp.value('sabiduria') + (gF.expFind || 0) + (st.expedition ? DK.relics.sum('exp') + (DK.expedition.kindDef().exp || 0) + DK.runes.bonus('exp') : 0)));
+      out.exp = Math.round(C().expGain(sp.exp, e.level) * (st.boss ? 2 : st.elite ? 1.5 : 1) * (st.wave && st.outcome === 'won' ? st.wave.mult : 1) * (1 + DK.camp.value('sabiduria') + (gF.expFind || 0) + (st.expedition ? DK.relics.sum('exp') + (DK.expedition.kindDef().exp || 0) + DK.runes.bonus('exp') : 0)));
       out.levelInfo = DK.daskai.gainExp(ally, out.exp);
       // Experiencia compartida con el resto del equipo (no debilitados)
       out.shared = DK.party.active().filter((d) => d.uid !== ally.uid && !DK.daskai.isFainted(d) && d.level < DK.config.maxLevel).map((d) => {
@@ -733,7 +804,8 @@
         return { uid: d.uid, name: DK.daskai.name(d), exp: n, from: before, to: d.level, evolveReady: info.evolveReady };
       });
       const bi = st.bossInfo || zone.boss;
-      out.coins = Math.round((st.boss ? bi.coins : C().coinDrop(e.level) * (st.elite ? 2 : 1)) * (1 + (gF.goldFind || 0)));
+      out.coins = Math.round((st.boss ? bi.coins : C().coinDrop(e.level) * (st.elite ? 2 : 1)) * (1 + (gF.goldFind || 0)) * (st.wave && st.outcome === 'won' ? st.wave.mult : 1));
+      if (st.wave) out.wave = { kind: st.wave.kind, n: st.wave.total, mult: st.wave.mult };
 
       const entry = DK.codex.entry(st.zoneId, e.species);
       entry.defeated++;
@@ -842,7 +914,7 @@
         DK.party.all().filter((d) => d.cur.hp <= 0).forEach((d) => {
           const how = DK.expedition.trySave(d);
           if (how) { st.saved.push({ name: DK.daskai.name(d), how }); return; }
-          const info = { name: DK.daskai.name(d), species: d.species, level: d.level };
+          const info = { name: DK.daskai.name(d), species: d.species, level: d.level, uid: d.uid, look: DK.looks.of(d) || null };
           st.dead.push(info);
           if (e && e.log) (e.log.fallen = e.log.fallen || []).push(info);
           DK.expedition.logEvent('fallen', { name: info.name });
@@ -861,6 +933,7 @@
       DK.emit('battle:end', {
         outcome: st.outcome, zone: st.zoneId, turns: st.turn, boss: st.boss, elite: !!st.elite,
         enemy: { species: st.enemy.species, level: st.enemy.level, shiny: !!st.enemy.shiny, look: DK.looks.of(st.enemy) || undefined },
+        foes: st.wave ? st.wave.all.map((x) => ({ species: x.species, level: x.level, shiny: !!x.shiny, look: DK.looks.of(x) || undefined })) : undefined, // v5.9: oleadas/relevos
         ally: ally ? { uid: ally.uid, species: ally.species, level: ally.level } : null,
       });
     },

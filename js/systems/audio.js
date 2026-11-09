@@ -99,9 +99,12 @@
 
   /** Catálogo de efectos. */
   const SFX = {
-    click: () => tone(midi(88), 0.04, { type: 'triangle', vol: 0.06 }),
-    select: () => { tone(midi(76), 0.05, { type: 'triangle', vol: 0.08 }); tone(midi(83), 0.07, { type: 'triangle', vol: 0.08, delay: 0.04 }); },
+    // v5.4: interfaz con más cuerpo: un golpecito grave bajo el clic
+    click: () => { tone(midi(88), 0.04, { type: 'triangle', vol: 0.06 }); tone(150, 0.06, { type: 'sine', vol: 0.09, slide: 90 }); noise(0.03, { vol: 0.08, freq: 3500, q: 2 }); },
+    select: () => { tone(midi(76), 0.05, { type: 'triangle', vol: 0.08 }); tone(midi(83), 0.07, { type: 'triangle', vol: 0.08, delay: 0.04 }); tone(180, 0.08, { type: 'sine', vol: 0.07, slide: 110 }); },
     hit: () => { noise(0.14, { vol: 0.45, freq: 900 }); tone(150, 0.14, { type: 'square', vol: 0.12, slide: 60 }); },
+    // v5.4: rugido del jefe al aparecer (ruido grave + tono que baja)
+    roar: () => { noise(0.9, { vol: 0.35, freq: 260 }); tone(140, 0.9, { type: 'sawtooth', vol: 0.12, slide: 55, attack: 0.08 }); tone(70, 1.1, { type: 'square', vol: 0.06, slide: 40, delay: 0.05 }); },
     crit: () => { noise(0.2, { vol: 0.55, freq: 1600 }); tone(900, 0.2, { type: 'sawtooth', vol: 0.12, slide: 200 }); },
     miss: () => noise(0.18, { vol: 0.2, freq: 3000, q: 0.6 }),
     heal: () => arp([72, 76, 79, 84], 0.06, { type: 'sine', vol: 0.12, dur: 0.25 }),
@@ -113,11 +116,19 @@
     capture: () => { tone(300, 0.5, { type: 'sine', vol: 0.15, slide: 1200 }); noise(0.4, { vol: 0.15, freq: 4000, delay: 0.1 }); },
     captured: () => arp([72, 79, 84, 91], 0.08, { type: 'triangle', vol: 0.14, dur: 0.3 }),
     captureFail: () => tone(700, 0.35, { type: 'square', vol: 0.08, slide: 180 }),
-    levelup: () => arp([72, 76, 79, 84, 88], 0.07, { type: 'triangle', vol: 0.14, dur: 0.3 }),
+    // v5.4: fanfarria: subida + acorde final sostenido
+    levelup: () => { arp([72, 76, 79, 84], 0.08, { type: 'square', vol: 0.06, dur: 0.16 }); [84, 88, 91].forEach((n) => tone(midi(n), 0.9, { type: 'triangle', vol: 0.1, delay: 0.34, attack: 0.02 })); tone(midi(60), 0.9, { type: 'sine', vol: 0.12, delay: 0.34 }); },
+    tick: () => { tone(midi(96), 0.03, { type: 'square', vol: 0.035 }); noise(0.02, { vol: 0.06, freq: 6000, q: 3 }); },
     win: () => { arp([67, 72, 76, 79], 0.1, { type: 'square', vol: 0.08, dur: 0.2 }); arp([84, 88, 91], 0, { type: 'triangle', vol: 0.1, dur: 0.8, delay: 0.42 }); },
     lose: () => arp([67, 64, 60, 55], 0.22, { type: 'triangle', vol: 0.12, dur: 0.35 }),
     flee: () => noise(0.35, { vol: 0.25, freq: 600, q: 0.5 }),
-    coin: () => { tone(midi(88), 0.07, { type: 'square', vol: 0.06 }); tone(midi(95), 0.18, { type: 'square', vol: 0.06, delay: 0.06 }); },
+    // v5.4: monedas que tintinean (parciales metálicos + 2-3 golpecitos)
+    coin: () => { [0, 0.07, 0.15].forEach((d, i) => { const f = 2400 + i * 350 + Math.random() * 200; tone(f, 0.22, { type: 'sine', vol: 0.05, delay: d }); tone(f * 2.76, 0.12, { type: 'sine', vol: 0.025, delay: d }); noise(0.03, { vol: 0.08, freq: 7000, q: 4, delay: d }); }); },
+    // v5.4: golpe seco al engarzar una runa
+    thud: () => { tone(110, 0.16, { type: 'sine', vol: 0.3, slide: 45 }); noise(0.07, { vol: 0.3, freq: 420, q: 0.8 }); tone(midi(79), 0.25, { type: 'triangle', vol: 0.04, delay: 0.05 }); },
+    chest: () => { noise(0.25, { vol: 0.18, freq: 500, q: 0.6 }); tone(90, 0.2, { type: 'square', vol: 0.06, slide: 60 }); arp([76, 83, 88], 0.07, { type: 'triangle', vol: 0.1, dur: 0.3, delay: 0.22 }); },
+    legend: () => { tone(300, 1.2, { type: 'sine', vol: 0.1, slide: 1200, attack: 0.25 }); [84, 88, 91, 96].forEach((n, i) => tone(midi(n), 1.2, { type: 'triangle', vol: 0.07, delay: 0.7 + i * 0.05 })); noise(0.6, { vol: 0.08, freq: 8000, q: 1, delay: 0.7 }); },
+    forge: () => { [0, 0.12, 0.24].forEach((d) => { noise(0.05, { vol: 0.35, freq: 3200, q: 3, delay: d }); tone(1800 + Math.random() * 600, 0.3, { type: 'sine', vol: 0.04, delay: d }); }); tone(90, 0.3, { type: 'sine', vol: 0.2, slide: 50 }); },
     craft: () => { noise(0.1, { vol: 0.3, freq: 2500 }); arp([67, 74, 79], 0.08, { type: 'triangle', vol: 0.12, dur: 0.22, delay: 0.08 }); },
     error: () => tone(160, 0.18, { type: 'square', vol: 0.08 }),
     evolve: () => { tone(200, 1.6, { type: 'sine', vol: 0.15, slide: 1600, attack: 0.3 }); arp([84, 88, 91, 96], 0.12, { type: 'triangle', vol: 0.1, dur: 0.4, delay: 1.5 }); },
@@ -196,12 +207,23 @@
   /** Generador pseudoaleatorio estable por pista y compás (la melodía se repite con variaciones). */
   const hashRnd = (str) => { let x = 0; for (let i = 0; i < str.length; i++) x = (x * 31 + str.charCodeAt(i)) | 0; return () => { x = (x * 1103515245 + 12345) | 0; return ((x >>> 0) % 10000) / 10000; }; };
 
+  /** v5.4: tensión del combate (0–1): capas de percusión extra que entran poco a poco. */
+  let intensity = 0;
   function startTrack(name) {
+    // v5.4: al cambiar de pista en mitad de un combate (furia, peligro) se baja el volumen un instante
+    // y la nueva entra en el siguiente pulso con un redoble, en vez de cortar en seco
+    const prev = seq;
     stopTrack();
     const tr = trackOf(name);
     if (!tr || !ctx) return;
     const eighth = 60 / tr.bpm / 2;
-    seq = { tr, name, step: 0, next: ctx.currentTime + 0.1, eighth };
+    const swap = prev && /^(boss|danger|elite|boss_rage|boss_secret)$|:fight$/.test(prev.name) && /^(boss_rage|danger)$/.test(name);
+    if (swap) {
+      const t0 = ctx.currentTime, g = musicGain.gain, v = g.value;
+      g.cancelScheduledValues(t0); g.setValueAtTime(v, t0); g.linearRampToValueAtTime(v * 0.35, t0 + 0.12); g.linearRampToValueAtTime(v, t0 + 0.9);
+      [0, 1, 2, 3, 4, 5].forEach((i) => noise(0.08, { out: musicGain, vol: 0.03 + i * 0.012, freq: 300 + i * 40, q: 0.8, delay: 0.1 + i * eighth / 2 }));
+    }
+    seq = { tr, name, step: 0, next: ctx.currentTime + (swap ? 0.1 + 3 * eighth : 0.1), eighth };
     seq.timer = setInterval(() => {
       if (!ctx || !seq) return;
       while (seq.next < ctx.currentTime + 0.3) { playStep(seq.step, seq.next - ctx.currentTime); seq.next += seq.eighth; seq.step++; }
@@ -259,6 +281,10 @@
       if (beat === 4) { noise(0.18, { ...o, out: musicGain, vol: 0.08, freq: 260, q: 0.8 }); tone(110, 0.2, { ...o, out: musicGain, type: 'triangle', vol: 0.06, slide: 60 }); }
       if (beat % 2 === 1) noise(0.05, { ...o, out: musicGain, vol: 0.025, freq: 3200 });
     }
+    // v5.4: capas de tensión (DK.audio.intensity): charles a semicorcheas, tambor grave y un pedal agudo
+    if (intensity > 0.25 && tr.drums !== 'none') noise(0.03, { ...o, out: musicGain, vol: 0.012 * intensity, freq: 7000, q: 1.5, delay: o.delay + eighth / 2 });
+    if (intensity > 0.5 && (beat === 1 || beat === 5)) tone(80, 0.25, { ...o, out: musicGain, type: 'sine', vol: 0.11 * intensity, slide: 40 });
+    if (intensity > 0.75 && beat % 2 === 0) voice(midi(deg(tr, g0) + 24), eighth * 0.6, { ...o, type: 'square', vol: 0.008 * intensity, attack: 0.004, cutoff: 3000 });
     // Ambiente
     if (tr.fx === 'drip' && rnd() < 0.08) tone(midi(96 + Math.floor(rnd() * 8)), 0.12, { ...o, out: musicGain, type: 'sine', vol: 0.03, slide: midi(84) });
     if (tr.fx === 'wind' && beat === 0 && bar % 2 === 0) noise(barLen * 1.6, { ...o, out: musicGain, vol: 0.018, freq: 500, q: 0.4 });
@@ -277,9 +303,12 @@
       if (name === wantedTrack && seq) return;
       wantedTrack = name;
       if (!ctx) return;
+      if (!name || !/^(boss|danger|elite|boss_rage|boss_secret)$|:fight$/.test(name)) intensity = 0;
       if (!name || hidden()) stopTrack(); else startTrack(name);
     },
     updateVolumes,
+    /** v5.4: tensión de la música (0 = normal … 1 = máxima). El combate la ajusta con la vida de cada lado. */
+    intensity(x) { intensity = Math.max(0, Math.min(1, +x || 0)); },
     /** Pista de la zona de la expedición en curso (o la del campamento). */
     zoneTrack() { const e = DK.expedition && DK.expedition.active(); const z = e && DK.data.zones[e.zone]; return z && TRACKS[z.scene] ? z.scene : 'menu'; },
     /** v4.88: pista que suena ahora (para las pruebas). */

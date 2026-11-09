@@ -64,7 +64,24 @@
   function applyGrowth(d) {
     const g = rollGrowth(d.nature, d);
     d.natureGrowth = d.natureGrowth || zeroStats();
+    // v5.4: en tus daskai una subida de nivel nunca sube un atributo más de config.growth.max (5) EN PANTALLA:
+    // antes los % (pasivas, talentos, genes, estrellas…) multiplicaban los puntos y salían +6/+7.
+    const mine = !d.wild && !d.boss && DK.store && DK.store.state;
+    const s0 = mine ? computeStats(d) : null;
     KEYS().forEach((k) => { d.growth[k] += g.total[k]; d.natureGrowth[k] += g.nature[k]; });
+    if (mine) {
+      const cap = DK.config.growth.max != null ? DK.config.growth.max : 5;
+      let s1 = computeStats(d);
+      for (const k of KEYS()) {
+        let guard = 8;
+        while (s1[k] - s0[k] > cap && g.total[k] > 0 && guard-- > 0) {
+          d.growth[k]--; g.total[k]--;
+          if (g.nature[k] > 0) { d.natureGrowth[k]--; g.nature[k]--; }
+          s1 = computeStats(d);
+        }
+      }
+    }
+    api.touch();
     return g.total;
   }
 
@@ -424,8 +441,12 @@
       for (const k of KEYS()) {
         // Base de la especie + crecimiento por niveles + equipo + herencia de caídos (d.legacy)
         // + tónicos y entrenamiento (mejoras permanentes, ver api.permBonus)
-        const raw = api.baseOf(d, k) + d.growth[k] + (eq[k] || 0) + ((d.legacy && d.legacy[k]) || 0) + api.permBonus(d, k);
-        out[k] = Math.max(1, Math.round(raw * (1 + (pas.mods[k] || 0)) * api.mult(d, k)));
+        const m = (1 + (pas.mods[k] || 0)) * api.mult(d, k);
+        let own = (api.baseOf(d, k) + d.growth[k] + ((d.legacy && d.legacy[k]) || 0) + api.permBonus(d, k)) * m;
+        // v5.4: la vida propia de tus daskai (sin contar el equipo) tiene un techo por nivel (config.hpCap):
+        // Nv. 10 → 150 · Nv. 40 → 300 · Nv. 100 → 600
+        if (k === 'hp' && !d.wild && !d.boss && DK.config.hpCap) own = Math.min(own, DK.config.hpCap.base + DK.config.hpCap.perLevel * (d.level || 1));
+        out[k] = Math.max(1, Math.round(own + (eq[k] || 0) * m));
       }
       // En expedición no hay regeneración base (config.expedition.noFreeHeal): sólo la de pasivas y equipo
       const noFree = DK.config.expedition.noFreeHeal && DK.store.state && DK.store.state.expedition;
@@ -521,14 +542,15 @@
           d.exp -= api.expToNext(d);
           const s0 = api.stats(d);
           d.level++;
-          const g = applyGrowth(d);
+          applyGrowth(d);
+          const sNow = api.stats(d), shown = {}; KEYS().forEach((k) => { shown[k] = sNow[k] - s0[k]; });
           if (DK.config.expedition.noFreeHeal && DK.store.state && DK.store.state.expedition) {
             // En expedición subir de nivel no cura: sólo se suma lo que crece el máximo
             const s1 = api.stats(d);
             if (d.cur.hp > 0) d.cur.hp = Math.min(s1.hp, d.cur.hp + Math.max(0, s1.hp - s0.hp));
             d.cur.mp = Math.min(s1.mp, d.cur.mp + Math.max(0, s1.mp - s0.mp));
           } else api.fullHeal(d); // fuera de expedición, subir de nivel recupera vida y maná
-          res.levels.push({ level: d.level, gains: g });
+          res.levels.push({ level: d.level, gains: shown }); // v5.4: lo que sube de verdad en pantalla en ESE nivel
           api.learnAt(d, d.level, res);
           if (d.level % DK.config.talentEvery === 0) res.talent = d.level; // nuevo talento por elegir
           DK.emit('levelUp', { d, level: d.level });

@@ -89,7 +89,11 @@
     "use": {
       "cure": [
         "veneno",
-        "quemadura"
+        "quemadura",
+        "congelacion",
+        "paralisis",
+        "ceguera",
+        "sueno"
       ],
       "healPct": 0.25
     },
@@ -106,7 +110,11 @@
       "manaPct": 1,
       "cure": [
         "veneno",
-        "quemadura"
+        "quemadura",
+        "congelacion",
+        "paralisis",
+        "ceguera",
+        "sueno"
       ]
     },
     "desc": "Restaura por completo vida y maná."

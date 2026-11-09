@@ -161,6 +161,14 @@
       [
         "raptil",
         2
+      ],
+      [
+        "cenicito",
+        2
+      ],
+      [
+        "nocturin",
+        2
       ]
     ],
     "boss": {
@@ -282,6 +290,14 @@
       [
         "conchin",
         2
+      ],
+      [
+        "escarchin",
+        2
+      ],
+      [
+        "guijarrin",
+        2
       ]
     ],
     "boss": {
@@ -399,6 +415,14 @@
       [
         "escorpix",
         2
+      ],
+      [
+        "guijarrin",
+        2
+      ],
+      [
+        "nocturin",
+        1
       ]
     ],
     "boss": {
@@ -519,6 +543,10 @@
       ],
       [
         "raptorex",
+        2
+      ],
+      [
+        "fogarron",
         2
       ]
     ],
@@ -645,6 +673,10 @@
       [
         "lobaurum",
         2
+      ],
+      [
+        "prismito",
+        2
       ]
     ],
     "boss": {
@@ -770,6 +802,10 @@
       [
         "geyseron",
         1
+      ],
+      [
+        "penumbron",
+        2
       ]
     ],
     "boss": {
@@ -861,6 +897,10 @@
       [
         "caracolon",
         2
+      ],
+      [
+        "penumbron",
+        1
       ]
     ],
     "boss": {
@@ -982,6 +1022,14 @@
       [
         "copito",
         1
+      ],
+      [
+        "glaciaron",
+        2
+      ],
+      [
+        "prismalux",
+        1
       ]
     ],
     "boss": {
@@ -1073,6 +1121,14 @@
       [
         "tiranox",
         2
+      ],
+      [
+        "penascon",
+        2
+      ],
+      [
+        "prismalux",
+        1
       ]
     ],
     "boss": {

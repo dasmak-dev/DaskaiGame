@@ -83,6 +83,11 @@
   D.statuses = {
     veneno: { name: 'Envenenado', icon: 'poison', color: '#a855f7', dot: 0.06, desc: 'Pierde un 6% de vida por turno.' },
     quemadura: { name: 'Quemado', icon: 'flame', color: '#f97316', dot: 0.05, atkMult: 0.8, desc: 'Pierde un 5% de vida por turno y su ataque físico baja un 20%.' },
+    // v5.4: estados que no hacen daño pero estorban (systems/battle.js → blockedBy / endOfTurn)
+    congelacion: { name: 'Congelado', icon: 'snowflake', color: '#7dd3fc', skip: 1, thaw: 0.35, maxTurns: 3, desc: 'No puede actuar. Cada turno tiene un 35% de descongelarse (como mucho 3 turnos); un ataque de fuego lo descongela.' },
+    paralisis: { name: 'Paralizado', icon: 'bolt', color: '#facc15', skip: 0.3, spdMult: 0.6, desc: 'Un 30% de las veces no puede moverse y su velocidad baja un 40%.' },
+    ceguera: { name: 'Cegado', icon: 'eyeOff', color: '#e5e7eb', accMult: 0.65, maxTurns: 3, desc: 'Su precisión baja un 35% durante 3 turnos.' },
+    sueno: { name: 'Dormido', icon: 'moon', color: '#a78bfa', skip: 1, thaw: 0.3, maxTurns: 3, wakeOnHit: true, desc: 'No puede actuar hasta despertar (30% cada turno, como mucho 3); un golpe lo despierta.' },
   };
 
   /* RASGOS (en el código, «roles»): cada daskai nace con uno AL AZAR

@@ -272,7 +272,7 @@
     const card = (d) => { const sp = DK.daskai.species(d), nat = C.natures[d.nature || 'equilibrada'];
       return h('div', { class: 'ex-who-card', style: { '--c': D.houseColor(sp.house) } },
         h('button', { class: 'ex-who-main', type: 'button', tip: t('explore.whoTip'), onClick: () => { DK.audio.sfx('select'); V.quickStats(d, { onChange: refresh }); } },
-          V.dSprite(d, { size: DK.ui.isNarrow() ? 70 : 100 }), h('b', null, DK.daskai.name(d)), h('small', null, `${t('common.lvl')} ${d.level}`),
+          V.dSprite(d, { size: DK.ui.isNarrow() ? 70 : 100, cls: 'alive' }), h('b', null, DK.daskai.name(d)), h('small', null, `${t('common.lvl')} ${d.level}`),
           nat ? h('span', { class: 'ex-nat' }, t('explore.nat.' + nat.key)) : null),
         h('button', { class: 'ex-who-x', type: 'button', 'aria-label': t('explore.remove'), tip: t('explore.remove'), onClick: () => toggle(d) }, DK.icon('x', 12))); };
     const whoSec = h('div', { class: 'ex-pcol ex-a-who' },

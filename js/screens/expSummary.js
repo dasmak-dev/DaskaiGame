@@ -93,6 +93,60 @@
       row('clock', t('sum.cmpTime'), dur(s), dur(best), (n) => DK.util.duration(n)));
   }
 
+  /* ---------- v5.9: equipo, rivales y cifras clave ---------- */
+  function statStrip(s, kept) {
+    const team = s.team || [], foes = s.foes || [];
+    const lv = team.reduce((a, x) => a + Math.max(0, (x.to || 0) - (x.from || 0)), 0);
+    const items = Object.values(s.items || {}).reduce((a, n) => a + n, 0) + (s.gear || []).length;
+    const cell = (icon, v, label, cls = '') => h('div', { class: 'ss-cell ' + cls }, h('span', { class: 'ss-ico' }, DK.icon(icon, 18)), h('b', null, v), h('small', null, label));
+    return h('div', { class: 'sum-strip' },
+      cell('swords', String(foes.filter((x) => x.won).length), t('sum5.won')),
+      cell('arrowUp', '+' + lv, t('sum5.levels'), lv ? 'up' : ''),
+      cell('coin', (kept || s.outcome === 'retreat' || s.outcome === 'lostBoss' ? s.coins || 0 : 0).toLocaleString(DK.i18n.lang), t('hub.coins')),
+      cell('gift', String(items), t('sum5.items')),
+      cell('emblem', String(s.emblems || 0), t('emblem.title')),
+      cell('flag', `${Math.min(s.step, s.total)}/${s.total}`, t('sum5.floors')));
+  }
+  function teamPanel(s) {
+    const team = s.team || [];
+    if (!team.length) return null;
+    const sorted = team.slice().sort((a, b) => ((b.to || 0) - (b.from || 0)) - ((a.to || 0) - (a.from || 0)));
+    return h('section', { class: 'card sum-team' },
+      h('div', { class: 'panel-head' }, h('h3', null, t('sum5.team'))),
+      h('div', { class: 'st-grid' }, sorted.map((x, i) => {
+        const up = Math.max(0, (x.to || 0) - (x.from || 0));
+        const sp = D.species[x.species]; if (!sp) return null;
+        const live = x.uid && DK.party.get(x.uid);
+        return h(live ? 'button' : 'div', { class: 'st-card' + (x.fallen ? ' fallen' : x.fainted ? ' ko' : '') + (up ? ' leveled' : ''), type: live ? 'button' : null, style: { '--i': i, '--c': D.houseColor(sp.house || (D.species[sp.evolvedFrom] || {}).house) },
+          onClick: live ? () => V.quickStats(live, { onChange: () => DK.router.refresh() }) : null },
+          h('span', { class: 'st-art' }, V.sprite(x.species, { look: x.look, shiny: x.shiny, size: 84, cls: x.fallen ? '' : 'alive' })),
+          h('b', { class: 'st-name' }, x.name),
+          h('span', { class: 'st-lv' }, h('span', { class: 'muted' }, `${t('common.lvl')} ${x.from}`), DK.icon('next', 13), h('b', null, x.to)),
+          up ? h('span', { class: 'st-up' }, DK.icon('arrowUp', 12), tn('sum5.upN', up)) : h('span', { class: 'st-up none' }, t('sum5.noUp')),
+          x.fallen ? h('span', { class: 'st-tag bad' }, DK.icon('skull', 11), t('sum5.fallen')) : x.recruit ? h('span', { class: 'st-tag good' }, DK.icon('paw', 11), t('sum5.recruit')) : x.fainted ? h('span', { class: 'st-tag warn' }, DK.icon('heart', 11), t('sum5.ko')) : null);
+      })));
+  }
+  function foesPanel(s) {
+    const foes = s.foes || [];
+    if (!foes.length) return null;
+    // agrupados por especie: cuántas veces, nivel más alto, si fue jefe / élite / vinculado
+    const by = new Map();
+    foes.forEach((f) => { const k = f.species + (f.boss ? ':b' : f.elite ? ':e' : ''); const g = by.get(k) || Object.assign({ n: 0, max: 0, won: 0, cap: 0 }, f); g.n++; g.max = Math.max(g.max, f.level || 0); if (f.won) g.won++; if (f.captured) g.cap++; if (!g.shiny && f.shiny) { g.shiny = true; g.look = f.look; } by.set(k, g); });
+    const list = [...by.values()].sort((a, b) => (b.boss - a.boss) || (b.elite - a.elite) || b.max - a.max);
+    return h('section', { class: 'card sum-foes' },
+      h('div', { class: 'panel-head' }, h('h3', null, t('sum5.foes')), h('span', { class: 'muted small' }, t('sum5.foesHint', { n: foes.length, k: list.length }))),
+      h('div', { class: 'sf-grid' }, list.map((g, i) => {
+        const sp = D.species[g.species]; if (!sp) return null;
+        return h('div', { class: 'sf-card' + (g.boss ? ' boss' : g.elite ? ' elite' : '') + (g.won ? '' : ' lost'), style: { '--i': i }, tip: `${sp.name} · ${t('common.lvl')} ${g.max}` },
+          h('span', { class: 'sf-art' }, V.sprite(g.species, { look: g.look, shiny: g.shiny, size: g.boss ? 76 : 60, flip: true, cls: 'alive' })),
+          h('b', null, sp.name), h('small', { class: 'muted' }, `${t('common.lvl')} ${g.max}`),
+          g.n > 1 ? h('span', { class: 'sf-n' }, '×' + g.n) : null,
+          g.boss ? h('span', { class: 'sf-tag boss' }, DK.icon('crown', 11), t('battle.boss')) : g.elite ? h('span', { class: 'sf-tag elite' }, DK.icon('skull', 11), t('exp.node.elite')) : null,
+          g.cap ? h('span', { class: 'sf-tag cap' }, DK.icon('paw', 11), t('sum5.bonded')) : null,
+          !g.won ? h('span', { class: 'sf-tag lost' }, DK.icon('x', 11), t('sum5.notBeaten')) : null);
+      })));
+  }
+
   DK.screens.register('expSummary', {
     title: () => t('sum.title'), icon: 'list', section: 'battle', music: 'menu',
     /** params.index → resumen de DK.store.state.expHistory[index] (desde el Perfil); si no, el último. */
@@ -119,22 +173,23 @@
       DK.keys.on('Enter', home);
 
       const hero = h('div', { class: 'card sum-hero ' + o.cls, style: { '--z1': zone.colors[0], '--z2': zone.colors[1] } },
-        h('span', { class: 'sum-icon' }, DK.icon(o.icon, 40)),
+        DK.outcomeEmblem(s.outcome, o.cls), // v5.12: emblema elaborado, distinto según el estilo
         h('div', { class: 'grow' },
           h('span', { class: 'muted small' }, t('exp.title', { zone: zone.name })),
           h('h2', null, t('sum.out.' + s.outcome)),
           h('p', { class: 'muted' }, t('sum.outText.' + s.outcome, { n: Math.round(((s.mult || DK.config.expeditionBonus) - 1) * 100) })),
-          h('div', { class: 'chips' },
-            h('span', { class: 'chip pos' }, DK.icon('compass', 13), t('sum.depth', { n: depth, maps: zonesDone.length })),
-            // Desafío semanal: puntos, récord y premio
-            s.weekly ? h('span', { class: 'chip gold wk-chip', tip: s.weekly.reward ? t('weekly.gotReward', { e: s.weekly.reward.emblems }) : t('weekly.title') }, DK.icon('trophy', 13), t('weekly.result', { n: s.weekly.score.toLocaleString(DK.i18n.lang) }), s.weekly.isBest ? ' · ' + t('weekly.newBest') : '') : null,
-            s.emblems ? h('span', { class: 'chip pos' }, DK.icon('emblem', 13), t('emblem.plus', { n: s.emblems })) : null,
-            (s.runes || []).length ? h('span', { class: 'chip pos rune-chip', tip: s.runes.map((id) => V.runeName(id)).join(', ') }, DK.icon('rune', 13), `+${s.runes.length} ${t('rune.short')}`) : null,
-            (s.secrets || []).length ? h('span', { class: 'chip pos' }, DK.icon('cave', 13), tn('sum.secrets', s.secrets.length)) : null,
-            h('span', { class: 'chip' }, DK.icon('flag', 13), t('exp.floor', { step: Math.min(s.step, s.total), total: s.total })),
-            h('span', { class: 'chip' }, DK.icon('clock', 13), DK.util.duration(mins)),
-            h('span', { class: 'chip' }, DK.icon('map', 13), t('sum.nodes', { n: totalNodes })),
-            s.difficulty ? h('span', { class: 'chip' }, DK.icon(DK.data.difficulties[s.difficulty].icon, 13), t('difficulty.' + s.difficulty + '.name')) : null)),
+          // v5.11: datos del mapa en una cuadrícula ordenada (antes, píldoras en filas desiguales)
+          h('div', { class: 'sum-meta' }, [
+            ['compass', t('sum5.mMaps'), String(depth)],
+            zonesDone.length ? ['crown', t('sum5.mCleared'), String(zonesDone.length)] : null,
+            ['flag', t('sum5.mFloor'), `${Math.min(s.step, s.total)} / ${s.total}`],
+            ['clock', t('sum5.mTime'), DK.util.duration(mins)],
+            ['map', t('sum5.mNodes'), String(totalNodes)],
+            s.difficulty ? [DK.data.difficulties[s.difficulty].icon, t('sum5.mDiff'), t('difficulty.' + s.difficulty + '.name')] : null,
+            s.weekly ? ['trophy', t('weekly.title'), s.weekly.score.toLocaleString(DK.i18n.lang)] : null,
+            (s.runes || []).length ? ['rune', t('rune.short'), '+' + s.runes.length] : null,
+            (s.secrets || []).length ? ['cave', t('sum5.mSecrets'), String(s.secrets.length)] : null,
+          ].filter(Boolean).map(([ic, k, v]) => h('div', { class: 'sm-cell' }, h('small', null, DK.icon(ic, 12), k), h('b', null, v))))),
         h('div', { class: 'sum-actions' },
           btn({ icon: 'home', label: t('nav.home'), variant: 'primary', hotkey: '↵', onClick: home }),
           btn({ icon: 'flag', label: t('sum.again'), variant: 'tone', onClick: again }),
@@ -150,7 +205,33 @@
           nodes.length ? h('div', { class: 'sum-nodes' }, nodes.map(([type, n]) => h('div', { class: 'sum-node t-' + type },
             h('span', { class: 'exp-legend-icon t-' + type }, DK.icon(DK.expedition.TYPES[type].icon, 14)), h('span', { class: 'grow' }, t('exp.node.' + type)), h('b', null, n)))) : h('p', { class: 'muted small' }, t('sum.none'))));
 
-      const rewards = h('div', { class: 'card stack-s' },
+      // v5.11: botín en fichas (icono, nombre, cantidad y rareza; al pasar el ratón o pulsar, qué hace)
+      const RANK = { legendario: 0, epico: 1, raro: 2, comun: 3 };
+      const lootTiles = (items, gear, lost) => {
+        const tiles = [];
+        (gear || []).forEach((g) => { if (!D.items[g.base]) return; const full = DK.gear.find && DK.gear.find(g.uid); const p = full ? full.p : g;
+          tiles.push({ r: g.rarity === 'legendario' ? 0 : g.rarity === 'raro' ? 1 : g.rarity === 'magico' ? 2 : 3, el: h('div', Object.assign({ style: { '--g': D.gear.rarities[g.rarity] ? D.gear.rarities[g.rarity].color : '#aaa' } }, full ? V.infoProps('gear', p) : {}, { class: 'lt lt-gear' + (lost ? ' lost' : '') + (full ? ' has-info' : ''), tip: g.name }),
+            h('span', { class: 'lt-ico' }, V.gearIcon(p, 34)), h('span', { class: 'lt-name' }, g.name), h('small', { class: 'lt-sub' }, t('gear.rarity.' + g.rarity))) }); });
+        Object.entries(items || {}).forEach(([id, n]) => { const it = D.items[id]; if (!it) return;
+          tiles.push({ r: RANK[it.rarity] != null ? RANK[it.rarity] : 3, el: h('div', Object.assign({ tip: it.name }, V.infoProps('item', id), { class: 'lt has-info r-' + it.rarity + (lost ? ' lost' : '') }),
+            h('span', { class: 'lt-ico' }, V.itemIcon(it, 34, { tip: false }), n > 1 ? h('b', { class: 'lt-n' }, '×' + n) : null), h('span', { class: 'lt-name' }, it.name), h('small', { class: 'lt-sub' }, V.itemDoes(it) || DK.tr('categories', D.categories[it.category]))) }); });
+        return tiles.length ? h('div', { class: 'lt-grid' }, tiles.sort((a, b) => a.r - b.r).map((x) => x.el)) : null;
+      };
+      const count = (items, gear) => Object.values(items || {}).reduce((a, n) => a + n, 0) + (gear || []).length;
+      const lootSec = (icon, title, items, gear, lost, note) => { const n = count(items, gear); return n ? h('div', { class: 'lt-sec' + (lost ? ' lost' : '') }, h('div', { class: 'lt-head' }, DK.icon(icon, 15), h('b', null, title), h('span', { class: 'lt-count' }, String(n)), note ? h('small', { class: 'muted' }, note) : null), lootTiles(items, gear, lost)) : null; };
+      const coinsOk = kept || s.outcome === 'retreat' || s.outcome === 'lostBoss';
+      const loot = h('section', { class: 'card sum-loot' },
+        h('div', { class: 'panel-head' }, h('h3', null, t('sum.rewards')),
+          h('span', { class: 'sl-coins' + (coinsOk ? '' : ' lost') }, DK.icon('coin', 18), coinsOk ? h('b', null, (s.coins || 0).toLocaleString(DK.i18n.lang)) : h('s', null, String(s.lostCoins || 0)))),
+        s.outcome === 'campfire' ? h('p', { class: 'muted small' }, t('sum.campfireLost', { pct: 100 - (s.keepPct || 50), coins: s.lostCoins || 0 })) : null,
+        s.lootSpent ? h('p', { class: 'muted small' }, t('sum.spent', { n: s.lootSpent })) : null,
+        s.outcome === 'lost' ? null : lootSec('gift', t('sum.loot'), s.items, s.gear, false),
+        lootSec('bag', t('sum.toBag'), s.toBag, null, false),
+        lootSec('bag', t('sum.packBack'), s.packBack, null, false),
+        lootSec('skull', t('sum.lootLost'), s.outcome === 'lost' || s.outcome === 'lostBoss' || s.outcome === 'campfire' ? s.lostItems : null, s.outcome === 'lost' || s.outcome === 'lostBoss' || s.outcome === 'campfire' ? s.lostGear : null, true),
+        lootSec('skull', t('sum.packLost'), s.lostPack, null, true),
+        !count(s.items, s.gear) && !count(s.toBag) && !count(s.lostItems, s.lostGear) ? h('p', { class: 'muted small' }, t('sum.none')) : null);
+      const rewards = null && h('div', { class: 'card stack-s' },
         h('div', { class: 'panel-head' }, DK.icon('gift', 18), h('h3', null, t('sum.rewards'))),
         h('div', { class: 'row between' }, h('span', null, t('sum.coins')), kept || s.outcome === 'retreat' || s.outcome === 'lostBoss' ? V.coins(s.coins || 0) : h('s', { class: 'muted' }, String(s.lostCoins || 0))),
         s.outcome === 'campfire' ? h('p', { class: 'muted small' }, t('sum.campfireLost', { pct: 100 - (s.keepPct || 50), coins: s.lostCoins || 0 })) : null,
@@ -179,13 +260,15 @@
         h('div', { class: 'panel-head' }, DK.icon('amulet', 18), h('h3', null, t('relics.title'))),
         relics.length ? h('div', { class: 'list' }, relics.map((r) => h('div', { class: 'relic-row r-' + r.rarity }, h('span', { class: 'relic-icon sm' }, DK.icon(r.icon, 18)), h('div', { class: 'grow' }, h('b', null, r.name), h('div', { class: 'muted small' }, V.relicText(r)))))) : h('p', { class: 'muted small' }, t('sum.none')));
 
-      return h('div', { class: 'screen sum-screen' }, hero,
+      // v5.9: tu equipo en grande (nivel al salir → al volver) y los rivales a los que te enfrentaste
+      const team = teamPanel(s), foes = foesPanel(s), strip = statStrip(s, kept);
+      return h('div', { class: 'screen sum-screen' }, hero, strip, team, foes, loot,
         latest && !DK.store.state.gameOver ? upgradeCardSummary(s, refresh) : null,
         goalsReady.length ? h('button', { class: 'card sum-goals', type: 'button', onClick: () => DK.router.reset('craft', { sel: goalsReady[0].id }) },
           h('span', { class: 'sum-shop-icon goals' }, DK.icon('star', 24)),
           h('span', { class: 'grow stack-s' }, h('b', null, t('craft.goalsReadyTitle')), h('span', { class: 'muted small' }, goalsReady.map((r) => D.items[r.result].name).join(', '))),
           DK.icon('next', 18)) : null,
-        h('div', { class: 'sum-grid' }, h('div', { class: 'stack' }, compare(s), timeline(s), pathCard), h('div', { class: 'stack' }, rewards, people, extras)));
+        h('div', { class: 'sum-grid' }, h('div', { class: 'stack' }, compare(s), timeline(s), pathCard), h('div', { class: 'stack' }, people, extras)));
     },
   });
 })();

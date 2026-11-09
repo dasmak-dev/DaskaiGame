@@ -743,3 +743,5 @@ button.sum-goals { display: flex; align-items: center; gap: 14px; width: 100%; t
 
 /* v4.45 · Con una hoja o ventana abierta los avisos no bloquean los clics (se ven, pero se puede pulsar lo de debajo) */
 body:has(.drawer-wrap.is-modal, .modal-backdrop) .toast { pointer-events: none; opacity: .92; }
+.drag-ghost, .drag-ghost * { transition: none !important; }
+.drag-ghost { animation: none !important; }

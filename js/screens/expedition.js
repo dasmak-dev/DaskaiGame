@@ -87,6 +87,9 @@
   /** Daskai que luchará en el siguiente combate (el elegido o el primero en pie). */
   function fighter() {
     const e = E().active(), alive = DK.party.aliveActive();
+    // v5.10: si cambiaste el primero del equipo (Equipo → líder), ése pasa a luchar en el siguiente combate
+    const first = DK.party.active()[0];
+    if (first && e.leaderFirst !== first.uid) { e.leaderFirst = first.uid; e.leader = first.uid; DK.store.save(); }
     return alive.find((d) => d.uid === e.leader) || alive[0];
   }
 
@@ -100,13 +103,15 @@
     const secret = type === 'secret' || (type === 'boss' && !!n.secret);
     // v5.1: jefes de la serie del Abismo (en el fondo de su propia zona, no son el jefe del final)
     if (type === 'aboss') { DK.router.go('battle', { zone: n.bossZone, leaderUid: d.uid, boss: true, final: false, abyssRound: n.round, node: n.id }); return; }
-    DK.router.go('battle', { zone: e.zone, leaderUid: d.uid, boss: type === 'boss' || type === 'secret', secret, final: type === 'boss', elite: type === 'elite', node: n.id, abyssRound: n.round != null ? n.round : undefined });
+    DK.router.go('battle', { zone: e.zone, leaderUid: d.uid, boss: type === 'boss' || type === 'secret', secret, final: type === 'boss', elite: type === 'elite', node: n.id, abyssRound: n.round != null ? n.round : undefined, wave: !kind && type === 'fight' && (n.special === 'chain' || n.special === 'swap') ? n.special : undefined });
   }
 
   /** Va a un nodo del mapa. */
   /** v4.68: dónde estabas mirando el mapa (página y caja del mapa) al entrar en un piso; al volver se recupera. */
   let mapMem = null;
   const memKey = (e) => `${e.seed}|${e.depth || 1}`;
+  /** v5.4: dónde estaba el líder en el mapa la última vez (para que camine de un nodo al siguiente). */
+  let heroPrev = null;
   // Mover la página también cuenta (sólo mientras se ve el mapa completo)
   let memBound = false, memQuiet = 0; // memQuiet: tras pintar el mapa, un momento sin apuntar (la app sube la página al cambiar de pantalla)
   function bindMem() {
@@ -251,10 +256,12 @@
     ['wheel', 'touchstart', 'pointerdown', 'keydown'].forEach((ev) => window.addEventListener(ev, cancel, { once: true, passive: true }));
     const end = () => { box.classList.remove('flying'); if (boss) boss.classList.remove('fly-focus'); };
     (async () => {
-      for (let i = 0; i < 60 && document.querySelector('.curtain'); i++) await DK.util.sleep(80);
+      // v5.7: arranca en cuanto la cortinilla empieza a abrirse (antes esperaba a que desapareciera y 0,9 s más)
+      const waiting = () => { const c = document.querySelector('.curtain'); return c && !c.classList.contains('opening'); };
+      for (let i = 0; i < 120 && waiting(); i++) await DK.util.sleep(30);
       if (stop || !box.isConnected) { end(); return; }
       if (boss) boss.classList.add('fly-focus');
-      await DK.util.sleep(900);
+      await DK.util.sleep(document.querySelector('.curtain') ? 260 : 120);
       const from = box.scrollTop, dist = target - from, dur = Math.min(2600, 900 + Math.abs(dist) * 1.1), t0 = performance.now();
       const ease = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
       // v4.68: la página baja a la vez y llega al fondo justo al acabar (en PC la caja bajaba pero la página no)
@@ -291,6 +298,10 @@
     const all = rows.flat();
     const byId = Object.fromEntries(all.map((n) => [n.id, n]));
 
+    // v5.4: si el líder ha cambiado de nodo desde la última vez, camina por el camino y éste se ilumina
+    const heroNow = e.pending || e.pos;
+    const walkFrom = !readonly && !compact && heroPrev && heroPrev.key === memKey(e) && heroPrev.id !== heroNow && byId[heroPrev.id] && heroNow && byId[heroNow] ? heroPrev.id : null;
+    if (!readonly && !compact) heroPrev = { key: memKey(e), id: heroNow };
     // Caminos (tierra con borde oscuro): recorridos, disponibles y el resto
     let lines = '', base = '';
     all.forEach((n) => n.links.forEach((lid) => {
@@ -301,6 +312,7 @@
       const xy = `x1="${xOf(n) * 100}" y1="${yOf(n.row)}" x2="${xOf(m) * 100}" y2="${yOf(m.row)}"`;
       base += `<line ${xy} class="road-base ${cls}${fogged(m) ? ' fog' : ''}"/>`;
       lines += `<line ${xy} class="road ${cls}${fogged(m) ? ' fog' : ''}"/>`;
+      if (walkFrom === n.id && lid === heroNow) lines += `<line ${xy} pathLength="1" class="road-lit"/>`;
     }));
     // Atajos: línea discontinua hasta el nodo al que saltan
     all.filter((n) => n.jump && byId[n.jump]).forEach((n) => {
@@ -316,21 +328,25 @@
     if (!readonly && !draw.on) order.forEach((id, i) => DK.keys.on(String(i + 1), () => go(id, refresh)));
     if (!readonly && draw.on) DK.keys.on('Escape', () => { draw.on = false; refresh(); });
     const nodes = all.map((n) => {
-      if (fogged(n)) return h('span', { class: 'exp-node fog', style: { left: xOf(n) * 100 + '%', top: yOf(n.row) + 'px' }, tip: t('mod.fogNode') }, DK.icon('question', 18));
+      if (fogged(n)) return h('span', { class: 'exp-node fog', style: { left: xOf(n) * 100 + '%', top: yOf(n.row) + 'px' }, tip: t('mod.fogNode') }, DK.nodeArt ? DK.nodeArt('fog') : DK.icon('question', 18));
       const ty = E().TYPES[n.type];
       const state = cleared.has(n.id) ? 'done' : e.pending === n.id ? (readonly && e.outcome === 'lost' ? 'lost' : 'pending') : avail.includes(n.id) ? 'open' : 'locked';
       const key = order.indexOf(n.id);
       const b = h('button', {
-        class: `exp-node t-${n.type} s-${state}` + (e.pos === n.id ? ' here' : '') + (n.secret ? ' secret' : ''), type: 'button',
+        class: `exp-node t-${n.type} s-${state}` + (e.pos === n.id ? ' here' : '') + (n.secret ? ' secret' : '') + (n.special ? ' special sp-' + n.special : ''), type: 'button',
         style: { left: xOf(n) * 100 + '%', top: yOf(n.row) + 'px' }, disabled: state !== 'open',
-        tip: n.secret ? `${t('exp.node.secretBoss')} — ${D.secretBosses[e.zone].title}` : n.bossZone ? abossText(n) : `${t('exp.node.' + n.type)} — ${t('exp.nodeDesc.' + n.type)}`, 'aria-label': t('exp.node.' + n.type),
+        tip: n.secret ? `${t('exp.node.secretBoss')} — ${D.secretBosses[e.zone].title}` : n.bossZone ? abossText(n) : n.special ? `★ ${t('exp.special.' + n.special + '.name')} — ${t('exp.special.' + n.special + '.desc')}` : `${t('exp.node.' + n.type)} — ${t('exp.nodeDesc.' + n.type)}`, 'aria-label': t('exp.node.' + n.type),
         onClick: () => go(n.id, refresh),
-      }, n.bossZone && state !== 'done' ? V.sprite(D.zones[n.bossZone].boss.species, { size: n.type === 'boss' ? 64 : 50 }) : DK.icon(state === 'done' ? 'check' : ty.icon, n.type === 'boss' ? 40 : 28),
+      }, n.bossZone && state !== 'done' ? V.sprite(D.zones[n.bossZone].boss.species, { size: n.type === 'boss' ? 64 : 50 }) : DK.nodeArt ? DK.nodeArt(n.secret ? 'secret' : n.type) : DK.icon(state === 'done' ? 'check' : ty.icon, n.type === 'boss' ? 40 : 28),
+      // v5.7: ya visitado: el icono queda apagado con una marca de hecho
+      state === 'done' ? h('span', { class: 'node-done' }, DK.icon('check', 12)) : null,
       // v5.1: en el Abismo cada jefe lleva su nombre debajo
       n.bossZone ? h('span', { class: 'node-boss-lbl' }, D.zones[n.bossZone].boss.title) : null,
       key >= 0 && key < 9 ? h('kbd', { class: 'hotkey' }, key + 1) : null,
       // Los mini jefes (élite) dan una reliquia: se marca en el mapa
-      n.type === 'elite' && state !== 'done' ? h('span', { class: 'node-relic' }, DK.icon('amulet', 12)) : null);
+      n.type === 'elite' && state !== 'done' ? h('span', { class: 'node-relic' }, DK.icon('amulet', 12)) : null,
+      // v5.5: piso especial: estrella dorada
+      n.special && state !== 'done' ? h('span', { class: 'node-special' }, DK.icon('star', 11)) : null);
       return b;
     });
     const zone = D.zones[e.zone];
@@ -346,7 +362,13 @@
     const marks = readonly ? e.marks || { lines: [], notes: [] } : E().marks();
     // Los dibujos se guardan en px del mapa normal: en la vista compacta se escalan
     const layer = compact ? marksLayer({ lines: (marks.lines || []).map((l) => ({ c: l.c, pts: l.pts.map(([x, y]) => [x, (y * ROW_COMPACT) / ROW_FULL]) })), notes: [] }, H, refresh, false) : marksLayer(marks, H, refresh, editing);
-    const map = h('div', { class: 'exp-map' + (compact ? ' compact' : '') + (editing ? ' is-drawing' : ''), style: { height: H + 'px', '--z1': zone.colors[0], '--z2': zone.colors[1] } }, decor, floors, svg, nodes, hero, layer);
+    if (hero && walkFrom && !DK.settings.reducedMotion() && !DK.settings.get('skipAnims')) {
+      const a = byId[walkFrom], b = byId[heroId];
+      hero.animate([{ left: xOf(a) * 100 + '%', top: yOf(a.row) + 'px' }, { left: xOf(b) * 100 + '%', top: yOf(b.row) + 'px' }], { duration: 750, easing: 'ease-in-out' });
+      hero.classList.add('walking'); setTimeout(() => hero.classList.remove('walking'), 760);
+    }
+    const amb = !compact && DK.ambient ? DK.ambient.map(zone.scene, H) : null; // v5.7: el mapa también se mueve
+    const map = h('div', { class: 'exp-map' + (compact ? ' compact' : '') + (editing ? ' is-drawing' : ''), style: { height: H + 'px', '--z1': zone.colors[0], '--z2': zone.colors[1] } }, decor, amb, floors, svg, nodes, hero, layer);
     // Clic derecho en el mapa: dibujar, nota aquí, deshacer, borrar
     if (!readonly) map.addEventListener('contextmenu', (ev) => {
       ev.preventDefault();
@@ -505,7 +527,7 @@
 
   function legend() {
     return h('div', { class: 'chart-legend exp-legend' }, Object.entries(E().TYPES).map(([k, ty]) =>
-      h('span', { class: 'legend-item', tip: t('exp.nodeDesc.' + k) }, h('span', { class: 'exp-legend-icon t-' + k }, DK.icon(ty.icon, 13)), t('exp.node.' + k))));
+      h('span', { class: 'legend-item', tip: t('exp.nodeDesc.' + k) }, h('span', { class: 'exp-legend-icon t-' + k }, DK.nodeArt && DK.nodeArt.has(k) ? DK.nodeArt(k) : DK.icon(ty.icon, 13)), t('exp.node.' + k))));
   }
 
   /** Fichas de profundidad y piso (barra del mapa y barra del modo foco). */
@@ -519,10 +541,61 @@
   const opts = (...b) => h('div', { class: 'exp-opts' }, b.flat().filter(Boolean));
   // v4.63: los sucesos con personaje llevan su silueta (npc = { key, color, icon })
   const head = (type, title, text, npc) => h('div', { class: 'exp-node-head t-' + type + (npc ? ' has-npc' : '') },
-    npc ? null : h('span', { class: 'exp-node-big t-' + type }, DK.icon(E().TYPES[type].icon, 28)), h('div', { class: 'enh-txt' }, h('h3', null, title), text ? h('p', { class: 'muted small' }, text) : null),
-    npc ? V.npc(npc.key, npc) : null);
+    npc ? null : h('span', { class: 'exp-node-big t-' + type }, DK.nodeArt && DK.nodeArt.has(type) ? DK.nodeArt(type) : DK.icon(E().TYPES[type].icon, 28)), h('div', { class: 'enh-txt' }, h('h3', null, title), text ? h('p', { class: 'muted small' }, text) : null),
+    npc ? h('button', { class: 'npc-btn', type: 'button', tip: t('exp.npcLook'), 'aria-label': t('exp.npcLook'), onClick: () => npcZoom(npc, npc.role || title) }, V.npc(npc.key, npc)) : null);
   const NPC_COLOR = { traveler: '#f59e0b', hermit: '#a78bfa', smith: '#fb923c', cartographer: '#38bdf8', bandits: '#ef4444', gamble: '#4ade80', trainer: '#f472b6', collector: '#facc15' };
   const npcOf = (e, id, icon) => (NPC_COLOR[id] ? { key: id + '|' + e.seed + '|' + e.pending, color: NPC_COLOR[id], icon } : null);
+
+  /**
+   * v5.5: escenario de los sucesos: el personaje grande (silueta oscura; al pulsarlo se ve más de cerca, aún
+   * oculto), un bocadillo con lo que dice y, debajo, las opciones como tarjetas.
+   * o = { npc, role, icon, title, text, tone, result, special }
+   */
+  function stage(o, ...below) {
+    const e = E().active(), z = D.zones[e.zone];
+    const who = o.npc
+      ? h('button', { class: 'ev-npc', type: 'button', style: { '--npc': o.npc.color }, tip: t('exp.npcLook'), 'aria-label': t('exp.npcLook'), onClick: () => npcZoom(o.npc, o.role || o.title) },
+        h('span', { class: 'ev-npc-glow' }), V.npc(o.npc.key, Object.assign({}, o.npc, { size: 150 })), h('span', { class: 'ev-npc-hint' }, DK.icon('search', 12)))
+      : h('span', { class: 'ev-emblem' }, h('span', { class: 'ev-emblem-ring' }), DK.icon(o.icon || 'question', 46));
+    return h('div', { class: 'card ev-stage' + (o.special ? ' special' : '') + (o.result ? ' is-result tone-' + (o.tone || 'good') : ''), style: { '--z1': z.colors[0], '--z2': z.colors[1] } },
+      h('div', { class: 'ev-scene' },
+        h('span', { class: 'ev-sky' }), h('span', { class: 'ev-ground' }), h('span', { class: 'ev-motes' }, Array.from({ length: 10 }, (_, i) => h('i', { style: { left: (i * 37) % 96 + 2 + '%', animationDelay: (-i * 1.3) + 's' } }))),
+        o.special ? h('span', { class: 'ev-ribbon' }, DK.icon('star', 12), t('exp.special.tag')) : null,
+        who,
+        h('div', { class: 'ev-bubble' }, h('h3', null, o.title), o.text ? h('p', null, o.text) : null)),
+      h('div', { class: 'ev-below' }, ...below));
+  }
+  /** v5.5: ver al personaje de cerca (sigue siendo una silueta: no se sabe qué daskai es). */
+  function npcZoom(npc, role) {
+    DK.audio.sfx('select');
+    DK.ui.modal({ title: role || t('exp.npcUnknown'), icon: npc.icon || 'question', cls: 'npc-zoom-modal',
+      content: h('div', { class: 'npc-zoom', style: { '--npc': npc.color } }, h('span', { class: 'nz-rays' }), V.npc(npc.key, Object.assign({}, npc, { size: 260 })),
+        h('p', { class: 'muted small center' }, t('exp.npcHidden'))),
+      actions: [{ label: t('common.close'), variant: 'primary', value: true }] });
+  }
+  /** v5.5: elegir un regalo (encuentro especial o mercader generoso). */
+  function giftPanel(e, refresh, o) {
+    const npc = { key: o.npcKey, color: o.color, icon: o.icon };
+    if (e.giftTaken) {
+      enterContFor(refresh);
+      const it = D.items[e.giftTaken];
+      return stage({ npc, role: o.role, title: o.title, text: t('exp.giftTaken', { item: it.name }), result: true, special: true },
+        h('div', { class: 'gift-row' }, giftCard(e.giftTaken, true)), cont(refresh));
+    }
+    const choose = (id) => { if (E().takeGift(id)) { DK.audio.sfx('achievement'); DK.app.renderNav(); refresh(); } };
+    (e.giftChoice || []).forEach((id, i) => DK.keys.on(String(i + 1), () => choose(id)));
+    return stage({ npc, role: o.role, title: o.title, text: o.text, special: true },
+      h('div', { class: 'gift-row' }, (e.giftChoice || []).map((id, i) => giftCard(id, false, () => choose(id), i + 1))));
+  }
+  function giftCard(id, taken, onClick, key) {
+    const it = D.items[id];
+    return h(taken ? 'div' : 'button', { class: 'gift-card r-' + it.rarity + (taken ? ' taken' : ''), type: taken ? null : 'button', onClick, tip: it.desc },
+      h('span', { class: 'gift-ico' }, V.itemIcon(it, 44)), h('b', null, it.name), V.rarity(it.rarity),
+      h('small', { class: 'muted' }, V.useText(it) || it.desc),
+      taken ? h('span', { class: 'badge good' }, DK.icon('check', 12), t('exp.giftGot')) : h('span', { class: 'gift-take' }, DK.icon('gift', 13), t('exp.giftTake')),
+      key ? h('kbd', { class: 'hotkey' }, String(key)) : null);
+  }
+  const enterContFor = (refresh) => DK.keys.on('Enter', () => { E().completeNode(); refresh(); });
 
   /** v4.88: pista de la expedición: la de la zona, o misterio en sucesos y santuarios sin resolver. */
   function expTrack() {
@@ -543,11 +616,11 @@
 
     if (n.type === 'treasure') {
       if (!e.result) {
-        const open = () => { const r = E().openTreasure(); e.result = { key: 'treasure', items: r.items, coins: r.coins, recipe: r.recipe, relic: r.relic, runes: r.runes }; DK.audio.sfx('coin'); DK.store.save(); refresh(); };
-        DK.keys.on('Enter', open);
+        // v5.5: el cofre se abre solo al llegar (sin pulsar y sin sonido al mostrar el botín)
+        const open = () => { if (e.result || E().active() !== e || e.pending !== n.id || DK.router.current().id !== 'expedition') return; const r = E().openTreasure(); e.result = { key: 'treasure', items: r.items, coins: r.coins, recipe: r.recipe, relic: r.relic, runes: r.runes }; DK.store.save(); refresh(); };
+        setTimeout(open, 650);
         return h('div', { class: 'card stack chest-panel' }, head('treasure', t('exp.node.treasure'), t('exp.treasureText')),
-          h('button', { class: 'chest-big closed', type: 'button', 'aria-label': t('exp.openChest'), onClick: open }, DK.icon('gift', 64), h('span', { class: 'chest-glow' })),
-          btn({ icon: 'gift', label: t('exp.openChest'), variant: 'primary', hotkey: '↵', cls: 'exp-cont', onClick: open }));
+          h('div', { class: 'chest-big closed', 'aria-hidden': 'true' }, DK.icon('gift', 64), h('span', { class: 'chest-glow' })));
       }
       enterCont();
       // Botín del cofre en tarjetas: lo que es, para qué sirve y adónde va (mochila: ya; botín: al volver)
@@ -558,14 +631,14 @@
         e.result.coins ? h('div', { class: 'loot-card coins', style: delay() }, h('span', { class: 'loot-icon' }, DK.icon('coin', 34)), h('b', null, '+' + e.result.coins.toLocaleString(DK.i18n.lang)), h('small', null, t('hub.coins')), h('span', { class: 'loot-dest loot' }, DK.icon('gift', 11), t('exp.destLoot'))) : null,
         ...Object.entries(counts).map(([id, n]) => {
           const it = D.items[id], bag = E().toBag(id);
-          return h('div', { class: 'loot-card r-' + it.rarity, style: delay(), tip: it.desc },
+          return h('div', { class: 'loot-card r-' + it.rarity, style: delay(), tip: it.desc, tipNode: () => V.infoCard('item', id) },
             h('span', { class: 'loot-icon' }, V.itemIcon(it, 40), n > 1 ? h('span', { class: 'loot-n' }, '×' + n) : null),
             h('b', null, it.name), V.rarity(it.rarity),
             h('small', { class: 'muted' }, V.useText(it) || it.desc),
             h('span', { class: 'loot-dest ' + (bag ? 'bag' : 'loot'), tip: bag ? t('exp.toBagTip') : t('exp.toLoot') }, DK.icon(bag ? 'bag' : 'gift', 11), bag ? t('exp.destBag') : t('exp.destLoot')));
         }),
         e.result.relic ? (() => { const r = D.relics[e.result.relic]; return h('div', { class: 'loot-card relic r-' + r.rarity, style: delay() }, h('span', { class: 'loot-icon' }, DK.icon(r.icon, 36)), h('b', null, r.name), V.rarity(r.rarity), h('small', { class: 'muted' }, relicText(r)), h('span', { class: 'loot-dest relic' }, DK.icon('amulet', 11), t('exp.destRelic'))); })() : null,
-        ...(e.result.runes || []).map((id) => { return h('div', { class: 'loot-card rune ' + V.runeRarity(id), style: delay(), tip: t('rune.help') }, h('span', { class: 'loot-icon' }, V.runeGem(id, 52)), h('b', null, V.runeName(id)), h('small', { class: 'muted' }, V.runeEffect(id)), ...V.runeAffixes(id).map((x) => h('small', { class: 'rune-aff' }, x)), h('span', { class: 'loot-dest rune' }, DK.icon('rune', 11), t('rune.dest'))); }),
+        ...(e.result.runes || []).map((id) => { return h('div', { class: 'loot-card rune ' + V.runeRarity(id), style: delay(), tip: t('rune.help'), tipNode: () => V.infoCard('rune', id) }, h('span', { class: 'loot-icon' }, V.runeGem(id, 52)), h('b', null, V.runeName(id)), h('small', { class: 'muted' }, V.runeEffect(id)), ...V.runeAffixes(id).map((x) => h('small', { class: 'rune-aff' }, x)), h('span', { class: 'loot-dest rune' }, DK.icon('rune', 11), t('rune.dest'))); }),
         e.result.recipe ? (() => { const it = D.items[D.recipes.find((r) => r.id === e.result.recipe).result]; return h('div', { class: 'loot-card recipe', style: delay() }, h('span', { class: 'loot-icon' }, DK.icon('scroll', 34)), h('b', null, t('exp.newRecipe', { item: it.name })), h('small', { class: 'muted' }, t('exp.recipeShort')), h('span', { class: 'loot-dest relic' }, DK.icon('anvil', 11), t('nav.craft'))); })() : null,
       ];
       return h('div', { class: 'card stack chest-panel' }, head('treasure', t('exp.node.treasure'), t('exp.chestOpened')),
@@ -661,25 +734,32 @@
     if (n.type === 'recruit') return recruitPanel(e, refresh);
     if (n.type === 'shrine') return shrinePanel(e, refresh);
 
-    if (n.type === 'shop') return merchantPanel(e, refresh);
+    if (n.type === 'shop' && n.special === 'gift') return giftPanel(e, refresh, { npcKey: 'shop|' + e.seed + '|' + e.pending, color: '#fbbf24', icon: 'gift', title: t('exp.special.gift.name'), text: t('exp.giftText.gift'), role: t('exp.npcRole.merchant') });
+    if (n.type === 'shop') return merchantPanel(e, refresh, n.special === 'curio');
 
     if (n.type === 'event') {
+      // v5.5: encuentro especial: un personaje misterioso regala uno de tres objetos especiales
+      if (e.event === 'special') return giftPanel(e, refresh, { npcKey: 'special|' + e.seed + '|' + e.pending, color: '#fbbf24', icon: 'gift', title: t('exp.special.rare.name'), text: t('exp.giftText.rare'), role: t('exp.npcRole.special') });
       const ev = D.events.find((x) => x.id === e.event) || D.events[0];
       const T = (k, v) => t(`events.${ev.id}.${k}`, v);
+      const npc = npcOf(e, ev.id, ev.icon);
+      const role = npc ? T('title') : null;
       if (e.result) {
         const r = e.result;
         if (r.fight) DK.keys.on('Enter', () => fight(r.fight)); else enterCont();
-        return h('div', { class: 'card stack-s' }, head('event', T('title'), null, npcOf(e, ev.id, ev.icon)),
-          h('div', { class: 'warning ' + (r.fight ? 'warn' : 'good') }, DK.icon(r.fight ? 'skull' : ev.icon, 18), h('span', null, T('results.' + r.key, r.vars))),
+        return stage({ npc, role, icon: ev.icon, title: T('title'), text: T('results.' + r.key, r.vars), tone: r.fight ? 'warn' : 'good', result: true },
           r.fight ? btn({ icon: 'swords', label: t('exp.fightNow'), variant: 'primary', hotkey: '↵', cls: 'exp-cont', onClick: () => fight(r.fight) }) : cont(refresh));
       }
       const ctx = E().ctx();
-      return h('div', { class: 'card stack-s' }, head('event', T('title'), T('text'), npcOf(e, ev.id, ev.icon)),
-        h('div', { class: 'exp-opts' }, ev.choices.map((c, i) => {
+      return stage({ npc, role, icon: ev.icon, title: T('title'), text: T('text') },
+        h('div', { class: 'ev-choices n' + ev.choices.length }, ev.choices.map((c, i) => {
           const ok = !c.req || c.req(ctx);
           const pick = () => { if (E().resolveEvent(c.id)) { DK.audio.sfx('select'); DK.app.renderNav(); refresh(); } };
           if (ok) DK.keys.on(String(i + 1), pick);
-          return btn({ icon: c.icon, label: T('choices.' + c.id), desc: ok ? T('desc.' + c.id) : T('need.' + c.id), variant: i === 0 ? 'primary' : 'tone', hotkey: String(i + 1), disabled: !ok, showDesc: true, onClick: pick });
+          return h('button', { class: 'ev-choice' + (i === 0 ? ' main' : '') + (ok ? '' : ' off'), type: 'button', disabled: !ok, onClick: pick },
+            h('span', { class: 'evc-ico' }, DK.icon(c.icon, 20)),
+            h('span', { class: 'evc-txt' }, h('b', null, T('choices.' + c.id)), h('small', null, ok ? T('desc.' + c.id) : T('need.' + c.id))),
+            h('kbd', { class: 'hotkey' }, String(i + 1)));
         })));
     }
     return null;
@@ -693,10 +773,10 @@
    * o comprar redibuja sólo este panel, no la pantalla (sin parpadeos).
    */
   const shopUi = { mode: 'buy', qty: {} };
-  function merchantPanel(e, refresh) {
+  function merchantPanel(e, refresh, curio = false) {
     if (shopUi.node !== e.pending) { shopUi.node = e.pending; shopUi.mode = 'buy'; shopUi.qty = {}; }
     DK.keys.on('Enter', () => { E().completeNode(); refresh(); });
-    const card = h('div', { class: 'card stack-s merchant' });
+    const card = h('div', { class: 'card stack-s merchant' + (curio ? ' curio' : '') });
     const flash = (text, icon, id) => {
       shopUi.flash = { text, icon, id, at: Date.now() };
       clearTimeout(shopUi.flashT); shopUi.flashT = setTimeout(() => { shopUi.flash = null; if (card.isConnected) draw(); }, 3200);
@@ -724,9 +804,10 @@
           if (DK.app.renderRes) DK.app.renderRes();
           document.querySelectorAll('[data-loot-coins]').forEach((el) => { el.textContent = t('exp.lootNow', { items: E().lootCount(), coins: e.loot.coins }); });
         };
-        return h('div', { class: 'mr-row r-' + it.rarity + (sold ? ' sold' : '') + (shopUi.flash && shopUi.flash.id === id && Date.now() - shopUi.flash.at < 900 ? ' just' : ''), tip: it.desc },
+        const special = !sell && e.offers && e.offers[k] && e.offers[k].special;
+        return h('div', { class: 'mr-row r-' + it.rarity + (special ? ' special' : '') + (sold ? ' sold' : '') + (shopUi.flash && shopUi.flash.id === id && Date.now() - shopUi.flash.at < 900 ? ' just' : ''), tip: it.desc },
           h('span', { class: 'mr-icon' }, V.itemIcon(it, 26)),
-          h('span', { class: 'mr-main' }, h('b', null, it.name), h('span', { class: 'muted small' }, V.useText(it) || it.desc),
+          h('span', { class: 'mr-main' }, h('b', null, special ? h('span', { class: 'mr-star', tip: t('exp.special.tag') }, DK.icon('star', 11)) : null, it.name), h('span', { class: 'muted small' }, V.useText(it) || it.desc),
             h('span', { class: 'mr-meta small' }, V.rarity(it.rarity),
               sell ? h('span', { class: 'muted' }, t('shop.haveN', { n: owned })) : h('span', { class: left ? '' : 'muted' }, t('shop.left', { n: left })),
               h('span', { class: 'muted' }, DK.icon('bag', 11), ' ', DK.bag.count(id)))),
@@ -744,7 +825,7 @@
       // v4.67: sin el botón de seguir arriba. Cabecera con el mercader y tu bolsa de monedas; abajo, una
       // barra que se queda pegada al borde (siempre a mano al bajar por la lista) con el aviso y «Seguir el camino».
       card.replaceChildren(
-        h('div', { class: 'mr-top' }, head('shop', t('exp.node.shop'), t('exp.shopText2'), { key: 'shop|' + e.seed + '|' + e.pending, color: '#fbbf24', icon: 'coin' }),
+        h('div', { class: 'mr-top' }, head('shop', curio ? '★ ' + t('exp.special.curio.name') : t('exp.node.shop'), curio ? t('exp.special.curio.desc') : t('exp.shopText2'), { key: 'shop|' + e.seed + '|' + e.pending, color: curio ? '#c084fc' : '#fbbf24', icon: 'coin', role: t('exp.npcRole.merchant') }),
           h('span', { class: 'mr-purse', tip: t('exp.lootCoinsTip') }, h('small', null, DK.icon('gift', 13), t('exp.loot')), V.coins(coins))),
         h('div', { class: 'mr-bar' }, tabs, h('p', { class: 'muted small mr-note' }, shopUi.mode === 'buy' ? t('exp.payNoteLoot') : t('shop.sellHelpLoot', { n: Math.round(DK.config.sellRatio * 100) }))),
         list.length ? h('div', { class: 'mr-list' }, list) : DK.ui.empty('coin', t('shop.nothingToSell'), ''),
@@ -1111,7 +1192,7 @@
     if (bd.dataset.zone !== z.id) {
       bd.dataset.zone = z.id;
       bd.style.setProperty('--z1', z.colors[0]); bd.style.setProperty('--z2', z.colors[1]);
-      bd.replaceChildren(h('div', { class: 'zb-sky' }), DK.scenes.render(z.scene, z.colors));
+      bd.replaceChildren(h('div', { class: 'zb-sky' }), DK.scenes.render(z.scene, z.colors), DK.ambient ? DK.ambient.page(z.scene) : null); // v5.9: paisaje animado a los lados
     }
     requestAnimationFrame(() => bd.classList.add('on'));
   });

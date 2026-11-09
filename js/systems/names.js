@@ -46,6 +46,7 @@
     cloud: ['nim', 'fu'], pear: ['pe', 'ra'], mound: ['mon', 'du'],
     wide: ['plas', 'ancho'], tower: ['lon', 'tor'], topheavy: ['gor', 'cabo'], bubble: ['bur', 'pop'], lumpy: ['gru', 'mo'],
     saddle: ['sel', 'mon'], pill: ['pil', 'cap'], spiky: ['pin', 'riz'], acorn: ['bel', 'yo'], potato: ['pa', 'tu'],
+    loaf: ['ga', 'pan'], hunch: ['gor', 'jo'], hourglass: ['re', 'lo'], peanut: ['ca', 'nu'], shield: ['es', 'cu'], pyramid: ['pi', 'ra'], hex: ['hex', 'sa'], crag: ['ro', 'ka'], tiltegg: ['lin', 'ka'], comet: ['co', 'me'], camel: ['ca', 'mel'], brute: ['bru', 'tox'],
     gourd: ['ba', 'zo'], gem: ['dax', 'tis'], puff: ['fus', 'mi'], bell: ['lin', 'dan'], bulb: ['bul', 'tre'],
   };
   const RARE = { eyes: ['star', 'button', 'uneven', 'cyclops', 'three', 'visor', 'spiral'], ears: ['unicorn', 'mushroom'], mouth: ['beak', 'sabre', 'bubble', 'stitch'], mark: [], hair: [] };
@@ -86,7 +87,7 @@
     const pool = rares.length ? rares : cands;
     const c = pool.length ? pool[Math.floor(R() * pool.length)] : null;
     let mid = c && (rares.length || R() < 0.55) ? TRAIT[c.cat][c.key] : '';
-    const end = sized(pickOf(BODY[i.body] || BODY.round, R), i.size || 1);
+    const end = sized(pickOf(BODY[i.body0 || i.body] || BODY.round, R), i.size || 1);
     const s2 = (x) => x.toLowerCase().slice(0, 2);
     if (mid && (s2(end) === s2(mid) || start.toLowerCase().endsWith(s2(mid)))) mid = ''; // «Monmon», «Lulu»
     let name = join(join(start, mid), end);

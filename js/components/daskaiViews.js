@@ -23,6 +23,8 @@
     // Pixel art (ajuste «pixelArt»): se usa la versión en caché o se pinta el SVG
     // mientras se genera y luego se cambia por la imagen pixelada.
     const toImg = (url) => { const im = document.createElement('img'); im.className = 'sprite-px'; im.alt = sp.name; im.draggable = false; im.src = url; el.replaceChildren(im); };
+    // v5.4: «alive» → respira y parpadea (components/life.js); sólo donde se pide (hoguera, combate, fichas)
+    if (/\balive\b/.test(cls) && !silhouette && !img && DK.life) DK.life.mark(el, { sid: speciesId, look, shiny, flip, pixel });
     if (img) { el.innerHTML = DK.sprites.svg(sp, { flip, shiny }); return el; }
     // v4.58: el dibujo va centrado en su recuadro; --feet = a qué altura (0–1) quedan los pies, para
     // las escenas que lo quieren apoyado en el suelo (combate: clase «grounded»)
@@ -50,6 +52,11 @@
       h('span', { class: 'npc-bubble' }, DK.icon(icon, 12)));
   };
   /** Sprite de un daskai concreto (su aspecto, variocolor y forma alternativa). */
+  /**
+   * v5.4: marco tipo carta según lo especial que es: variocolor (holográfico) › ascendido (oro, por
+   * estrellas) › evolucionado (plata / bronce). Devuelve una clase «frame-…» ('' si es básico).
+   */
+  V.frameCls = (d) => (!d ? '' : d.shiny ? ' frame frame-holo' : d.stars ? ' frame frame-gold' : (d.form || 0) >= 2 ? ' frame frame-silver' : (d.form || 0) === 1 ? ' frame frame-bronze' : '');
   V.dSprite = (d, o = {}) => V.sprite(d.species, Object.assign({ shiny: !!d.shiny, look: DK.looks.of(d) }, o, d.variant ? { cls: ((o.cls || '') + ' variant-' + d.variant).trim() } : null));
 
   /**
@@ -107,7 +114,7 @@
     const stage = h('div', { class: 'sc-stage' + (bare ? ' bare' : ''), style: { '--c': D.houseColor(sp.house) } });
     // v4.65: en pantallas táctiles sin «tip» (salía al tocar) ni marco al pulsar
     const touch = window.matchMedia && window.matchMedia('(hover: none)').matches;
-    const mon = h('button', { class: 'sc-mon', type: 'button', tip: touch ? null : t('detail.showAgain'), 'aria-label': t('detail.showAgain') }, V.dSprite(d, { size: 260 }));
+    const mon = h('button', { class: 'sc-mon', type: 'button', tip: touch ? null : t('detail.showAgain'), 'aria-label': t('detail.showAgain') }, V.dSprite(d, { size: 260, cls: 'alive' }));
     const fx = h('div', { class: 'sc-fx', 'aria-hidden': 'true' });
     // Fondo vivo: motas que suben despacio todo el rato
     const amb = h('div', { class: 'sc-amb', 'aria-hidden': 'true' }, Array.from({ length: 14 }, (_, i) => h('b', { style: { left: (4 + Math.random() * 92).toFixed(0) + '%', '--d': (-Math.random() * 8).toFixed(1) + 's', '--t': (6 + Math.random() * 5).toFixed(1) + 's', '--s': (3 + Math.random() * 4).toFixed(0) + 'px' } })));
@@ -149,7 +156,7 @@
     const go = () => { m.close(true); DK.router.reset('team', { uid: d.uid }); };
     m = DK.ui.modal({ title: DK.daskai.name(d), icon: lead ? 'crown' : 'paw', cls: 'qs-modal', closeX: true, content: () => h('div', { class: 'qs', style: { '--c': D.houseColor(sp.house) } },
       h('div', { class: 'qs-top' },
-        h('button', { class: 'qs-art', type: 'button', tip: t('detail.viewBig'), 'aria-label': t('detail.viewBig'), onClick: () => V.showcase(d) }, V.dSprite(d, { size: 84 }), V.formPips(d)),
+        h('button', { class: 'qs-art', type: 'button', tip: t('detail.viewBig'), 'aria-label': t('detail.viewBig'), onClick: () => V.showcase(d) }, V.dSprite(d, { size: 84, cls: 'alive' }), V.formPips(d)),
         h('div', { class: 'qs-id' },
           h('div', { class: 'qs-tags' }, h('span', { class: 'dk-species' }, DK.daskai.speciesName(d)), V.level(d.level), V.housesBadge(d), V.roleBadge(d, { neutral: true }), V.shinyTag(d), V.statusTag(d.status),
             DK.daskai.isFainted(d) ? h('span', { class: 'badge bad' }, DK.icon('skull', 12), t('common.fainted')) : null),

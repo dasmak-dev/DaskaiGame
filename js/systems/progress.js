@@ -112,9 +112,11 @@
           fresh.push(a);
         }
       });
-      fresh.forEach((a) => {
-        DK.audio.sfx('achievement');
-        DK.ui.toast(DK.t(a.hidden ? 'achievements.unlockedHidden' : 'achievements.unlocked', { name: DK.achievements.name(a), coins: a.reward }), { icon: a.icon, kind: 'good' });
+      fresh.forEach((a, i) => {
+        const text = DK.t(a.hidden ? 'achievements.unlockedHidden' : 'achievements.unlocked', { name: DK.achievements.name(a), coins: a.reward });
+        // v5.4: medalla que cae desde arriba (una tras otra si son varias)
+        if (DK.views && DK.views.achievementDrop) setTimeout(() => DK.views.achievementDrop({ icon: a.icon, title: DK.achievements.name(a), text, coins: a.reward, hidden: a.hidden }), i * 1400);
+        else { DK.audio.sfx('achievement'); DK.ui.toast(text, { icon: a.icon, kind: 'good' }); }
       });
       if (fresh.length) DK.store.save();
       return fresh;

@@ -387,8 +387,14 @@
       class: 'camp-mon', type: 'button', style: { left: fx + dx + '%', top: fy + dy + '%', zIndex: 2 + Math.round(dy + 20), animationDelay: (i * 0.4) + 's' },
       'aria-label': DK.daskai.name(d), tip: `${DK.daskai.name(d)} · ${t('common.lvl')} ${d.level}`,
       // v4.67: el mismo resumen rápido que «Tu equipo» (antes llevaba a la pantalla de equipo)
-      onClick: () => { DK.audio.sfx('select'); DK.views.quickStats(d, { onChange: o.onChange || (() => DK.router.refresh()) }); },
-    }, DK.views.sprite(d.species, { look: DK.looks.of(d), size, shiny: d.shiny, flip: dx > 0 })); });
+      onClick: (ev) => { DK.audio.sfx('select'); const spr = ev.currentTarget.querySelector('.sprite'); DK.life.react(spr, 'hop'); setTimeout(() => DK.views.quickStats(d, { onChange: o.onChange || (() => DK.router.refresh()) }), 260); }, // v5.4: saltito antes de abrir su ficha
+    }, (() => {
+      const sp = DK.views.sprite(d.species, { look: DK.looks.of(d), size, shiny: d.shiny, flip: dx > 0, cls: 'alive' });
+      sp.style.setProperty('--warm-x', dx > 0 ? '-7px' : '7px'); // v5.5: al calentarse se acerca al fuego
+      // v5.4: de noche, algunos duermen junto al fuego (siempre los mismos esa noche)
+      if (tod === 'night' && DK.life && (i + new Date().getDate()) % 2 === 0) DK.life.sleep(sp);
+      return sp;
+    })()); });
     // Ascuas que suben de la hoguera, niebla baja y antorchas
     const embers = h('div', { class: 'camp-embers', 'aria-hidden': 'true', style: { left: fx + '%', top: fy + '%' } }, Array.from({ length: 16 }, (_, i) => h('i', { style: { '--dx': ((i * 37) % 60 - 30) + 'px', left: ((i * 13) % 40 - 20) + 'px', animationDelay: (i * 0.35) + 's', animationDuration: (2.6 + (i % 5) * 0.5) + 's' } })));
     const fog = h('div', { class: 'camp-fog', 'aria-hidden': 'true' }, h('i'), h('i'));
@@ -397,8 +403,11 @@
     const motes = h('div', { class: 'camp-motes', 'aria-hidden': 'true' }, Array.from({ length: 14 }, (_, i) => h('i', { style: { left: ((i * 53) % 96 + 2) + '%', top: (40 + (i * 29) % 55) + '%', animationDelay: (i * 1.3).toFixed(1) + 's', animationDuration: (9 + (i % 5) * 2.5) + 's' } })));
     const torches = (narrow ? [[5, 58], [96, 62]] : mid ? [[29, 56], [79, 52], [3, 78], [97, 78]] : [[31, 62], [74, 62], [3, 78], [97, 78]]).map(([x, y], i) =>
       h('span', { class: 'camp-torch', 'aria-hidden': 'true', style: { left: x + '%', top: y + '%' } }, animArt('torch', scale * 0.8, i * 0.13) || pixSvg(SPRITES.torch(0), scale * 0.8)));
+    // v5.4: de noche, luciérnagas; y el clima del campamento (cambia cada pocas horas)
+    const flies = tod === 'night' || tod === 'dusk' ? h('div', { class: 'camp-fireflies', 'aria-hidden': 'true' }, Array.from({ length: narrow ? 8 : 14 }, (_, i) => h('i', { style: { left: ((i * 41) % 92 + 4) + '%', top: (48 + (i * 23) % 44) + '%', animationDelay: (-i * 1.7).toFixed(1) + 's', animationDuration: (7 + (i % 4) * 2) + 's' } }))) : null;
+    const wx = DK.weather ? DK.weather.layer(DK.weather.forCamp()) : null;
     return h('section', { class: 'camp-scene grim tod-' + tod, 'aria-label': t('scene.title') },
-      backdrop(tod, narrow), firelight, fog, motes, ...torches, embers,
+      backdrop(tod, narrow), firelight, fog, motes, flies, wx, ...torches, embers,
       h('div', { class: 'camp-greet' }, h('span', { class: 'camp-greet-text' }, t('scene.greet.' + tod))),
       ...team, ...spots);
   };

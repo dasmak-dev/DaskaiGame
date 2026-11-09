@@ -89,8 +89,8 @@
       const st = STYLES[house] || STYLES.neutral;
       const a = center(layer, from), b = center(layer, to);
       const dur = 380 / speed();
-      for (let i = 0; i < 5; i++) {
-        const p = particle(layer, a.x, a.y, st.colors[i % st.colors.length], st.shape, 18 - i * 2.5);
+      for (let i = 0; i < 9; i++) { // v5.4: estela más larga
+        const p = particle(layer, a.x, a.y, st.colors[i % st.colors.length], st.shape, Math.max(4, 19 - i * 1.7));
         p.animate([
           { transform: 'translate(-50%,-50%)', opacity: 0.95 },
           { transform: `translate(calc(-50% + ${b.x - a.x}px), calc(-50% + ${b.y - a.y}px))`, opacity: 0.9 },
@@ -98,6 +98,35 @@
       }
       setTimeout(resolve, dur + 60);
     });
+  }
+
+  /** v5.4: rayo de luz recto del atacante al objetivo. */
+  function beam(layer, from, to) {
+    return new Promise((resolve) => {
+      if (!enabled() || !layer || !from || !to) return resolve();
+      const a = center(layer, from), b = center(layer, to), dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy);
+      const el = document.createElement('span'); el.className = 'fx-beam';
+      el.style.cssText = `left:${a.x}px;top:${a.y}px;width:${len}px;transform:rotate(${Math.atan2(dy, dx)}rad)`;
+      layer.append(el);
+      el.animate([{ opacity: 0, scale: '0 1' }, { opacity: 1, scale: '1 1', offset: 0.35 }, { opacity: 0, scale: '1 0.2' }], { duration: 420 / speed(), easing: 'ease-out' }).onfinish = () => el.remove();
+      setTimeout(resolve, 200 / speed());
+    });
+  }
+  /**
+   * v5.4: impacto según la casa: fuego → llamarada, agua → onda, tierra → polvo y temblor,
+   * luz → destello de pantalla, oscuridad → sombra que envuelve.
+   */
+  function impact(layer, target, house, crit) {
+    if (!enabled() || !layer || !target) return;
+    const c = center(layer, target), arena = layer.closest('.arena');
+    const ring = (cls, ms) => { const r = document.createElement('span'); r.className = 'fx-impact ' + cls; r.style.cssText = `left:${c.x}px;top:${c.y}px`; layer.append(r); setTimeout(() => r.remove(), ms / speed()); };
+    if (house === 'fuego') ring('i-fire', 600);
+    else if (house === 'agua') ring('i-wave', 700);
+    else if (house === 'tierra') { ring('i-dust', 700); if (arena) { arena.classList.remove('quake'); void arena.offsetWidth; arena.classList.add('quake'); setTimeout(() => arena.classList.remove('quake'), 380); } }
+    else if (house === 'luz') { if (arena) { arena.classList.remove('lightflash'); void arena.offsetWidth; arena.classList.add('lightflash'); setTimeout(() => arena.classList.remove('lightflash'), 360); } ring('i-light', 500); }
+    else if (house === 'oscuridad') ring('i-dark', 750);
+    else ring('i-neutral', 450);
+    if (crit) ring('i-crit', 550);
   }
 
   DK.fx = {
@@ -112,8 +141,37 @@
      */
     async attack(layer, from, to, { house, kind, crit } = {}) {
       if (!enabled()) return;
-      if (kind === 'magico') { await projectile(layer, from, to, house || 'neutral'); burst(layer, to, house || 'neutral', crit ? 26 : 18); }
-      else { slash(layer, to, crit); if (house) burst(layer, to, house, 10); }
+      if (kind === 'magico') {
+        // v5.4: luz → rayo directo; el resto, proyectil con estela
+        if (house === 'luz') await beam(layer, from, to); else await projectile(layer, from, to, house || 'neutral');
+        burst(layer, to, house || 'neutral', crit ? 26 : 18);
+      } else { slash(layer, to, crit); if (house) burst(layer, to, house, 10); }
+      impact(layer, to, house || 'neutral', crit);
+    },
+    /** v5.4: rastro de cada estado al aplicarse (copos, chispas, «z», destello…). */
+    statusBurst(layer, target, status) {
+      if (!enabled() || !layer || !target) return;
+      const S = (DK.data.statuses || {})[status], c = center(layer, target);
+      const map = { congelacion: ['❄', '#bae6fd'], paralisis: ['ϟ', '#fde047'], sueno: ['z', '#c4b5fd'], ceguera: ['✦', '#f8fafc'], veneno: ['•', '#c084fc'], quemadura: ['•', '#fb923c'] };
+      const [ch, col] = map[status] || ['•', (S && S.color) || '#fff'];
+      for (let i = 0; i < 9; i++) {
+        const p = document.createElement('span'); p.className = 'fx-glyph'; p.textContent = ch;
+        p.style.cssText = `left:${c.x + (Math.random() - 0.5) * 70}px;top:${c.y + (Math.random() - 0.5) * 40}px;color:${col};font-size:${12 + Math.random() * 12}px`;
+        layer.append(p);
+        p.animate([{ transform: 'translate(-50%,-50%) scale(.4)', opacity: 0 }, { transform: 'translate(-50%,-90%) scale(1)', opacity: 1, offset: 0.3 }, { transform: `translate(${-50 + (Math.random() - 0.5) * 60}%, -260%) scale(.8)`, opacity: 0 }],
+          { duration: (900 + Math.random() * 400) / speed(), delay: (i * 40) / speed(), easing: 'ease-out', fill: 'backwards' }).onfinish = () => p.remove();
+      }
+    },
+    /** v5.4: el jefe se deshace en partículas que suben. */
+    disintegrate(layer, target, house) {
+      if (!enabled() || !layer || !target) return;
+      const st = STYLES[house] || STYLES.neutral, r = target.getBoundingClientRect(), a = layer.getBoundingClientRect();
+      for (let i = 0; i < 46; i++) {
+        const x = r.left - a.left + r.width * (0.2 + Math.random() * 0.6), y = r.top - a.top + r.height * (0.25 + Math.random() * 0.6);
+        const p = particle(layer, x, y, i % 3 ? st.colors[i % st.colors.length] : '#fff', 'square', 3 + Math.random() * 6);
+        p.animate([{ transform: 'translate(-50%,-50%)', opacity: 1 }, { transform: `translate(calc(-50% + ${(Math.random() - 0.5) * 80}px), calc(-50% - ${60 + Math.random() * 120}px)) rotate(${Math.random() * 360}deg)`, opacity: 0 }],
+          { duration: 1300 + Math.random() * 900, delay: Math.random() * 600, easing: 'cubic-bezier(.2,.6,.3,1)', fill: 'backwards' }).onfinish = () => p.remove();
+      }
     },
 
     /**

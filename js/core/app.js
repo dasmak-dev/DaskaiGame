@@ -145,8 +145,20 @@
       // Si la cifra cambia desde la última vez, la píldora da un saltito (css/motion.css .bump)
       const prev = this._resPrev || (this._resPrev = {});
       const pill = (icon, v, tip, cls) => {
-        const bump = prev[cls] != null && prev[cls] !== v; prev[cls] = v;
-        return h('span', { class: 'hud-pill ' + cls + (bump ? ' bump' : ''), tip }, DK.icon(icon, 16), h('b', null, Number(v).toLocaleString(DK.i18n.lang)));
+        const old = prev[cls], bump = old != null && old !== v; prev[cls] = v;
+        // si no ha cambiado, se reutiliza la misma píldora (así no se corta la animación del «+N»)
+        const els = this._resEls || (this._resEls = {});
+        if (!bump && els[cls] && els[cls].isConnected) return els[cls];
+        const num = h('b', null, Number(bump ? old : v).toLocaleString(DK.i18n.lang));
+        const el = h('span', { class: 'hud-pill ' + cls + (bump ? ' bump' : ''), tip }, DK.icon(icon, 16), num);
+        // v5.4: la cifra corre hasta el valor nuevo y sale un «+N» / «−N» que sube y se desvanece
+        if (bump) {
+          DK.util.countTo(num, old, v, 650);
+          const d = v - old;
+          el.append(h('span', { class: 'hud-delta ' + (d > 0 ? 'up' : 'down') }, (d > 0 ? '+' : '−') + Math.abs(d).toLocaleString(DK.i18n.lang)));
+        }
+        els[cls] = el;
+        return el;
       };
       // En expedición sólo se ve el botín (con lo que se paga en el mercader), no el monedero de casa
       resEl.replaceChildren(...[

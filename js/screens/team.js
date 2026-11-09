@@ -119,7 +119,7 @@
         if (d) {
           const sp = DK.daskai.species(d), s = DK.daskai.stats(d);
           const hp = DK.util.percent(d.cur.hp, s.hp), mp = DK.util.percent(d.cur.mp, s.mp);
-          inner = h('div', { class: 'party-mon' + (picked(d) ? ' selected' : '') + (DK.daskai.isFainted(d) ? ' fainted' : ''), role: 'button', tabindex: '0', 'data-drag': params.compare ? null : '1', dataset: { uid: d.uid }, style: { '--c': D.houseColor(sp.house) },
+          inner = h('div', { class: 'party-mon' + V.frameCls(d) + (picked(d) ? ' selected' : '') + (DK.daskai.isFainted(d) ? ' fainted' : ''), role: 'button', tabindex: '0', 'data-drag': params.compare ? null : '1', dataset: { uid: d.uid }, style: { '--c': D.houseColor(sp.house) },
             tip: `${DK.daskai.name(d)} · ${sp.name}`, onClick: (e) => { if (!e.target.closest('.party-out')) select(d); }, onKeydown: (e) => { if (e.key === 'Enter') select(d); } },
             h('span', { class: 'party-art' }, V.dSprite(d, { size: 64 }), V.formPips(d), V.newDot(d), i === 0 ? h('span', { class: 'party-crown', tip: t('team.leaderHint') }, DK.icon('crown', 14)) : null),
             h('span', { class: 'party-info' },
@@ -160,7 +160,7 @@
             d.shiny ? h('span', { class: 'pc-flag shiny' }, DK.icon('sparkles', 11)) : training ? h('span', { class: 'pc-flag train' }, DK.icon('compass', 11)) : DK.daskai.canEvolve(d) ? h('span', { class: 'pc-flag evo' }, DK.icon('evolve', 11)) : null);
           ctx(mon, d);
         }
-        return h('div', { class: 'pc-slot drop-zone' + (d ? '' : ' is-empty'), dataset: { zone: 'box', index: i } }, mon);
+        return h('div', { class: 'pc-slot drop-zone' + (d ? V.frameCls(d) : ' is-empty'), dataset: { zone: 'box', index: i } }, mon); // v5.6: el marco va en la casilla
       });
       const nBoxes = DK.boxes.list().length;
       const rename = async () => { const v = await DK.ui.prompt(t('box.renameTitle'), { placeholder: DK.boxes.name(bi), maxlength: 24, icon: 'edit', value: box.name || '' }); if (v != null) { DK.boxes.rename(bi, v); refresh(); } };

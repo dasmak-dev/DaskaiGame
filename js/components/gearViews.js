@@ -142,7 +142,7 @@
               h('span', { class: 'ep-slot-h' }, h('b', null, t('gear.slotN', { n: slot + 1 })), e ? h('span', { class: 'ep-cur', style: { '--g': D.gear.rarities[e.rarity].color } }, DK.gear.name(e)) : h('span', { class: 'muted' }, t('gear.slotFree'))),
               V.diffChips(DK.gear.preview(d, slot, p.uid)),
               btn({ icon: 'gem', label: e ? t('gear.swapHere') : t('gear.equipHere'), size: 'sm', variant: e ? 'ghost' : 'primary', disabled: hasIt,
-                onClick: () => { DK.gear.equip(d, slot, p.uid); DK.audio.sfx('select'); DK.ui.toast(t('equip.done', { name: DK.daskai.name(d), item: name }), { icon: 'gem', kind: 'good' }); close(true); } }));
+                onClick: () => { DK.gear.equip(d, slot, p.uid); DK.audio.sfx('thud'); DK.ui.toast(t('equip.done', { name: DK.daskai.name(d), item: name }), { icon: 'gem', kind: 'good' }); close(true); } }));
           });
           return h('div', { class: 'ep-item open' }, head, h('div', { class: 'ep-slots-detail' }, slots));
         };

@@ -357,6 +357,158 @@ Se carga la última y sólo sobrescribe: paleta (piedra oscura, bronce, oro `--g
 - **Expedición:** al entrar en el mapa, el equipo, la mochila o un combate durante una expedición, `#zone-backdrop` (creado en `screens/expedition.js` con `screen:enter`) pinta detrás de todo la escena de la zona actual, oscurecida; `body.in-exp`.
 - **Combate:** la arena usa la escena de la zona (`components/scenes.js`, ahora con árboles muertos, ruinas, tumbas, cristales o tentáculos según la zona) y los **jefes tienen su propio fondo**: `DK.scenes.bossScene(zona, secreto)` → `boss_<escena>` (menhires bajo luna roja, bosque muerto, naufragio con tormenta, bosque de cristales, forja de lava, santuario con estatua, fauces del abismo, ruinas entre rayos) y `boss_secret` (cripta) para los jefes ocultos.
 
+### Cambios de la v5.14 — más siluetas y cuerpos que cambian al evolucionar
+
+- **12 siluetas nuevas** (`BODIES9`, `PRESET`, `BODY_PATH`): hogaza (`loaf`), jorobado (`hunch`), reloj de arena, cacahuete, escudo, pirámide, hexagonal, rocoso (`crag`), inclinado (`tiltegg`), cometa de cola (`comet`), de dos jorobas (`camel`) y bruto (`brute`).
+  - `bodyPath` admite parámetros nuevos:
+    - `nb`: exponente distinto en la mitad de abajo (base plana);
+    - `hunch`: lomo más alto atrás;
+    - `humps`: dos jorobas;
+    - `waistX`: estrechez en horizontal;
+    - `taper`: la parte de atrás acaba en punta;
+    - `tilt`: giro;
+    - `poly`, `rot`, `blend`, `jit`, `flatB`: polígono redondeado o facetado.
+  - Las siluetas con `hull` usan el borde real (`hullTop`) para colocar orejas, cuernos y piezas del lomo.
+  - Tienen nombre en es/en (`look.body.*`) y sílabas en `names.js`.
+- **`evolveBody(r, root, sprite)`**, en `ind()`, dentro de `systems/looks.js`:
+  - **Firma de la especie**: `hash('sig:' + root)` le da a cada línea evolutiva un cuerpo base y uno maduro propios. Los aspectos nuevos (semillas NEW8) llevan el cuerpo de su especie el 50 % de las veces, y una silueta nueva el 22 %. Así las especies se distinguen más entre sí.
+  - **Madurar**: guarda `ind.path`, el cuerpo de cada una de las 4 etapas. En la 3.ª etapa, el 70 % de las veces el cuerpo pasa a uno de `MATURE` (el de la especie o uno al azar). En la 4.ª, el 75 % pasa a uno de `MATURE_LATE` (bruto, jorobado, rocoso, torre…) o mantiene el de la 3.ª. Esto vale para todas las semillas; solo quedan fuera los fantasmas, los alargados y las siluetas fijas.
+  - `draw` usa `ind.bodyFixed || ind.path[st] || BODY_PATH`.
+  - El nombre automático se calcula con `ind.body0` (el cuerpo de antes del cambio), así que nadie cambia de nombre.
+- Prueba nueva en `juice.test.js` (v5.14).
+
+### Cambios de la v5.13 — piezas variadas en las formas 3.ª y 4.ª
+
+- **«Regalía» por individuo** (`systems/looks.js`, `regalia(ind)`, expuesto en `DK.looks.regalia`). Cada daskai tira con su semilla (`ind.seed ^ 0x7e9a11c3`) un juego de piezas, sesgado por su casa (y algo por su segunda casa, `REG_BIAS`). Se guarda en `ind._reg`, así que su 3.ª y su 4.ª forma son coherentes.
+  - `back` (rango 3 y 4): púas, placas, cristales, vela, vértebras, llamas, hojas o púas finas (`backSvg`).
+  - `head3`: cuernitos, cuerno único, antenas con luz, cresta, gema o cuernos de carnero.
+  - `head4`: el 65 % de las veces es la evolución de `head3` (`UPGRADE`); si no, se tira aparte. Opciones: cuernos de dragón, de demonio, halo, corona de llamas, astas, cuerno único dorado, corona de cuernos, tercer ojo o carnero grande (`headSvg`; la gema y el tercer ojo van en la capa `top`, sobre el pelo).
+  - `wings` (rango 4): ángel, dragón, demonio, mariposa, cristal, fuego, hueso, cuervo, espectrales o ninguna (`epicWingsSvg`). Sin alas, casi siempre lleva capa.
+  - `extra` (rango 4): orbes que flotan, círculo rúnico en el suelo, capa, humo, hombrera o brasas (`extraSvg`, capas `back` y `front`).
+  - `pattern`: runas, rayas, escamas o grietas brillantes, dibujadas dentro del recorte del cuerpo. Las runas y las grietas, solo en la 4.ª forma.
+  - `glow`: color de los brillos según la casa (`GLOW`). La llama usa el degradado `fw<id>`.
+- Reglas: si ya tiene orejas de cuerno, la cabeza lleva algo que flota (gema, antenas, cresta, halo, corona de llamas, tercer ojo). Si lleva sombrero o corona de forma final, no se le pone halo ni corona de llamas. Las siluetas fijas (`arch`) no llevan lomo ni cuernos extra.
+- Los jefes usan su aspecto típico, así que cada jefe tiene siempre las mismas piezas.
+- Prueba nueva en `juice.test.js` (v5.13: variedad de piezas).
+
+### Cambios de la v5.12 — evoluciones imponentes y emblema del resumen
+
+- **Formas 3.ª y 4.ª más imponentes** (`systems/looks.js`). `lookOf` añade `tot` (formas totales de la línea, `DK.daskai.formsOf`) y `boss`; `tierOf(look, st, fin, g)` decide el rango:
+  - **4** = forma final de una línea de 4 formas, o cualquier jefe: alas especiales según la casa (`epicKind`: oscuridad → demonio, luz/agua → ángel, el resto → dragón; `epicWingsSvg`), cuernos grandes o halo (ángel), púas en el lomo y aura radial (`EPIC[kind].aura`).
+  - **3** = 3.ª forma de una línea de 4, o la final de una de 3: más grande (×1.12), piel algo más oscura, púas dorsales (`spikesSvg`) y cuernos pequeños (`hornsSvg`).
+  - **0** = el resto, sin cambios. Las líneas de 2 formas no cambian.
+  - El tamaño crece ×1.2 en rango 4 y los jefes van siempre a tamaño de forma final grande (`boss`: mínimo `1.62 / GROWTH[st]`, caja 150). El `viewBox` crece (+30 / +8) y `extraTop` deja sitio a las alas. La clave del caché de píxeles (`pxKey`) incluye `B` (jefe) y `T<tot>`.
+- **Emblema del resultado** (`components/outcomeEmblem.js`, `DK.outcomeEmblem(outcome, cls)`), de nuevo en la cabecera del resumen. Un solo elemento con dos caras, y el CSS (juice.css, «Emblema del resumen») elige cuál se ve:
+  - el dibujo con relieve (copa con estrella de rubí, bandera hecha jirones, calavera con huesos cruzados, corona maldita rota, hoguera con llama animada);
+  - el icono de línea con laurel.
+  Según el estilo:
+  - **Clásico**: medalla redonda de colores con rayos que giran y cintas.
+  - **Exilio**: placa octogonal con marco de oro viejo y halo que late.
+  - **Limpio**, y también Exilio con tema claro: anillo con laurel (dos ramas generadas en un arco), icono de línea y anillo punteado que gira.
+  Todas las variantes llevan un brillo que cruza la placa y se respeta `data-motion="reduced"`.
+- Prueba nueva en `juice.test.js` (v5.12).
+
+### Cambios de la v5.11 — Resumen más compacto, botín en fichas y más gestos de los daskai
+
+- **Resumen de la expedición** (`screens/expSummary.js`, `juice.css` «v5.11»):
+  - Cabecera sin el icono grande del resultado; los datos del mapa (mapa, superados, piso, tiempo, visitados, dificultad, desafío, runas, secretos) en una cuadrícula ordenada de celdas iguales (`.sum-meta`) en vez de píldoras en filas desiguales.
+  - «Tu equipo» y «Rivales» sin icono en el título ni el texto de ayuda del equipo; tarjetas más pequeñas (dibujo 84 / 60 px).
+  - **Botín en fichas** (`.lt`): una tarjeta por objeto o pieza con icono, nombre, cantidad y qué hace (o su rareza), borde del color de su rareza, ordenadas de legendario a común y agrupadas (entregado al volver, para usar ya, la mochila vuelve, perdido —tachado—); al pasar el ratón o pulsar, la ficha completa (`V.infoProps`). Las monedas, arriba a la derecha. Ocupa todo el ancho, debajo de los rivales.
+- **Gestos de los daskai fuera de la hoguera** (`life.js`, `.ia-*`): cada ~2,6 s uno o dos daskai visibles (fichas, resumen, combate, equipo…) miran a un lado, ladean la cabeza, dan un saltito, se contonean, se estiran o se asoman. Van sobre la imagen con propiedades sueltas (`rotate`/`translate`/`scale`) para no pisar la respiración ni las animaciones del combate; en combate no se hacen mientras reciben un golpe, cargan o caen.
+
+### Cambios de la v5.10 — Arreglos: parpadeo en la hoguera (móvil), líder en la expedición, arrastrar daskai y haz legendario
+
+- **Hoguera en el móvil**: al desplazar la pantalla con el dedo por encima de los lugares (hoguera, cofre, tablón…) se les ponía y quitaba enseguida el «hundido» de los botones (`life.js`) → parpadeaban. Ahora, con el dedo, el hundido espera 90 ms y se cancela si el dedo se mueve o la página se desplaza. Además los lugares, la luz de la hoguera, el clima y las luciérnagas van en capas propias (`will-change`, `backface-visibility`), la niebla ya no usa desenfoque animado y en el móvil hay la mitad de gotas/copos.
+- **Líder durante la expedición**: si cambias el primero del equipo (Equipo → hacer líder / arrastrar) el siguiente combate lo empieza él (`fighter()` en `screens/expedition.js` adopta el nuevo primero: `e.leaderFirst`). Elegir quién lucha desde la barra del mapa sigue funcionando igual.
+- **Arrastrar un daskai** (cajas ↔ equipo): la copia que sigue al dedo/ratón ya no «vuela» desde la esquina de arriba a la izquierda (`pointerDrag`: nace en el sitio del puntero, sin transición ni animación).
+- **Haz dorado del botín legendario**: sube, brilla y se va solo a los ~3 s (antes se quedaba latiendo); la tarjeta conserva sólo un borde dorado fino. La ficha de pieza legendaria recién forjada late 2 veces y para.
+
+### Cambios de la v5.9 — Pisos planos en Limpio, paisaje vivo en la expedición y nuevo resumen
+
+- **Pisos en el estilo Limpio**: planos y sutiles como el resto de la interfaz (círculo con borde fino del color del tipo, fondo opaco tenue, icono de línea; disponible = borde vivo y halo suave; hecho = apagado con insignia verde plana; jefe más grande con borde dorado). `DK.nodeArt(tipo)` lleva ahora el dibujo con relieve **y** el icono de línea (`.node-line`): Limpio muestra el de línea; Exilio (oscuro) y Clásico, el dibujo. Igual en la cabecera del piso y la leyenda.
+- **Fondo de la pantalla de la expedición** (`#zone-backdrop`): menos oscurecido y con **paisaje animado a los lados** según la zona (`DK.ambient.page(escena)`, tiras SVG a izquierda y derecha en espejo): pinos y robles que se mecen (Pradera, Bosque), palmeras (Costa), estalactitas y cristales que brillan (Cavernas), rocas con grietas de lava (Volcán), columnas (Templo), árboles muertos y juncos (Pantano), tentáculos e islas flotantes (Abismo), agujas de hielo (Glaciar), islas flotantes (Cumbre); con borde de luz de la zona y partículas por toda la pantalla (hojas, ascuas, nieve…). Dentro del mapa, los árboles y rocas (`.exp-deco`) también se mecen.
+- **Resumen de la expedición** (`screens/expSummary.js`):
+  - Lleva el fondo animado de las pantallas generales (`bgfx`: `expSummary` ya no está en `OFF_SCREENS`).
+  - Cifras clave arriba (`.sum-strip`): combates ganados, niveles subidos, monedas, objetos traídos, emblemas y pisos.
+  - **Tu equipo** en grande (`.st-card`): cada daskai con su dibujo, «Nv. 8 → 14», «+6 niveles», y si cayó, fue reclutado o acabó debilitado; pulsar abre su ficha.
+  - **Rivales** (`.sf-card`): los daskai contra los que luchaste, agrupados por especie (veces, nivel más alto), con jefes (más grandes) y mini jefes marcados, y si los vinculaste o no los venciste.
+  - Datos nuevos guardados: `e.log.lvStart` (nivel de todos al salir), `e.log.foes` (cada combate, también cada rival de oleadas/relevos: `battle:end` lleva `foes`), y en el resumen `team` (`DK.expedition.teamSnap`) y `foes`. Los resúmenes antiguos (sin esos datos) no muestran esas secciones.
+- Tests: `juice` (+ resumen con equipo, niveles y rivales).
+
+### Cambios de la v5.8 — Pisos del mapa adaptados a cada estilo
+
+- Los medallones de la v5.7 cambian según el estilo (`juice.css`, sección «v5.8»):
+  - **Limpio (oscuro)**: medallón redondo con anillo de metal (sin cambios).
+  - **Limpio claro** (`[data-theme="light"]`): el mismo medallón sobre pergamino claro, anillo de bronce y sombras suaves; el jefe en rojo.
+  - **Exilio** (`[data-skin="exile"]`, sólo oscuro): losa octogonal de piedra con filete dorado (`::before` marco, `::after` fondo, `clip-path` octogonal), iconos algo desaturados y cálidos, brillo dorado cuando se puede ir, insignias en rombo con borde dorado; mismo octógono en la cabecera del piso y la leyenda.
+  - **Clásico** (`[data-style="classic"]`): ficha cuadrada de colores vivos del tipo de piso, borde grueso oscuro y sombra 3D (como antes, con los iconos nuevos).
+
+### Cambios de la v5.7 — Mapa de rol clásico, fondos con vida y bajada del mapa sin espera
+
+- **Bajada del mapa al entrar** (`flyIn` en `screens/expedition.js`): empieza en cuanto la cortinilla empieza a abrirse (`.curtain.opening`), sin esperar a que desaparezca ni los 0,9 s de antes (ahora 0,26 s con el jefe resaltado).
+- **Pisos del mapa como medallones** (`components/nodeArt.js`, `juice.css`): `DK.nodeArt(tipo)` dibuja cada icono con relieve y contorno (espadas cruzadas de acero, calavera con cuernos, corona con rubíes, pergamino con «?», bolsa de monedas, hoguera, cofre, huella, cristal, cueva, flecha dorada; el jefe del Abismo en violeta). Degradados compartidos en un único `<svg>` de definiciones (`#na-*`). El medallón: anillo de metal según el estado (hierro bloqueado, oro disponible, plata en curso, piedra hecho, rojo perdido), fondo con volumen del color del tipo y brillo arriba; el jefe más grande con anillo de oro y fondo rojo. Ya no son translúcidos (los caminos no se ven a través). Hechos: icono apagado + insignia verde. Mismo estilo en la cabecera de cada piso y en la leyenda.
+- **Insignias** (estrella del piso especial, reliquia, hecho) dentro del borde del medallón, del mismo tamaño y con su borde: ya no quedan cortadas ni descuadradas.
+- **Fondos con vida** (`components/ambient.js`): `DK.ambient.map(escena, alto)` en el mapa (sombras de nubes que lo cruzan, luz de la zona que se mueve despacio y partículas: luciérnagas, polen y mariposas en la Pradera; hojas en el Bosque; destellos, burbujas y gaviotas en la Costa; polvo, gotas y brillos en las Cavernas; ascuas y ceniza en el Volcán; motas de luz en el Templo; fuegos fatuos en el Pantano; chispas del vacío en el Abismo; nieve en el Glaciar; ráfagas en la Cumbre). `DK.ambient.battle(escena)` en el combate (rayos de sol, reflejos del agua, calor y lava, niebla, aurora, estrellas…).
+- **Fondos de combate** (`components/scenes.js` → `DECO`, clases `scn-*`): nubes que pasan y pájaros (Pradera, Costa, Cumbre), flores que se mecen, pinos en capas y setas que brillan (Bosque), sol, mar con olas y un velero (Costa), estalactitas y cristales que laten (Cavernas), volcán con cráter y río de lava que brillan y columna de humo (Volcán), sol con rayos que giran e islas flotantes (Templo, Abismo, Cumbre), fuegos fatuos y bancos de niebla (Pantano), aurora que ondea (Glaciar). Las capas cercanas se mecen un poco.
+- Tests: `juice` (+ medallones con icono nuevo, estrella dentro del medallón y fondo animado en el mapa).
+
+### Cambios de la v5.6 — Marcos que encajan, más colores por casa, degradados, ojos y bocas nuevos y 10 especies
+
+- **Marcos de las cajas**: `.pc-slot > .pc-mon` vuelve a ocupar la casilla entera (`position: absolute; inset: 0`; `grim.css` lo dejaba en `relative` y el daskai quedaba más bajo que el hueco). El marco va en la casilla (borde del color + esquina) y el arcoíris del variocolor rodea la casilla entera.
+- **Aspectos nuevos** (`looks.js`, marca `NEW8_TAG = 0xaa` en la semilla; los daskai que ya tenías no cambian):
+  - `PAL8`: 14 tonos por casa (parecidos pero variados: carmesí, coral, rosa y ámbar en Fuego; marino, turquesa, hielo y verde agua en Agua; añil, ciruela, magenta y lavanda en Oscuridad; oro, crema, melocotón y rosado en Luz; oliva, musgo, terracota, arena y piedra en Tierra). El 70 % de los nacidos usa uno.
+  - **Degradado** del cuerpo (`ind.grad = { c, dir, at }`, 60 %): otro tono de su casa o el mismo más claro/oscuro, hacia abajo, hacia arriba, en diagonal o hacia atrás (`<linearGradient id="g8…">` recortado al cuerpo). No se aplica a los de doble casa (ya llevan el degradado de la segunda).
+  - Ojos `EYES8`: con estrellitas (`twinkle`), con cejas (`brows`), almendrados (`almond`), adorables (`dewy`). Bocas `MOUTHS8`: un colmillo (`fang1`), punta de lengua (`blep`), «¡oh, no!» (`ohno`), carcajada (`beam`). 22 % cada uno; los ojos nuevos parpadean.
+- **10 especies nuevas** (`data/species.json`, en las listas de rivales de `data/zones.json`): Cenicito → Fogarrón (Fuego, Nv. 24), Escarchín → Glaciarón (Agua, Nv. 30), Prismito → Prismalux (Luz, Nv. 32), Nocturín → Penumbrón (Oscuridad, Nv. 28), Guijarrín → Peñascón (Tierra, Nv. 30). Salen en Bosque, Costa, Cavernas, Volcán, Templo, Pantano, Abismo, Glaciar y Cumbre.
+- Tests: `juice` (+ aspectos nuevos, especies y marcos que encajan).
+
+### Cambios de la v5.5.1 — Marcos de las cajas más sutiles
+
+- `V.frameCls(d)` en las cajas va ahora en la **casilla** (`.pc-slot.frame-*`), no en el daskai: el borde de la casilla toma el color (bronce / plata / oro) y lleva una esquina pequeña arriba a la derecha; el variocolor tiene un borde arcoíris fino que gira. En Equipo y en la preparación, un aro fino. Encaja exactamente con el hueco.
+
+### Cambios de la v5.5 — Pisos especiales (oleada, relevo, encuentros, mercaderes), sucesos en escenario, fichas al pasar el ratón y hoguera más viva
+
+- **Fuera**: la pantalla de título de la v5.4 (y sus textos/CSS). El cofre de la expedición vuelve a su animación de antes, pero **se abre solo** al llegar (650 ms, sin botón) y **sin sonido** al mostrar el botín.
+- **Hoguera más viva** (`components/life.js`, `juice.css` `.ca-*`): cada ~2 s un daskai (nunca el mismo dos veces) hace algo corto: mirar a los lados, estirarse, saltito (a veces dos a la vez), bailar, acercarse al fuego a calentarse (`--warm-x` hacia la hoguera), girarse, asentir o botar; los dormidos se acurrucan. **Sólo en la hoguera** (`.camp-mon`).
+- **Pisos especiales** (`config.expedition.specials`, estrella dorada en el mapa `.exp-node.special`, `n.special`): se reparten con su propio azar (`seed|special`) para no cambiar el resto del mapa.
+  - Combate **Oleada** (`chain`): 3 rivales seguidos sin salir del combate. **Relevo** (`swap`): a media vida el rival se retira y entra otro con la vida llena; a media vida de éste vuelve el primero; al caer uno, vuelve el otro hasta vencer a los dos. Recompensa ×2,2 / ×1,8 (`rewardMult`). Motor: `battle.start(..., { wave })` → `st.wave = { kind, total, queue, beaten, all, swapped, mult }`; `resolve()` hace entrar al siguiente (`enemyIn()`, evento `anim:'enemyIn'` con `uid`) o retirarse (`anim:'enemyOut'`). La foto de cada evento lleva `eUid` para que la barra de vida sea la del rival que se ve. Insignia «Oleada 2/3» / «Relevo» en el HUD.
+  - **Encuentro especial** (`?` con `special: 'rare'`, `e.event = 'special'`): un personaje misterioso regala uno de 3 objetos especiales (`config.expedition.specialItems`: tónicos, cristal de sabio, esencia ancestral, pluma de fénix, elixir, piedras de forja raras…). `DK.expedition.specialPick(n)`, `takeGift(id)` (una sola vez; `e.giftChoice`/`e.giftTaken`).
+  - **Mercader de rarezas** (`curio`): 5 objetos especiales (`specialOffers()`, precio `specialPrice()`) + 2 normales, marcados con ★. **Mercader generoso** (`gift`): regala uno a elegir (mismo panel que el encuentro).
+- **Sucesos en escenario** (`stage()` en `screens/expedition.js`, `.ev-*`): escena con los colores de la zona, el personaje grande (o un emblema si no hay personaje), bocadillo con lo que dice y las opciones como tarjetas (icono, texto, tecla). El resultado se muestra en el mismo escenario. **Al pulsar al personaje** (también el medallón del mercader) se abre una ventana con su silueta mucho más grande, **aún oculta** (`npcZoom`).
+- **Fichas al pasar el ratón** (`components/infoTips.js`): `h(..., { tipNode: () => nodo })` hace que el tooltip enseñe una ficha (`.tooltip.rich`). `V.infoCard(kind, id)` para 'item' | 'rune' | 'gear' | 'move' | 'passive' | 'status'; `V.infoOpen` la abre en ventana; `V.infoProps(kind, id)` = ficha al pasar + ventana al pulsar. Se usa en el botín tras ganar (objetos, runas, piezas) y en las tarjetas del cofre.
+- **Registro de combate** (`V.richLog(text)`): los ataques, objetos, pasivas y estados que aparecen en cada línea se resaltan por colores (`.log-ref.k-*`) y al pasar el ratón o pulsar dicen qué hacen. En la tira de la arena se ven resaltados pero sin ficha (al pulsarla se abre el registro).
+- Tests: `juice` (+ pisos especiales, oleada y relevo, regalo, registro con fichas).
+
+### Cambios de la v5.4 — Daskai vivos, combate con impacto, recompensas, mundo, sonido y detalles de «juego de verdad»
+
+- **Daskai vivos** (`components/life.js`, `css/juice.css`): `V.sprite(..., { cls: 'alive' })` respira muy suave (`dkBreathe`, 1–3 %) y parpadea de vez en cuando (un único `setInterval` de 700 ms, como mucho 40 a la vez, sólo los visibles). El parpadeo cambia un instante el dibujo por el mismo con los ojos cerrados (`DK.looks.svg/pixel(..., { blink: true })`, caché con sufijo `~`). Sólo parpadean los ojos abiertos de base (`DK.looks.canBlink`; lista `BLINK` en `looks.js`): los ojos ya cerrados, felices, guiños, gafas… se quedan igual. `DK.life.react(el, 'hop'|'happy')` (saltito al pulsarlo en la hoguera; alegría al subir de nivel) y `DK.life.sleep(el)` (ojos cerrados fijos, respiración lenta y «Zzz»). Se usa en la hoguera, el combate, la ficha rápida, el escaparate, Entrenamiento y la subida de nivel. Todo se apaga con «Reducir movimiento» / «Saltar animaciones».
+- **Combate** (`screens/battle.js`, `components/fx.js`, `juice.css`) — sin embestida hacia el rival:
+  - Carga mágica con el color de la casa (`.sprite.charge`, `--hc`), destello blanco del atacante, temblor suave en golpes grandes (≥25 % de la vida, `.arena.shake-s`) y el fuerte en críticos, *hit-stop* (60 ms; 110 ms en crítico).
+  - Números de crítico dorados que rebotan (`.float-num.crit`); los números seguidos no se pisan.
+  - Impacto por casa (`impact()` en `fx.js`): fuego → llamarada; agua → onda; tierra → polvo y temblor (`.arena.quake`); luz → rayo directo (`beam()`) y destello de pantalla; oscuridad → sombra que envuelve. Estela de proyectil más larga.
+  - **Jefes**: entrada desde abajo iluminados en rojo + rugido (`sfx('roar')`); al caer, cámara lenta, destello blanco y se deshacen en partículas (`DK.fx.disintegrate`). Los demás caen de lado (`dkFaint`).
+  - **Estados nuevos** (`data/basics.js`): **Congelado** (no actúa; se descongela al azar 35 %/turno, a los 3 turnos o con un ataque de fuego), **Paralizado** (30 % de perder el turno y −40 % de velocidad), **Cegado** (precisión ×0,65 durante 3 turnos) y **Dormido** (no actúa; despierta al azar 30 %, a los 3 turnos o al recibir un golpe). `battle.blockedBy()` decide si pierde el turno (evento `anim:'blocked'` con «¡Congelado!/¡Paralizado!/Zzz…» flotando) y `anim:'cured'` al pasarse. Se ven en el propio daskai (`.sprite.st-*`: escarcha, chispas, venda, «z Z», burbujas) y al aplicarse sueltan su rastro (`DK.fx.statusBurst`).
+  - Ataques que los causan: destello y supernova (cegado), hidrochorro y maremoto (congelado), terremoto y golpe roca (paralizado), sombra vil y eclipse (dormido), y 4 nuevos: **Aliento helado** (agua), **Nana lunar** (oscuridad), **Polvo paralizante** (tierra) y **Resplandor** (luz), en las listas de 36 especies. Panacea y elixir curan los 6 estados.
+- **Subida de nivel**: el «+8» venía de sumar varios niveles a la vez y de los multiplicadores (%), que agrandaban los puntos de crecimiento. Ahora `applyGrowth` recorta lo que **se ve** a +5 por atributo y nivel (`config.growth.max`), `gainExp` guarda lo que dio cada nivel (`res.levels[i].gains`) y la ventana lo desglosa («+3 +4 +5…»). Tope de vida sin equipo para los daskai del jugador: `config.hpCap = { base: 100, perLevel: 5 }` (Nv. 40 → 300; Nv. 100 → 600; se aplica también a los que ya tenías). `growthBias.max` 1,6 → 1,4.
+- **Recompensas** (`celebrations.js`, `expedition.js`, `craft.js`, `battle.js`):
+  - Subida de nivel: columna de luz detrás del daskai, los atributos suben uno a uno con un «tic» y fanfarria nueva.
+  - Evolución: silueta blanca que alterna entre las dos formas cada vez más rápido, destello y revelación.
+  - Cofre: tiembla con el brillo de la mejor rareza que lleva, se abre y el botín sale volando (`.chest-panel.fresh`).
+  - Botín legendario: haz de luz dorada y sonido propio (`sfx('legend')`), también en las recompensas de combate.
+  - Forja: yunque con chispas (`sfx('forge')`) y la pieza aparece girando; si es legendaria, borde dorado que late.
+- **Mundo**:
+  - Hoguera con día/noche real (ya existía): de noche el fuego alumbra más, hay luciérnagas y la mitad del equipo duerme con «Zzz».
+  - Clima (`components/weather.js`, `DK.weather`): Glaciar → nieve; Pantano → niebla (a veces lluvia); Bosque/Pradera/Playa → a veces lluvia; Volcán → ceniza; cuevas, templo, abismo y cielo → despejado. En combate según la zona (cambia cada 2 h); en el campamento, cada 3 h. Sólo CSS y ≤55 partículas.
+  - Mapa de expedición: el líder camina de un nodo al siguiente y el camino recorrido se ilumina (`.road-lit`).
+- **Sonido** (`systems/audio.js`): música dinámica — `DK.audio.intensity(0–1)` añade capas de percusión según lo herido que esté el jefe o tu daskai, y al pasar a «furia»/«peligro» la música baja un instante y entra con un redoble (sin cortar en seco). Interfaz con más cuerpo: clic con golpecito grave, monedas que tintinean, golpe seco al engarzar una runa o equipar (`sfx('thud')`), cofre, forja, logro.
+- **Detalles**:
+  - Pantalla de título (una vez por sesión, `mainMenu.js`): el campamento según la hora de fondo, el logo cae letra a letra y brilla, ascuas, cinco daskai y «Pulsa para empezar» (también activa el audio). No sale en las pruebas automáticas (`navigator.webdriver`, salvo `window.__title`).
+  - Marcos tipo carta (`V.frameCls(d)`): bronce (1.ª evolución), plata (2.ª), oro (ascendido) y holográfico (variocolor), en Equipo, cajas y la preparación.
+  - Contadores que corren (`DK.util.countTo`): monedas y emblemas del HUD (con «+N/−N» que sube) y la experiencia/monedas de las recompensas.
+  - Logros: medalla que cae desde arriba (`V.achievementDrop`), en lugar del aviso.
+  - Botones que se hunden al pulsar (`.is-pressed`) con una vibración corta en el móvil.
+- Tests: `juice` (tope +5 por nivel y de vida, estados nuevos, parpadeo y clima, logro/contador/botón).
+
 ### Cambios de la v5.3 — Mejorar runas: reactivos sólo con una runa elegida
 
 - `V.runeBench` (`components/runeBench.js`): sin runa elegida sólo se ve la lista de runas (`.rune-bench.browse.no-sel`); la columna de reactivos aparece al pulsar una. Se quita la nota «Cada reactivo sale explorando su zona…» (y su texto `rune.forge.reagentsHint`).

@@ -244,6 +244,17 @@
       const target = rows[n.row + skip].slice().sort((p, q) => Math.abs(p.x - n.x) - Math.abs(q.x - n.x))[0];
       n.type = 'shortcut'; n.jump = target.id;
     }
+    // v5.5: pisos especiales (marco dorado en el mapa). Con su propio azar para no cambiar el resto del mapa.
+    const sp = cfg().specials;
+    if (sp) {
+      const srnd = U.seeded(seed + '|special');
+      rows.slice(sp.fromRow || 2, c.rows).flat().forEach((n) => {
+        const r = srnd(), k = srnd();
+        if (n.type === 'fight' && r < sp.fight) n.special = k < 0.5 ? 'chain' : 'swap';
+        else if (n.type === 'event' && r < sp.event) n.special = 'rare';
+        else if (n.type === 'shop' && r < sp.shop) n.special = k < 0.55 ? 'curio' : 'gift';
+      });
+    }
     return { rows, size, mod, kind };
   }
 
@@ -495,7 +506,7 @@
         relics: [], relicChoice: null,
         depth: 1, zones: [], awaitingChoice: false, next: null,
         pack: chosen, packed: Object.assign({}, chosen), members: DK.party.active().map((d) => d.uid),
-        log: { nodes: {}, toBag: {}, lootSpent: 0, recipes: [], kept: [] }, // para el resumen final
+        log: { nodes: {}, toBag: {}, lootSpent: 0, recipes: [], kept: [], foes: [], lvStart: Object.fromEntries(DK.party.all().map((d) => [d.uid, d.level])) }, // para el resumen final (v5.9: niveles al salir y rivales)
         revivesUsed: 0, blessed: null, // salvaciones de la muerte (DK.expedition.trySave)
         quest: this.pickQuest(n.size || 'small'),
         runesUsed,
@@ -587,7 +598,7 @@
       const map = generate(n.zone, n.seed, n.size || 'small', n.mod || null, e.kind || 'normal', this.mapExtra(e.corruption, e.runesUsed));
       Object.assign(e, { zone: n.zone, seed: n.seed, size: n.size || 'small', mod: n.mod || null, map, marks: { lines: [], notes: [] }, pos: null, pending: null, cleared: [], step: 1, total: map.rows.length,
         depth: e.depth + 1, awaitingChoice: false, next: null, altarUsed: false, mapStartedAt: Date.now(), quest: this.pickQuest(n.size || 'small') });
-      delete e.offers; delete e.event; delete e.result; delete e.candidates;
+      delete e.offers; delete e.event; delete e.result; delete e.candidates; delete e.giftChoice; delete e.giftTaken;
       DK.codex.discoverZone(n.zone);
       this.logEvent('newMap', { zone: n.zone, size: n.size || 'small', mod: n.mod || null });
       // Pactos nuevos y reliquia nueva (mejores cuanto más profundo)
@@ -650,8 +661,10 @@
       e.pending = id;
       delete e.jumpTo;
       const n = nodeOf(e, id);
-      if (n.type === 'shop') e.offers = this.makeOffers();
-      if (n.type === 'event') e.event = this.pickEvent(n);
+      if (n.type === 'shop') e.offers = n.special === 'curio' ? this.specialOffers() : this.makeOffers();
+      if (n.type === 'shop' && n.special === 'gift') e.giftChoice = this.specialPick(3);
+      if (n.type === 'event') e.event = n.special === 'rare' ? 'special' : this.pickEvent(n);
+      if (n.type === 'event' && n.special === 'rare') e.giftChoice = this.specialPick(3);
       if (n.type === 'recruit') e.candidates = this.makeCandidates(n);
       DK.store.save();
       return n;
@@ -722,7 +735,7 @@
       e.log.nodes[ty] = (e.log.nodes[ty] || 0) + 1;
       e.pos = e.pending; e.cleared.push(e.pending); e.pending = null;
       e.step = nodeOf(e, e.pos).row + 2;
-      delete e.offers; delete e.event; delete e.result; delete e.candidates;
+      delete e.offers; delete e.event; delete e.result; delete e.candidates; delete e.giftChoice; delete e.giftTaken;
       DK.store.save();
     },
 
@@ -869,6 +882,30 @@
       if (U.chance(0.12)) out.push(offer('pluma_fenix', 1));
       return out;
     },
+    /**
+     * v5.5: objetos especiales (tónicos, cristales de sabio, piedras de forja raras, elixir, pluma de fénix…)
+     * para los pisos especiales: el mercader de rarezas los vende y el generoso / el encuentro especial regala uno.
+     */
+    specialPool() { return (cfg().specialItems || []).filter((id) => D.items[id]); },
+    specialPick(n = 3) { return this.specialPool().map((id) => [Math.random(), id]).sort((a, b) => a[0] - b[0]).slice(0, n).map((x) => x[1]); },
+    specialPrice(id) {
+      const e = this.active(), lv = e ? D.zones[e.zone].levels[1] : 10, it = D.items[id];
+      const base = D.prices[id] || ({ comun: 40, raro: 110, epico: 240, legendario: 520 }[it.rarity] || 150);
+      return Math.round(base * 0.85 * (1 + lv / 80) * (DK.corruption && DK.corruption.has('shopDouble') ? D.endgame.corruption.shopMult : 1));
+    },
+    specialOffers() {
+      return this.specialPick(5).map((id) => ({ id, price: this.specialPrice(id), stock: 1, left: 1, special: true })).concat(this.makeOffers().slice(0, 2));
+    },
+    /** Coge el regalo elegido (mercader generoso o encuentro especial). */
+    takeGift(id) {
+      const e = this.active();
+      if (!e || !e.giftChoice || !e.giftChoice.includes(id) || e.giftTaken) return false;
+      e.giftTaken = id;
+      this.addLoot([id]);
+      DK.store.save();
+      return true;
+    },
+
     /** Compra n unidades de una oferta. Sólo se paga con las monedas del botín de la expedición. */
     buyOffer(i, n = 1) {
       const e = this.active(); const o = e && e.offers && e.offers[i];
@@ -1072,6 +1109,15 @@
       return summary;
     },
 
+    /** v5.9: equipo para el resumen: los que fueron (y los reclutados), con su nivel al salir y al volver. */
+    teamSnap(e) {
+      const start = (e.log && e.log.lvStart) || {}, fallen = new Set((e.log.fallen || []).map((x) => x.uid).filter(Boolean));
+      const uids = [...new Set([].concat(e.members || [], DK.party.active().map((d) => d.uid)))];
+      return uids.map((uid) => DK.party.get(uid)).filter(Boolean).map((d) => ({
+        uid: d.uid, species: d.species, look: DK.looks.of(d) || null, shiny: !!d.shiny, name: DK.daskai.name(d),
+        from: start[d.uid] != null ? start[d.uid] : (d.joinLevel || d.level), to: d.level, fainted: fallen.has(d.uid) || DK.daskai.isFainted(d), recruit: start[d.uid] == null,
+      })).concat((e.log.fallen || []).filter((x) => !DK.party.get(x.uid)).map((x) => ({ species: x.species, name: x.name, from: start[x.uid] || x.level, to: x.level, fallen: true, look: x.look || null })));
+    },
     /**
      * Guarda el resumen de la expedición que termina (pantalla expSummary).
      * outcome: 'completed' | 'retreat' | 'lost'
@@ -1089,6 +1135,8 @@
         emblems: e.log.emblems || 0, timeline: (e.log.timeline || []).slice(), secrets: (e.log.secrets || []).slice(), shortcuts: e.log.shortcuts || 0, runes: (e.log.runes || []).slice(), runesUsed: (e.runesUsed || []).slice(),
         // Desafío semanal: puntos, récord y premio (DK.weekly)
         weekly: e.weekly && DK.weekly ? DK.weekly.record(e, outcome) : null,
+        // v5.9: el equipo (nivel al salir → al volver) y los rivales a los que te enfrentaste
+        team: this.teamSnap(e), foes: (e.log.foes || []).slice(0, 80),
       }, extra);
       // Historial de expediciones (Perfil): las últimas config.expHistorySize
       st().expHistory = st().expHistory || [];
@@ -1314,6 +1362,12 @@
     },
   };
   // Encargo «sin objetos»: usar un objeto curativo (en combate o fuera) lo falla
+  // v5.9: rivales de la expedición (para el resumen)
+  DK.on('battle:end', (r) => {
+    const e = DK.expedition.active(); if (!e || !r || !r.enemy) return;
+    e.log = e.log || {}; e.log.foes = e.log.foes || [];
+    (r.foes || [r.enemy]).forEach((x) => { if (e.log.foes.length < 120) e.log.foes.push({ species: x.species, level: x.level, shiny: !!x.shiny, look: x.look || null, boss: !!r.boss, elite: !!r.elite, won: r.outcome === 'won' || r.outcome === 'captured', captured: r.outcome === 'captured', zone: r.zone }); });
+  });
   DK.on('item:used', ({ id }) => {
     const u = D.items[id] && D.items[id].use;
     if (u && !u.capture && (u.heal || u.healPct || u.mana || u.manaPct || u.cure) && DK.expedition.active()) DK.expedition.questFail('item');

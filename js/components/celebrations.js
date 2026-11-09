@@ -12,13 +12,18 @@
   const V = (DK.views = DK.views || {});
 
   /** Anima un número de `from` a `to` en un elemento. */
-  function countUp(el, from, to, ms) {
+  let lastTick = 0;
+  function countUp(el, from, to, ms, tick) {
     if (DK.settings.reducedMotion() || DK.settings.get('skipAnims')) { el.textContent = to; return; }
     const start = performance.now();
+    let shown = from;
     const step = (now) => {
       const p = Math.min(1, (now - start) / ms);
-      el.textContent = Math.round(from + (to - from) * (1 - Math.pow(1 - p, 3)));
-      if (p < 1) requestAnimationFrame(step);
+      const v = Math.round(from + (to - from) * (1 - Math.pow(1 - p, 3)));
+      // v5.4: «tic» por cada punto que sube (sin saturar: como mucho uno cada 55 ms)
+      if (tick && v !== shown && now - lastTick > 55) { lastTick = now; DK.audio.sfx('tick'); }
+      shown = v; el.textContent = v;
+      if (p < 1) requestAnimationFrame(step); else if (tick) el.classList.add('lu-pop');
     };
     requestAnimationFrame(step);
   }
@@ -31,21 +36,25 @@
   V.levelUpDialog = (d, info) => {
     if (!info.levels.length) return Promise.resolve();
     DK.audio.sfx('levelup');
+    const multi = info.levels.length > 1;
     const rows = D.statKeys.map((k, i) => {
       const val = h('b', { class: 'lu-val' }, info.before[k]);
       const gain = info.after[k] - info.before[k];
       const row = h('div', { class: 'lu-row', style: { animationDelay: i * 80 + 'ms' } },
         h('span', { class: 'stat-name' }, DK.icon(D.stats[k].icon, 16), DK.tr('stats', D.stats[k]), V.growthBadge(d, k)),
         h('span', { class: 'muted' }, info.before[k]), DK.icon('next', 14), val,
-        h('span', { class: 'lu-gain ' + (gain > 0 ? 'pos' : '') }, gain > 0 ? '+' + gain : '—'));
-      setTimeout(() => countUp(val, info.before[k], info.after[k], 600), 250 + i * 90);
+        h('span', { class: 'lu-gain ' + (gain > 0 ? 'pos' : '') }, gain > 0 ? '+' + gain : '—'),
+        // v5.4: si subió varios niveles, lo que dio cada uno (nunca más de +5 por nivel)
+        multi && gain > 0 ? h('small', { class: 'lu-split' }, info.levels.map((l) => h('span', { tip: `${t('common.lvl')} ${l.level}` }, '+' + Math.max(0, (l.gains && l.gains[k]) || 0)))) : null);
+      setTimeout(() => countUp(val, info.before[k], info.after[k], 520, gain > 0), 650 + i * 160);
       return row;
     });
     const fxLayer = h('div', { class: 'fx-layer' });
     const m = modal({
       title: t('levelup.title', { name: DK.daskai.name(d), level: d.level }), icon: 'star', cls: 'levelup-modal',
       content: h('div', { class: 'levelup' }, fxLayer,
-        h('div', { class: 'lu-head' }, V.dSprite(d, { size: 110, cls: 'float glow-once' }),
+        // v5.4: columna de luz detrás del daskai
+        h('div', { class: 'lu-head' }, h('div', { class: 'lu-hero' }, h('i', { class: 'lu-pillar' }), V.dSprite(d, { size: 110, cls: 'float glow-once alive dk-happy' })),
           h('div', null, h('div', { class: 'lu-level' }, t('common.lvl'), ' ', h('b', null, d.level)),
             info.levels.length > 1 ? h('span', { class: 'badge good' }, t('levelup.multi', { n: info.levels.length })) : null,
             h('p', { class: 'muted small' }, t('levelup.restored')))),
@@ -86,6 +95,24 @@
     }, i * 380));
   };
 
+  /**
+   * v5.4: logro desbloqueado: una medalla cae desde arriba con su cinta, brilla y se va sola.
+   * @param {{icon, title, text, coins, hidden}} a
+   */
+  V.achievementDrop = (a) => {
+    let host = document.querySelector('.ach-drops');
+    if (!host) { host = h('div', { class: 'ach-drops', 'aria-live': 'polite' }); document.body.append(host); }
+    DK.audio.sfx('achievement'); DK.vibrate([20, 40, 60]);
+    const card = h('div', { class: 'ach-drop' + (a.hidden ? ' hidden-ach' : ''), role: 'status', tip: a.text },
+      h('span', { class: 'ach-ribbon' }),
+      h('span', { class: 'ach-medal' }, DK.icon(a.icon || 'trophy', 26)),
+      h('span', { class: 'ach-body' }, h('small', null, t('achievements.dropTitle')), h('b', null, a.title),
+        a.coins ? h('span', { class: 'ach-coins' }, DK.icon('coin', 12), '+' + a.coins) : null));
+    card.addEventListener('click', () => { card.classList.add('out'); setTimeout(() => card.remove(), 400); });
+    host.append(card);
+    setTimeout(() => { card.classList.add('out'); setTimeout(() => card.remove(), 450); }, 3600);
+  };
+
   V.evolveDialog = async (d) => {
     if (!DK.daskai.canEvolve(d)) return false;
     const nf = DK.daskai.nextForm(d), into = D.species[nf.into];
@@ -107,7 +134,7 @@
           await DK.util.sleep(wait);
           const r = DK.daskai.evolve(d);
           evolved = true;
-          stage.classList.add('done');
+          stage.classList.remove('evolving'); stage.classList.add('done');
           text.textContent = t('evo.done', { name: oldName, into: into.name });
           // Cuánto ha subido cada atributo (nueva base + puntos extra de evolución)
           // v4.59: tabla ordenada (icono, atributo, antes → después, +subida) con una barra que crece una a una

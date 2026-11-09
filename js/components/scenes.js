@@ -173,6 +173,33 @@
   };
   Object.entries(darker).forEach(([id, extra]) => { const sc = SCENES[id]; if (!sc) return; const far = sc.far; sc.far = (c) => far(c) + extra(c); });
 
+  /* ---------- v5.7: piezas animadas de cada zona (nubes, olas, humo, cristales, islas…) ----------
+   * Elementos SVG con clase scn-*: el movimiento lo pone css/juice.css (transform-box: fill-box). */
+  const cloud = (x, y, k, op = 0.35, cls = 'scn-cloud') => `<g class="${cls}" style="--d:${(40 + (x % 7) * 6)}s;--o:${-(x % 23)}s"><g opacity="${op}" fill="#fff"><ellipse cx="${x}" cy="${y}" rx="${46 * k}" ry="${14 * k}"/><ellipse cx="${x - 22 * k}" cy="${y - 8 * k}" rx="${22 * k}" ry="${14 * k}"/><ellipse cx="${x + 14 * k}" cy="${y - 12 * k}" rx="${26 * k}" ry="${17 * k}"/></g></g>`;
+  const birds = (x, y, n) => Array.from({ length: n }, (_, i) => `<path class="scn-bird" style="--o:${-i * 0.7}s" d="M${x + i * 26} ${y + (i % 2) * 12} q6 -6 12 0 q6 -6 12 0" stroke="rgba(20,20,30,.55)" stroke-width="2.2" fill="none" stroke-linecap="round"/>`).join('');
+  const flowers = (y, n, seed) => Array.from({ length: n }, (_, i) => { const x = ((i + 0.5) / n) * W + Math.sin(seed + i * 3.1) * 25, c = ['#f9a8d4', '#fde047', '#c4b5fd', '#fca5a5', '#fff'][i % 5], yy = y + Math.sin(seed + i) * 8; return `<g class="scn-sway" style="--o:${-(i % 5)}s"><path d="M${x} ${yy + 16} L${x} ${yy}" stroke="rgba(22,101,52,.6)" stroke-width="2"/><circle cx="${x}" cy="${yy}" r="4" fill="${c}" opacity=".8"/></g>`; }).join('');
+  const pines = (y, color, n, seed, size) => Array.from({ length: n }, (_, i) => { const x = ((i + 0.5) / n) * W + Math.sin(seed + i * 1.3) * 30, hh = size * (0.8 + Math.abs(Math.sin(seed * 2 + i)) * 0.5); return `<path d="M${x} ${y - hh} L${x + hh * 0.32} ${y - hh * 0.45} L${x + hh * 0.18} ${y - hh * 0.45} L${x + hh * 0.42} ${y} L${x - hh * 0.42} ${y} L${x - hh * 0.18} ${y - hh * 0.45} L${x - hh * 0.32} ${y - hh * 0.45} Z" fill="${color}"/>`; }).join('');
+  const smoke = (x, y) => Array.from({ length: 5 }, (_, i) => `<circle class="scn-smoke" style="--o:${-i * 1.1}s" cx="${x}" cy="${y}" r="${18 + i * 3}" fill="rgba(60,40,40,.45)"/>`).join('');
+  const islands = (list) => list.map(([x, y, k], i) => `<g class="scn-bob" style="--o:${-i * 1.7}s"><path d="M${x - 60 * k} ${y} Q${x} ${y - 14 * k} ${x + 60 * k} ${y} L${x + 30 * k} ${y + 22 * k} L${x} ${y + 48 * k} L${x - 26 * k} ${y + 24 * k} Z" fill="rgba(80,70,110,.45)"/><path d="M${x - 60 * k} ${y} Q${x} ${y - 14 * k} ${x + 60 * k} ${y}" stroke="rgba(134,239,172,.55)" stroke-width="${5 * k}" fill="none"/></g>`).join('');
+  const glowRocks = (list, c) => list.map(([x, y, r], i) => `<circle class="scn-glow" style="--o:${-i * 0.9}s" cx="${x}" cy="${y}" r="${r}" fill="${c}"/>`).join('');
+  const DECO = {
+    meadow: { far: () => cloud(180, 70, 1.2) + cloud(620, 50, 1) + cloud(880, 95, 0.8, 0.25) + birds(380, 60, 3), near: () => flowers(392, 26, 3) },
+    forest: { far: () => pines(310, 'rgba(5,46,22,.28)', 12, 2, 120) + cloud(760, 60, 0.8, 0.18), near: () => glowRocks([[140, 380, 3], [260, 372, 2.5], [720, 384, 3], [860, 376, 2.5]], 'rgba(190,242,100,.8)') },
+    beach: { far: () => `<circle cx="760" cy="120" r="44" fill="rgba(254,240,138,.45)"/><circle cx="760" cy="120" r="80" fill="rgba(254,240,138,.12)"/>` + `<rect x="0" y="250" width="${W}" height="55" fill="rgba(14,116,144,.22)"/>` + [262, 276, 290].map((y, i) => `<path class="scn-wave" style="--o:${-i}s" d="M-40 ${y} q25 -6 50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0" stroke="rgba(255,255,255,.35)" stroke-width="2" fill="none"/>`).join('') + `<g class="scn-bob"><path d="M300 248 L330 248 L326 256 L304 256 Z M314 248 L314 214 L330 244 Z" fill="rgba(30,30,40,.4)"/></g>` + cloud(240, 70, 1) + birds(560, 80, 3) },
+    cave: { far: () => Array.from({ length: 14 }, (_, i) => { const x = 30 + i * 72 + (i % 3) * 10, hh = 40 + (i * 37) % 70; return `<path d="M${x - 12} 0 L${x} ${hh} L${x + 12} 0 Z" fill="rgba(15,10,40,.45)"/>`; }).join('') + glowRocks([[160, 330, 9], [420, 350, 7], [690, 320, 10], [880, 345, 8]], 'rgba(103,232,249,.55)') },
+    volcano: { far: () => `<path d="M330 300 L460 120 L540 120 L670 300 Z" fill="rgba(70,12,12,.55)"/><path d="M460 120 Q500 108 540 120 Q500 132 460 120 Z" fill="rgba(253,186,116,.75)" class="scn-glow"/><path d="M492 124 Q486 200 470 300 L486 300 Q504 210 506 124 Z" fill="rgba(249,115,22,.55)" class="scn-glow" style="--o:-1s"/>` + smoke(500, 100) },
+    temple: { far: () => `<g class="scn-spin" style="transform-origin:500px 110px">${Array.from({ length: 12 }, (_, i) => `<rect x="497" y="20" width="6" height="70" fill="rgba(254,240,138,.12)" transform="rotate(${i * 30} 500 110)"/>`).join('')}</g><circle cx="500" cy="110" r="34" fill="rgba(254,240,138,.35)"/>` + islands([[200, 150, 0.35], [820, 120, 0.3]]) },
+    swamp: { far: () => glowRocks([[220, 300, 5], [470, 280, 4], [610, 310, 5], [830, 290, 4]], 'rgba(190,242,100,.7)') + `<ellipse class="scn-drift" cx="300" cy="350" rx="260" ry="26" fill="rgba(203,213,225,.12)"/><ellipse class="scn-drift" style="--o:-9s" cx="760" cy="360" rx="240" ry="22" fill="rgba(203,213,225,.1)"/>` },
+    abyss: { far: () => `<ellipse class="scn-glow" cx="500" cy="160" rx="160" ry="20" fill="rgba(124,58,237,.25)"/><path class="scn-glow" style="--o:-2s" d="M380 160 Q500 120 620 160 Q500 200 380 160 Z" fill="rgba(196,181,253,.25)"/>` + islands([[180, 200, 0.45], [800, 170, 0.4], [520, 280, 0.25]]) },
+    glacier: { far: () => `<g class="scn-aurora">${aurora('rgba(94,234,212,.18)', 'rgba(244,114,182,.12)')}</g>` + cloud(820, 70, 0.9, 0.3) },
+    sky: { far: () => islands([[180, 210, 0.55], [520, 140, 0.4], [840, 230, 0.6]]) + cloud(300, 90, 1.4, 0.5) + cloud(700, 60, 1.1, 0.45) + cloud(950, 120, 1.2, 0.4) + birds(420, 100, 4) },
+  };
+  Object.entries(DECO).forEach(([id, d]) => {
+    const sc = SCENES[id]; if (!sc) return;
+    const far = sc.far; sc.far = (c) => far(c) + (d.far ? d.far(c) : '');
+    if (d.near) { const near = sc.near; sc.near = (c) => (near ? near(c) : '') + d.near(c); }
+  });
+
   DK.scenes = {
     list: SCENES,
     /** Escena de jefe de una zona (o la del jefe oculto). */

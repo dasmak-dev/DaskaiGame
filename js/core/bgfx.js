@@ -16,7 +16,7 @@
  *     degradado normal del <body>).
  * ============================================================= */
 (function () {
-  const OFF_SCREENS = ['expedition', 'battle', 'expSummary', 'gameOver'];
+  const OFF_SCREENS = ['expedition', 'battle', 'gameOver']; // v5.9: el resumen de la expedición lleva el fondo de las pantallas generales
   const PIXEL = 4;          // tamaño del «píxel» del fondo
   const FPS = 30;
 

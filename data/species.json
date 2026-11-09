@@ -46,6 +46,10 @@
         "curacion"
       ],
       [
+        16,
+        "resplandor"
+      ],
+      [
         21,
         "rayo_luz"
       ],
@@ -133,6 +137,10 @@
       [
         16,
         "garra_umbria"
+      ],
+      [
+        18,
+        "nana_lunar"
       ],
       [
         21,
@@ -316,6 +324,10 @@
         "hidrochorro"
       ],
       [
+        22,
+        "aliento_helado"
+      ],
+      [
         27,
         "concentracion"
       ],
@@ -399,6 +411,10 @@
       [
         16,
         "raiz_drenante"
+      ],
+      [
+        16,
+        "polvo_paralizante"
       ],
       [
         21,
@@ -500,6 +516,10 @@
       [
         15,
         "golpe_roca"
+      ],
+      [
+        16,
+        "polvo_paralizante"
       ],
       [
         22,
@@ -733,6 +753,10 @@
         "hidrochorro"
       ],
       [
+        22,
+        "aliento_helado"
+      ],
+      [
         34,
         "maremoto"
       ]
@@ -811,6 +835,10 @@
       [
         15,
         "rayo_luz"
+      ],
+      [
+        16,
+        "resplandor"
       ],
       [
         22,
@@ -893,6 +921,10 @@
       [
         14,
         "curacion"
+      ],
+      [
+        16,
+        "resplandor"
       ],
       [
         20,
@@ -983,6 +1015,10 @@
         "raiz_drenante"
       ],
       [
+        16,
+        "polvo_paralizante"
+      ],
+      [
         24,
         "terremoto"
       ],
@@ -1065,6 +1101,10 @@
       [
         16,
         "drenaje_vital"
+      ],
+      [
+        18,
+        "nana_lunar"
       ],
       [
         22,
@@ -1288,6 +1328,10 @@
         "rayo_luz"
       ],
       [
+        16,
+        "resplandor"
+      ],
+      [
         26,
         "juicio"
       ],
@@ -1361,6 +1405,10 @@
       [
         16,
         "curacion"
+      ],
+      [
+        16,
+        "resplandor"
       ]
     ],
     "sprite": {
@@ -1434,6 +1482,10 @@
       [
         16,
         "mordisco"
+      ],
+      [
+        16,
+        "resplandor"
       ],
       [
         22,
@@ -1662,6 +1714,10 @@
         "rugido"
       ],
       [
+        16,
+        "polvo_paralizante"
+      ],
+      [
         22,
         "golpe_feroz"
       ],
@@ -1809,6 +1865,10 @@
       [
         20,
         "hidrochorro"
+      ],
+      [
+        22,
+        "aliento_helado"
       ],
       [
         30,
@@ -2517,6 +2577,10 @@
         "drenaje_vital"
       ],
       [
+        18,
+        "nana_lunar"
+      ],
+      [
         24,
         "pulso_umbrio"
       ],
@@ -2840,6 +2904,10 @@
         "coraza"
       ],
       [
+        16,
+        "resplandor"
+      ],
+      [
         20,
         "curacion"
       ],
@@ -2984,6 +3052,10 @@
       [
         1,
         "lodo"
+      ],
+      [
+        16,
+        "polvo_paralizante"
       ],
       [
         34,
@@ -3218,6 +3290,10 @@
         "burbuja"
       ],
       [
+        22,
+        "aliento_helado"
+      ],
+      [
         46,
         "acua_cola"
       ],
@@ -3372,6 +3448,10 @@
         "intimidar"
       ],
       [
+        18,
+        "nana_lunar"
+      ],
+      [
         24,
         "pulso_umbrio"
       ],
@@ -3523,6 +3603,10 @@
       [
         1,
         "rayo_luz"
+      ],
+      [
+        16,
+        "resplandor"
       ],
       [
         30,
@@ -4452,6 +4536,10 @@
         "velo_aurora"
       ],
       [
+        16,
+        "resplandor"
+      ],
+      [
         18,
         "rayo_luz"
       ],
@@ -4535,6 +4623,10 @@
       [
         20,
         "hidrochorro"
+      ],
+      [
+        22,
+        "aliento_helado"
       ],
       [
         30,
@@ -4665,6 +4757,10 @@
       [
         17,
         "hidrochorro"
+      ],
+      [
+        22,
+        "aliento_helado"
       ],
       [
         23,
@@ -4856,6 +4952,10 @@
       [
         16,
         "telarana"
+      ],
+      [
+        18,
+        "nana_lunar"
       ],
       [
         22,
@@ -5137,6 +5237,10 @@
         "aguas_curativas"
       ],
       [
+        22,
+        "aliento_helado"
+      ],
+      [
         28,
         "maremoto"
       ],
@@ -5210,6 +5314,10 @@
       [
         17,
         "garra_umbria"
+      ],
+      [
+        18,
+        "nana_lunar"
       ],
       [
         24,
@@ -5289,6 +5397,10 @@
       [
         18,
         "aguas_curativas"
+      ],
+      [
+        22,
+        "aliento_helado"
       ],
       [
         24,
@@ -5427,6 +5539,10 @@
       [
         14,
         "lodo"
+      ],
+      [
+        16,
+        "polvo_paralizante"
       ],
       [
         20,
@@ -5641,6 +5757,10 @@
         "colmillo_venenoso"
       ],
       [
+        18,
+        "nana_lunar"
+      ],
+      [
         22,
         "garra_umbria"
       ],
@@ -5849,6 +5969,10 @@
         "mordisco"
       ],
       [
+        16,
+        "polvo_paralizante"
+      ],
+      [
         26,
         "embestida"
       ],
@@ -6014,6 +6138,10 @@
         "aguas_curativas"
       ],
       [
+        22,
+        "aliento_helado"
+      ],
+      [
         24,
         "hidrochorro"
       ]
@@ -6146,6 +6274,10 @@
       [
         1,
         "golpe_roca"
+      ],
+      [
+        16,
+        "polvo_paralizante"
       ],
       [
         34,
@@ -6721,6 +6853,10 @@
         "polen_toxico"
       ],
       [
+        16,
+        "polvo_paralizante"
+      ],
+      [
         22,
         "coraza"
       ],
@@ -6863,6 +6999,10 @@
         "hidrochorro"
       ],
       [
+        22,
+        "aliento_helado"
+      ],
+      [
         28,
         "muralla"
       ],
@@ -6989,6 +7129,10 @@
         "rugido"
       ],
       [
+        16,
+        "resplandor"
+      ],
+      [
         22,
         "rayo_luz"
       ],
@@ -7080,6 +7224,873 @@
         "fangs",
         "crown"
       ]
+    }
+  },
+  "cenicito": {
+    "name": "Cenicito",
+    "house": "fuego",
+    "base": {
+      "hp": 50,
+      "mp": 30,
+      "atk": 14,
+      "matk": 11,
+      "def": 11,
+      "mdef": 9,
+      "spd": 14
+    },
+    "exp": 40,
+    "drops": [
+      [
+        "brasa",
+        0.45
+      ],
+      [
+        "fragmento_garra",
+        0.25
+      ],
+      [
+        "pocion",
+        0.12
+      ],
+      [
+        "anillo_brasas",
+        0.02
+      ]
+    ],
+    "passives": [
+      "furia",
+      "sangre_caliente",
+      "arranque"
+    ],
+    "desc": "Un montoncito de ceniza tibia que se enciende cuando se emociona.",
+    "learn": [
+      [
+        1,
+        "aranazo"
+      ],
+      [
+        1,
+        "chispa"
+      ],
+      [
+        5,
+        "rugido"
+      ],
+      [
+        9,
+        "colmillo_ardiente"
+      ],
+      [
+        14,
+        "embestida"
+      ],
+      [
+        19,
+        "puno_igneo"
+      ],
+      [
+        26,
+        "mordisco_brasa"
+      ],
+      [
+        34,
+        "lanzallamas"
+      ],
+      [
+        46,
+        "llamarada"
+      ]
+    ],
+    "sprite": {
+      "c1": "#ea580c",
+      "c2": "#fed7aa",
+      "rx": 25,
+      "ry": 23,
+      "ears": "flame",
+      "tail": "flame",
+      "eyes": "big",
+      "body": "round"
+    },
+    "evolves": {
+      "to": "fogarron",
+      "level": 24
+    }
+  },
+  "fogarron": {
+    "name": "Fogarrón",
+    "from": "cenicito",
+    "base": {
+      "hp": 74,
+      "mp": 38,
+      "atk": 21,
+      "matk": 15,
+      "def": 16,
+      "mdef": 13,
+      "spd": 17
+    },
+    "exp": 78,
+    "drops": [
+      [
+        "brasa",
+        0.5
+      ],
+      [
+        "obsidiana",
+        0.15
+      ],
+      [
+        "superpocion",
+        0.06
+      ],
+      [
+        "anillo_brasas",
+        0.03
+      ]
+    ],
+    "passives": [
+      "furia",
+      "adrenalina",
+      "rompecorazas"
+    ],
+    "desc": "Sus brasas nunca se apagan: duerme en los cráteres para no perder el calor.",
+    "learn": [
+      [
+        1,
+        "aranazo"
+      ],
+      [
+        1,
+        "chispa"
+      ],
+      [
+        8,
+        "colmillo_ardiente"
+      ],
+      [
+        14,
+        "embestida"
+      ],
+      [
+        19,
+        "puno_igneo"
+      ],
+      [
+        26,
+        "mordisco_brasa"
+      ],
+      [
+        34,
+        "lanzallamas"
+      ],
+      [
+        42,
+        "golpe_feroz"
+      ],
+      [
+        50,
+        "llamarada"
+      ],
+      [
+        64,
+        "infierno"
+      ]
+    ],
+    "sprite": {
+      "c1": "#dc2626",
+      "c2": "#fde68a",
+      "rx": 28,
+      "ry": 26,
+      "ears": "horns",
+      "tail": "flame",
+      "eyes": "sharp",
+      "body": "chubby"
+    }
+  },
+  "escarchin": {
+    "name": "Escarchín",
+    "house": "agua",
+    "base": {
+      "hp": 50,
+      "mp": 34,
+      "atk": 10,
+      "matk": 14,
+      "def": 11,
+      "mdef": 13,
+      "spd": 13
+    },
+    "exp": 42,
+    "drops": [
+      [
+        "gota",
+        0.45
+      ],
+      [
+        "coral",
+        0.2
+      ],
+      [
+        "eter",
+        0.12
+      ],
+      [
+        "perla_marina",
+        0.02
+      ]
+    ],
+    "passives": [
+      "pozo_mana",
+      "regeneracion",
+      "mente_arcana"
+    ],
+    "desc": "Copo con patitas que deja escarcha donde pisa. Le encanta deslizarse.",
+    "learn": [
+      [
+        1,
+        "placaje"
+      ],
+      [
+        1,
+        "burbuja"
+      ],
+      [
+        5,
+        "concentracion"
+      ],
+      [
+        10,
+        "vapor"
+      ],
+      [
+        15,
+        "acua_cola"
+      ],
+      [
+        22,
+        "aliento_helado"
+      ],
+      [
+        30,
+        "hidrochorro"
+      ],
+      [
+        40,
+        "maremoto"
+      ]
+    ],
+    "sprite": {
+      "c1": "#7dd3fc",
+      "c2": "#f0f9ff",
+      "rx": 24,
+      "ry": 24,
+      "ears": "spikes",
+      "tail": "none",
+      "eyes": "big",
+      "body": "drop"
+    },
+    "evolves": {
+      "to": "glaciaron",
+      "level": 30
+    }
+  },
+  "glaciaron": {
+    "name": "Glaciarón",
+    "from": "escarchin",
+    "base": {
+      "hp": 80,
+      "mp": 46,
+      "atk": 14,
+      "matk": 22,
+      "def": 18,
+      "mdef": 20,
+      "spd": 15
+    },
+    "exp": 88,
+    "drops": [
+      [
+        "gota",
+        0.5
+      ],
+      [
+        "perla_marina",
+        0.05
+      ],
+      [
+        "supereter",
+        0.08
+      ],
+      [
+        "escama_dura",
+        0.02
+      ]
+    ],
+    "passives": [
+      "espiritu_ferreo",
+      "pozo_mana",
+      "guardia_alta"
+    ],
+    "desc": "Un bloque de hielo milenario con un corazón tranquilo. Congela el aire al respirar.",
+    "learn": [
+      [
+        1,
+        "burbuja"
+      ],
+      [
+        1,
+        "aliento_helado"
+      ],
+      [
+        10,
+        "vapor"
+      ],
+      [
+        15,
+        "acua_cola"
+      ],
+      [
+        22,
+        "coraza"
+      ],
+      [
+        30,
+        "hidrochorro"
+      ],
+      [
+        40,
+        "maremoto"
+      ],
+      [
+        52,
+        "aguas_curativas"
+      ],
+      [
+        66,
+        "diluvio"
+      ]
+    ],
+    "sprite": {
+      "c1": "#38bdf8",
+      "c2": "#e0f2fe",
+      "rx": 30,
+      "ry": 27,
+      "ears": "crest",
+      "tail": "fin",
+      "eyes": "glow",
+      "eyeColor": "#e0f2fe",
+      "body": "block"
+    }
+  },
+  "prismito": {
+    "name": "Prismito",
+    "house": "luz",
+    "base": {
+      "hp": 48,
+      "mp": 36,
+      "atk": 9,
+      "matk": 15,
+      "def": 10,
+      "mdef": 14,
+      "spd": 15
+    },
+    "exp": 44,
+    "drops": [
+      [
+        "polvo_brillante",
+        0.4
+      ],
+      [
+        "lagrima_estelar",
+        0.08
+      ],
+      [
+        "eter",
+        0.15
+      ],
+      [
+        "orbe_solar",
+        0.02
+      ]
+    ],
+    "passives": [
+      "foco_arcano",
+      "equilibrio",
+      "pozo_mana"
+    ],
+    "desc": "Un cristalito que descompone la luz en arcoíris cuando está contento.",
+    "learn": [
+      [
+        1,
+        "placaje"
+      ],
+      [
+        1,
+        "destello"
+      ],
+      [
+        6,
+        "concentracion"
+      ],
+      [
+        11,
+        "golpe_aureo"
+      ],
+      [
+        16,
+        "resplandor"
+      ],
+      [
+        22,
+        "curacion"
+      ],
+      [
+        28,
+        "rayo_luz"
+      ],
+      [
+        38,
+        "juicio"
+      ]
+    ],
+    "sprite": {
+      "c1": "#fde68a",
+      "c2": "#fffbeb",
+      "rx": 23,
+      "ry": 25,
+      "ears": "halo",
+      "tail": "orb",
+      "eyes": "big",
+      "body": "egg"
+    },
+    "evolves": {
+      "to": "prismalux",
+      "level": 32
+    }
+  },
+  "prismalux": {
+    "name": "Prismalux",
+    "from": "prismito",
+    "base": {
+      "hp": 70,
+      "mp": 52,
+      "atk": 12,
+      "matk": 25,
+      "def": 15,
+      "mdef": 22,
+      "spd": 21
+    },
+    "exp": 92,
+    "drops": [
+      [
+        "polvo_brillante",
+        0.45
+      ],
+      [
+        "lagrima_estelar",
+        0.12
+      ],
+      [
+        "supereter",
+        0.08
+      ],
+      [
+        "corona_celeste",
+        0.01
+      ]
+    ],
+    "passives": [
+      "foco_arcano",
+      "mente_arcana",
+      "niebla_arcana"
+    ],
+    "desc": "Sus facetas guardan la luz de mil amaneceres; cegarlo es imposible.",
+    "learn": [
+      [
+        1,
+        "destello"
+      ],
+      [
+        1,
+        "golpe_aureo"
+      ],
+      [
+        16,
+        "resplandor"
+      ],
+      [
+        22,
+        "curacion"
+      ],
+      [
+        28,
+        "rayo_luz"
+      ],
+      [
+        34,
+        "velo_aurora"
+      ],
+      [
+        42,
+        "juicio"
+      ],
+      [
+        58,
+        "supernova"
+      ]
+    ],
+    "sprite": {
+      "c1": "#facc15",
+      "c2": "#fef9c3",
+      "rx": 26,
+      "ry": 29,
+      "ears": "halo",
+      "tail": "orb",
+      "eyes": "glow",
+      "eyeColor": "#fffbeb",
+      "body": "tall"
+    }
+  },
+  "nocturin": {
+    "name": "Nocturín",
+    "house": "oscuridad",
+    "base": {
+      "hp": 48,
+      "mp": 32,
+      "atk": 13,
+      "matk": 13,
+      "def": 10,
+      "mdef": 11,
+      "spd": 17
+    },
+    "exp": 42,
+    "drops": [
+      [
+        "esencia_sombria",
+        0.35
+      ],
+      [
+        "hilo",
+        0.3
+      ],
+      [
+        "antidoto",
+        0.15
+      ],
+      [
+        "colmillo_umbrio",
+        0.02
+      ]
+    ],
+    "passives": [
+      "pies_ligeros",
+      "instinto",
+      "mirada_fiera"
+    ],
+    "desc": "Aparece al anochecer y cuenta las estrellas en voz baja. Se asusta con el sol.",
+    "learn": [
+      [
+        1,
+        "aranazo"
+      ],
+      [
+        1,
+        "sombra_vil"
+      ],
+      [
+        5,
+        "intimidar"
+      ],
+      [
+        10,
+        "mordisco"
+      ],
+      [
+        14,
+        "colmillo_venenoso"
+      ],
+      [
+        18,
+        "nana_lunar"
+      ],
+      [
+        24,
+        "garra_umbria"
+      ],
+      [
+        32,
+        "pulso_umbrio"
+      ],
+      [
+        44,
+        "eclipse"
+      ]
+    ],
+    "sprite": {
+      "c1": "#4338ca",
+      "c2": "#c7d2fe",
+      "rx": 24,
+      "ry": 23,
+      "ears": "cat",
+      "tail": "curl",
+      "eyes": "slit",
+      "body": "round"
+    },
+    "evolves": {
+      "to": "penumbron",
+      "level": 28
+    }
+  },
+  "penumbron": {
+    "name": "Penumbrón",
+    "from": "nocturin",
+    "base": {
+      "hp": 72,
+      "mp": 42,
+      "atk": 20,
+      "matk": 18,
+      "def": 14,
+      "mdef": 15,
+      "spd": 24
+    },
+    "exp": 86,
+    "drops": [
+      [
+        "esencia_sombria",
+        0.45
+      ],
+      [
+        "nucleo_arcano",
+        0.05
+      ],
+      [
+        "superpocion",
+        0.06
+      ],
+      [
+        "velo_mistico",
+        0.02
+      ]
+    ],
+    "passives": [
+      "pies_ligeros",
+      "mirada_fiera",
+      "rompecorazas"
+    ],
+    "desc": "Se funde con las sombras de la luna nueva. Solo se ven sus ojos.",
+    "learn": [
+      [
+        1,
+        "sombra_vil"
+      ],
+      [
+        1,
+        "mordisco"
+      ],
+      [
+        14,
+        "colmillo_venenoso"
+      ],
+      [
+        18,
+        "nana_lunar"
+      ],
+      [
+        24,
+        "garra_umbria"
+      ],
+      [
+        30,
+        "drenaje_vital"
+      ],
+      [
+        36,
+        "pulso_umbrio"
+      ],
+      [
+        44,
+        "golpe_feroz"
+      ],
+      [
+        58,
+        "eclipse"
+      ]
+    ],
+    "sprite": {
+      "c1": "#312e81",
+      "c2": "#a5b4fc",
+      "rx": 27,
+      "ry": 26,
+      "ears": "spikes",
+      "tail": "curl",
+      "eyes": "glow",
+      "eyeColor": "#a5b4fc",
+      "body": "chubby"
+    }
+  },
+  "guijarrin": {
+    "name": "Guijarrín",
+    "house": "tierra",
+    "base": {
+      "hp": 56,
+      "mp": 22,
+      "atk": 13,
+      "matk": 8,
+      "def": 16,
+      "mdef": 11,
+      "spd": 8
+    },
+    "exp": 42,
+    "drops": [
+      [
+        "obsidiana",
+        0.2
+      ],
+      [
+        "hilo",
+        0.3
+      ],
+      [
+        "pocion",
+        0.15
+      ],
+      [
+        "corazon_roca",
+        0.02
+      ]
+    ],
+    "passives": [
+      "caparazon",
+      "vitalidad",
+      "guardia_alta"
+    ],
+    "desc": "Una piedrecita con musgo que rueda colina abajo solo por diversión.",
+    "learn": [
+      [
+        1,
+        "placaje"
+      ],
+      [
+        1,
+        "lodo"
+      ],
+      [
+        5,
+        "coraza"
+      ],
+      [
+        9,
+        "golpe_roca"
+      ],
+      [
+        14,
+        "polvo_paralizante"
+      ],
+      [
+        20,
+        "raiz_drenante"
+      ],
+      [
+        28,
+        "muralla"
+      ],
+      [
+        36,
+        "terremoto"
+      ]
+    ],
+    "sprite": {
+      "c1": "#a8a29e",
+      "c2": "#e7e5e4",
+      "rx": 26,
+      "ry": 22,
+      "ears": "leaf",
+      "tail": "none",
+      "eyes": "sleepy",
+      "body": "squat"
+    },
+    "evolves": {
+      "to": "penascon",
+      "level": 30
+    }
+  },
+  "penascon": {
+    "name": "Peñascón",
+    "from": "guijarrin",
+    "base": {
+      "hp": 92,
+      "mp": 28,
+      "atk": 21,
+      "matk": 11,
+      "def": 25,
+      "mdef": 16,
+      "spd": 7
+    },
+    "exp": 90,
+    "drops": [
+      [
+        "obsidiana",
+        0.35
+      ],
+      [
+        "corazon_roca",
+        0.04
+      ],
+      [
+        "hiperpocion",
+        0.04
+      ],
+      [
+        "coraza_obsidiana",
+        0.01
+      ]
+    ],
+    "passives": [
+      "caparazon",
+      "espiritu_ferreo",
+      "rompecorazas"
+    ],
+    "desc": "Montaña dormida con un bosquecillo en la espalda. Cuando despierta, tiembla el valle.",
+    "learn": [
+      [
+        1,
+        "golpe_roca"
+      ],
+      [
+        1,
+        "coraza"
+      ],
+      [
+        14,
+        "polvo_paralizante"
+      ],
+      [
+        20,
+        "raiz_drenante"
+      ],
+      [
+        28,
+        "muralla"
+      ],
+      [
+        36,
+        "terremoto"
+      ],
+      [
+        48,
+        "golpe_feroz"
+      ],
+      [
+        62,
+        "avalancha"
+      ]
+    ],
+    "sprite": {
+      "c1": "#78716c",
+      "c2": "#d6d3d1",
+      "rx": 31,
+      "ry": 27,
+      "ears": "horns",
+      "tail": "spike",
+      "eyes": "sharp",
+      "body": "block"
     }
   }
 }

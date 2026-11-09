@@ -47,13 +47,14 @@
       if (p.boss) {
         const info = p.secret && D.secretBosses ? D.secretBosses[p.zone] : z.boss;
         const sp = D.species[info.species];
-        return DK.fx.cover({ title: info.title, subtitle: t(p.secret ? 'battle.curtainSecret' : 'battle.curtainBoss', { name: sp.name, n: info.level + (DK.expedition.active() ? DK.expedition.levelBonus() : 0) }), icon: p.secret ? 'cave' : 'crown', colors: ['#f59e0b', '#7f1d1d'], kind: 'boss' }, go);
+        const ex = DK.expedition.active(), lvl = !p.secret && p.abyssRound != null && ex && ex.kind === 'abismo' ? Math.max(info.level, DK.abyss.bossLevel(ex.startZone || ex.zone, p.abyssRound)) : info.level; // v5.1b: nivel real en el Abismo
+        return DK.fx.cover({ title: info.title, subtitle: t(p.secret ? 'battle.curtainSecret' : 'battle.curtainBoss', { name: sp.name, n: lvl + (ex ? DK.expedition.levelBonus() : 0) }), icon: p.secret ? 'cave' : 'crown', colors: ['#f59e0b', '#7f1d1d'], kind: 'boss' }, go);
       }
       if (p.elite) return DK.fx.cover({ title: t('battle.curtainEliteTitle'), subtitle: z.name, icon: 'skull', colors: ['#f43f5e', '#4c0519'], kind: 'elite' }, go);
       return DK.fx.cover({ colors: z.colors, kind: 'battle' }, go);
     },
     render(params) {
-      if (!params.state) params.state = B().start(params.zone, params.leaderUid, { boss: params.boss, elite: params.elite, secret: params.secret, final: params.final, abyssRound: params.abyssRound });
+      if (!params.state) params.state = B().start(params.zone, params.leaderUid, { boss: params.boss, elite: params.elite, secret: params.secret, final: params.final, abyssRound: params.abyssRound, wave: params.wave });
       return buildBattle(params);
     },
     onLeave(params) { if (params._ctl) params._ctl.stop(); },
@@ -91,6 +92,9 @@
     const sceneId = st.boss ? DK.scenes.bossScene(zone, st.secret) : zone.scene;
     const arena = h('div', { class: 'arena' + (st.boss ? ' is-boss' : '') + (st.secret ? ' is-secret' : '') + (st.elite ? ' is-elite' : ''), style: { '--z1': zone.colors[0], '--z2': zone.colors[1] } },
       DK.scenes.render(sceneId, zone.colors),
+      DK.ambient ? DK.ambient.battle(sceneId) : null, // v5.7: luz, aurora, calor… y más partículas
+      // v5.4: clima de la zona (nieve en el Glaciar, niebla en el Pantano, lluvia a ratos…); en el jefe secreto, no
+      st.secret || !DK.weather ? null : DK.weather.layer(DK.weather.forZone(zone, Math.floor(Date.now() / 72e5))),
       h('div', { class: 'platform p-enemy' }), h('div', { class: 'platform p-ally' }),
       enemyHud, enemySlot, allySlot, allyHud, orderChip, toolbar, ticker, autoBadge, fx, banner);
     // Registro completo (se abre en un panel lateral con L o pulsando las últimas líneas)
@@ -103,8 +107,9 @@
     const ui = {};
 
     /* ---------- HUD ---------- */
-    function buildEnemy() {
-      const e = st.enemy, s = DK.daskai.stats(e), sp = D.species[e.species];
+    function buildEnemy(cur) {
+      const e = cur || st.enemy, s = DK.daskai.stats(e), sp = D.species[e.species];
+      ui.eCur = e;
       ui.eHp = bar({ value: e.cur.hp, max: s.hp, kind: 'hp', icon: 'heart', label: DK.tr('stats', D.stats.hp) });
       ui.eMp = bar({ value: e.cur.mp, max: s.mp, kind: 'mp', icon: 'sparkle', label: DK.tr('stats', D.stats.mp) });
       ui.eStatus = h('span');
@@ -117,10 +122,12 @@
       (st.phases || []).forEach((p) => ui.eHp.querySelector('.bar-track').append(h('i', { class: 'phase-mark', style: { left: p.at * 100 + '%' }, tip: t('phase.name.' + p.type) })));
       enemyHud.replaceChildren(
         h('div', { class: 'hud-title' }, h('b', null, st.boss ? (st.bossInfo || zone.boss).title : DK.daskai.name(e)), V.level(e.level)),
-        h('div', { class: 'hud-tags' }, st.boss ? h('span', { class: 'badge leader' }, DK.icon('crown', 13), t('battle.boss')) : null, V.housesBadge(e, { known: st.known }), V.roleBadge(e), V.shinyTag(e), ui.eStatus, ui.ePhase),
+        h('div', { class: 'hud-tags' }, st.boss ? h('span', { class: 'badge leader' }, DK.icon('crown', 13), t('battle.boss')) : null,
+          st.wave ? h('span', { class: 'badge wave-badge', tip: t('battle.wave.tip.' + st.wave.kind, { n: st.wave.total }) }, DK.icon(st.wave.kind === 'chain' ? 'swords' : 'swap', 12), t('battle.wave.badge.' + st.wave.kind, { i: Math.min(st.wave.total, st.wave.beaten + 1), n: st.wave.total })) : null, V.housesBadge(e, { known: st.known }), V.roleBadge(e), V.shinyTag(e), ui.eStatus, ui.ePhase),
         ui.eHp, ui.eMp, ui.eBreak, ui.intent);
       updateBreak();
-      ui.eSprite = V.dSprite(e, { size: st.boss ? 210 : 180, cls: 'idle grounded' });
+      ui.eSprite = V.dSprite(e, { size: st.boss ? 210 : 180, cls: 'idle grounded alive' + (st.boss && !st.turn && !params._entered ? ' boss-enter' : '') });
+      if (st.boss && !st.turn && !params._entered) { params._entered = true; setTimeout(() => DK.audio.sfx('roar'), 650); }
       enemySlot.replaceChildren(ui.eSprite);
     }
     function buildAlly() {
@@ -134,7 +141,7 @@
         h('div', { class: 'hud-title' }, h('b', null, DK.daskai.name(a)), ui.aLevel),
         h('div', { class: 'hud-tags' }, V.housesBadge(a), V.roleBadge(a), V.shinyTag(a), V.tempTag(a), ui.aStatus),
         ui.aHp, ui.aMp, ui.aExp);
-      ui.aSprite = V.dSprite(a, { size: 210, flip: true, cls: 'idle grounded' });
+      ui.aSprite = V.dSprite(a, { size: 210, flip: true, cls: 'idle grounded alive' });
       allySlot.replaceChildren(ui.aSprite);
       updateStatus();
     }
@@ -207,10 +214,18 @@
       DK.icon(x.pct > 0 ? 'arrowUp' : 'arrowDown', 11), `${D.stats[x.stat].short} ${x.pct > 0 ? '+' : '−'}${Math.round(Math.abs(x.pct) * 100)}%`, h('small', null, x.left)));
     /** v4.88: la música cambia con la tensión: poca vida → latido; jefe herido → furia. */
     function updateMood() {
-      if (!st.outcome) DK.audio.music(battleTrack(st, params));
+      if (!st.outcome) {
+        DK.audio.music(battleTrack(st, params));
+        // v5.4: música dinámica: más tensión cuanto más herido está el jefe o tu daskai
+        const a = DK.battle.ally(st), en = st.enemy;
+        const mine = a && !DK.daskai.isFainted(a) ? 1 - DK.daskai.hpPct(a) : 0, theirs = (st.boss || st.secret) && en ? 1 - DK.daskai.hpPct(en) : 0;
+        DK.audio.intensity(Math.max(mine * 1.1 - 0.2, theirs - 0.15));
+      } else DK.audio.intensity(0);
     }
     function updateStatus() {
       updateMood();
+      // v5.4: el estado se ve en el propio daskai (escarcha, chispas, «Zzz», ojos tapados…)
+      [[ui.aSprite, B().ally(st)], [ui.eSprite, st.enemy]].forEach(([el, d]) => { if (!el) return; [...el.classList].filter((c) => c.startsWith('st-')).forEach((c) => el.classList.remove(c)); if (d && d.status && d.cur.hp > 0) el.classList.add('st-' + d.status); });
       ui.aStatus.replaceChildren(V.statusTag(B().ally(st).status) || '', ...timedTags('ally'));
       ui.eStatus.replaceChildren(V.statusTag(st.enemy.status) || '', ...timedTags('enemy'));
       updatePhase();
@@ -233,19 +248,21 @@
       if (!s) return;
       const a = B().ally(st), as = DK.daskai.stats(a), es = DK.daskai.stats(st.enemy);
       if (s.aUid === a.uid) { ui.aHp.update(s.aHp, as.hp); ui.aMp.update(s.aMp, as.mp); }
-      ui.eHp.update(s.eHp, es.hp); ui.eMp.update(s.eMp, es.mp);
+      // v5.5: en oleadas/relevos la foto puede ser de otro rival (el que está en pantalla manda)
+      const shown = ui.eCur || st.enemy;
+      if (!s.eUid || s.eUid === shown.uid) { const ss = shown === st.enemy ? es : DK.daskai.stats(shown); ui.eHp.update(s.eHp, ss.hp); ui.eMp.update(s.eMp, ss.mp); }
       updateBreak(s);
       updateStatus();
     }
 
     /* ---------- Registro ---------- */
     function log(text, kind = '', cat = 'sys') {
-      const line = h('div', { class: `log-line ${kind} cat-${cat}` }, text);
+      const line = h('div', { class: `log-line ${kind} cat-${cat}` }, V.richLog ? V.richLog(text) : text); // v5.5: ataques, objetos, pasivas y estados resaltados
       if (logFilter !== 'all' && logFilter !== cat) line.classList.add('hidden');
       logEl.append(line);
       logEl.scrollTop = logEl.scrollHeight;
       // Últimas 3 líneas sobre la arena
-      const last = [...logEl.querySelectorAll('.log-line:not(.hidden)')].slice(-3).map((l) => { const c = l.cloneNode(true); c.classList.remove('hidden'); return c; });
+      const last = [...logEl.querySelectorAll('.log-line:not(.hidden)')].slice(-3).map((l) => { const c = l.cloneNode(true); c.classList.remove('hidden'); c.querySelectorAll('[data-tip]').forEach((x) => { x.removeAttribute('data-tip'); x.removeAttribute('role'); x.removeAttribute('tabindex'); }); return c; });
       ticker.replaceChildren(...last);
     }
     function drawLogFilters() {
@@ -262,10 +279,13 @@
     }
 
     /* ---------- Efectos ---------- */
-    function floatNum(side, text, kind) {
-      const n = h('span', { class: `float-num ${side} ${kind}` }, text);
+    function floatNum(side, text, kind, color) {
+      const n = h('span', { class: `float-num ${side} ${kind}`, style: color ? { '--fc': color } : null }, text);
+      // v5.4: varios números seguidos no se pisan: cada uno sale un poco desplazado
+      const k = (floatNum.k = ((floatNum.k || 0) + 1) % 4);
+      n.style.marginLeft = (k - 1.5) * 14 + 'px';
       fx.append(n);
-      setTimeout(() => n.remove(), 1100);
+      setTimeout(() => n.remove(), kind === 'crit' ? 1400 : 1100);
     }
     function anim(el, cls, ms) {
       if (!el) return;
@@ -282,16 +302,22 @@
         switch (e.anim) {
           case 'attack':
             anim(spriteOf(e.side), 'atk-' + e.side, 420);
+            // v5.4: los ataques mágicos se cargan un instante (brillo del color de su casa)
+            if (e.kind === 'magico' && !skipping && D.moves[e.move] && D.moves[e.move].power) { spriteOf(e.side).style.setProperty('--hc', D.houseColor(e.house || 'neutral') || '#e9d5ff'); anim(spriteOf(e.side), 'charge', 420); await wait(240); }
             pendingAttack = e;
             break;
           case 'hit': {
             const att = pendingAttack && !e.dot ? pendingAttack : null;
             if (att && !skipping) await DK.fx.attack(fx, spriteOf(att.side), spriteOf(e.side), { house: e.house, kind: e.kind, crit: e.crit });
             pendingAttack = null;
+            // v5.4: impacto con peso: destello blanco, un parón cortito y temblor en los críticos y golpes gordos
             anim(spriteOf(e.side), 'hit', 450);
-            if (e.crit) { anim(arena, 'shake', 400); DK.vibrate([40, 30, 60]); }
+            if (!e.dot) anim(spriteOf(e.side), 'flash', 160);
+            const maxHp = DK.daskai.stats(B().get(st, e.side)).hp || 1, big = e.amount >= maxHp * 0.25;
+            if (e.crit) { anim(arena, 'shake', 400); DK.vibrate([40, 30, 60]); } else if (big && !e.dot) anim(arena, 'shake-s', 260);
             DK.audio.sfx(e.crit ? 'crit' : 'hit');
-            floatNum(e.side, (e.crit ? '¡' : '') + '-' + e.amount + (e.crit ? '!' : ''), e.dot ? 'dot' : e.eff === 'strong' ? 'strong' : e.eff === 'weak' ? 'weak' : '');
+            floatNum(e.side, (e.crit ? '¡' : '') + '-' + e.amount + (e.crit ? '!' : ''), e.dot ? 'dot' : e.crit ? 'crit' : e.eff === 'strong' ? 'strong' : e.eff === 'weak' ? 'weak' : '');
+            if (!e.dot && !skipping) await DK.util.sleep((e.crit ? 110 : 60) / speed()); // parón al golpear
             break;
           }
           case 'heal': case 'regen':
@@ -301,13 +327,33 @@
           case 'mana': floatNum(e.side, '+' + e.amount + ' ' + t('common.mpShort'), 'mana'); DK.fx.heal(fx, spriteOf(e.side), '#60a5fa'); DK.audio.sfx('mana'); break;
           case 'buff': anim(spriteOf(e.side), 'buff', 600); DK.audio.sfx('buff'); break;
           case 'debuff': anim(spriteOf(e.side), 'debuff', 600); DK.audio.sfx('debuff'); break;
-          case 'status': DK.audio.sfx('status'); DK.fx.burst(fx, spriteOf(e.side), 'oscuridad', 10); break;
+          case 'status': { // v5.4: cada estado con su color y su nombre flotando
+            const S = e.status && D.statuses[e.status];
+            DK.audio.sfx('status'); DK.fx.statusBurst(fx, spriteOf(e.side), e.status);
+            if (S) floatNum(e.side, DK.tr('statuses', S), 'status', S.color);
+            break;
+          }
+          case 'blocked': { const S = D.statuses[e.status]; anim(spriteOf(e.side), 'blocked', 500); if (S) floatNum(e.side, t('battle.blockedFloat.' + e.status), 'status', S.color); DK.audio.sfx('miss'); break; }
+          case 'cured': anim(spriteOf(e.side), 'glow', 600); break;
           case 'miss': floatNum(e.side, t('battle.missFloat'), 'weak'); DK.audio.sfx('miss'); pendingAttack = null; break;
-          case 'faint': spriteOf(e.side).classList.add('faint'); DK.audio.sfx('faint'); if (e.side === 'ally') DK.vibrate(200); break;
+          case 'faint': {
+            const sp = spriteOf(e.side);
+            // v5.4: el jefe se deshace en partículas a cámara lenta con un destello; los demás caen de lado y se apagan
+            if (e.side === 'enemy' && st.boss && !skipping) {
+              arena.classList.add('slowmo'); anim(arena, 'boss-flash', 900); DK.audio.sfx('crit'); DK.vibrate([80, 60, 160]);
+              sp.classList.add('disintegrate'); DK.fx.disintegrate(fx, sp, e.house || DK.daskai.species(st.enemy).house);
+              await DK.util.sleep(1300 / speed()); arena.classList.remove('slowmo');
+            } else sp.classList.add('faint');
+            DK.audio.sfx('faint'); if (e.side === 'ally') DK.vibrate(200);
+            break;
+          }
           case 'capture': anim(ui.eSprite, 'capturing', 900); DK.audio.sfx('capture'); break;
           case 'captured': ui.eSprite.classList.add('captured'); DK.audio.sfx('captured'); DK.fx.burst(fx, ui.eSprite, 'luz', 24); break;
           case 'captureFail': DK.audio.sfx('captureFail'); break;
           case 'switch': buildAlly(); anim(ui.aSprite, 'enter', 600); DK.audio.sfx('swap'); break;
+          // v5.5: oleadas y relevos: el rival se retira o entra otro sin salir del combate
+          case 'enemyOut': ui.eSprite.classList.add('retreat'); DK.audio.sfx('flee'); await wait(420); break;
+          case 'enemyIn': { const nx = st.wave && st.wave.all.find((x) => x.uid === e.uid); buildEnemy(nx); anim(ui.eSprite, 'enter-enemy', 700); DK.audio.sfx('swap'); break; }
           case 'flee': DK.audio.sfx('flee'); break;
           case 'broken': anim(ui.eSprite, 'hit', 450); anim(arena, 'shake', 500); DK.audio.sfx('crit'); DK.vibrate([60, 40, 90]); floatNum('enemy', t('battle.breakFloat'), 'strong'); DK.fx.burst(fx, ui.eSprite, 'luz', 18); break;
           case 'stunned': anim(ui.eSprite, 'debuff', 600); floatNum('enemy', t('battle.stunFloat'), 'weak'); break;
@@ -749,18 +795,25 @@
      */
     function rewardsView(r) {
       let k = 0; const dl = () => ({ animationDelay: (0.15 + k++ * 0.09).toFixed(2) + 's' });
-      const big = (icon, n, label, cls) => h('div', { class: 'rw-big ' + cls, style: dl() }, h('span', { class: 'rw-big-ico' }, DK.icon(icon, 22)), h('b', null, n), h('small', null, label));
+      // v5.4: las cifras grandes (experiencia, monedas) corren desde 0
+      const big = (icon, n, label, cls) => {
+        const m = /^\+(\d+)$/.exec(String(n)), b = h('b', null, m ? '+0' : n);
+        if (m) setTimeout(() => DK.util.countTo(b, 0, +m[1], 900, (x) => '+' + Math.round(x).toLocaleString(DK.i18n.lang)), 250);
+        return h('div', { class: 'rw-big ' + cls, style: dl() }, h('span', { class: 'rw-big-ico' }, DK.icon(icon, 22)), b, h('small', null, label));
+      };
       const counts = {}; r.drops.forEach((id) => { if (!(r.gear && DK.gear.isGear(id))) counts[id] = (counts[id] || 0) + 1; });
       const items = [
-        ...Object.entries(counts).map(([id, n]) => { const it = D.items[id]; return h('div', { class: 'rw-item r-' + it.rarity, style: dl(), tip: it.desc || it.name },
+        ...Object.entries(counts).map(([id, n]) => { const it = D.items[id]; return h('div', Object.assign({ style: dl(), tip: it.name }, V.infoProps('item', id), { class: 'rw-item has-info r-' + it.rarity }),
           h('span', { class: 'rw-item-ico' }, V.itemIcon ? V.itemIcon(it, 30) : DK.icon(it.icon, 26), n > 1 ? h('span', { class: 'rw-n' }, '×' + n) : null), h('span', { class: 'rw-item-name' }, it.name),
           r.toLoot && !(r.toBag || []).includes(id) ? h('small', { class: 'rw-dest' }, DK.icon('gift', 10), t('exp.destLoot')) : null); }),
         // v4.74: piezas de equipo con el color de su rareza
-        ...(r.gear || []).map((p) => h('div', { class: 'rw-item gear g-' + p.rarity, style: Object.assign(dl(), { '--g': D.gear.rarities[p.rarity].color }), tip: t('gear.rarity.' + p.rarity) },
+        ...(r.gear || []).map((p) => h('div', Object.assign({ style: Object.assign(dl(), { '--g': D.gear.rarities[p.rarity].color }), tip: t('gear.rarity.' + p.rarity) }, V.infoProps('gear', p), { class: 'rw-item has-info gear g-' + p.rarity }),
           h('span', { class: 'rw-item-ico' }, V.gearIcon(p, 30)), h('span', { class: 'rw-item-name' }, DK.gear.name(p)), h('small', { class: 'rw-dest' }, t('gear.rarity.' + p.rarity)))),
-        ...(r.runes || []).map((id) => h('div', { class: 'rw-item rune ' + V.runeRarity(id), style: dl(), tip: V.runeTip(id) }, h('span', { class: 'rw-item-ico' }, V.runeGem(id, 30)), h('span', { class: 'rw-item-name' }, V.runeName(id)))),
+        ...(r.runes || []).map((id) => h('div', Object.assign({ style: dl(), tip: V.runeTip(id) }, V.infoProps('rune', id), { class: 'rw-item has-info rune ' + V.runeRarity(id) }), h('span', { class: 'rw-item-ico' }, V.runeGem(id, 30)), h('span', { class: 'rw-item-name' }, V.runeName(id)))),
         r.relicOffer ? h('div', { class: 'rw-item relic', style: dl() }, h('span', { class: 'rw-item-ico' }, DK.icon('amulet', 26)), h('span', { class: 'rw-item-name' }, t('relics.toChoose'))) : null,
       ].filter(Boolean);
+      // v5.4: botín legendario → haz dorado y sonido propio
+      if ((r.gear || []).some((p) => p.rarity === 'legendario') || r.drops.some((id) => D.items[id] && D.items[id].rarity === 'legendario')) setTimeout(() => DK.audio.sfx('legend'), 450);
       return h('div', { class: 'rw' },
         h('div', { class: 'rw-main' }, big('star', '+' + r.exp, t('common.expShort'), 'exp'), big(r.toLoot ? 'gift' : 'coin', '+' + r.coins, r.toLoot ? t('battle.coinsLootShort') : t('hub.coins'), 'coin'),
           r.emblems ? big('emblem', '+' + r.emblems, t('emblem.title'), 'emblem') : null),

@@ -16,6 +16,8 @@ DK.i18n.register('es', {
   },
   top: { help: 'Ayuda', settings: 'Ajustes', light: 'Modo claro', dark: 'Modo oscuro', more: 'Menú', search: 'Buscar' },
 
+  info: { toBag: 'A la mochila: ya puedes usarlo', toLoot: 'Al botín: te lo llevas al volver a casa', does: 'Qué hace', where: 'Adónde va', have: 'Tienes', rune: 'Runa de expedición', status: 'Estado alterado',
+    runeHow: 'Engárzala en la preparación de una expedición (5 huecos) para cambiar el mapa o ganar más. Se mejora en Crafteo › Runas.' },
   main: {
     yourGames: 'Tus partidas', helpDesc: 'Reglas, casas y atajos',
     tagline: 'Forma tu equipo. Explora zonas. Domina las cinco casas.',
@@ -307,6 +309,18 @@ DK.i18n.register('es', {
     jefe_furioso: { name: 'Jefe furioso', desc: 'El jefe tiene una fase de furia más.' },
   },
   exp: {
+    npcLook: 'Míralo de cerca', npcUnknown: 'Alguien misterioso', npcHidden: 'Lo ves más de cerca, pero sigue entre las sombras: no sabes qué daskai es.',
+    npcRole: { special: 'Viajero misterioso', merchant: 'Mercader' },
+    giftText: { rare: 'Llevo tiempo esperando a alguien como tú. Elige uno: es tuyo.', gift: 'Hoy me siento generoso. Escoge lo que quieras de aquí, sin pagar nada.' },
+    giftTake: 'Elegir', giftGot: 'Conseguido', giftTaken: 'Te llevas {item}. Sonríe y desaparece entre la niebla.',
+    special: {
+      chain: { name: 'Oleada', desc: 'Combate especial: tres rivales seguidos sin salir del combate. Mucha más experiencia y monedas.' },
+      swap: { name: 'Relevo', desc: 'Combate especial: a media vida el rival se retira y entra otro con la vida llena; luego vuelve el primero. Más recompensa.' },
+      rare: { name: 'Encuentro especial', desc: 'Un personaje misterioso con un regalo especial para ti.' },
+      curio: { name: 'Mercader de rarezas', desc: 'Vende objetos especiales que no encontrarás en otros mercaderes.' },
+      gift: { name: 'Mercader generoso', desc: 'Un mercader que te regala un objeto especial a elegir.' },
+      tag: 'Especial',
+    },
     chestOpened: 'Esto es lo que había dentro:', destBag: 'Mochila', destLoot: 'Botín', destRelic: 'Reliquia', destBagHelp: 'ya puedes usarlo', destLootHelp: 'te lo llevas al volver a casa', recipeShort: 'Ya puedes fabricarlo en el yunque.', 
     trainDescLevel: 'Elige a un daskai: sube 1 nivel ahora mismo.', trainBtn: 'Entrenar a {name} (Nv. {n})', trainedLevel: '{name} entrena junto al fuego y sube al nivel {n}.', 
     campExit: 'Volver a casa', campExitDesc: 'Te llevas el {pct}% del botín ({coins} monedas) y todos tus reclutas', campExitQ: '¿Volver a casa desde la hoguera?',
@@ -379,6 +393,9 @@ DK.i18n.register('es', {
   },
 
   battle: {
+    wave: { next: '¡Llega otro rival! {name} ({n}/{total})', swap: '¡{name} entra de relevo con la vida llena!', back: '¡{name} vuelve al combate!', retreat: '{name} se retira a recobrar el aliento…',
+      badge: { chain: 'Oleada {i}/{n}', swap: 'Relevo' },
+      tip: { chain: 'Combate en oleada: {n} rivales seguidos sin salir del combate. Da más recompensa.', swap: 'Combate de relevo: a media vida el rival se retira y entra otro con la vida llena; luego vuelve el primero. Da más recompensa.' } },
     coinsLootShort: 'Monedas al botín',
     captureOff: 'Por ahora no se puede vincular en combate: recluta daskai en los nodos de reclutas de las expediciones.', 
     curtainEliteTitle: '¡Mini jefe!', curtainBoss: '¡Jefe! {name} · Nv. {n}', curtainSecret: '¡Jefe oculto! {name} · Nv. {n}', curtainElite: 'Mini jefe · Nv. {n}',
@@ -421,6 +438,9 @@ DK.i18n.register('es', {
     uses: '{name} usa {move}.', missed: '¡Pero ha fallado!', missFloat: 'Fallo', crit: '¡Golpe crítico!', strong: '¡Es muy eficaz!', weak: 'No es muy eficaz...',
     drains: '{name} absorbe {n} PV.', heals: '{name} recupera {n} PV.', alreadyFull: 'Su vida ya estaba al máximo.',
     gotStatus: '¡{name} está {status}!', noEffect: 'No ha tenido efecto.',
+    woke: '¡{name} se despierta!', thawed: '¡{name} se descongela!', cured: '{name} ya no está {status}.',
+    blockedFloat: { congelacion: '¡Congelado!', paralisis: '¡Paralizado!', sueno: 'Zzz…' },
+    blocked: { congelacion: '{name} está congelado y no puede moverse.', paralisis: '¡{name} está paralizado! No puede moverse.', sueno: '{name} está dormido…' },
     cantRise: 'Su {stat} no puede subir más.', cantFall: 'Su {stat} no puede bajar más.',
     statRise: '¡La {stat} de {name} sube!', statRiseMuch: '¡La {stat} de {name} sube mucho!', statFall: 'La {stat} de {name} baja.',
     useItem: 'Usas {item} en {name}.', throw: 'Lanzas {item}...', captured: '¡{name} se ha vinculado contigo!', captureFail: '{name} se ha liberado del vínculo.',
@@ -513,6 +533,7 @@ DK.i18n.register('es', {
     expedition: 'Completa {n} expediciones', boss: 'Derrota {n} jefes',
   },
   achievements: {
+    dropTitle: '¡Logro!',
     all: 'Todos', cat: { combat: 'Combate', collection: 'Colección', expedition: 'Expediciones', bosses: 'Jefes', craft: 'Crafteo y riqueza' },
     hintLabel: 'Pista:', titleReward: 'Título: {name}', titleTip: 'Al conseguirlo podrás usarlo como título en tu perfil',
     framesHint: 'Con 10 logros desbloqueas el marco dorado; con todos, el legendario.',
@@ -944,10 +965,10 @@ DK.i18n.register('es', {
     wings: { feather: 'de plumas', bat: 'de murciélago', fin: 'de aleta', crystal: 'de cristal' },
     arch: { dino: 'dinosaurio', scorpion: 'escorpión', beast: 'bestia de cuatro patas', shell: 'con caparazón' },
     size: { xxs: 'diminuto', xxl: 'gigante', xs: 'pequeñito', s: 'pequeño', m: 'normal', l: 'grande', xl: 'enorme' },
-    body: { round: 'redondo', chubby: 'rechoncho', egg: 'ovalado', bean: 'alubia', block: 'cuadrado', tall: 'espigado', blob: 'blandito', drop: 'gota', squat: 'achaparrado', ghost: 'fantasma', long: 'alargado', cloud: 'nube', pear: 'pera', mound: 'montículo', gourd: 'calabaza', gem: 'rombo', puff: 'peludo', bell: 'campana', bulb: 'trébol', wide: 'ancho', tower: 'torre', topheavy: 'cabezón', bubble: 'burbujas', lumpy: 'grumoso' , saddle: 'silla de montar', pill: 'cápsula', spiky: 'erizado', acorn: 'bellota', potato: 'patata', heart: 'corazón', star5: 'estrella', mushroom: 'seta', barrel: 'barril', kite: 'cometa', dino: 'de dinosaurio', scorpion: 'de escorpión', beast: 'de bestia', shellb: 'de tortuga' },
+    body: { round: 'redondo', chubby: 'rechoncho', egg: 'ovalado', bean: 'alubia', block: 'cuadrado', tall: 'espigado', blob: 'blandito', drop: 'gota', squat: 'achaparrado', ghost: 'fantasma', long: 'alargado', cloud: 'nube', pear: 'pera', mound: 'montículo', gourd: 'calabaza', gem: 'rombo', puff: 'peludo', bell: 'campana', bulb: 'trébol', wide: 'ancho', tower: 'torre', topheavy: 'cabezón', bubble: 'burbujas', lumpy: 'grumoso' , saddle: 'silla de montar', pill: 'cápsula', spiky: 'erizado', acorn: 'bellota', potato: 'patata', heart: 'corazón', star5: 'estrella', mushroom: 'seta', barrel: 'barril', kite: 'cometa', dino: 'de dinosaurio', scorpion: 'de escorpión', beast: 'de bestia', shellb: 'de tortuga', loaf: 'hogaza', hunch: 'jorobado', hourglass: 'reloj de arena', peanut: 'cacahuete', shield: 'escudo', pyramid: 'pirámide', hex: 'hexagonal', crag: 'rocoso', tiltegg: 'inclinado', comet: 'cometa de cola', camel: 'de dos jorobas', brute: 'bruto' },
     legs: { stubby: 'patitas → cuatro patas', digi: 'patitas → patas de salto', paws: 'zarpas → patas gruesas', bird: 'patas de ave', tent: 'tentáculos', hover: 'flota', late: 'patitas (cambian tarde)', pillar: 'patas de columna', hoof: 'pezuñas', frog: 'ancas de rana', talon: 'garras de rapaz', root: 'raíces', puff: 'nubecitas', peg: 'patas de palo', webbed: 'patas palmeadas', spring: 'muelles', bigfoot: 'pies grandes', stilts: 'zancos' , wheels: 'ruedas', crab: 'patas de cangrejo', boots: 'con botas', paddles: 'aletas planas', insect: 'patas de insecto', raptor: 'patas de raptor', slime: 'charco de baba', beast: 'cuatro patas desde pequeño' },
-    eyes: { big: 'grandes', sharp: 'afilados', slit: 'de gato', sleepy: 'dormilones', happy: 'felices', glow: 'brillantes', dot: 'de punto', angry: 'ceño fruncido', star: 'pupilas de estrella', button: 'de botón', uneven: 'dispares', cyclops: 'un solo ojo', three: 'tres ojos', visor: 'visor', spiral: 'mareados', heart: 'enamorados', wink: 'guiño', anime: 'brillantes y enormes', halflid: 'párpado caído', sparkle: 'con destellos', crescent: 'pupila de luna', squint: 'apretados', bug: 'de insecto', ringed: 'hipnóticos', crosseye: 'pupila en cruz', teary: 'lloroso', robot: 'de robot', lashes: 'con pestañas', diamond: 'pupila de rombo' , shades: 'gafas de sol', monocle: 'monóculo', xeyes: 'en equis', blank: 'en blanco', bags: 'ojeras', void: 'de vacío', gemeye: 'de gema', snake: 'de serpiente', pixel: 'de píxel', sclera: 'esclerótica negra' },
-    mouth: { w: 'boquita', smile: 'sonrisa', open: 'abierta', grin: 'dientes', tiny: 'pequeña', flat: 'seria', fangs: 'colmillos', tusks: 'defensas', buck: 'paletas', tongue: 'lengua fuera', beak: 'pico', smirk: 'sonrisa pícara', wavy: 'nerviosa', cat3: 'hocico gatuno', sabre: 'dientes de sable', pout: 'morritos', oh: 'sorprendida', jagged: 'dientes de sierra', bubble: 'pompa', mustache: 'bigote', biggrin: 'sonrisa enorme', stitch: 'cosida', toothy: 'dientes apretados', gaptooth: 'mellada', drool: 'babeando', whistle: 'silbando', vampire: 'colmillitos', zipper: 'cremallera', catmouth: 'de gato con bigotes', lips: 'labios', frown: 'enfurruñada' , snout: 'hocico', gum: 'chicle', grit: 'dientes apretados de rabia', mask: 'máscara', kiss: 'besito' , hook: 'pico de rapaz', trunk: 'trompa', mandible: 'mandíbulas', lick: 'relamiéndose', muzzle: 'hocico de perro', shark: 'de tiburón', sucker: 'de ventosa', goofy: 'de un diente', whiskers: 'con bigotes largos', underbite: 'mandíbula salida' },
+    eyes: { big: 'grandes', sharp: 'afilados', slit: 'de gato', sleepy: 'dormilones', happy: 'felices', glow: 'brillantes', dot: 'de punto', angry: 'ceño fruncido', star: 'pupilas de estrella', button: 'de botón', uneven: 'dispares', cyclops: 'un solo ojo', three: 'tres ojos', visor: 'visor', spiral: 'mareados', heart: 'enamorados', wink: 'guiño', anime: 'brillantes y enormes', halflid: 'párpado caído', sparkle: 'con destellos', crescent: 'pupila de luna', squint: 'apretados', bug: 'de insecto', ringed: 'hipnóticos', crosseye: 'pupila en cruz', teary: 'lloroso', robot: 'de robot', lashes: 'con pestañas', diamond: 'pupila de rombo' , shades: 'gafas de sol', monocle: 'monóculo', xeyes: 'en equis', blank: 'en blanco', bags: 'ojeras', void: 'de vacío', gemeye: 'de gema', snake: 'de serpiente', pixel: 'de píxel', sclera: 'esclerótica negra', twinkle: 'con estrellitas', brows: 'con cejas', almond: 'almendrados', dewy: 'adorables' },
+    mouth: { w: 'boquita', smile: 'sonrisa', open: 'abierta', grin: 'dientes', tiny: 'pequeña', flat: 'seria', fangs: 'colmillos', tusks: 'defensas', buck: 'paletas', tongue: 'lengua fuera', beak: 'pico', smirk: 'sonrisa pícara', wavy: 'nerviosa', cat3: 'hocico gatuno', sabre: 'dientes de sable', pout: 'morritos', oh: 'sorprendida', jagged: 'dientes de sierra', bubble: 'pompa', mustache: 'bigote', biggrin: 'sonrisa enorme', stitch: 'cosida', toothy: 'dientes apretados', gaptooth: 'mellada', drool: 'babeando', whistle: 'silbando', vampire: 'colmillitos', zipper: 'cremallera', catmouth: 'de gato con bigotes', lips: 'labios', frown: 'enfurruñada' , snout: 'hocico', gum: 'chicle', grit: 'dientes apretados de rabia', mask: 'máscara', kiss: 'besito' , hook: 'pico de rapaz', trunk: 'trompa', mandible: 'mandíbulas', lick: 'relamiéndose', muzzle: 'hocico de perro', shark: 'de tiburón', sucker: 'de ventosa', goofy: 'de un diente', whiskers: 'con bigotes largos', underbite: 'mandíbula salida', fang1: 'con un colmillo', blep: 'punta de lengua', ohno: '¡oh, no!', beam: 'carcajada' },
     ears: { cat: 'orejas de gato', bunny: 'orejas de conejo', bear: 'orejas de oso', droopy: 'orejas caídas', horns: 'cuernos', unicorn: 'cuerno único', antenna: 'antenas', crest: 'cresta', sprout: 'brote', fins: 'aletas', spikes: 'púas', tuft: 'tupé', none: 'lisa', antlers: 'astas', ram: 'cuernos de carnero', mushroom: 'sombrero de seta', flower: 'flor', mohawk: 'cresta punk', elf: 'orejas de elfo', mouse: 'orejas de ratón', headwings: 'alitas', trihorn: 'tres cuernos', lynx: 'orejas de lince', leafy: 'orejas de hoja', plume: 'pluma', devil: 'cuernecillos', bow: 'lazo', crystals: 'cristales' , curved: 'cuernos curvos', nubs: 'cuernecitos', feelers: 'antenas largas', fan: 'cresta de abanico', fox: 'orejas de zorro' },
     mark: { star: 'estrella', moon: 'luna', heart: 'corazón', spots: 'manchas', stripes: 'rayas', zigzag: 'zigzag', gem: 'gema', freckles: 'pecas', patch: 'parche en el ojo', band: 'franja', swirl: 'remolino', blaze: 'lucero', bolt: 'rayo', chevron: 'galones', ring: 'anillo', bloom: 'flor', triad: 'tres puntos' },
     hair: { fringe: 'flequillo', curl: 'rizo', spiky: 'pinchos', ponytail: 'coleta', cheektufts: 'patillas', beard: 'perilla', bun: 'moño', afro: 'afro', swoop: 'tupé ladeado', braids: 'trenzas', quiff: 'copete' },
@@ -1218,6 +1239,9 @@ DK.i18n.register('es', {
     },
   },
   /* Resumen de expedición (screens/expSummary.js) */
+  sum5: { mMaps: 'Mapas', mMapsV: '{n} · {maps} superados', mFloor: 'Piso', mTime: 'Tiempo', mNodes: 'Visitados', mCleared: 'Superados', mDiff: 'Dificultad', mSecrets: 'Secretos', won: 'Combates ganados', levels: 'Niveles subidos', items: 'Objetos traídos', floors: 'Pisos', team: 'Tu equipo', teamHint: 'nivel al salir → al volver · pulsa para ver su ficha',
+    upN: '+{n} niveles', upNOne: '+1 nivel', noUp: 'sin subir', fallen: 'Caído', recruit: 'Reclutado', ko: 'Debilitado',
+    foes: 'Rivales', foesHint: '{n} combates · {k} distintos', bonded: 'Vinculado', notBeaten: 'Sin vencer' },
   sum: {
     timeline: 'Cronología', moments: '{n} momentos', floorN: 'piso {n}', compare: 'Frente a tu mejor expedición', newRecord: '¡Nuevo récord!', bestWas: 'récord {v}',
     cmpDepth: 'Profundidad', cmpCoins: 'Monedas', cmpTime: 'Duración',

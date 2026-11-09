@@ -41,6 +41,7 @@
         else if (k === 'html') el.innerHTML = v;
         else if (k === 'dataset') Object.assign(el.dataset, v);
         else if (k === 'tip') el.dataset.tip = v;
+        else if (k === 'tipNode' && typeof v === 'function') { el._tipNode = v; if (!el.dataset.tip) el.dataset.tip = ' '; } // v5.5: tooltip con contenido (ficha)
         else if (k === 'value') el.value = v;
         else if (v === true) el.setAttribute(k, '');
         else el.setAttribute(k, v);
@@ -570,7 +571,9 @@
     const text = target.dataset.tip;
     if (!text) return;
     if (!tipEl) { tipEl = h('div', { class: 'tooltip', role: 'tooltip' }); document.body.append(tipEl); }
-    tipEl.textContent = text;
+    // v5.5: los que llevan una ficha (tipNode) la enseñan en lugar del texto
+    let node = null; try { node = target._tipNode ? target._tipNode() : null; } catch (e) { node = null; }
+    if (node) { tipEl.replaceChildren(node); tipEl.classList.add('rich'); } else { tipEl.textContent = text; tipEl.classList.remove('rich'); }
     tipEl.classList.toggle('touch', touch);
     tipEl.classList.add('show');
     const r = target.getBoundingClientRect();
@@ -668,7 +671,10 @@
         if (!ghost) {
           const r = el.getBoundingClientRect();
           ghost = el.cloneNode(true); ghost.classList.add('drag-ghost'); ghost.classList.remove('drag-armed');
-          Object.assign(ghost.style, { position: 'fixed', width: r.width + 'px', height: r.height + 'px', left: 0, top: 0, pointerEvents: 'none', zIndex: 500 });
+          // v5.10: sin transición ni animación (antes «volaba» desde la esquina de arriba a la izquierda hasta el dedo)
+          Object.assign(ghost.style, { position: 'fixed', width: r.width + 'px', height: r.height + 'px', left: 0, top: 0, inset: 'auto auto auto auto', margin: 0, pointerEvents: 'none', zIndex: 500, transition: 'none', animation: 'none',
+            transform: `translate(${ev.clientX - r.width / 2}px, ${ev.clientY - r.height / 2}px) rotate(-4deg)` });
+          ghost.style.left = '0px'; ghost.style.top = '0px';
           document.body.append(ghost); el.classList.add('dragging'); document.body.classList.add('is-dragging'); hideTip();
           el.dataset.dragging = '1'; closeContextMenu();
         }

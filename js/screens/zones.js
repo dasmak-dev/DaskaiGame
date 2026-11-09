@@ -246,7 +246,7 @@
       const d = team[i];
       if (!d) return h('button', { class: 'bt-mon empty', type: 'button', tip: t('home.manage'), 'aria-label': t('home.manage'), onClick: () => DK.router.go('team') }, DK.icon('plus', 16));
       const s = DK.daskai.stats(d), hp = DK.util.percent(d.cur.hp, s.hp);
-      return h('button', { class: 'bt-mon' + (DK.daskai.isFainted(d) ? ' ko' : ''), type: 'button', tip: `${DK.daskai.name(d)} · ${t('common.lvl')} ${d.level} · ${d.cur.hp}/${s.hp}`,
+      return h('button', { class: 'bt-mon' + V.frameCls(d) + (DK.daskai.isFainted(d) ? ' ko' : ''), type: 'button', tip: `${DK.daskai.name(d)} · ${t('common.lvl')} ${d.level} · ${d.cur.hp}/${s.hp}`,
         onClick: () => { DK.audio.sfx('select'); V.quickStats(d, { onChange: refresh }); } },
         i === 0 ? h('span', { class: 'bt-mon-lead', tip: t('pack.lead') }, DK.icon('crown', 10)) : null,
         h('span', { class: 'bt-mon-spr' }, V.dSprite(d, { size: 48 })),
@@ -456,7 +456,7 @@
       const sel = DK.runes.selected(), swap = r.group !== 'bonus' && sel[r.group];
       return h('button', { class: 'rune-pick ' + V.runeRarity(id) + (ok ? '' : ' off'), type: 'button', disabled: !ok, style: { '--rc': look(id)[0] },
         tip: locked ? t('rune.locked') : swap && ok ? t('rune.swap', { name: V.runeName(sel[r.group]) }) : null,
-        onClick: () => { if (DK.runes.socket(id)) { DK.audio.sfx('select'); close(); refresh(); } } },
+        onClick: () => { if (DK.runes.socket(id)) { DK.audio.sfx('thud'); DK.vibrate(25); close(); refresh(); setTimeout(() => { const s = document.querySelectorAll('.rune-socket.full'); const el = s[s.length - 1]; if (el) { el.classList.add('just-set'); setTimeout(() => el.classList.remove('just-set'), 500); } }, 30); } } },
         V.runeGem(id, 44, { dim: !free }),
         h('span', { class: 'rune-pick-text' },
           h('b', null, V.runeName(id)),
