@@ -97,7 +97,7 @@
 
     // Atributos de ESTE daskai: se resaltan los que ha sacado por encima de lo normal de su especie (genes + rasgo)
     const dd = params.rolls[sp.id], ds = statsOf(sp.id);
-    const luck = (k) => (DK.daskai.baseOf(dd, k) - sp.base[k]) / Math.max(1, sp.base[k]);
+    const luck = (k) => (1 + ((dd.genes && dd.genes[k]) || 0)) * (1 + ((DK.daskai.roleOf(dd).mods || {})[k] || 0)) - 1; // v5.18: genes + rasgo
     const stats = h('div', { class: 'st-stats' }, D.statKeys.map((k) => {
       const l = luck(k), pct = Math.round(l * 100);
       return h('div', { class: 'st-stat' + (pct >= 4 ? ' top' : pct <= -4 ? ' low' : ''), tip: DK.tr('stats', D.stats[k], 'desc') || DK.tr('stats', D.stats[k]) },

@@ -45,11 +45,16 @@
       let enemy;
       // Datos del jefe: el de la zona o, en las cuevas, el oculto (D.secretBosses)
       const secret = o.secret && D.secretBosses ? D.secretBosses[zoneId] : null;
-      const bossInfo = secret || (o.boss ? zone.boss : null);
+      let bossInfo = secret || (o.boss ? zone.boss : null);
+      // v5.18: muy de vez en cuando, en lugar del jefe de la zona aparece un legendario (systems/legends.js)
+      const legend = bossInfo && !secret && DK.legends ? DK.legends.roll(zoneId, o) : null;
+      if (legend) bossInfo = Object.assign({}, zone.boss, { species: legend.species, level: zone.boss.level + DK.config.legends.levelBonus, title: t('legend.title', { name: D.species[legend.species].name }),
+        coins: Math.round(zone.boss.coins * DK.config.legends.coinMult), drops: zone.boss.drops.concat([['tonico_vida', 0.5], ['restaurador', 0.5], ['elixir', 0.25]]).filter(([id]) => D.items[id]) });
       if (o.boss && bossInfo) {
         // v5.1: en el Abismo todos los jefes de la serie van al nivel de la zona elegida (y suben jefe a jefe)
         const ex = DK.expedition.active(), abyssLv = !secret && o.abyssRound != null && ex && ex.kind === 'abismo' ? DK.abyss.bossLevel(ex.startZone || ex.zone, o.abyssRound) : 0;
         enemy = DK.daskai.create(bossInfo.species, lv(Math.max(bossInfo.level, abyssLv)), { boss: true, shiny: false, dual: U.chance(secret ? C().dual.secret : C().dual.boss) });
+        if (legend) { enemy.legendary = true; DK.daskai.touch(); DK.daskai.fullHeal(enemy); }
       } else if (o.elite) {
         const pick = U.weighted(zone.enemies);
         enemy = DK.daskai.create(pick.species, lv(zone.levels[1] + C().eliteLevelBonus), { wild: true, elite: true, dual: U.chance(C().dual.elite) });
@@ -72,7 +77,7 @@
       const st = {
         zoneId, enemy, allyUid: leaderUid, known, boss: !!o.boss, elite: !!o.elite && !o.boss, expedition: !!DK.expedition.active(),
         secret: !!secret, final: o.final != null ? !!o.final : !!o.boss && !secret,
-        bossInfo: bossInfo ? { title: bossInfo.title, coins: bossInfo.coins, drops: bossInfo.drops } : null,
+        bossInfo: bossInfo ? { title: bossInfo.title, coins: bossInfo.coins, drops: bossInfo.drops } : null, legend: legend ? legend.species : null,
         stages: { ally: zeroStages(), enemy: zeroStages() }, turn: 0, outcome: null, needSwitch: false, finished: false, lastMove: null,
         phases: o.boss ? (secret ? secret.phases.map((p) => Object.assign({}, p)) : this.bossPhases(zoneId)) : [], phase: 0, shield: 0, frenzy: false, bossRegen: 0, guarding: false,
         breakMax: o.boss ? C().breakGauge.boss : o.elite ? C().breakGauge.elite : 0, breakVal: 0, broken: 0, brokeAt: 0, breaks: 0,
@@ -886,6 +891,8 @@
         else if (st.elite) { DK.expedition.logEvent('elite', { species: e.species }); DK.expedition.questTrack('elite'); }
         if (out.captured) { DK.expedition.logEvent('recruit', { name: DK.daskai.name(e), species: e.species }); DK.expedition.questTrack('capture'); }
       }
+      // v5.18: legendario vencido: desde la segunda victoria puede querer unirse
+      if (st.legend && st.outcome === 'won') { const L = DK.legends.defeated(st.legend); out.legend = { species: st.legend, n: L.n, offer: L.offer, level: e.level }; }
       if (st.boss) {
         DK.store.state.stats.bossesDefeated++;
         // Emblemas para las Mejoras permanentes (sólo en expedición)

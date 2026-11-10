@@ -81,7 +81,8 @@
   };
 
   /** Valor base de un atributo plano (nivel de objeto 0, base «raro»). Se escala con el ilvl. */
-  G.units = { hp: 18, mp: 15, atk: 5, matk: 5, def: 5, mdef: 5, spd: 4, regen: 1 };
+  // v5.18: más bajos (los atributos de los daskai ahora son más pequeños); siguen pesando mucho: el equipo importa
+  G.units = { hp: 14, mp: 11, atk: 2.4, matk: 2.4, def: 2.4, mdef: 2.4, spd: 2, regen: 1 };
   /** Calidad de la base según su rareza en items.json (las épicas y legendarias dan más). */
   G.baseTier = { comun: 0.9, raro: 1, epico: 1.25, legendario: 1.45 };
   /** Escala por nivel de objeto: × (1 + ilvl / ilvlScale). */

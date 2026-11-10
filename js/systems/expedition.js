@@ -66,6 +66,8 @@
   const cfg = () => DK.config.expedition;
 
   /** Tipos de nodo: icono y si se resuelve con un combate. */
+  /** Borra lo que guardaba el piso actual (ofertas, suceso, resultado, reclutas, regalos). */
+  const clearNodeState = (e) => { delete e.offers; delete e.event; delete e.result; delete e.candidates; delete e.giftChoice; delete e.giftTaken; };
   const TYPES = {
     fight: { icon: 'swords', battle: true },
     elite: { icon: 'skull', battle: true },
@@ -598,7 +600,7 @@
       const map = generate(n.zone, n.seed, n.size || 'small', n.mod || null, e.kind || 'normal', this.mapExtra(e.corruption, e.runesUsed));
       Object.assign(e, { zone: n.zone, seed: n.seed, size: n.size || 'small', mod: n.mod || null, map, marks: { lines: [], notes: [] }, pos: null, pending: null, cleared: [], step: 1, total: map.rows.length,
         depth: e.depth + 1, awaitingChoice: false, next: null, altarUsed: false, mapStartedAt: Date.now(), quest: this.pickQuest(n.size || 'small') });
-      delete e.offers; delete e.event; delete e.result; delete e.candidates; delete e.giftChoice; delete e.giftTaken;
+      clearNodeState(e);
       DK.codex.discoverZone(n.zone);
       this.logEvent('newMap', { zone: n.zone, size: n.size || 'small', mod: n.mod || null });
       // Pactos nuevos y reliquia nueva (mejores cuanto más profundo)
@@ -735,7 +737,7 @@
       e.log.nodes[ty] = (e.log.nodes[ty] || 0) + 1;
       e.pos = e.pending; e.cleared.push(e.pending); e.pending = null;
       e.step = nodeOf(e, e.pos).row + 2;
-      delete e.offers; delete e.event; delete e.result; delete e.candidates; delete e.giftChoice; delete e.giftTaken;
+      clearNodeState(e);
       DK.store.save();
     },
 
@@ -1099,7 +1101,7 @@
       const summary = { items: e.loot.items, coins, zone: e.zone, recruits, keptRecruits: bonus, mult, pack };
       const gear = (e.loot.gear || []).slice(); // v4.74: el equipo encontrado vuelve entero
       this.snapshot(bonus ? 'completed' : 'retreat', { coins, items: e.loot.items, recruits, mult, packBack: pack, gear: gear.map(gearSnap) });
-      { const pct = DK.daskai.snapPct(); st().expedition = null; DK.daskai.applyPct(pct); } // v4.68: sin bonus de la expedición, el máximo baja y la vida con él
+      this.closeRun();
       DK.gear.home().push(...gear);
       // Ya fuera de la expedición: botín y mochila vuelven a la bolsa de casa
       DK.bag.addHome(e.loot.items);
@@ -1198,7 +1200,7 @@
       const gearKept = [], gearLost = [];
       (e.loot.gear || []).forEach((p) => (Math.random() < keep ? gearKept : gearLost).push(p));
       this.snapshot('campfire', { coins, items: keptLoot, lostItems: lostLoot, lostCoins: e.loot.coins - coins, recruits, packBack, lostPack, keepPct: Math.round(keep * 100), gear: gearKept.map(gearSnap), lostGear: gearLost.map(gearSnap) });
-      { const pct = DK.daskai.snapPct(); st().expedition = null; DK.daskai.applyPct(pct); } // v4.68: sin bonus de la expedición, el máximo baja y la vida con él
+      this.closeRun();
       DK.gear.home().push(...gearKept);
       this.afterEnd();
       DK.bag.addHome(keptLoot); DK.bag.addHome(packBack); DK.wallet.add(coins);
@@ -1267,7 +1269,7 @@
       const recruits = e.log.kept.map((x) => Object.assign({}, x, { kept: true })).concat(lost.recruits.map((x) => Object.assign({}, x, { kept: false })));
       const [packBack, lostPack] = this.packOnDefeat();
       this.snapshot('lost', { coins: 0, items: {}, lostItems: e.loot.items, lostCoins: e.loot.coins, recruits, packBack, lostPack, keepPack: DK.rules.keepPack(), lostGear: (e.loot.gear || []).map(gearSnap) });
-      { const pct = DK.daskai.snapPct(); st().expedition = null; DK.daskai.applyPct(pct); } // v4.68: sin bonus de la expedición, el máximo baja y la vida con él
+      this.closeRun();
       this.afterEnd({ defeat: true });
       DK.bag.addHome(packBack);
       DK.store.save();
@@ -1287,7 +1289,7 @@
       const recruits = e.log.kept.map((x) => Object.assign({}, x, { kept: true })).concat(left.map((x) => Object.assign({}, x, { kept: false })));
       this.snapshot('lostBoss', { coins, items: keptLoot, lostItems: lostLoot, lostCoins: e.loot.coins - coins, recruits, packBack: keptPack, lostPack, keepPack: DK.rules.keepPack(), lostGear: (e.loot.gear || []).map(gearSnap) });
       st().consolation = { zone: e.zone, depth: e.depth || 1 };
-      { const pct = DK.daskai.snapPct(); st().expedition = null; DK.daskai.applyPct(pct); } // v4.68: sin bonus de la expedición, el máximo baja y la vida con él
+      this.closeRun();
       this.afterEnd({ defeat: true });
       DK.bag.addHome(keptLoot); DK.bag.addHome(keptPack); DK.wallet.add(coins);
       DK.store.save();
@@ -1305,6 +1307,9 @@
      *  - derrota en Normal (rules.defeatHeal): el equipo vuelve con al menos
      *    el 50% de vida y maná.
      */
+    /** Cierra la expedición: sin su bonus, el máximo de vida baja y la vida actual con él (v4.68). */
+    closeRun() { const pct = DK.daskai.snapPct(); st().expedition = null; DK.daskai.applyPct(pct); },
+
     afterEnd({ defeat = false } = {}) {
       const P = DK.party, s = st(), heal = defeat ? DK.rules.defeatHeal() : 0;
       P.all().forEach((d) => {

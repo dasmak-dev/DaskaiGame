@@ -785,6 +785,16 @@
       if (r.emblems) { log(t('battle.emblemLog', { n: r.emblems }), 'level', 'reward'); DK.ui.toast(t('battle.emblemLog', { n: r.emblems }), { icon: 'emblem', kind: 'good' }); }
       if (r.secretUnlocked) { log(t('battle.secretUnlocked', { title: st.bossInfo.title, zone: zone.name }), 'level', 'reward'); DK.ui.toast(t('battle.secretUnlocked', { title: st.bossInfo.title, zone: zone.name }), { icon: 'cave', kind: 'good' }); }
       if (r.unlocked) { log(t('battle.zoneUnlocked', { zone: r.unlocked.name }), 'level', 'reward'); DK.ui.toast(t('battle.zoneUnlocked', { zone: r.unlocked.name }), { icon: 'map', kind: 'good' }); }
+      // v5.18: legendario vencido: la 1.ª vez sólo se le vence; desde la 2.ª puede querer unirse (y tú decides)
+      if (r.legend) {
+        const nm = D.species[r.legend.species].name;
+        log(t('legend.beaten', { name: nm, n: r.legend.n }), 'level', 'reward');
+        if (r.legend.offer) {
+          DK.audio.sfx('legend');
+          const ok = await DK.ui.confirm(t('legend.offerQ', { name: nm }), t('legend.offerText', { name: nm, lv: r.legend.level }), { okLabel: t('legend.accept'), okIcon: 'crown', icon: 'crown' });
+          if (ok) { const d = DK.legends.join(r.legend.species, r.legend.level); log(t('legend.joined', { name: DK.daskai.name(d) }), 'level', 'reward'); DK.ui.toast(t('legend.joined', { name: DK.daskai.name(d) }), { icon: 'crown', kind: 'good' }); }
+        } else if (r.legend.n === 1) log(t('legend.firstTime', { name: nm }), 'muted', 'reward');
+      }
       DK.crafting.newlyReadyFavorites().forEach((rc) => DK.ui.toast(t('bag.favReady', { item: D.items[rc.result].name }), { icon: 'star', kind: 'good' }));
       B().finish(st);
       // Jefe del mapa derrotado: se decide si continuar o terminar (panel final)
@@ -899,16 +909,21 @@
       };
       const keys = { 1: next, Enter: next, 2: () => heal.click(), 3: goHub };
       const expNow = DK.expedition.active();
+      // Botón «Curar» de la barra final, con cuántos del equipo están heridos
+      const endHealBtn = () => {
+        const hurt = DK.party.active().filter((d) => !DK.daskai.isFainted(d) && DK.daskai.hpPct(d) < 1).length;
+        const b = btn({ icon: 'flask', label: t('heal.short'), variant: 'tone', hotkey: '2', tip: t('battle.healDesc'), onClick: () => heal.click() });
+        if (hurt) b.append(h('span', { class: 'ee-hurt', tip: t('battle.hurtTip', { n: hurt }) }, DK.icon('heart', 11), hurt));
+        return b;
+      };
       if (expNow) {
         // En una expedición se vuelve al mapa para elegir el siguiente paso
         const toMap = () => { if (params._nextUid) expNow.leader = params._nextUid; DK.store.save(); DK.router.reset('expedition'); };
         keys[1] = toMap; keys.Enter = toMap;
         // v4.63: barra propia y compacta. Sin el desplegable «Luchará» (en el mapa se elige el siguiente paso):
         // a la izquierda el botín que llevas, a la derecha curar y volver al mapa.
-        const hurt = DK.party.active().filter((d) => !DK.daskai.isFainted(d) && DK.daskai.hpPct(d) < 1).length;
         const back = btn({ icon: 'map', label: t('exp.backToMap'), variant: 'primary', hotkey: '1', disabled: !alive.length, onClick: toMap });
-        const healBtn = btn({ icon: 'flask', label: t('heal.short'), variant: 'tone', hotkey: '2', tip: t('battle.healDesc'), onClick: () => heal.click() });
-        if (hurt) healBtn.append(h('span', { class: 'ee-hurt', tip: t('battle.hurtTip', { n: hurt }) }, DK.icon('heart', 11), hurt));
+        const healBtn = endHealBtn();
         actionsEl.replaceChildren(h('div', { class: 'end-exp' },
           h('div', { class: 'ee-loot' }, h('span', { class: 'ee-lbl' }, t('exp.lootLabel')),
             h('span', { class: 'ee-chip' }, DK.icon('gift', 14), h('b', null, DK.expedition.lootCount())),
@@ -918,10 +933,8 @@
       }
       // v4.68: el combate libre usa la misma barra compacta que la expedición. A la izquierda quién lucha
       // en el siguiente (desplegable si hay varios en pie); a la derecha salir, curar y siguiente combate.
-      const hurt = DK.party.active().filter((d) => !DK.daskai.isFainted(d) && DK.daskai.hpPct(d) < 1).length;
       const nextBtn = btn({ icon: 'swords', label: t('battle.nextFight'), variant: 'primary', hotkey: '1', disabled: !alive.length, tip: alive.length ? t('battle.continueDesc') : t('battle.noneStanding'), onClick: next });
-      const healBtn = btn({ icon: 'flask', label: t('heal.short'), variant: 'tone', hotkey: '2', tip: t('battle.healDesc'), onClick: () => heal.click() });
-      if (hurt) healBtn.append(h('span', { class: 'ee-hurt', tip: t('battle.hurtTip', { n: hurt }) }, DK.icon('heart', 11), hurt));
+      const healBtn = endHealBtn();
       const exitBtn = btn({ icon: 'home', label: t('battle.exit'), variant: 'ghost', hotkey: '3', tip: t('battle.exitDesc'), onClick: goHub });
       const fighter = alive.find((d) => d.uid === params._nextUid);
       // v4.69: sin el desplegable «Luchará»: sigue el mismo (o el primero en pie); se cambia desde el banquillo

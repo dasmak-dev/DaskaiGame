@@ -63,13 +63,14 @@
       if (safe && safe !== entry.id && !render.failing) {
         render.failing = true;
         try { stack.length = 0; stack.push({ id: safe, params: {} }); render('fade'); } finally { render.failing = false; }
-        if (DK.ui && DK.ui.toast) DK.ui.toast(DK.t ? DK.t('common.screenError') : 'Error', { icon: 'info', kind: 'bad' });
       }
+      // v5.19.1: avisa siempre (antes, si fallaba el propio mapa de la expedición, se quedaba la pantalla vieja sin decir nada)
+      if (DK.ui && DK.ui.toast && !render.failing) DK.ui.toast((DK.t ? DK.t('common.screenError') : 'Error') + ' · ' + String(err && err.message || err).slice(0, 80), { icon: 'info', kind: 'bad' });
       return;
     }
     DK.app.mount(el, def, entry, stack.length > 1 && def.back !== false, dir);
     if (def.onEnter) def.onEnter(entry.params, ctx);
-    if (def.music && DK.audio) DK.audio.music(typeof def.music === 'function' ? def.music(entry.params) : def.music);
+    try { if (def.music && DK.audio) DK.audio.music(typeof def.music === 'function' ? def.music(entry.params) : def.music); } catch (e) { console.warn('Música:', e); }
     if (def.tutorial && DK.tutorial && dir !== 'none') DK.tutorial.maybe(def.tutorial);
     DK.emit('screen:enter', { id: entry.id, params: entry.params });
   }

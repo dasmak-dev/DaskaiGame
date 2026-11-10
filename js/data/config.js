@@ -27,7 +27,7 @@
     // Ritmo de crecimiento de cada atributo al subir de nivel (systems/daskai.js → growthWeight):
     //   especie (sus atributos fuertes crecen más) + pasivas (+/-) → multiplica los puntos por nivel
     // v5.4: techo de la vida propia de tus daskai (sin el equipo): base + perLevel × nivel (Nv. 40 → 300 · Nv. 100 → 600; sube 5 por nivel como mucho)
-    hpCap: { base: 100, perLevel: 5 },
+    hpCap: { base: 90, perLevel: 3.6 }, // v5.18: con el modelo nuevo (Nv. 100 → 450)
     growthBias: { species: 0.7, passive: 1.5, min: 0.5, max: 1.4 }, // v5.4: máx. 1.4 (antes 1.6; la vida crecía demasiado)
     // Formas (v4.51): cada daskai sortea al nacer cuántas formas tendrá (1-4); el inicial siempre 4.
     //   levels: niveles para pasar a la forma siguiente · power: fuerza base de cada forma respecto a la
@@ -39,6 +39,28 @@
       vis: { 1: [2], 2: [1, 3], 3: [0, 2, 3], 4: [0, 1, 2, 3] },
     },
     evolveBonus: { hp: 6, mp: 3, atk: 2, matk: 2, def: 2, mdef: 2, spd: 2 }, // puntos extra al evolucionar
+    // v5.18: atributos al estilo Pokémon. Cada forma tiene un total de base («BST»: tiers[nº de formas][forma]),
+    // repartido como su especie; el atributo = flat[0] + flat[1]·nivel + base × nivel × coef × potencial.
+    // Calibrado para que una forma final ronde 1000–1050 de suma a Nv. 100 (vida ≈ 360, maná ≈ 190, resto ≈ 95).
+    // v5.18: jefes legendarios (systems/legends.js). chance = probabilidad de que el jefe de un mapa sea un legendario;
+    // join[n] = probabilidad de que quiera unirse tras vencerlo n veces (la 1.ª, nunca).
+    legends: {
+      chance: 0.04, levelBonus: 3, coinMult: 2,
+      join: [0, 0, 0.5, 0.75, 1],
+      list: [
+        { species: 'astrelion', key: 'astrelion' }, { species: 'oceanyx', key: 'oceanyx' }, { species: 'titanterra', key: 'titanterra' },
+        { species: 'volcanor', key: 'volcanor' }, { species: 'eclipsar', key: 'eclipsar' },
+      ],
+    },
+    statModel: {
+      tiers: { 1: [420], 2: [250, 480], 3: [200, 350, 500], 4: [200, 300, 400, 500] },
+      boss: 520, legendary: 600,
+      wildCurve: [200, 500, 56], // total de un rival según su nivel: 200 → 500 a Nv. 56 (como un daskai que evoluciona)
+      bossCurve: [230, 50],      // jefes: de 230 (Nv. 1) a `boss` (Nv. 50)
+      coef: { hp: 0.0078, mp: 0.007, other: 0.0182 },
+      flat: { hp: [62, 1.9], mp: [35, 0.7], other: [8, 0] },
+      legacyMult: 0.45, // la herencia de caídos (puntos planos) pesa menos con las cifras nuevas
+    },
     // Tónicos (mejora permanente de un atributo): cuánto da cada uno y cuántos admite cada daskai
     tonic: { per: { hp: 6, mp: 4, atk: 2, matk: 2, def: 2, mdef: 2, spd: 2 }, cap: 15 },
     talentEvery: 25,      // v4.96: cada cuántos niveles se elige un talento (25, 50, 75 y 100; antes 10)
@@ -169,14 +191,14 @@
     stageStep: 0.25,      // cada mejora/reducción en combate = 25%
 
     // --- Daskai salvajes, jefes y variocolor ---
-    wildStatMult: 0.9,    // los salvajes son un 10% más débiles (al vincularlos pierden la penalización)
+    wildStatMult: 0.95,   // los salvajes son un 5% más débiles (v5.18: antes 10%; el juego es más exigente)
     shinyChance: 1 / 450, // probabilidad de variocolor (v5.16: antes 1/200; en las expediciones de captura, más: kinds.captura.shiny / wildShiny)
     shinyStatMult: 1.1,   // +10% atributos
     bossHpMult: 2.4,      // vida de los jefes
     bossStatMult: 1.2,    // resto de atributos de los jefes (v5.0: antes 1.15)
     // v5.0: los rivales crecen con su nivel para compensar lo que acumula tu equipo (equipo, talentos, tónicos…):
     // ×(base + perLevel × nivel) → Nv. 5 ×1.05 · Nv. 30 ×1.13 · Nv. 60 ×1.23 · Nv. 90 ×1.33 (el principio casi igual)
-    enemyScale: { base: 1.03, perLevel: 0.0033 },
+    enemyScale: { base: 1.04, perLevel: 0.0036 }, // v5.18: algo más duros (antes 1.03 + 0.0033)
 
     // --- Progreso ---
     // (La muerte permanente y la retirada dependen de la dificultad: data/difficulties.js)

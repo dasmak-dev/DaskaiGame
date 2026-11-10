@@ -402,7 +402,7 @@
         extra: [stage ? h('span', { class: 'stage ' + (stage > 0 ? 'pos' : 'neg') }, (stage > 0 ? '▲' : '▼') + Math.abs(stage)) : null,
           other && diff ? h('span', { class: 'stage ' + (diff > 0 ? 'pos' : 'neg') }, (diff > 0 ? '+' : '') + diff) : null],
         marks: [V.natureArrow(d, k), V.growthBadge(d, k), b.trait ? h('span', { class: 'trait-mark ' + (b.trait > 0 ? 'up' : 'down'), tip: t('trait.statTip', { name: DK.tr('roles', DK.daskai.roleOf(d)), n: (b.trait > 0 ? '+' : '') + Math.round(b.trait * 100) }) }, DK.icon(DK.daskai.roleOf(d).icon, 11)) : null],
-        bar: V.statBar(b, k === 'hp' ? 400 : 260),
+        bar: V.statBar(b, k === 'hp' ? 380 : k === 'mp' ? 180 : 110), // v5.18: cifras del modelo nuevo
         more: V.breakdownText(b),
       });
     });

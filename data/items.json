@@ -119,6 +119,81 @@
     },
     "desc": "Restaura por completo vida y maná."
   },
+  "pocion_media": {
+    "name": "Poción vital",
+    "category": "batalla",
+    "rarity": "raro",
+    "icon": "potion",
+    "color": "#15803d",
+    "use": {
+      "healPct": 0.5
+    },
+    "desc": "Restaura la mitad de la vida máxima."
+  },
+  "pocion_total": {
+    "name": "Restaurador de vida",
+    "category": "batalla",
+    "rarity": "epico",
+    "icon": "potion",
+    "color": "#ef4444",
+    "use": {
+      "healPct": 1
+    },
+    "desc": "Restaura toda la vida."
+  },
+  "eter_medio": {
+    "name": "Éter vital",
+    "category": "batalla",
+    "rarity": "raro",
+    "icon": "etherBottle",
+    "color": "#2563eb",
+    "use": {
+      "manaPct": 0.5
+    },
+    "desc": "Restaura la mitad del maná máximo."
+  },
+  "eter_total": {
+    "name": "Éter total",
+    "category": "batalla",
+    "rarity": "epico",
+    "icon": "etherBottle",
+    "color": "#7c3aed",
+    "use": {
+      "manaPct": 1
+    },
+    "desc": "Restaura todo el maná."
+  },
+  "restaurador": {
+    "name": "Restaurador total",
+    "category": "batalla",
+    "rarity": "epico",
+    "icon": "elixir",
+    "color": "#ec4899",
+    "use": {
+      "healPct": 1,
+      "cure": [
+        "veneno",
+        "quemadura",
+        "congelacion",
+        "paralisis",
+        "ceguera",
+        "sueno"
+      ]
+    },
+    "desc": "Restaura toda la vida y cura cualquier estado alterado."
+  },
+  "tonico_vigor": {
+    "name": "Bálsamo de vigor",
+    "category": "batalla",
+    "rarity": "raro",
+    "icon": "jar",
+    "color": "#f59e0b",
+    "use": {
+      "healPct": 0.3,
+      "manaPct": 0.3
+    },
+    "desc": "Restaura un 30 % de vida y de maná."
+  },
   "cristal_vinculo": {
     "name": "Cristal de vínculo",
     "category": "batalla",

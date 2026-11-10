@@ -357,6 +357,68 @@ Se carga la última y sólo sobrescribe: paleta (piedra oscura, bronce, oro `--g
 - **Expedición:** al entrar en el mapa, el equipo, la mochila o un combate durante una expedición, `#zone-backdrop` (creado en `screens/expedition.js` con `screen:enter`) pinta detrás de todo la escena de la zona actual, oscurecida; `body.in-exp`.
 - **Combate:** la arena usa la escena de la zona (`components/scenes.js`, ahora con árboles muertos, ruinas, tumbas, cristales o tentáculos según la zona) y los **jefes tienen su propio fondo**: `DK.scenes.bossScene(zona, secreto)` → `boss_<escena>` (menhires bajo luna roja, bosque muerto, naufragio con tormenta, bosque de cristales, forja de lava, santuario con estatua, fauces del abismo, ruinas entre rayos) y `boss_secret` (cripta) para los jefes ocultos.
 
+### Cambios de la v5.19.2 — la música rompía pantallas en Firefox
+
+- **Causa** (`systems/audio.js`, desde la v5.17.1): los fundidos usaban `setValueCurveAtTime`. Si la pista cambiaba mientras la anterior aún estaba entrando (p. ej. menú principal → «Continuar» una expedición), `stopTrack` hacía `cancelScheduledValues` + `setValueAtTime` dentro de la curva. Chromium lo tolera, pero **Firefox lanza** «AudioParam.setValueAtTime: Can't add events during a curve event»; como `DK.audio.music` se llama al pintar la pantalla, la pantalla fallaba (el router la mandaba «a un sitio seguro») y la música se cortaba.
+- **Arreglo**: fundidos de igual potencia hechos con 12 rampas lineales (`eqRamp`), que sí se pueden interrumpir; `holdAt` congela el parámetro donde esté (`cancelAndHoldAtTime` si existe). `startTrack`/`stopTrack` y la llamada del router a la música van en `try`: la música nunca puede romper una pantalla.
+- Pruebas: `tests/run.js` lanza Chromium con `--autoplay-policy=no-user-gesture-required` para que suene; `juice` «v5.19.1: cambiar de música en mitad de un fundido» emula la regla estricta de Firefox sobre `AudioParam` (reproducía el fallo exacto con la versión anterior).
+
+### Cambios de la v5.19.1 — revisión de la expedición: toques que no respondían y código repetido
+
+- **Nodos del mapa solapados en el móvil** (`mapView`): en pantallas de 360–390 px todos los mapas tenían nodos de un mismo piso montados unos sobre otros (hasta 27 de 52 px); un nodo bloqueado encima de uno abierto se «comía» el toque o abría otro piso. Ahora `xFix` separa los nodos de cada piso al menos un nodo de ancho + 6 px según el ancho real del mapa (`clientWidth / uiScale`).
+- **Toque lento perdido** (`core/ui.js`): mantener pulsado 450 ms mostraba la ayuda y anulaba el toque; ahora son 600 ms.
+- **Service worker** (`sw.js`): al instalar una versión nueva descarga con `cache: 'reload'` (antes la caché HTTP podía colar archivos viejos en la caché nueva → juego con piezas de dos versiones).
+- **Nunca atascado en un piso**: `stuckPanel` (si un piso no sabe pintarse, «Seguir») y el encuentro especial sin regalos ofrece «Seguir». Si una pantalla falla al pintarse, el router ahora siempre avisa con el error (antes, si fallaba el propio mapa, se quedaba la pantalla vieja sin decir nada).
+- **Código repetido**: `closeRun()` y `clearNodeState(e)` en `systems/expedition.js` (estaban copiados 4 y 2 veces), `campHome()` en la hoguera (2 copias; ahora no abre dos confirmaciones con doble clic), `endHealBtn()` en el combate y `packOrder` en la preparación.
+- Comprobado con un bot que juega con clics reales y animaciones (escritorio y móvil táctil): ~240 clics, todos responden en < 250 ms, sin errores. Prueba: `juice` «v5.19.1».
+
+### Cambios de la v5.19 — sin alas dobles, accesorios que se adaptan, accesorios y colores nuevos
+
+- **Sin alas dobles** (`looks.draw`): si el daskai ya tiene alas propias (`winged` en la forma final, orejas `headwings` o brazos `wingarm`), las alas épicas de la regalía (3.ª/4.ª forma) no se dibujan (`ownWings`).
+- **Accesorios que se adaptan** (`finalSvg` → `finalRaw`): los sombreros (`crown`, `halo`, `tophat`, `wizard`, `beanie`, `goggles`, `cap`, `pirate`, `propeller`) se escalan con el ancho de la cabeza (`z = clamp(W/21, 0.72, 1.55)`). `edges(y)` calcula los bordes reales del cuerpo a partir de `P.pts` (cada cuerpo lo publica en `bo.pts`); los **auriculares** van de borde a borde a la altura de los ojos, el **collar** se queda bajo la boca y la **mochila** asoma por la espalda.
+- **Accesorios nuevos** (`FINALS9`, sólo aspectos NEW9): gorra, sombrero pirata, gorro de hélice (gira), collar, mochila y gafas. Textos en `look.final.*`.
+- **Colores nuevos** (`PAL9`): 8 tonos más por casa (perla, oro rosa, obsidiana, cobre, magenta, plata, arena…) y dos degradados nuevos (`side`, `belly`). Se tiran con `R12` al final de la secuencia NEW9, así que los daskai ya existentes no cambian.
+- Prueba: `juice` «v5.19».
+
+### Cambios de la v5.18 — atributos al estilo Pokémon, legendarios, restauradores y piezas nuevas
+
+- **Atributos** (`systems/daskai.js`, `config.statModel`):
+  - **Antes** el 80 % de los atributos venía de los puntos por nivel (~15 por nivel) y evolucionar apenas se notaba: a Nv. 100 se llegaba a ~1.850.
+  - **Ahora** cada forma tiene un **total de base** («BST», `tierTotal(d)`):
+    - `tiers[nº de formas][forma]`: 4 formas → 200/300/400/500 · 3 → 200/350/500 · 2 → 250/480 · 1 → 420;
+    - × la fuerza de la especie (`speciesFactor`: √(total ÷ mediana de su etapa), entre 0,88 y 1,12);
+    - repartido como su especie (`speciesShare`).
+  - Atributo = `(flat[0] + flat[1]·nivel + base × nivel × coef × potencial) × (1 + genes) × (1 + rasgo)` (`levelStat`).
+    - El **potencial** (como los IV, entre 0,72 y 1,32) sale de los puntos de crecimiento que ya se tiraban en cada nivel (naturaleza, ritmo y suerte), suavizado.
+    - `coef`: vida 0,0078 · maná 0,007 · resto 0,0182. `flat`: vida 62 + 1,9·Nv · maná 35 + 0,7·Nv · resto 8.
+    - Una forma final a Nv. 100 suma ~1.000–1.080 (vida ~410, maná ~180, el resto ~95–110 cada uno).
+  - **El daño no cambia**: solo depende de la relación ataque/defensa y la vida se mantuvo parecida, así que los combates duran lo mismo.
+  - **Rivales**: su total va con su nivel (`wildCurve`: 200 → 500 a Nv. 56).
+    - Los jefes, al menos `bossCurve`: de 230 a Nv. 1 hasta 520 a Nv. 50. Los legendarios, 600.
+    - Algo más duros: `wildStatMult` 0,95 y `enemyScale` 1,04 + 0,0036·Nv.
+  - El desglose (`breakdown`) muestra ahora «base» = la parte fija y «nivel» = base × nivel × potencial. Las barras usan nuevas referencias (110 / 180 / 380).
+  - `hpCap` = 90 + 3,6·Nv. La herencia de caídos pesa 0,45 en los atributos que no son vida ni maná.
+  - Las partidas guardadas se recalculan solas al cargar.
+- **Equipo**: `G.units` más bajos (vida 14, maná 11, ataques y defensas 2,4, velocidad 2). Sigue pesando mucho: en la simulación, ir equipado sube un 10–25 % las victorias.
+- **Legendarios** (`systems/legends.js`, `config.legends`):
+  - El 4 % de los jefes de mapa (nunca en cuevas secretas ni en el Abismo) son uno de 5 legendarios: astrelion, oceanyx, titanterra, volcanor y eclipsar.
+  - Tienen +3 niveles, total 600, el doble de monedas, botín extra y el título «Legendario: X».
+  - Desde la segunda victoria pueden querer unirse (`join[n]`: 50 % · 75 % · 100 %). Se pregunta en la pantalla de combate.
+  - Si aceptas, se une para siempre (`d.legendary`, una forma, se dibuja como cuando lo venciste). Si ya lo tienes, sale menos.
+  - Estado en `state.legends`.
+- **Objetos nuevos** (`data/items.json`, precios, tienda y recetas):
+  - Poción vital (50 % de vida) y Restaurador de vida (100 %);
+  - Éter vital (50 % de maná) y Éter total (100 %);
+  - Restaurador total (vida completa y cura cualquier estado);
+  - Bálsamo de vigor (30 % de vida y de maná).
+- **Piezas nuevas** (semillas NEW9, con un azar aparte `R12`):
+  - ojos `compound` y `ember`;
+  - bocas `maw` y `fishlips`;
+  - brazos `shieldarm` y `flamearm`;
+  - patas `pistons` (mecánicas) y `crystal` (de cristal, `crystallegs`);
+  - alas de la regalía `mecha` y `storm`.
+- Pruebas: v5.18 en `juice.test.js`; ajustadas las de crecimiento (≤ +7 por nivel) y la de partidas antiguas.
+
 ### Cambios de la v5.17.1 — transiciones de música más suaves
 
 - **Problema**: el fundido de la v5.17 bajaba el volumen del bus de la pista anterior, pero paraba su secuenciador al momento. Como casi todas sus notas son cortas (percusión, arpegios), la pista se cortaba en ~0,3 s aunque el volumen siguiera bajando. Las grabaciones lo confirmaban: se oía un bache de silencio.

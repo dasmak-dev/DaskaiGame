@@ -10,7 +10,8 @@
   DK.data.prices = {
     // Batalla
     pocion: 40, superpocion: 140, hiperpocion: 420, eter: 50, supereter: 170,
-    antidoto: 30, balsamo: 30, panacea: 160, elixir: 1500, cristal_vinculo: 120, cristal_mayor: 450,
+    antidoto: 30, balsamo: 30, panacea: 160, elixir: 1500,
+    pocion_media: 260, pocion_total: 700, eter_medio: 240, eter_total: 650, restaurador: 900, tonico_vigor: 200, // v5.18 cristal_vinculo: 120, cristal_mayor: 450,
     // Mejora
     baya_saber: 60, tonico_exp: 220, cristal_sabio: 800, esencia_ancestral: 2500, pluma_fenix: 1400,
     // Equipamiento (sólo venta, se consiguen fusionando o como botín)
@@ -34,6 +35,7 @@
   /** Lo que vende la tienda (el resto sólo se puede vender). */
   DK.data.shopStock = [
     'pocion', 'superpocion', 'hiperpocion', 'eter', 'supereter', 'antidoto', 'balsamo', 'panacea',
+    'pocion_media', 'eter_medio', 'tonico_vigor', 'pocion_total', 'eter_total', // v5.18
     'cristal_vinculo', 'cristal_mayor', 'baya_saber', 'tonico_exp',
     'piedra_transmutacion', 'piedra_alteracion', 'piedra_aumento', 'piedra_cambio', 'piedra_nucleo', 'piedra_purga', 'fragmento_forja',
     'pelaje', 'gota', 'hilo', 'fragmento_garra', 'escama', 'pluma', 'brasa', 'coral', 'polvo_brillante', 'piedra_runica', 'racion_viaje',

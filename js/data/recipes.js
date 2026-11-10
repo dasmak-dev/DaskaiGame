@@ -25,6 +25,13 @@
   def('supereter', 1, { eter: 3, polvo_brillante: 1, piedra_runica: 1 });
   def('pluma_fenix', 1, { pluma: 6, brasa: 4, lagrima_estelar: 1 });
   def('elixir', 1, { lagrima_estelar: 1, superpocion: 2 });
+  // v5.18: restauradores
+  def('pocion_media', 1, { superpocion: 1, polvo_brillante: 1 });
+  def('eter_medio', 1, { supereter: 1, polvo_brillante: 1 });
+  def('tonico_vigor', 1, { pocion: 1, eter: 1, hilo: 1 });
+  def('pocion_total', 1, { pocion_media: 2, nucleo_arcano: 1 });
+  def('eter_total', 1, { eter_medio: 2, nucleo_arcano: 1 });
+  def('restaurador', 1, { pocion_total: 1, panacea: 1 });
 
   // Mejora (experiencia)
   def('baya_saber', 2, { hilo: 1, polvo_brillante: 1 });

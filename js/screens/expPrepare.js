@@ -15,6 +15,8 @@
  * (DK.bag trabaja sobre e.pack). Capacidad: DK.expedition.packCapacity().
  * ============================================================= */
 (function () {
+  /** Orden de los objetos de la mochila: categoría, rareza y nombre. */
+  const packOrder = (a, b) => { const D = DK.data, cats = DK.config.expedition.packCategories; return cats.indexOf(D.items[a].category) - cats.indexOf(D.items[b].category) || D.rarities[D.items[a].rarity].order - D.rarities[D.items[b].rarity].order || D.items[a].name.localeCompare(D.items[b].name); };
   const { h, btn } = DK.ui;
   const D = DK.data, V = DK.views;
   const { t } = DK;
@@ -78,8 +80,7 @@
         DK.audio.sfx('select'); refresh();
       };
       /* ---------- Mochila (lista) ---------- */
-      const cats = DK.config.expedition.packCategories;
-      const order = (a, b) => cats.indexOf(D.items[a].category) - cats.indexOf(D.items[b].category) || D.rarities[D.items[a].rarity].order - D.rarities[D.items[b].rarity].order || D.items[a].name.localeCompare(D.items[b].name);
+      const cats = DK.config.expedition.packCategories, order = packOrder;
       /** Fila de objeto. where: 'pack' (con − cantidad +) o 'bag' (con disponibles y +). */
       const row = (id, where) => {
         const it = D.items[id];
@@ -168,8 +169,7 @@
             DK.audio.sfx(n > 0 ? 'select' : 'click'); draw(); onChange && onChange();
           };
           const setAll = (o) => { Object.keys(pack).forEach((k) => delete pack[k]); Object.assign(pack, o); DK.audio.sfx('select'); draw(); onChange && onChange(); };
-          const cats = DK.config.expedition.packCategories;
-          const order = (a, b) => cats.indexOf(D.items[a].category) - cats.indexOf(D.items[b].category) || D.rarities[D.items[a].rarity].order - D.rarities[D.items[b].rarity].order || D.items[a].name.localeCompare(D.items[b].name);
+          const cats = DK.config.expedition.packCategories, order = packOrder;
           // Huecos de la mochila: uno por unidad
           const units = Object.keys(pack).sort(order).flatMap((id) => Array(pack[id]).fill(id));
           const slots = h('div', { class: 'pm-slots', style: { '--n': cap } }, Array.from({ length: cap }, (_, i) => {

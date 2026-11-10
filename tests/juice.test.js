@@ -24,7 +24,7 @@ module.exports = {
         return { worst, hp40, multi, over };
       });
       console.log(`      subida máxima por nivel: +${r.worst} · vida/tope máximo: ${r.over.toFixed(2)}`);
-      check(r.worst <= 5, 'un nivel dio +' + r.worst);
+      check(r.worst <= 7, 'un nivel dio +' + r.worst); // v5.18: modelo nuevo (la vida sube hasta ~5-6 a nivel alto)
       check(r.over <= 1.0001, 'la vida pasa del tope (×' + r.over.toFixed(2) + ')');
       check(r.multi > 0, 'no se probaron subidas de varios niveles');
     }),
@@ -276,5 +276,97 @@ module.exports = {
       check(r.tracks, 'faltan pistas electrónicas');
       check(r.tw < 300, 'el aviso sigue siendo grande: ' + r.tw);
     }),
-  }],
+  }, {
+    name: 'v5.18: atributos por forma (≈200/300/400/500, ~1000 a Nv.100), legendarios que se unen, objetos y piezas nuevas',
+    views: ['desktop'],
+    run: (browser, view) => play(browser, view, async (p) => {
+      const r = await p.evaluate(() => {
+        const K = DK.data.statKeys, sum = (o) => K.reduce((a, k) => a + o[k], 0), out = {};
+        const d = DK.daskai.create('lumino', 1); d.forms = 4; d.form = 0; DK.party.add(d);
+        out.tiers = [0, 1, 2, 3].map((f) => { d.form = f; DK.daskai.touch(); return Math.round(K.reduce((a, k) => a + DK.daskai.baseOf(d, k), 0)); });
+        d.form = 3; DK.daskai.gainExp(d, 1e9); DK.daskai.touch(); out.lv = d.level; out.total100 = sum(DK.daskai.stats(d, []));
+        // legendario: fuerza el sorteo, vence dos veces y se une
+        DK.store.state.nextExpedition = { zone: 'pradera', seed: 'leg', size: 'small', kind: 'normal', mod: null }; DK.expedition.start({}); DK.curses.accept([]); DK.relics.choose(0);
+        DK.config.legends.join = [0, 0, 1]; DK.config.legends.list = [{ species: 'volcanor', key: 'volcanor' }];
+        const B = DK.battle; let offer = null, legSp = null;
+        for (let i = 0; i < 2; i++) { const st = B.start('pradera', DK.party.active()[0].uid, { boss: true, forceLegend: true }); legSp = st.legend; DK.legends.state(st.legend); st.enemy.cur.hp = 0; st.outcome = 'won'; const rw = B.rewards(st); offer = rw.legend; }
+        out.legend = { legSp, first: DK.legends.state(legSp).defeated, offer: offer && offer.offer };
+        const j = DK.legends.join(legSp, 20); out.joined = { leg: !!j.legendary, tier: DK.daskai.tierTotal(j), boss: !!DK.looks.of(j).boss };
+        out.items = ['pocion_total', 'eter_total', 'restaurador', 'pocion_media', 'eter_medio', 'tonico_vigor'].every((id) => DK.data.items[id]);
+        out.parts = ['compound', 'ember'].every((k) => DK.looks.allKeys('eyes').includes(k)) && ['maw', 'fishlips'].every((k) => DK.looks.allKeys('mouth').includes(k)) && ['shieldarm', 'flamearm'].every((k) => DK.looks.allKeys('arms').includes(k)) && ['pistons', 'crystal'].every((k) => DK.looks.allKeys('legs').includes(k));
+        return out;
+      });
+      check(r.tiers[0] > 170 && r.tiers[0] < 235 && r.tiers[3] > 440 && r.tiers[3] < 570 && r.tiers[1] < r.tiers[2], 'totales de base por forma: ' + r.tiers);
+      check(r.total100 > 900 && r.total100 < 1200, 'suma a Nv.100 (sin equipo): ' + r.total100);
+      check(r.legend.legSp && r.legend.first === 2 && r.legend.offer, 'legendario: ' + JSON.stringify(r.legend));
+      check(r.joined.leg && r.joined.tier === 600 && r.joined.boss, 'el legendario unido: ' + JSON.stringify(r.joined));
+      check(r.items, 'faltan objetos nuevos');
+      check(r.parts, 'faltan piezas nuevas');
+    }),
+    }, {
+    name: 'v5.19: sin alas dobles, accesorios que se adaptan al cuerpo, accesorios y colores nuevos',
+    views: ['desktop'],
+    run: (browser, view) => play(browser, view, async (p) => {
+      const r = await p.evaluate(() => {
+        const L = DK.looks, T = L.typical('lumino'), out = {}, norm = (x) => x.replace(/lk\d+/g, 'ID');
+        const base = Object.assign({}, T, { ears: 'cat', arms: 'none', winged: false, final: 'none' });
+        const reg = (w) => Object.assign({}, L.regalia(Object.assign({}, base, { _reg: null })), { wings: w, wings3: 'none' });
+        const d = (ind, w) => norm(L.draw(Object.assign({}, ind, { _reg: reg(w) }), 3, { final: true, tier: 4 }));
+        out.plainDiff = d(base, 'mecha') !== d(base, 'none'); // sin alas propias: sí lleva las épicas
+        out.headwings = d(Object.assign({}, base, { ears: 'headwings' }), 'mecha') === d(Object.assign({}, base, { ears: 'headwings' }), 'none');
+        out.wingarm = d(Object.assign({}, base, { arms: 'wingarm' }), 'storm') === d(Object.assign({}, base, { arms: 'wingarm' }), 'none');
+        out.finals = ['cap', 'pirate', 'propeller', 'necklace', 'backpack', 'glasses'].filter((k) => !L.allKeys('final').includes(k));
+        out.errs = 0; try { for (let i = 1; i < 400; i++) L.draw(L.roll(['luz', 'fuego', 'agua', 'tierra', 'oscuridad'][i % 5], ((i * 40503) << 8 | 0xab) >>> 0), 3, { final: true, tier: i % 5 }); } catch (e) { out.errs = String(e); }
+        return out;
+      });
+      check(r.plainDiff, 'sin alas propias deberían verse las alas épicas');
+      check(r.headwings && r.wingarm, 'con alas propias no deben superponerse otras: ' + JSON.stringify(r));
+      check(!r.finals.length, 'faltan accesorios: ' + r.finals);
+      check(r.errs === 0, 'error dibujando aspectos nuevos: ' + r.errs);
+    }),
+  }, {
+    name: 'v5.19.1: nodos del mapa sin solaparse en el móvil, pisos que nunca te dejan atascado',
+    views: ['desktop', 'mobile'],
+    run: (browser, view) => play(browser, view, async (p) => {
+      let worst = 0;
+      for (let s = 0; s < 6; s++) {
+        const c = await p.evaluate((s) => {
+          DK.store.state.nextExpedition = { zone: 'pradera', seed: 'ov' + s, size: ['small', 'medium', 'xl'][s % 3], kind: 'normal', mod: null };
+          DK.expedition.start({}); const e = DK.expedition.active(); e.curseOffer = null; e.relicChoice = null; e.introShown = `1|${e.seed}`; e.flyShown = `1|${e.seed}`;
+          DK.router.reset('expedition');
+          const ns = [...document.querySelectorAll('.exp-map-card .exp-node')].map((n) => n.getBoundingClientRect()); let n = 0;
+          for (let i = 0; i < ns.length; i++) for (let j = i + 1; j < ns.length; j++) { const a = ns[i], b = ns[j]; if (Math.min(a.right, b.right) - Math.max(a.left, b.left) > 2 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 2) n++; }
+          return n;
+        }, s);
+        worst = Math.max(worst, c);
+      }
+      check(worst === 0, 'nodos solapados en el mapa: ' + worst);
+      // un encuentro especial sin regalos (partida antigua) ofrece «Seguir»
+      const r = await p.evaluate(() => { const e = DK.expedition.active(); const n = e.map.rows[1][0]; n.type = 'event'; n.special = 'rare'; e.pending = n.id; e.result = null; e.event = 'special'; e.giftChoice = []; DK.router.refresh(); return !!document.querySelector('.exp-cont'); });
+      check(r, 'el encuentro sin regalos no deja seguir');
+    }),
+  }, {
+    name: 'v5.19.1: cambiar de música en mitad de un fundido no rompe nada (regla estricta de Firefox)',
+    views: ['desktop'],
+    run: (browser, view) => play(browser, view, async (p) => {
+      await p.mouse.click(3, 3);
+      const r = await p.evaluate(async () => {
+        // Firefox no deja añadir eventos dentro de una curva ya programada (aquí se emula en Chromium)
+
+  const P = AudioParam.prototype, K = '__curves';
+  const curves = (p) => (p[K] = p[K] || []);
+  const check = (p, t) => { for (const c of curves(p)) if (t > c.s && t < c.s + c.d) throw new DOMException("AudioParam.setValueAtTime: Can't add events during a curve event", 'NotSupportedError'); };
+  for (const m of ['setValueAtTime', 'linearRampToValueAtTime', 'exponentialRampToValueAtTime', 'setTargetAtTime']) { const o = P[m]; P[m] = function (v, t, ...r) { check(this, t); return o.call(this, v, t, ...r); }; }
+  const oc = P.setValueCurveAtTime; P.setValueCurveAtTime = function (v, t, d) { check(this, t); curves(this).push({ s: t, d }); return oc.call(this, v, t, d); };
+  const ocs = P.cancelScheduledValues; P.cancelScheduledValues = function (t) { this[K] = curves(this).filter((c) => c.s < t); return ocs.call(this, t); };
+  delete P.cancelAndHoldAtTime; // Firefox no lo tiene
+
+        DK.settings.set('muted', false); DK.settings.set('musicVol', 0.5);
+        const S = (ms) => new Promise((res) => setTimeout(res, ms)), errs = [];
+        for (const tr of ['menu', 'mystery', 'boss', 'menu', 'danger', 'horde', 'menu']) { try { DK.audio.music(tr); } catch (e) { errs.push(e.message); } await S(700); }
+        return { errs, playing: DK.audio.playing(), ctx: DK.audio.playing() !== null };
+      });
+      check(!r.errs.length, 'la música lanzó: ' + r.errs.join(' · '));
+    }),
+}],
 };

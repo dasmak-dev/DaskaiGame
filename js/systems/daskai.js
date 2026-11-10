@@ -37,6 +37,37 @@
     return U.clamp(1 + spBias + pasBias, B.min, B.max);
   }
 
+  /* v5.18: reparto de la especie (qué parte del total va a cada atributo) y su «fuerza» respecto a las de su etapa */
+  const shareCache = {}, factorCache = {};
+  function speciesShare(sid) {
+    if (shareCache[sid]) return shareCache[sid];
+    const b = D.species[sid].base, tot = KEYS().reduce((a, k) => a + (b[k] || 0), 0) || 1, out = {};
+    KEYS().forEach((k) => (out[k] = (b[k] || 0) / tot));
+    return (shareCache[sid] = out);
+  }
+  function speciesFactor(sid) {
+    if (factorCache[sid] != null) return factorCache[sid];
+    const tot = (x) => KEYS().reduce((a, k) => a + (D.species[x].base[k] || 0), 0), evo = !!D.species[sid].evolvedFrom;
+    const same = Object.keys(D.species).filter((x) => !!D.species[x].evolvedFrom === evo).map(tot).sort((a, b) => a - b);
+    const med = same[same.length >> 1] || tot(sid);
+    return (factorCache[sid] = U.clamp(Math.sqrt(tot(sid) / med), 0.88, 1.12));
+  }
+  /**
+   * v5.18: potencial de un atributo (como los IV de Pokémon): sale de cómo ha ido creciendo al subir de nivel
+   * (naturaleza, ritmo de su especie y pasivas, y la suerte de cada subida), suavizado. ~0,75 – 1,3.
+   */
+  function potential(d, k) {
+    const n = Math.max(0, (d.level || 1) - 1), g = (d.growth[k] || 0) - ((d.evoBonus && d.evoBonus[k]) || 0);
+    return U.clamp((g + 2 * 6) / (2 * n + 12), 0.72, 1.32);
+  }
+  /** v5.18: atributo «propio» por nivel: fijo + base × nivel × coeficiente × potencial (config.statModel). */
+  function levelStat(d, k) {
+    const M = DK.config.statModel, L = d.level || 1, c = M.coef[k] != null ? M.coef[k] : M.coef.other, fl = M.flat[k] || M.flat.other;
+    // genes y rasgo multiplican todo el atributo (así se notan también a nivel bajo)
+    const ind = (1 + ((d.genes && d.genes[k]) || 0)) * (1 + ((api.roleOf(d).mods || {})[k] || 0));
+    return (fl[0] + fl[1] * L + api.tierTotal(d) * speciesShare(d.species)[k] * L * c * potential(d, k)) * ind;
+  }
+
   /**
    * Puntos de una subida de nivel.
    * @returns {{total:Object, nature:Object}} total = nivel + naturaleza; nature = parte de la naturaleza
@@ -191,9 +222,25 @@
     hasRole(d) { return api.roleOf(d).id !== 'equilibrado'; },
     /** Atributo base de ESTE daskai: el de su especie con sus genes y su rasgo. */
     baseOf(d, k) {
-      const b = D.species[d.species].base[k];
+      // v5.18: base «al estilo Pokémon»: el total de su forma (config.statModel.tiers) repartido como su especie
       const role = (api.roleOf(d).mods || {})[k] || 0;
-      return Math.max(1, Math.round(b * api.formMult(d) * (1 + ((d.genes && d.genes[k]) || 0)) * (1 + role)));
+      return Math.max(1, Math.round(api.tierTotal(d) * speciesShare(d.species)[k] * (1 + ((d.genes && d.genes[k]) || 0)) * (1 + role)));
+    },
+    /**
+     * v5.18: total de atributos base de este daskai (como el «BST» de Pokémon): depende de su forma
+     * (1.ª ≈ 200, intermedias ≈ 300–400, final ≈ 500; de una sola forma ≈ 450), de su especie (las fuertes
+     * un poco más: ±12 %) y de si es jefe (≥ 520) o legendario (600).
+     */
+    tierTotal(d) {
+      const M = DK.config.statModel, f = api.formsOf(d), row = M.tiers[Math.max(1, Math.min(4, f.total))] || M.tiers[4];
+      let T = row[Math.min(f.now, row.length - 1)] * speciesFactor(d.species);
+      // Rivales: su total va con su nivel (como si hubieran evolucionado a su ritmo): un salvaje de una sola forma
+      // a nivel 5 no tiene los 420 de una forma final. Los jefes, al menos lo de su nivel (≈330 al principio → 520).
+      const L = d.level || 1, byLevel = M.wildCurve[0] + (M.wildCurve[1] - M.wildCurve[0]) * Math.min(1, L / M.wildCurve[2]);
+      if (d.wild || d.boss) T = Math.min(T, byLevel);
+      if (d.boss) T = Math.max(T, M.bossCurve[0] + (M.boss - M.bossCurve[0]) * Math.min(1, L / M.bossCurve[1]));
+      if (d.legendary) T = M.legendary;
+      return T;
     },
 
     /* ---------- Formas (v4.51) ----------
@@ -408,7 +455,7 @@
       return Object.assign({}, val);
     },
     /** Vacía la caché de atributos. */
-    clearStatCache() { statCache = new WeakMap(); rev++; },
+    clearStatCache() { statCache = new WeakMap(); rev++; Object.keys(shareCache).forEach((x) => delete shareCache[x]); Object.keys(factorCache).forEach((x) => delete factorCache[x]); },
   };
 
   /*
@@ -442,7 +489,9 @@
         // Base de la especie + crecimiento por niveles + equipo + herencia de caídos (d.legacy)
         // + tónicos y entrenamiento (mejoras permanentes, ver api.permBonus)
         const m = (1 + (pas.mods[k] || 0)) * api.mult(d, k);
-        let own = (api.baseOf(d, k) + d.growth[k] + ((d.legacy && d.legacy[k]) || 0) + api.permBonus(d, k)) * m;
+        // v5.18: base × nivel al estilo Pokémon (levelStat) + herencia de caídos (más modesta) + tónicos/entrenamiento
+        const leg = ((d.legacy && d.legacy[k]) || 0) * (k === 'hp' || k === 'mp' ? 1 : DK.config.statModel.legacyMult);
+        let own = (levelStat(d, k) + leg + api.permBonus(d, k)) * m;
         // v5.4: la vida propia de tus daskai (sin contar el equipo) tiene un techo por nivel (config.hpCap):
         // Nv. 10 → 150 · Nv. 40 → 300 · Nv. 100 → 600
         if (k === 'hp' && !d.wild && !d.boss && DK.config.hpCap) own = Math.min(own, DK.config.hpCap.base + DK.config.hpCap.perLevel * (d.level || 1));
@@ -512,9 +561,11 @@
       const equip = api.equipBonus(d)[k] || 0;
       const total = api.stats(d)[k];
       const perm = api.permBonus(d, k), evo = (d.evoBonus && d.evoBonus[k]) || 0;
-      const flat = api.baseOf(d, k) + d.growth[k] + equip + perm;
+      // v5.18: «base» = la parte fija; «nivel» = base de su forma × nivel × potencial (lo que más pesa)
+      const M = DK.config.statModel, fl = M.flat[k] || M.flat.other, fixed = Math.round(fl[0] + fl[1] * (d.level || 1)), lvPart = Math.round(levelStat(d, k)) - fixed;
+      const flat = fixed + lvPart + equip + perm;
       return {
-        base: api.baseOf(d, k), gene: (d.genes && d.genes[k]) || 0, trait: (api.roleOf(d).mods || {})[k] || 0, level: d.growth[k] - nature - evo, nature, natureEffect: D.natureEffect(d.nature, k), evo,
+        base: fixed, gene: (d.genes && d.genes[k]) || 0, trait: (api.roleOf(d).mods || {})[k] || 0, level: lvPart, nature: 0, natureEffect: D.natureEffect(d.nature, k), evo: 0, tierBase: api.baseOf(d, k), potential: potential(d, k),
         perm, tonic: ((d.tonics && d.tonics[k]) || 0) * DK.config.tonic.per[k], trained: (d.trained && d.trained[k]) || 0,
         equip, passivePct: pas.mods[k] || 0, bonus: total - flat, total, rate: api.growthRate(d, k),
       };

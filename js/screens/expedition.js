@@ -20,7 +20,7 @@
   V.sizeChip = (size, { big = false } = {}) => {
     size = size || 'small';
     if (size === 'abyss') return null; // v5.1: el Abismo no tiene tamaño (es una serie de jefes)
-    const sz = DK.config.expedition.sizes[size];
+    const sz = DK.config.expedition.sizes[size] || { icon: 'map' };
     return h('span', { class: 'chip size-chip s-' + size + (big ? ' big' : ''), tip: t('size.' + size + '.desc', { n: E().sizeFloors(size) }) },
       DK.icon(sz.icon, big ? 16 : 13), t('size.label', { name: t('size.' + size + '.name'), n: E().sizeFloors(size) }));
   };
@@ -294,7 +294,22 @@
     const here = e.pending ? +e.pending.split('-')[0] : e.pos ? +e.pos.split('-')[0] : -1;
     const fogged = (n) => !!(md && md.fog && !readonly && n.type !== 'boss' && n.row > here + md.fog);
     // Separa los nodos hacia los lados (los mapas se generan entre 0.2 y 0.8)
-    const xOf = (n) => Math.min(0.95, Math.max(0.05, 0.5 + (n.x - 0.5) * 1.45));
+    const xRaw = (n) => Math.min(0.95, Math.max(0.05, 0.5 + (n.x - 0.5) * 1.45));
+    // v5.19.1: en pantallas estrechas los nodos de un mismo piso se pisaban (uno bloqueado encima de uno abierto
+    // se «comía» el toque). Se separan lo justo para que quepan: un nodo de ancho y un margen.
+    const zoom = Number(DK.settings.get('uiScale')) || 1;
+    const mapW = Math.max(200, Math.min(1100, (document.documentElement.clientWidth || 1024) / zoom - 62));
+    const nodeW = compact ? 40 : mapW < 640 ? 54 : 62;
+    const xFix = new Map();
+    rows.forEach((row) => {
+      const list = row.map((n) => ({ n, x: xRaw(n) })).sort((a, b) => a.x - b.x), k = list.length;
+      if (k < 2) { list.forEach((o) => xFix.set(o.n.id, o.x)); return; }
+      const lo = 0.05, hi = 0.95, gap = Math.min((nodeW + 6) / mapW, (hi - lo) / (k - 1));
+      for (let i = 1; i < k; i++) list[i].x = Math.max(list[i].x, list[i - 1].x + gap);
+      if (list[k - 1].x > hi) { list[k - 1].x = hi; for (let i = k - 2; i >= 0; i--) list[i].x = Math.min(list[i].x, list[i + 1].x - gap); }
+      list.forEach((o) => xFix.set(o.n.id, Math.max(lo, o.x)));
+    });
+    const xOf = (n) => (xFix.has(n.id) ? xFix.get(n.id) : xRaw(n));
     const all = rows.flat();
     const byId = Object.fromEntries(all.map((n) => [n.id, n]));
 
@@ -583,6 +598,8 @@
         h('div', { class: 'gift-row' }, giftCard(e.giftTaken, true)), cont(refresh));
     }
     const choose = (id) => { if (E().takeGift(id)) { DK.audio.sfx('achievement'); DK.app.renderNav(); refresh(); } };
+    // (partida antigua o sin regalos que ofrecer: nunca te quedas atascado en el piso)
+    if (!(e.giftChoice || []).length) { enterContFor(refresh); return stage({ npc, role: o.role, title: o.title, text: o.text, special: true }, cont(refresh)); }
     (e.giftChoice || []).forEach((id, i) => DK.keys.on(String(i + 1), () => choose(id)));
     return stage({ npc, role: o.role, title: o.title, text: o.text, special: true },
       h('div', { class: 'gift-row' }, (e.giftChoice || []).map((id, i) => giftCard(id, false, () => choose(id), i + 1))));
@@ -601,6 +618,27 @@
   function expTrack() {
     const e = E().active(), pn = e && E().pendingNode();
     return pn && (pn.type === 'event' || pn.type === 'shrine') && !e.result ? 'mystery' : DK.audio.zoneTrack();
+  }
+
+  /** Volver a casa desde la hoguera (la mitad del botín y TODOS los reclutas). Una sola vez aunque se pulse dos veces. */
+  let campAsking = false;
+  async function campHome() {
+    if (campAsking || !E().canCampfireExit()) return;
+    const pv = E().campfirePreview();
+    const text = t('exp.campExitText', { pct: pv.pct, coins: pv.coins, items: pv.items }) + (pv.recruits.length ? ' ' + t('exp.campExitRecruits', { names: pv.recruits.join(', ') }) : '');
+    campAsking = true;
+    try { if (!(await DK.ui.confirm(t('exp.campExitQ'), text, { okLabel: t('exp.campExit'), okIcon: 'home', icon: 'campfire' }))) return; } finally { campAsking = false; }
+    if (!E().active()) return;
+    const r = E().campfireExit();
+    DK.ui.toast(t('exp.campExited', { coins: r.coins }), { icon: 'campfire', kind: 'good' });
+    DK.router.reset('expSummary');
+  }
+
+  /** v5.19.1: red de seguridad: si un piso no sabe pintarse (datos de una versión vieja), al menos se puede seguir. */
+  function stuckPanel(refresh) {
+    console.warn('Piso sin panel: se ofrece «Continuar»', E().pendingNode());
+    enterContFor(refresh);
+    return h('div', { class: 'card stack-s' }, cont(refresh));
   }
 
   function nodePanel(n, refresh) {
@@ -654,10 +692,7 @@
         enterCont();
         const pv0 = E().campfirePreview();
         return h('div', { class: 'card stack-s' }, head('rest', t('exp.node.rest')), done(e.result.key, e.result.vars),
-          E().canCampfireExit() ? btn({ icon: 'home', label: t('exp.campExit'), desc: t('exp.campExitDesc', { pct: pv0.pct, coins: pv0.coins }), variant: 'ghost', onClick: async () => {
-            if (!(await DK.ui.confirm(t('exp.campExitQ'), t('exp.campExitText', { pct: pv0.pct, coins: pv0.coins, items: pv0.items }) + (pv0.recruits.length ? ' ' + t('exp.campExitRecruits', { names: pv0.recruits.join(', ') }) : ''), { okLabel: t('exp.campExit'), okIcon: 'home', icon: 'campfire' }))) return;
-            const r = E().campfireExit(); DK.ui.toast(t('exp.campExited', { coins: r.coins }), { icon: 'campfire', kind: 'good' }); DK.router.reset('expSummary');
-          } }) : null);
+          E().canCampfireExit() ? btn({ icon: 'home', label: t('exp.campExit'), desc: t('exp.campExitDesc', { pct: pv0.pct, coins: pv0.coins }), variant: 'ghost', onClick: campHome }) : null);
       }
       const team = DK.party.active();
       if (!e.trainUid || !team.some((d) => d.uid === e.trainUid)) e.trainUid = (fighter() || team[0]).uid;
@@ -674,15 +709,7 @@
       };
       DK.keys.on('1', rest); DK.keys.on('2', train);
       // Volver a casa desde la hoguera: la mitad del botín y TODOS los daskai reclutados
-      const pv = E().campfirePreview();
-      const goHome = async () => {
-        if (!E().canCampfireExit()) return;
-        const text = t('exp.campExitText', { pct: pv.pct, coins: pv.coins, items: pv.items }) + (pv.recruits.length ? ' ' + t('exp.campExitRecruits', { names: pv.recruits.join(', ') }) : '');
-        if (!(await DK.ui.confirm(t('exp.campExitQ'), text, { okLabel: t('exp.campExit'), okIcon: 'home', icon: 'campfire' }))) return;
-        const r = E().campfireExit();
-        DK.ui.toast(t('exp.campExited', { coins: r.coins }), { icon: 'campfire', kind: 'good' });
-        DK.router.reset('expSummary');
-      };
+      const pv = E().campfirePreview(), goHome = campHome;
       if (E().canCampfireExit()) DK.keys.on('3', goHome);
       const exitBox = E().canCampfireExit()
         ? h('div', { class: 'camp-exit' },
@@ -1231,7 +1258,7 @@
       const pend = E().pendingNode();
       // Vista centrada: mientras eliges una reliquia o estás en un nodo sin combate
       // (mercader, suceso, descanso, cofre, reclutas) el mapa se oculta.
-      const focus = e.awaitingChoice ? choicePanel(refresh) : e.curseOffer ? cursePanel(e, params, refresh) : (e.relicChoice && e.relicChoice.length) ? relicPanel(e, refresh) : pend && !E().TYPES[pend.type].battle ? nodePanel(pend, refresh) : null;
+      const focus = e.awaitingChoice ? choicePanel(refresh) : e.curseOffer ? cursePanel(e, params, refresh) : (e.relicChoice && e.relicChoice.length) ? relicPanel(e, refresh) : pend && !E().TYPES[pend.type].battle ? (nodePanel(pend, refresh) || stuckPanel(refresh)) : null;
       if (focus) {
         setTimeout(() => window.scrollTo({ top: 0 }), 0);
         const zone = D.zones[e.zone];

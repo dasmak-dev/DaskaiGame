@@ -36,7 +36,7 @@ const ko = (name, e) => { failed++; console.log(`  ✗ ${name}\n      ${String(e
     console.log('\n⚠ Falta Playwright para las pruebas en el navegador: npm install && npx playwright install chromium');
     process.exit(failed ? 1 : 0);
   }
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] });
   const files = fs.readdirSync(__dirname).filter((f) => f.endsWith('.test.js') && f.includes(filter)).sort();
   for (const f of files) {
     const test = require(path.join(__dirname, f));

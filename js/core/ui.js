@@ -609,7 +609,7 @@
     if (tipEl && tipEl.classList.contains('show') && (!tgt || tgt !== touchTip)) { hideTip(); touchTip = null; }
     if (!tgt || tgt.closest('[data-ctx]')) return;
     const tch = e.touches[0]; touchXY = [tch.clientX, tch.clientY]; longTipped = null;
-    if (tgt.closest(INTERACTIVE)) tipTimer = setTimeout(() => { longTipped = tgt; touchTip = tgt; showTip(tgt, true); DK.vibrate && DK.vibrate(15); }, 450);
+    if (tgt.closest(INTERACTIVE)) tipTimer = setTimeout(() => { longTipped = tgt; touchTip = tgt; showTip(tgt, true); DK.vibrate && DK.vibrate(15); }, 600); // v5.19.1: 450 → 600 ms (un toque algo lento ya no se pierde)
   }, { passive: true });
   document.addEventListener('touchmove', (e) => {
     if (!touchXY) return; const tch = e.touches[0];

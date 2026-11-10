@@ -6,7 +6,7 @@
  * sube el número de CACHE para que los jugadores reciban la versión
  * nueva. (Sólo funciona servido por http/https, no con file://).
  * ============================================================= */
-const CACHE = 'daskai-v5.17.1';
+const CACHE = 'daskai-v5.19.2';
 const FILES = [
     './',
     './css/cursor.css',
@@ -113,6 +113,7 @@ const FILES = [
     './js/screens/zones.js',
     './js/systems/audio.js',
     './js/systems/battle.js',
+    './js/systems/legends.js',
     './js/systems/daskai.js',
     './js/systems/boxes.js',
     './js/systems/rules.js',
@@ -134,7 +135,9 @@ const FILES = [
 ];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting()));
+  // v5.19.1: cache 'reload' = siempre del servidor (si no, la caché HTTP del navegador podía colar archivos de la
+  // versión anterior en la caché nueva y el juego quedaba con piezas de dos versiones mezcladas)
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES.map((f) => new Request(f, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (e) => {

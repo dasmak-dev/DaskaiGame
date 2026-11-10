@@ -227,7 +227,24 @@
   const FIGHT_RE = /^(boss|danger|elite|boss_rage|boss_secret|boss_synth|boss_synth_rage|horde)$|:fight$/;
   /** Curva de igual potencia (de 0 a 1 o de 1 a 0) para setValueCurveAtTime. */
   const eqCurve = (up, from = 1) => { const n = 64, c = new Float32Array(n); for (let i = 0; i < n; i++) { const x = i / (n - 1); c[i] = Math.max(0.0001, from * (up ? Math.sin(x * Math.PI / 2) : Math.cos(x * Math.PI / 2))); } return c; };
-  function startTrack(name) {
+  /**
+   * v5.19.1: el fundido de igual potencia como 12 rampas lineales en vez de setValueCurveAtTime. Una curva no se
+   * puede interrumpir (cancelScheduledValues no la borra si ya empezó y setValueAtTime lanzaba «Can't add events
+   * during a curve event» al cambiar de pista durante un fundido → la pantalla no se podía abrir). Las rampas sí.
+   */
+  function eqRamp(param, up, from, start, dur) {
+    const c = eqCurve(up, from), n = 12;
+    for (let i = 1; i <= n; i++) param.linearRampToValueAtTime(c[Math.round(i / n * (c.length - 1))], start + dur * i / n);
+  }
+  /** Para un parámetro donde esté ahora (cancelAndHold si existe; si no, su valor actual). */
+  function holdAt(param, t) {
+    const v = Math.max(0.0001, param.value);
+    try { if (param.cancelAndHoldAtTime) { param.cancelAndHoldAtTime(t); return v; } } catch (e) { /* sigue abajo */ }
+    param.cancelScheduledValues(t); param.setValueAtTime(v, t); return v;
+  }
+  /** v5.19.1: la música nunca rompe una pantalla: cualquier fallo de Web Audio se queda aquí. */
+  function startTrack(name) { try { startTrackRaw(name); } catch (e) { console.warn('Música:', e); } }
+  function startTrackRaw(name) {
     const prev = seq;
     const tr = trackOf(name);
     const fightish = (n) => FIGHT_RE.test(n || '');
@@ -246,7 +263,7 @@
     // La nueva entra un poco después de que la vieja empiece a irse (se solapan, sin hueco ni choque)
     const t0 = ctx.currentTime, lead = swap ? 0.1 + 3 * eighth : prev ? Math.min(1.2, fadeOut * 0.35) : recent ? 0.3 : 0.1;
     bus.gain.setValueAtTime(0.0001, t0);
-    bus.gain.setValueCurveAtTime(eqCurve(true), t0 + lead * 0.6, fadeIn);
+    bus.gain.setValueAtTime(0.0001, t0 + lead * 0.6); eqRamp(bus.gain, true, 1, t0 + lead * 0.6, fadeIn);
     filt.frequency.setValueAtTime(swap ? 2500 : 450, t0);
     filt.frequency.setValueAtTime(swap ? 2500 : 450, t0 + lead * 0.6);
     filt.frequency.exponentialRampToValueAtTime(18000, t0 + lead * 0.6 + fadeIn * 1.1);
@@ -260,19 +277,22 @@
     }, 90);
   }
   /** Para la pista: con fade (segundos) se va apagando y su filtro se cierra (las notas programadas se desvanecen). */
-  function stopTrack(fade = 0) {
+  function stopTrack(fade = 0) { try { stopTrackRaw(fade); } catch (e) { console.warn('Música:', e); seq = null; } }
+  function stopTrackRaw(fade = 0) {
     if (!seq) return;
     const old = seq, { bus, filt } = old; seq = null;
     if (!bus || !ctx || !(fade > 0)) clearInterval(old.timer);
     else setTimeout(() => clearInterval(old.timer), fade * 1000); // sigue tocando (cada vez más bajo) hasta apagarse
     if (!bus || !ctx) return;
-    const t0 = ctx.currentTime, g = bus.gain, v = Math.max(0.0001, g.value);
+    const t0 = ctx.currentTime, g = bus.gain;
     lastStop = t0;
-    g.cancelScheduledValues(t0); g.setValueAtTime(v, t0);
-    if (fade > 0) {
-      g.setValueCurveAtTime(eqCurve(false, v), t0 + 0.01, fade);
-      if (filt) { filt.frequency.cancelScheduledValues(t0); filt.frequency.setValueAtTime(Math.max(500, filt.frequency.value), t0); filt.frequency.exponentialRampToValueAtTime(320, t0 + fade); }
-    } else g.setValueAtTime(0.0001, t0);
+    try {
+      const v = holdAt(g, t0);
+      if (fade > 0) {
+        eqRamp(g, false, v, t0, fade);
+        if (filt) { const fv = holdAt(filt.frequency, t0); filt.frequency.exponentialRampToValueAtTime(Math.min(fv, 320), t0 + fade); }
+      } else g.linearRampToValueAtTime(0.0001, t0 + 0.03);
+    } catch (e) { try { g.value = 0.0001; } catch (e2) { /* */ } } // la música nunca debe romper nada
     setTimeout(() => { try { bus.disconnect(); if (filt) filt.disconnect(); } catch (e) { /* ya desconectado */ } }, (fade + 0.8) * 1000);
   }
 
