@@ -368,5 +368,39 @@ module.exports = {
       });
       check(!r.errs.length, 'la música lanzó: ' + r.errs.join(' · '));
     }),
+  }, {
+    name: 'v5.20: fondos en pixel art, marcos por grupos y tarjeta de perfil personalizable',
+    views: ['desktop'],
+    run: (browser, view) => play(browser, view, async (p) => {
+      const S = (ms) => new Promise((r) => setTimeout(r, ms));
+      // Fondos: con pixel art la escena es una imagen; sin él, el SVG de siempre
+      const px = {};
+      for (const on of [true, false]) {
+        await p.evaluate((on) => { DK.settings.set('pixelArt', on); const z = DK.data.zones[Object.keys(DK.data.zones)[0]]; document.querySelector('#app, body').append(Object.assign(document.createElement('div'), { id: 'pxtest' })); document.getElementById('pxtest').append(DK.scenes.render(z.scene, z.colors), DK.ambient.page(z.scene)); }, on);
+        await S(900);
+        px[on] = await p.evaluate(() => { const r = { img: document.querySelectorAll('#pxtest img.px-layer').length, svg: document.querySelectorAll('#pxtest svg').length, attr: document.documentElement.dataset.px }; document.getElementById('pxtest').remove(); return r; });
+      }
+      check(px.true.img >= 3 && px.true.svg === 0 && px.true.attr === 'on', 'con pixel art el fondo debería ser imagen: ' + JSON.stringify(px.true));
+      check(px.false.img === 0 && px.false.svg >= 3 && px.false.attr === 'off', 'sin pixel art el fondo es SVG: ' + JSON.stringify(px.false));
+      // Marcos: todos con su CSS y su nombre, en grupos; los básicos siempre están
+      const fr = await p.evaluate(() => { const all = DK.avatars.frames(); return { n: all.length, noCss: all.filter((f) => !f.css || !f.group).map((f) => f.id), basicLocked: DK.avatars.framesOf('basic').filter((f) => !f.unlocked).length, names: all.filter((f) => /^profile\.|^pass\./.test(DK.avatars.frameName(f))).map((f) => f.id), feats: DK.avatars.framesOf('feat').length }; });
+      check(fr.n >= 30 && !fr.noCss.length && !fr.basicLocked && fr.feats >= 8, 'marcos: ' + JSON.stringify(fr));
+      check(!fr.names.length, 'marcos sin nombre: ' + fr.names);
+      // Tarjeta: todas las combinaciones de tema se dibujan; opciones raras se corrigen
+      const card = await p.evaluate(async () => {
+        const out = [], SC = DK.shareCard;
+        for (const th of Object.keys(SC.THEMES)) { const c = await SC.render({ theme: th, pattern: 'stars', border: 'gold', show: 'team', stats: Object.keys(SC.STATS).slice(0, 6) }); out.push(c.width + 'x' + c.height); }
+        DK.store.state.player.card = { theme: 'nope', stats: ['x', 'battles'] };
+        const o = SC.options();
+        return { sizes: [...new Set(out)], theme: o.theme, stats: o.stats };
+      });
+      check(card.sizes.length === 1 && card.sizes[0] === '1200x630', 'tarjeta: ' + JSON.stringify(card));
+      check(card.theme === 'night' && card.stats.join() === 'battles', 'opciones de la tarjeta sin corregir: ' + JSON.stringify(card));
+      // El editor del perfil abre sus tres pestañas
+      for (const tab of ['pic', 'frame', 'card']) {
+        await p.evaluate((tab) => DK.router.reset('profile', { edit: true, edTab: tab }), tab); await S(400);
+        check(await p.evaluate(() => !!document.querySelector('.profile-editor')), 'no se abre la pestaña ' + tab);
+      }
+    }),
 }],
 };

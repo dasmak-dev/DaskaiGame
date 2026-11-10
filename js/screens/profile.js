@@ -8,7 +8,7 @@
  *  - Gráficos: últimos combates, resultados, victorias por casa y por zona.
  *  - Estadísticas detalladas, daskai más usados y últimos logros.
  *
- * params: { edit: bool, avTab: 'daskai'|'icon'|'image' }
+ * params: { edit: bool, edTab: 'pic'|'frame'|'card', avTab: 'daskai'|'icon'|'image' }
  * Las estadísticas se registran en systems/progress.js (evento battle:end).
  * ============================================================= */
 (function () {
@@ -70,6 +70,7 @@
             Object.assign(DK.ui.select({ label: t('profile.title'), value: p.title || '', onChange: (v) => { p.title = v || null; save(); refresh(); },
               options: DK.avatars.titles().map((x) => ({ value: x.id || '', label: x.label, icon: 'award' })) }), { className: 'dd dd-inline ph-title-select' })),
           nameInput,
+          p.motto ? h('div', { class: 'ph-motto' }, '«' + p.motto + '»') : null,
           h('div', { class: 'ph-meta' },
             h('span', null, DK.icon('clock', 12), DK.util.duration(s.playTime)),
             h('span', null, DK.icon('flag', 12), t('profile.since', { date: new Date(st.created || Date.now()).toLocaleDateString(DK.i18n.lang) })),
@@ -85,12 +86,17 @@
         head('crown', num(s.bossesDefeated), t('pstats.bosses'))));
   }
 
-  /** Editor de foto y marco (dentro de la pantalla, sin ventana). */
+  /**
+   * v5.20: editor del perfil en tres pestañas (dentro de la pantalla, sin ventana):
+   *   Foto (daskai · icono con su fondo · imagen propia) · Marco (por grupos) · Tarjeta (para compartir, con vista previa)
+   */
   function editor(params, refresh) {
     const p = DK.store.state.player;
-    const set = (av) => { p.avatar = av; DK.store.save(); DK.app.renderNav(); DK.audio.sfx('select'); refresh(); };
+    const saveP = () => { DK.store.save(); DK.app.renderNav(); };
+    const set = (av) => { p.avatar = av; saveP(); DK.audio.sfx('select'); refresh(); };
     const isSel = (av) => JSON.stringify(av) === JSON.stringify(p.avatar);
     const opt = (av, content, tip) => h('button', { class: 'avatar-opt' + (isSel(av) ? ' selected' : ''), type: 'button', tip, onClick: () => set(av) }, content);
+    const sub = (icon, text, extra) => h('h4', { class: 'pe-sub' }, DK.icon(icon, 15), h('span', null, text), extra || null);
 
     const file = h('input', { type: 'file', accept: 'image/*', class: 'hidden' });
     file.addEventListener('change', async () => {
@@ -98,7 +104,8 @@
       catch (e) { DK.ui.toast(t('profile.imageError'), { icon: 'x', kind: 'bad' }); }
     });
 
-    const tabs = DK.ui.tabs({
+    /* --- Foto --- */
+    const picTab = () => DK.ui.tabs({
       active: params.avTab, onChange: (id) => (params.avTab = id),
       items: [
         { id: 'daskai', label: t('profile.tabDaskai'), icon: 'paw', render: () => h('div', { class: 'avatar-opts' },
@@ -107,9 +114,12 @@
           DK.party.all().filter((d) => d.shiny).map((d) => opt({ kind: 'daskai', species: d.species, shiny: true }, V.avatar(p, { size: 56, avatar: { kind: 'daskai', species: d.species, shiny: true }, frame: 'none' }), `${D.species[d.species].name} · ${t('common.shiny')}`))) },
         { id: 'icon', label: t('profile.tabIcon'), icon: 'star', render: () => {
           const cur = p.avatar && p.avatar.kind === 'icon' ? p.avatar : { icon: 'user', color: DK.avatars.colors[0] };
+          const swatch = (c) => h('button', { class: 'color-opt' + (p.avatar && p.avatar.kind === 'icon' && p.avatar.color === c ? ' selected' : ''), type: 'button', style: { background: DK.avatars.bgCss(c) }, 'aria-label': c, onClick: () => set({ kind: 'icon', icon: cur.icon, color: c }) });
           return h('div', { class: 'stack-s' },
-            h('div', { class: 'avatar-opts' }, DK.avatars.icons.map((ic) => opt({ kind: 'icon', icon: ic, color: cur.color }, V.avatar(p, { size: 52, avatar: { kind: 'icon', icon: ic, color: cur.color }, frame: 'none' })))),
-            h('div', { class: 'color-opts' }, DK.avatars.colors.map((c) => h('button', { class: 'color-opt' + (p.avatar && p.avatar.kind === 'icon' && p.avatar.color === c ? ' selected' : ''), type: 'button', style: { background: c }, 'aria-label': c, onClick: () => set({ kind: 'icon', icon: cur.icon, color: c }) }))));
+            h('div', { class: 'avatar-opts' }, DK.avatars.icons.map((ic) => opt({ kind: 'icon', icon: ic, color: cur.color }, V.avatar(p, { size: 48, avatar: { kind: 'icon', icon: ic, color: cur.color }, frame: 'none' })))),
+            sub('contrast', t('profile.iconBg')),
+            h('div', { class: 'color-opts' }, DK.avatars.colors.filter((c) => !c.startsWith('g:')).map(swatch)),
+            h('div', { class: 'color-opts' }, DK.avatars.colors.filter((c) => c.startsWith('g:')).map(swatch)));
         } },
         { id: 'image', label: t('profile.tabImage'), icon: 'upload', render: () => h('div', { class: 'stack-s' },
           h('p', { class: 'muted small' }, t('profile.imageHint')),
@@ -120,18 +130,71 @@
       ],
     });
 
-    const frames = h('div', { class: 'avatar-opts' }, DK.avatars.frames().map((f) => {
-      const b = h('button', { class: 'avatar-opt' + (p.frame === f.id ? ' selected' : '') + (f.unlocked ? '' : ' locked'), type: 'button', disabled: !f.unlocked,
-        tip: f.unlocked ? (f.shinyHouse ? t('profile.frameShinyName', { house: DK.tr('houses', D.houses[f.shinyHouse]) }) : f.season ? t('pass.frameName', { metal: t('pass.metal.' + f.metal), n: f.season })
-          : t('profile.frame.' + (f.house ? 'house' : f.id), { house: f.house ? DK.tr('houses', D.houses[f.house]) : '' })) : f.reqText(),
-        onClick: () => { p.frame = f.id; DK.store.save(); DK.app.renderNav(); DK.audio.sfx('select'); refresh(); } },
-        V.avatar(p, { size: 52, frame: f.id }), f.unlocked ? null : h('span', { class: 'avatar-lock' }, DK.icon('lock', 14)));
-      return b;
-    }));
+    /* --- Marco (por grupos, con cuántos tienes de cada uno) --- */
+    const frameTab = () => h('div', { class: 'stack-s' },
+      h('p', { class: 'muted small' }, t('profile.framesHint')),
+      DK.avatars.GROUPS.map((g) => {
+        const list = DK.avatars.framesOf(g);
+        if (!list.length) return null;
+        const got = list.filter((f) => f.unlocked).length;
+        return h('div', { class: 'pe-group' },
+          sub(['user', 'home', 'trophy', 'sparkles', 'flag'][DK.avatars.GROUPS.indexOf(g)], t('profile.frameGroup.' + g), h('span', { class: 'chip sm' }, `${got}/${list.length}`)),
+          h('div', { class: 'avatar-opts' }, list.map((f) => h('button', { class: 'avatar-opt' + (p.frame === f.id ? ' selected' : '') + (f.unlocked ? '' : ' locked'), type: 'button', disabled: !f.unlocked,
+            tip: f.unlocked ? DK.avatars.frameName(f) : DK.avatars.frameName(f) + ' — ' + f.reqText(),
+            onClick: () => { p.frame = f.id; saveP(); DK.audio.sfx('select'); refresh(); } },
+          V.avatar(p, { size: 52, frame: f.id }), f.unlocked ? null : h('span', { class: 'avatar-lock' }, DK.icon('lock', 14))))));
+      }));
 
+    /* --- Tarjeta para compartir --- */
+    const cardTab = () => {
+      const SC = DK.shareCard, o = SC.options();
+      const setCard = (patch) => { p.card = Object.assign(SC.options(), patch); saveP(); DK.audio.sfx('select'); refresh(); };
+      const chip = (on, label, onClick, icon) => h('button', { class: 'pe-chip' + (on ? ' on' : ''), type: 'button', 'aria-pressed': String(!!on), onClick }, icon ? DK.icon(icon, 14) : null, label);
+      const preview = h('div', { class: 'pe-card-preview' }, h('div', { class: 'waiting' }, DK.icon('image', 18), h('span', null, t('share.drawing'))));
+      const token = (params._cardTok = (params._cardTok || 0) + 1);
+      SC.render().then((c) => { if (params._cardTok === token && preview.isConnected !== false) preview.replaceChildren(h('img', { src: c.toDataURL('image/png'), alt: t('share.title'), class: 'share-img' })); })
+        .catch(() => preview.replaceChildren(DK.ui.empty('x', t('share.error'), '')));
+      const motto = h('input', { class: 'input', value: p.motto || '', maxlength: 48, placeholder: t('profile.mottoPh'), 'aria-label': t('profile.motto') });
+      motto.addEventListener('change', () => { p.motto = motto.value.trim(); saveP(); refresh(); });
+      const nStats = o.stats.length;
+      return h('div', { class: 'pe-card' },
+        h('div', { class: 'stack-s pe-card-left' }, preview,
+          h('div', { class: 'row gap-s wrap' }, btn({ icon: 'share', label: t('share.button'), variant: 'primary', onClick: () => SC.open() }),
+            btn({ icon: 'refresh', label: t('profile.card.reset'), variant: 'ghost', onClick: () => { p.card = null; saveP(); refresh(); } }))),
+        h('div', { class: 'stack-s pe-card-opts' },
+          sub('contrast', t('profile.card.theme')),
+          h('div', { class: 'pe-themes' }, Object.keys(SC.THEMES).map((id) => { const [a, b2, acc] = SC.swatch(id);
+            return h('button', { class: 'pe-theme' + (o.theme === id ? ' on' : ''), type: 'button', tip: t('profile.card.themes.' + id), 'aria-label': t('profile.card.themes.' + id), style: { background: `linear-gradient(135deg, ${a}, ${b2})`, '--acc': acc }, onClick: () => setCard({ theme: id }) }, h('i')); })),
+          sub('grid', t('profile.card.pattern')),
+          h('div', { class: 'pe-chips' }, SC.PATTERNS.map((id) => chip(o.pattern === id, t('profile.card.patterns.' + id), () => setCard({ pattern: id })))),
+          sub('maximize', t('profile.card.border')),
+          h('div', { class: 'pe-chips' }, SC.BORDERS.map((id) => chip(o.border === id, t('profile.card.borders.' + id), () => setCard({ border: id })))),
+          sub('chart', t('profile.card.stats'), h('span', { class: 'chip sm' + (nStats >= 6 ? ' pos' : '') }, `${nStats}/6`)),
+          h('p', { class: 'muted small' }, t('profile.card.statsHint')),
+          h('div', { class: 'pe-chips' }, Object.entries(SC.STATS).map(([id, [icon]]) => {
+            const i = o.stats.indexOf(id), on = i >= 0;
+            return h('button', { class: 'pe-chip' + (on ? ' on' : ''), type: 'button', disabled: !on && nStats >= 6, 'aria-pressed': String(on),
+              onClick: () => setCard({ stats: on ? (o.stats.length > 1 ? o.stats.filter((k) => k !== id) : o.stats) : o.stats.concat(id) }) },
+              on ? h('b', { class: 'pe-n' }, String(i + 1)) : DK.icon(icon, 14), t('share.stat.' + id));
+          })),
+          sub('paw', t('profile.card.show')),
+          h('div', { class: 'pe-chips' }, SC.SHOW.map((id) => chip(o.show === id, t('profile.card.shows.' + id), () => setCard({ show: id }), { favorite: 'heart', team: 'users', none: 'eyeOff' }[id])),
+            chip(o.houses, t('profile.card.houses'), () => setCard({ houses: !o.houses }), 'chart')),
+          sub('edit', t('profile.motto')), motto));
+    };
+
+    params.edTab = params.edTab || 'pic';
+    const tabs = DK.ui.tabs({
+      active: params.edTab, onChange: (id) => (params.edTab = id),
+      items: [
+        { id: 'pic', label: t('profile.picTitle'), icon: 'user', render: picTab },
+        { id: 'frame', label: t('profile.frames'), icon: 'sparkle', render: frameTab },
+        { id: 'card', label: t('profile.tabCard'), icon: 'image', render: cardTab },
+      ],
+    });
     return h('div', { class: 'card profile-editor' },
-      h('div', { class: 'panel-head' }, DK.icon('user', 18), h('h3', null, t('profile.picTitle'))), tabs,
-      h('h4', null, DK.icon('sparkle', 16), ' ', t('profile.frames')), h('p', { class: 'muted small' }, t('profile.framesHint')), frames);
+      h('div', { class: 'panel-head' }, DK.icon('edit', 18), h('h3', null, t('profile.customize')),
+        h('span', { class: 'grow' }), btn({ icon: 'check', label: t('profile.doneEditing'), size: 'sm', variant: 'tone', onClick: () => { params.edit = false; refresh(); } })), tabs);
   }
 
   /* ---------- Resumen y gráficos ---------- */

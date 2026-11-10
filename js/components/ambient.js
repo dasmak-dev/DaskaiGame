@@ -66,7 +66,8 @@
     page(scene) {
       const sc = sceneOf(scene), f = SIDES[sc] || SIDES.meadow;
       const strip = (side) => { const el = h('div', { class: 'ps-side ' + side }); el.innerHTML = `<svg viewBox="0 0 320 1000" preserveAspectRatio="xMidYMax meet" width="100%" height="100%">${f()}</svg>`; return el; };
-      return h('div', { class: 'amb-page amb-' + sc, 'aria-hidden': 'true' }, strip('left'), strip('right'), off() ? null : h('div', { class: 'amb amb-pagefx' }, ...parts(base(sc).p, 1.2)));
+      const el = h('div', { class: 'amb-page amb-' + sc, 'aria-hidden': 'true' }, strip('left'), strip('right'), off() ? null : h('div', { class: 'amb amb-pagefx' }, ...parts(base(sc).p, 1.2)));
+      return DK.pixelBg ? DK.pixelBg.swap(el) : el; // v5.20: laterales en pixel art
     },
     map(scene, height = 800) {
       if (off()) return null;

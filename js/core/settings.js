@@ -97,6 +97,7 @@
       el.dataset.contrast = this.data.highContrast ? 'high' : 'normal';
       el.dataset.colorblind = this.data.colorblind ? 'on' : 'off';
       el.dataset.motion = this.reducedMotion() ? 'reduced' : 'full';
+      el.dataset.px = this.data.pixelArt === false ? 'off' : 'on'; // v5.20: fondos en pixel art (css/pixel.css)
       el.dataset.hotkeys = this.data.showHotkeys ? 'on' : 'off';
       el.dataset.cursor = this.data.customCursor === false ? 'native' : 'game';
       if (DK.i18n) DK.i18n.setLang(this.data.lang);

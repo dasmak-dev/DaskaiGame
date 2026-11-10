@@ -222,7 +222,7 @@
         pWrap.append(h('span', { class: 'sp sp-' + p.type, style: { left: Math.random() * 100 + '%', top: Math.random() * 100 + '%', animationDelay: -Math.random() * 12 + 's', animationDuration: 6 + Math.random() * 8 + 's' } }));
       }
       layer.append(pWrap);
-      return layer;
+      return DK.pixelBg ? DK.pixelBg.swap(layer) : layer; // v5.20: en pixel art si está activo
     },
   };
 })();
