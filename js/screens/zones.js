@@ -356,12 +356,14 @@
       h('div', { class: 'chips' },
         h('span', { class: 'chip' }, DK.icon(z.icon, 12), z.name),
         V.sizeChip(w.size), V.modChip(w.mod),
+        h('span', { class: 'chip', tip: t('weekly.foesTip') }, DK.icon('swords', 12), t('weekly.foes', { n: W.teamLevel() })), // v5.40
         h('span', { class: 'chip', tip: t('kind.' + w.kind + '.desc') }, DK.icon(DK.expedition.kindDef(w.kind).icon, 12), t('kind.' + w.kind + '.name')),
         w.curses.map((id) => h('span', { class: 'chip neg', tip: t('curse.' + id + '.desc') }, DK.icon(D.curses[id].icon, 12), t('curse.' + id + '.name')))),
       h('div', { class: 'wk-foot' },
         h('span', { class: 'small muted' }, W.rec().rewarded ? t('weekly.rewarded') : t('weekly.reward', { e: rw.emblems })),
         h('span', { class: 'grow' }),
         btn({ icon: 'list', label: t('weekly.board'), iconOnly: true, size: 'sm', variant: 'ghost', onClick: () => weeklyBoard() }),
+        DK.online.enabled() ? btn({ icon: 'globe', label: t('online.boardsBtn'), iconOnly: true, size: 'sm', variant: 'ghost', onClick: () => V.leaderboard({ board: 'weekly' }) }) : null, // v5.39: tabla global semanal
         btn({ icon: 'flag', label: t('weekly.play'), size: 'sm', variant: 'primary', onClick: go })));
   }
   /** Tabla de récords local: intentos de esta semana y mejores de las anteriores. */
@@ -398,7 +400,7 @@
     if (AVR.isZone(n.zone)) {
       const r = AVR.rec(), A = G.averno;
       rows.push(row('averno', 'flame', t('averno.title'), t('averno.help'), h('div', { class: 'row gap-s wrap' }, h('span', { class: 'chip neg' }, DK.icon('flame', 12), `${t('common.lvl')} ${A.level.start}–${A.level.cap}`),
-        btn({ icon: 'trophy', label: t('online.boardBtn'), size: 'sm', variant: 'ghost', onClick: () => V.leaderboard() })), true, [
+        btn({ icon: 'trophy', label: t('online.boardBtn'), size: 'sm', variant: 'ghost', onClick: () => V.leaderboard({ board: 'averno' }) })), true, [
         h('div', { class: 'egx-list bad' }, h('span', { class: 'egx-k' }, DK.icon('alert', 12), t('endgameBox.harder')),
           h('span', null, t('averno.rule1')), h('span', null, t('averno.rule2')), h('span', null, t('averno.rule3')), h('span', null, t('averno.rule4'))),
         r.best && r.best.floors ? h('div', { class: 'egx-list good' }, h('span', { class: 'egx-k' }, DK.icon('trophy', 12), t('averno.bestTitle')),

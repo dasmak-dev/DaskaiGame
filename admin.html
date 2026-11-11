@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="es" data-theme="dark" data-style="clean" data-skin="none">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Daskai · Panel de admin</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23f59e0b' d='M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z'/%3E%3C/svg%3E">
+  <!--
+    Panel de administración de Daskai (v5.40).
+    Es una página pública, pero NO da acceso a nada por sí sola: hay que entrar con un usuario de
+    Supabase Auth que esté en la tabla public.admins (ver docs/ONLINE-SUPABASE.md, sección 6).
+    Carga los scripts del juego (sin arrancarlo) para dibujar daskai, equipos y objetos.
+  -->
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body class="adm-body">
+  <div id="adm"><p class="adm-boot">Cargando…</p></div>
+  <script src="js/admin/admin.js"></script>
+</body>
+</html>

@@ -440,7 +440,7 @@
     nextStart() {
       let n = st().nextExpedition;
       // Por defecto empieza en la zona recomendada para tu equipo (se puede cambiar en el mapa del mundo: setStart)
-      if (!n || !DK.world.isUnlocked(n.zone)) { const rec = DK.world.recommended(); const zone = rec ? rec.id : this.pickZone(1); const kind = (n && n.kind) || this.pickKind(); n = st().nextExpedition = { zone, kind, seed: `${zone}-${Date.now()}`, size: this.pickSize(Math.random, kind), mod: this.pickMod() }; DK.store.save(); }
+      if (!n || !(DK.world.isUnlocked(n.zone) || (n.weekly && D.zones[n.zone]))) { /* v5.40: el desafío semanal puede ser en una zona aún cerrada */ const rec = DK.world.recommended(); const zone = rec ? rec.id : this.pickZone(1); const kind = (n && n.kind) || this.pickKind(); n = st().nextExpedition = { zone, kind, seed: `${zone}-${Date.now()}`, size: this.pickSize(Math.random, kind), mod: this.pickMod() }; DK.store.save(); }
       // El tipo sale al azar (y no cambia hasta que salgas); partidas antiguas: se sortea ahora
       if (!n.kind || !cfg().kinds[n.kind]) { n.kind = this.pickKind(); n.size = this.pickSize(Math.random, n.kind); DK.store.save(); }
       if (!n.size) { n.size = this.pickSize(); DK.store.save(); } // vistas previas guardadas antes de los tamaños
@@ -1144,7 +1144,7 @@
       const e = this.active(); if (!e) return;
       this.ensureFields();
       st().lastExpedition = Object.assign({
-        outcome, zone: e.zone, startedAt: e.startedAt, endedAt: Date.now(),
+        outcome, zone: e.zone, startedAt: e.startedAt, endedAt: Date.now(), kind: e.kind || 'normal', abyssKills: e.abyssKills || 0, // (v5.39: para las tablas globales)
         depth: e.depth || 1, zones: (e.zones || []).slice(),
         map: e.map, cleared: e.cleared.slice(), pending: e.pending, step: e.step, total: e.total,
         relics: e.relics.slice(), nodes: e.log.nodes, toBag: e.log.toBag, lootSpent: e.log.lootSpent, recipes: e.log.recipes.slice(),

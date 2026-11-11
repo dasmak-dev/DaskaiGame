@@ -43,7 +43,8 @@
       const plus = DK.expedition.active() ? DK.expedition.levelBonus() : 0;
       // v5.31: en el Averno el nivel no sale de la zona: sube con los pisos y los jefes (DK.averno.level), hasta 120
       const av = DK.averno && DK.averno.on();
-      const lv = (n, kind = 'wild') => (av ? DK.averno.level(kind) - (kind === 'wild' ? U.rand(0, 2) : 0) : Math.min(DK.config.maxLevel, n + plus));
+      const wk = !av && DK.expedition.active() && DK.expedition.active().weekly ? DK.expedition.active().weeklyLv || DK.weekly.teamLevel() : 0; // v5.40: desafío semanal: según tu equipo
+      const lv = (n, kind = 'wild') => (av ? DK.averno.level(kind) - (kind === 'wild' ? U.rand(0, 2) : 0) : wk ? Math.min(DK.config.maxLevel, DK.weekly.levelFor(n, zoneId, wk) + plus) : Math.min(DK.config.maxLevel, n + plus));
       let enemy;
       // Datos del jefe: el de la zona o, en las cuevas, el oculto (D.secretBosses)
       const secret = o.secret && D.secretBosses ? D.secretBosses[zoneId] : null;

@@ -62,6 +62,7 @@
       root.append(h('a', { class: 'skip-link', href: '#main' }, DK.t('common.skipToContent')), topbar,
         h('div', { class: 'app-body' }, screenHost), dock);
       this.renderActions();
+      DK.on('game:loaded', () => this.renderActions()); // (v5.40: el buzón sólo con una partida cargada)
       this.favicon();
       // v5.17: alto real de la barra de accesos (cambia según el dispositivo): las barras pegadas abajo
       // (mercader, preparación…) se colocan justo encima en vez de quedar debajo de ella
@@ -279,7 +280,16 @@
       this._offBell = DK.on('notices:changed', upd);
       upd();
       const menu = btn({ icon: 'menu', label: DK.t('pause.menu'), variant: 'ghost', cls: 'hud-menu', tip: DK.t('pause.menuTip'), onClick: () => this.openMenu() });
-      actionsEl.replaceChildren(bell, menu);
+      // v5.40: buzón (noticias, solicitudes, regalos, mensajes), si el juego tiene la parte en línea
+      let mail = null;
+      if (DK.online && DK.online.enabled() && DK.views.mailbox && DK.store.state) {
+        mail = btn({ icon: 'mail', label: DK.t('online.mailTitle'), variant: 'ghost', cls: 'topbar-bell topbar-mail hud-icon', tip: DK.t('online.mailTitle'), onClick: () => DK.views.mailbox(DK.online.unread || !DK.online.ready() ? 'inbox' : 'friends') });
+        const mdot = h('span', { class: 'nav-dot bell-dot hidden' }); mail.append(mdot);
+        const updM = () => { const n = DK.online.unread | 0; mdot.textContent = n > 9 ? '9+' : n; mdot.classList.toggle('hidden', !n); };
+        if (this._offMail) this._offMail();
+        this._offMail = DK.on('online:inbox', updM); updM();
+      }
+      actionsEl.replaceChildren(...[mail, bell, menu].filter(Boolean));
     },
 
     /** Alterna tema claro/oscuro. */

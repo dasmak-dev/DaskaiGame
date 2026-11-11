@@ -357,6 +357,46 @@ Se carga la última y sólo sobrescribe: paleta (piedra oscura, bronce, oro `--g
 - **Expedición:** al entrar en el mapa, el equipo, la mochila o un combate durante una expedición, `#zone-backdrop` (creado en `screens/expedition.js` con `screen:enter`) pinta detrás de todo la escena de la zona actual, oscurecida; `body.in-exp`.
 - **Combate:** la arena usa la escena de la zona (`components/scenes.js`, ahora con árboles muertos, ruinas, tumbas, cristales o tentáculos según la zona) y los **jefes tienen su propio fondo**: `DK.scenes.bossScene(zona, secreto)` → `boss_<escena>` (menhires bajo luna roja, bosque muerto, naufragio con tormenta, bosque de cristales, forja de lava, santuario con estatua, fauces del abismo, ruinas entre rayos) y `boss_secret` (cripta) para los jefes ocultos.
 
+### Cambios de la v5.41.3 — selector de objetos en el panel
+- Regalos (panel de admin): «Elegir objetos…» abre una ventana con todos los objetos del juego (icono, nombre y rareza), buscador y filtros por tipo (Batalla, Mejora, Equipamiento, Piezas, Forja). Clic suma 1, Mayús + clic suma 10 y clic derecho resta 1; luego cada objeto elegido tiene su cantidad editable. Sin datos del juego (abierto desde el disco) se escribe el id a mano.
+- Las ventanas del panel usaban la clase `.am`, que el juego ya usa (`juice.css`: `position: absolute; pointer-events: none`): con los estilos del juego cargados no se podían pulsar. Renombradas (`adm-m`, `adm-mbg`…), y también otras clases que chocaban (`ach`, `sm`, `big`, `qty`, `gold` → `achk`, `asm`, `abig`, `aqty`, `agold`).
+
+### Cambios de la v5.41.1 — el panel de admin no conectaba
+- Abriendo `admin.html` desde el disco (`file://`) no se podía leer `index.html`, así que no se cargaba la configuración y el panel llamaba a una dirección vacía («NetworkError»). Ahora, si no hay juego, carga al menos `js/core/dk.js` y `js/data/config.js`, y avisa de que los dibujos sólo salen abriéndolo desde la web.
+- La URL de Supabase se reduce siempre a su origen (sirve aunque se pegue con `/rest/v1/` o con espacios) y se muestra la que se está usando en «Conexión».
+- Mensajes claros: sin conexión, credenciales incorrectas (con qué revisar en Authentication → Users), email sin confirmar y clave pública no válida.
+
+### Cambios de la v5.41.0 — buzón de dos paneles, imágenes y fichas compactas
+- **Buzón sin parpadeo**: `V.mailbox` abre **una** ventana y guarda todo en un estado interno (`S`: pestaña, mensaje elegido, listas). Cambiar de pestaña, elegir un mensaje, aceptar una solicitud o recoger un regalo sólo vuelve a dibujar el contenido (`draw()` / `reload()`); antes se cerraba y se abría la ventana y parpadeaba.
+- **Diseño**: a la izquierda la lista (icono por tipo, quién, cuándo, resumen, punto de no leído, marcas de regalo/imagen) y a la derecha el mensaje en grande (texto, imagen, regalo y acciones). Pestaña Amigos igual (lista + ficha con récords y acciones); Equipo Daskai es un chat a pantalla completa. En móvil (≤700 px) es una columna: lista → mensaje con «Volver».
+- **Imágenes**: `body.img` en mensajes del equipo y regalos, `img` en noticias y en el chat. Se pintan con `V.mailImg(url)` sólo si `DK.online.imgOk(url)` (https). En el panel, `imagePicker()` sube a Storage (`uploadImage`: reduce a 1600 px WebP; también se puede pegar una imagen o una dirección).
+- **Equipos compactos**: `V.buildView` muestra fichas pequeñas (dibujo, nombre, nivel) y el detalle del elegido (atributos en una fila, naturaleza, pasiva, estrellas, ataques, talentos y equipo). Lo usan la ficha pública, la tabla y el panel de admin.
+- **Ficha pública**: cabecera con avatar, título, ID, horas y favorito; acciones en una fila; récords en una cuadrícula de 5; pestañas «Equipo del récord / Equipo actual». Ya no se cierra y reabre al añadir o quitar amigos.
+- SQL: sección 7 de `docs/ONLINE-SUPABASE.md`.
+
+### Cambios de la v5.40.0 — desafío semanal común, solicitudes de amistad, buzón y panel de admin
+- **Desafío semanal**: `DK.weekly.def()` elige la zona entre las diez principales aunque no la tengas abierta (`nextStart` lo permite si `n.weekly`), así que es la misma para todos. Los rivales no usan el nivel de la zona: `weekly.levelFor(n, zone, base)` (con `base = e.weeklyLv`, el nivel medio de tu equipo al empezar) los coloca entre base−2 y base+3, y élites/jefe algo por encima (`systems/battle.js`, `lv()`).
+- **Amistad por solicitudes**: `addFriend` devuelve `sent` / `accepted` / `pending` / `already`; `friends()` trae `status` (`friend` · `sent` · `incoming`); `rejectFriend`. En la ficha pública: Añadir → solicitud; Aceptar/Rechazar si te la han enviado; Cancelar si la enviaste.
+- **Buzón** (`V.mailbox(tab)`, pestañas `inbox` · `friends` · `team`; `V.friendsDialog` sigue como alias). Botón de sobre en la barra superior (`app.renderActions`, con punto de no leídos) y en el Perfil. Tipos: `msg`, `gift`, `trade`, `friend`, `friendok`, `admin`, `agift`, más las **noticias** (`DK.online.news()`, `claimNews`, `newsClaimed`). Los regalos del equipo se aplican con `DK.online.applyGift({items, coins, emblems})` (sólo objetos que existen; topes 999 / 1 000 000 / 500). Soporte: `support(text)` / `supportThread()`.
+- **Perfil privado**: `saveProfile` envía `p_private` (`privateSnap()`: cajas, monedas, emblemas, bolsa) y `p_version`; si la base de datos es de la v5.39 reintenta sin ellos.
+- **Panel de admin**: `admin.html` + `js/admin/admin.js` + `css/admin.css`. Lee las etiquetas `<script>`/`<link>` de `index.html` y carga el juego sin arrancarlo (`main.js` no) para dibujar daskai, equipos (`V.buildView`) y objetos; si no puede, muestra texto. Entra con Supabase Auth (`/auth/v1/token`), renueva la sesión sola y llama a `rpc/admin_*` con el token. Secciones: Resumen, Jugadores (+ ficha con equipo, cajas, bolsa, récords, amigos, denuncias y chat), Soporte, Denuncias, Sospechosos, Clasificaciones, Noticias, Regalos, Registro y Ajustes. El service worker no guarda en caché el panel.
+- SQL: sección 6 de `docs/ONLINE-SUPABASE.md`. Prueba: `shell` → «v5.40: …». Banco de pruebas local usado: Postgres + un servidor que imita PostgREST/Auth (no forma parte del repo).
+
+### Cambios de la v5.39.0 — clasificaciones, perfiles públicos, amigos y contramedidas
+- **Cinco tablas** (`DK.online.BOARDS`): `averno`, `depth` (más mapas seguidos en una expedición), `weekly` (desafío semanal; periodo = `DK.weekly.weekNo()` / `dk_week()` en el servidor), `abyss` (jefes seguidos en un Abismo, `lastExpedition.abyssKills`) y `shiny` (variocolores propios de la temporada, `state.seasonShiny`, sumados en `party.add` cuando no vienen de un intercambio). Se envían en `expedition:end` (`systems/online.js`) con `submitScore(board, value, buildSnap(relics))`; si aún no has decidido publicar quedan en `me.pendingScores` (el mejor de cada tabla y periodo).
+- **Equipo del récord**: `DK.online.snapD(d)` hace una instantánea compacta (especie, nivel, aspecto, atributos, naturaleza, pasiva, ataques, talentos, estrellas y equipo con sus afijos en texto). `V.buildView(build)` la dibuja (también las reliquias). En la tabla del semanal el equipo lleva además `zone` (la zona del desafío depende de las zonas abiertas de cada uno).
+- **Perfil público** (`players` en Supabase): `saveProfile()` (cada 5 min como mucho) sube nombre, título, avatar, favorito, equipo y `records()`. `V.publicProfile(tid, {build, board, value})` es la ficha; desde la tabla, cada fila abre la ficha con el equipo de ese récord.
+- **Amigos y buzón**: `friendsDialog(tab)` (amigos / buzón), `composeMessage`. Sólo entre amigos mutuos; regalo = 1 poción al día por amigo (el servidor decide: `inbox_take` devuelve `claimed` una única vez y sólo entonces se suma); mensajes de 140 caracteres que se borran a las 24 h; invitación a intercambiar = abrir sala y mandar el código. `pollInbox()` cada 3 min emite `online:inbox` (aviso y punto en el botón de Amigos del perfil). `mute` / `report`.
+- **Contra las trampas**: la partida se firma al guardar (`state._sig`, parche sobre `DK.store.flush`); si al cargar no coincide o hay datos imposibles, `me.tainted` y no se publica nada. En el servidor: secreto por jugador (sólo la huella), topes por tabla, máximo según el tiempo de juego (que no puede crecer más rápido que el reloj), 15 s entre envíos, saltos grandes `flagged` (ocultos hasta revisarlos), `bans` por ID y `reports`.
+- SQL: sección 5 de `docs/ONLINE-SUPABASE.md`. Prueba: `shell` → «v5.39: clasificaciones, perfil público, amigos…».
+
+### Cambios de la v5.38.1 — el intercambio por relé no se completaba
+
+- La huella que comparan los dos jugadores al aceptar (`DK.trade.fingerprint`) se calculaba con `JSON.stringify`
+  de las dos ofertas, pero la base de datos del relé (jsonb) devuelve las claves en otro orden: cada lado obtenía
+  una huella distinta y «aceptar» nunca coincidía. Ahora usa JSON canónico (`canon`, claves ordenadas). La prueba
+  del relé reordena las claves como jsonb (sin el arreglo, falla).
+
 ### Cambios de la v5.38 — móvil: sin parpadeos al abrir ventanas o cambiar de pantalla
 
 - **Fondo de remolino** (`core/bgfx.js`): en pantallas táctiles (`LITE`) ya no hay un lienzo WebGL vivo detrás de

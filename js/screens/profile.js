@@ -78,7 +78,11 @@
             diff ? h('span', null, DK.icon(diff.icon, 12), t('difficulty.' + st.difficulty + '.name')) : null),
           h('div', { class: 'ph-actions' },
             btn({ icon: 'edit', label: params.edit && !sheetMode() ? t('profile.doneEditing') : t('profile.customize'), size: 'sm', variant: params.edit && !sheetMode() ? 'primary' : 'tone', onClick: () => toggleEdit(params, refresh) }),
-            btn({ icon: 'share', label: t('share.button'), size: 'sm', variant: 'tone', onClick: () => DK.shareCard.open() })))),
+            btn({ icon: 'share', label: t('share.button'), size: 'sm', variant: 'tone', onClick: () => DK.shareCard.open() }),
+            // v5.39: clasificaciones globales y amigos (con aviso de buzón)
+            DK.online.enabled() ? btn({ icon: 'trophy', label: t('online.boardsBtn'), size: 'sm', variant: 'tone', onClick: () => DK.views.leaderboard({ board: 'averno' }) }) : null,
+            DK.online.enabled() ? h('span', { class: 'ph-fr' }, btn({ icon: 'users', label: t('online.friendsBtn'), size: 'sm', variant: 'tone', onClick: () => DK.views.mailbox(DK.online.unread ? 'inbox' : 'friends') }),
+              DK.online.unread ? h('span', { class: 'nav-dot' }, String(DK.online.unread)) : null) : null))),
       h('div', { class: 'ph-stats' },
         h('div', { class: 'ph-stat ring' }, ring, h('span', null, t('profile.winRate'))),
         head('swords', num(s.battles), t('pstats.battles')),

@@ -728,6 +728,8 @@
       // sólo eliges los que gane subiendo contigo
       api.autoTalents(d);
       if (DK.trainer) DK.trainer.stamp(d); // v5.37: entrenador original
+      // v5.39: variocolores conseguidos esta temporada (los recibidos en intercambios no cuentan)
+      if (d.shiny && DK.trainer && DK.trainer.isMine(d) && DK.online) { const ss = this.st().seasonShiny, sea = DK.online.season(); this.st().seasonShiny = { season: sea, n: (ss && ss.season === sea ? ss.n : 0) + 1 }; }
       this.all().push(d);
       if (DK.looks) DK.looks.see(d);
       if (this.st().team.length < DK.config.maxTeam) this.st().team.push(d.uid);

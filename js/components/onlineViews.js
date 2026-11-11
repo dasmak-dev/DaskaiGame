@@ -10,6 +10,8 @@
 (function () {
   const { h, btn, toast } = DK.ui;
   const D = DK.data, V = DK.views;
+  /** Como replaceChildren, pero sin pintar «null» cuando un hijo es opcional (v5.41.2). */
+  const put = (n, ...k) => n.replaceChildren(...k.flat(9).filter((x) => x != null && x !== false));
   const { t } = DK;
 
   /** Ficha compacta: dibujo, nombre, especie, nivel, casas, naturaleza, pasiva y atributos. */
@@ -45,7 +47,7 @@
       title, icon: 'paw', cls: 'pick-daskai', closeX: true,
       content: (close) => {
         const holder = h('div', { class: 'stack-s' });
-        const draw = () => holder.replaceChildren(
+        const draw = () => put(holder, 
           h('div', { class: 'pe-chips pe-groups' }, shown.map((g) => h('button', { class: 'pe-chip' + (g === cur ? ' on' : ''), type: 'button', onClick: () => { cur = g; draw(); } }, DK.icon(g.icon, 14), g.label, h('small', { class: 'muted' }, String(g.list.length))))),
           h('div', { class: 'pd-grid' }, (cur ? cur.list : []).map((d) => {
             const why = filter(d);
@@ -79,7 +81,7 @@
       title: t('trade.title'), icon: 'swap', cls: 'trade-modal tx', closeX: true, dismissable: true,
       content: () => {
         const holder = h('div', { class: 'trade-body' });
-        const draw = () => holder.replaceChildren(view());
+        const draw = () => put(holder, view());
         off = DK.on('trade:changed', () => draw());
         draw();
         return holder;
@@ -182,49 +184,373 @@
     return m;
   };
 
-  /* ---------------- Tabla global ---------------- */
-  const teamIcons = (team) => h('span', { class: 'lb-team' }, (Array.isArray(team) ? team : []).slice(0, 6).map((x) => (x && D.species[x.s] ? h('span', { tip: `${D.species[x.s].name} · ${t('common.lvl')} ${x.l | 0}` }, V.sprite(x.s, { size: 36, shiny: !!x.sh })) : null)));
-  V.leaderboard = (season) => {
-    const O = DK.online, cur = O.season(), sea = season || cur;
+  /* ---------------- Tablas globales (v5.39: cinco tablas, perfiles y equipos) ---------------- */
+  /** Un daskai de otra partida (instantánea) como objeto dibujable. */
+  const pseudoD = (x) => ({ species: x.s, shiny: !!x.sh, look: x.lk || null, house2: x.h2 || undefined, form: x.f || 0, forms: x.fs || 0, level: x.l | 0, nickname: x.n });
+  const okSp = (x) => x && D.species[x.s];
+  const teamIcons = (team) => h('span', { class: 'lb-team' }, (Array.isArray(team) ? team : []).slice(0, 6).map((x) => (okSp(x) ? h('span', { tip: `${x.n || D.species[x.s].name} · ${t('common.lvl')} ${x.l | 0}` }, V.dSprite(pseudoD(x), { size: 36 })) : null)));
+  const statShort = (k) => (D.stats[k] && DK.tr('stats', D.stats[k], 'short')) || k;
+
+  /**
+   * v5.41: cómo está montado un equipo, compacto: una fila de fichas (dibujo, nombre y nivel) y, debajo,
+   * el detalle del que tengas elegido (atributos, naturaleza, pasiva, ataques, talentos y equipo). Arriba, las reliquias.
+   */
+  const monDetail = (x) => {
+    const d = pseudoD(x), sp = D.species[x.s];
+    const tags = [D.natures[x.nat] ? h('span', { class: 'chip sm' }, DK.icon('leaf', 10), DK.tr('natures', D.natures[x.nat])) : null,
+      D.passives[x.pas] ? h('span', { class: 'chip sm', tip: DK.tr('passives', D.passives[x.pas], 'desc') }, DK.icon('sparkles', 10), DK.tr('passives', D.passives[x.pas])) : null,
+      x.stars ? h('span', { class: 'chip sm bv-stars' }, '✦'.repeat(Math.min(5, x.stars))) : null].filter(Boolean);
+    const moves = (x.mv || []).filter((m) => D.moves[m]), tal = D.talents ? (x.tal || []).filter((id) => D.talents[id]) : [], gear = x.gear || [];
+    return h('div', { class: 'bv-d', style: { '--c': D.houseColor ? D.houseColor(sp.house) : '#888' } },
+      h('div', { class: 'bv-d-head' }, h('span', { class: 'bv-d-spr' }, V.dSprite(d, { size: 64 })),
+        h('div', { class: 'bv-d-who' }, h('b', null, x.n || sp.name, x.sh ? h('span', { class: 'tc-shiny' }, ' ★') : null),
+          h('small', { class: 'muted' }, `${sp.name} · ${t('common.lvl')} ${x.l | 0}`), tags.length ? h('div', { class: 'bv-tags' }, tags) : null)),
+      x.st ? h('div', { class: 'bv-stats' }, ['hp', 'mp', 'atk', 'matk', 'def', 'mdef', 'spd'].map((k) => h('span', null, h('small', null, statShort(k)), h('b', null, x.st[k] | 0)))) : null,
+      moves.length ? h('div', { class: 'bv-row' }, h('small', { class: 'bv-lbl' }, t('online.bv.moves')), h('div', { class: 'bv-chips' }, moves.map((m) => h('span', { class: 'chip sm' }, DK.tr('moves', D.moves[m]))))) : null,
+      tal.length ? h('div', { class: 'bv-row' }, h('small', { class: 'bv-lbl' }, t('online.bv.talents')), h('div', { class: 'bv-chips' }, tal.map((id) => h('span', { class: 'chip sm tal', tip: V.talentText ? V.talentText(id) : '' }, t('talent.' + id + '.name'))))) : null,
+      gear.length ? h('div', { class: 'bv-row' }, h('small', { class: 'bv-lbl' }, t('online.bv.gear')), h('div', { class: 'bv-gear' }, gear.map((g) => h('div', { class: 'bv-g', style: { '--g': (D.gear.rarities[g.r] || {}).color || '#aaa' }, tip: (g.a || []).join('\n') },
+        h('b', null, g.n), h('small', null, `${t('gear.rarity.' + g.r)} · ${t('common.lvl')} ${g.i | 0}`), (g.a || []).length ? h('small', { class: 'bv-aff' }, g.a.join(' · ')) : null)))) : null);
+  };
+  V.buildView = (build) => {
+    const team = (build && Array.isArray(build.team) ? build.team : Array.isArray(build) ? build : []).filter(okSp);
+    const relics = (build && Array.isArray(build.relics) ? build.relics : []).filter((id) => D.relics[id]);
+    if (!team.length) return h('p', { class: 'muted small' }, t('online.noBuild'));
+    const detail = h('div', { class: 'bv-detail' }, monDetail(team[0]));
+    const tiles = team.length > 1 ? team.map((x, i) => h('button', { class: 'bv-tile' + (i ? '' : ' on'), type: 'button', style: { '--c': D.houseColor ? D.houseColor(D.species[x.s].house) : '#888' },
+      onClick: (e) => { tiles.forEach((b) => b.classList.toggle('on', b === e.currentTarget)); put(detail, monDetail(x)); } },
+      h('span', { class: 'bv-tspr' }, V.dSprite(pseudoD(x), { size: 44 })), h('b', null, x.n || D.species[x.s].name, x.sh ? h('span', { class: 'tc-shiny' }, '★') : null), h('small', null, `${t('common.lvl')} ${x.l | 0}`))) : null;
+    return h('div', { class: 'bv' },
+      relics.length ? h('div', { class: 'bv-relics' }, relics.map((id) => h('span', { class: 'chip sm r-' + D.relics[id].rarity, tip: V.relicText ? V.relicText(D.relics[id]) : '' }, DK.icon(D.relics[id].icon, 11), DK.tr('relics', D.relics[id])))) : null,
+      tiles ? h('div', { class: 'bv-tiles' }, tiles) : null, detail);
+  };
+
+  /** Tabla global con pestañas: Averno · Más profunda · Desafío semanal · Abismo · Variocolores. */
+  V.leaderboard = (opts) => {
+    const o = typeof opts === 'object' && opts ? opts : { season: opts };
+    const O = DK.online, board = O.BOARDS.includes(o.board) ? o.board : 'averno';
+    const cur = O.periodOf(board), per = o.period || (board === 'averno' && o.season) || cur;
     return DK.ui.modal({
-      title: t('online.boardTitle'), icon: 'trophy', cls: 'lb-modal', closeX: true, size: 'wide',
+      title: t('online.boardsTitle'), icon: 'trophy', cls: 'lb-modal', closeX: true, size: 'wide',
       content: (close) => {
         const holder = h('div', { class: 'lb-body' }, h('p', { class: 'muted' }, DK.icon('clock', 13), ' ', t('online.loading')));
-        if (!O.enabled()) { holder.replaceChildren(h('p', { class: 'muted' }, DK.icon('info', 13), ' ', t('online.off'))); return holder; }
-        const me = O.me();
-        const pub = h('div', { class: 'lb-pub row gap-s wrap' }, h('small', { class: 'muted' }, me.publish ? t('online.pubOn') : t('online.pubOff')),
-          btn({ label: me.publish ? t('online.pubStop') : t('online.pubStart'), size: 'sm', variant: 'ghost', onClick: async () => { await O.setPublish(!me.publish); close(); V.leaderboard(sea); } }));
-        // v5.34: una tabla por temporada (la actual se vacía al empezar la siguiente; la anterior se puede consultar)
+        const go = (b, p) => { close(); V.leaderboard({ board: b, period: p }); };
+        const tabs = h('div', { class: 'lb-tabs' }, O.BOARDS.map((b) => h('button', { class: 'lb-tab' + (b === board ? ' on' : ''), type: 'button', onClick: () => { if (b !== board) go(b); } },
+          DK.icon({ averno: 'flame', depth: 'compass', weekly: 'trophy', abyss: 'moon', shiny: 'sparkles' }[b], 14), h('span', null, t('online.board.' + b)))));
+        if (!O.enabled()) { put(holder, tabs, h('p', { class: 'muted' }, DK.icon('info', 13), ' ', t('online.off'))); return holder; }
+        const me = O.me(), myTid = DK.trainer.id();
+        const isWeek = board === 'weekly';
         const head = h('div', { class: 'lb-season row gap-s wrap' },
-          h('span', { class: 'chip' }, DK.icon('flag', 12), t('online.season', { n: sea })),
-          sea === cur ? h('small', { class: 'muted' }, t('online.resetIn', { n: O.daysLeft() })) : h('small', { class: 'muted' }, t('online.pastSeason')),
+          h('span', { class: 'chip' }, DK.icon(isWeek ? 'clock' : 'flag', 12), t(isWeek ? 'online.weekN' : 'online.season', { n: per })),
+          per === cur ? h('small', { class: 'muted' }, isWeek ? t('online.weekResets', { n: DK.weekly.daysLeft() }) : t('online.resetIn', { n: O.daysLeft() })) : h('small', { class: 'muted' }, t(isWeek ? 'online.pastWeek' : 'online.pastSeason')),
           h('span', { class: 'grow' }),
           cur > 1 ? h('div', { class: 'egx-seg' },
-            h('button', { class: sea === cur ? 'on' : '', type: 'button', onClick: () => { if (sea !== cur) { close(); V.leaderboard(cur); } } }, t('online.thisSeason')),
-            h('button', { class: sea !== cur ? 'on' : '', type: 'button', onClick: () => { if (sea === cur) { close(); V.leaderboard(cur - 1); } } }, t('online.lastSeason'))) : null);
-        O.board(50, sea).then((rows) => {
-          if (!rows.length) { holder.replaceChildren(head, h('p', { class: 'muted' }, t(sea === cur ? 'online.empty' : 'online.emptyPast')), pub); return; }
-          holder.replaceChildren(head, h('p', { class: 'muted small' }, t('online.boardHelp')),
-            h('div', { class: 'lb-table', role: 'table' },
-              h('div', { class: 'lb-row head', role: 'row' }, ['#', t('online.player'), t('online.floors'), t('online.bosses'), t('online.foeLv'), t('online.team')].map((x) => h('span', { role: 'columnheader' }, x))),
-              rows.map((r, i) => h('div', { class: 'lb-row' + (r.player_id === me.id ? ' me' : '') + (i < 3 ? ' top' + (i + 1) : ''), role: 'row' },
+            h('button', { class: per === cur ? 'on' : '', type: 'button', onClick: () => { if (per !== cur) go(board, cur); } }, t(isWeek ? 'online.thisWeek' : 'online.thisSeason')),
+            h('button', { class: per !== cur ? 'on' : '', type: 'button', onClick: () => { if (per === cur) go(board, cur - 1); } }, t('online.lastSeason'))) : null);
+        const pub = V.publishCard(() => { close(); V.leaderboard({ board, period: per }); });
+        const load = board === 'averno' ? O.board(50, per).then((rows) => rows.map((r) => ({ tid: r.trainer_id, name: r.name, value: r.floors, sub: `${r.maps} ${t('online.bosses').toLowerCase()} · ${t('common.lvl')} ${r.level}`, team: r.team, build: { team: r.team, relics: r.relics || [] }, mine: r.player_id === me.id })))
+          : O.scoreBoard(board, 50, per).then((rows) => rows.map((r) => ({ tid: r.trainer_id, name: r.name, value: r.value, sub: r.title || '', team: r.build && r.build.team, build: r.build, mine: r.trainer_id === myTid })));
+        load.then((rows) => {
+          const help = h('p', { class: 'muted small' }, t('online.help.' + board));
+          if (!rows.length) { put(holder, tabs, head, help, h('p', { class: 'muted' }, t(per === cur ? 'online.empty' : 'online.emptyPast')), pub); return; }
+          put(holder, tabs, head, help,
+            h('div', { class: 'lb-table lb2', role: 'table' },
+              h('div', { class: 'lb-row head', role: 'row' }, ['#', t('online.player'), t('online.value.' + board), t('online.team')].map((x) => h('span', { role: 'columnheader' }, x))),
+              rows.map((r, i) => h('button', { class: 'lb-row' + (r.mine ? ' me' : '') + (i < 3 ? ' top' + (i + 1) : ''), type: 'button', role: 'row', tip: t('online.seeProfile'),
+                onClick: () => V.publicProfile(r.tid, { name: r.name, build: r.build, board, value: r.value }) },
                 h('span', { class: 'lb-rank' }, i < 3 ? DK.icon('crown', 14) : null, String(i + 1)),
-                h('b', { class: 'lb-name' }, String(r.name || '?').slice(0, 20)),
-                h('span', { class: 'lb-floors' }, String(r.floors)), h('span', null, String(r.maps)), h('span', null, `${t('common.lvl')} ${r.level}`),
+                h('span', { class: 'lb-who' }, h('b', { class: 'lb-name' }, String(r.name || '?').slice(0, 20)), r.sub ? h('small', { class: 'muted' }, r.sub) : null),
+                h('span', { class: 'lb-floors' }, Number(r.value).toLocaleString(DK.i18n.lang)),
                 teamIcons(r.team)))), pub);
-        }).catch(() => holder.replaceChildren(h('p', { class: 'warn-text' }, DK.icon('alert', 13), ' ', t('online.error'))));
+        }).catch(() => put(holder, tabs, head, h('p', { class: 'warn-text' }, DK.icon('alert', 13), ' ', t('online.error'))));
         return holder;
       },
       actions: [{ label: t('common.close'), icon: 'x', variant: 'ghost', value: false }],
     });
   };
-  /** Tarjeta para decidir si publicar (sale una vez, tras el primer récord del Averno). */
+
+  /** Estado del perfil público: activarlo / desactivarlo (y aviso si la partida no puede publicar). */
+  V.publishCard = (after) => {
+    const O = DK.online; if (!O.enabled()) return null;
+    const me = O.me();
+    if (me.tainted) return h('p', { class: 'small warn-text lb-pub' }, DK.icon('alert', 12), ' ', t('online.tainted'));
+    if (me.banned) return h('p', { class: 'small warn-text lb-pub' }, DK.icon('lock', 12), ' ', t('online.banned'));
+    return h('div', { class: 'lb-pub row gap-s wrap' }, h('small', { class: 'muted' }, me.publish ? t('online.pubOn') : t('online.pubOff')),
+      btn({ label: me.publish ? t('online.pubStop') : t('online.pubStart'), size: 'sm', variant: me.publish ? 'ghost' : 'tone', onClick: async () => { await O.setPublish(!me.publish); if (after) after(); } }));
+  };
+
+  /* ---------------- Perfil público (v5.41: compacto) ---------------- */
+  const REC_MAIN = [['flame', 'averno'], ['compass', 'depth'], ['moon', 'abyss'], ['trophy', 'weekly'], ['sparkles', 'shinies'], ['star', 'maxLv']];
+  const REC_MORE = [['swords', 'battles'], ['paw', 'daskai'], ['swap', 'trades'], ['award', 'achievements']];
+  const recordGrid = (r) => h('div', { class: 'pp-recs' }, REC_MAIN.concat(REC_MORE).filter(([, k]) => r[k] != null).map(([ic, k]) =>
+    h('div', { class: 'pp-rec' + (r[k] ? '' : ' zero') }, h('span', { class: 'pp-rec-ic' }, DK.icon(ic, 13)), h('b', null, Number(r[k] || 0).toLocaleString(DK.i18n.lang)), h('small', null, t('online.rec.' + k)))));
+  const segTabs = (items, cur, on) => h('div', { class: 'seg-tabs' }, items.map(([k, label]) => h('button', { class: k === cur ? 'on' : '', type: 'button', onClick: () => on(k) }, label)));
+
+  /** Ficha pública de un jugador (por su ID de entrenador). o.build = equipo del récord que pulsaste en la tabla. */
+  V.publicProfile = (tid, o = {}) => {
+    const O = DK.online, mine = tid && tid === DK.trainer.id();
+    return DK.ui.modal({
+      title: t('online.profileTitle'), icon: 'user', cls: 'pp-modal', closeX: true, size: 'wide',
+      content: () => {
+        const holder = h('div', { class: 'pp-body' }, h('p', { class: 'muted' }, DK.icon('clock', 13), ' ', t('online.loading')));
+        let p = null, fr = null, teamTab = o.build ? 'record' : 'current';
+        const draw = () => {
+          if (!p) {
+            put(holder, h('div', { class: 'pp-hero' }, h('div', { class: 'pp-who' }, h('b', { class: 'pp-name' }, o.name || '?'), tid ? h('span', { class: 'chip sm' }, '#' + tid) : null)),
+              h('p', { class: 'muted small' }, t('online.noProfile')), o.build ? V.buildView(o.build) : null);
+            return;
+          }
+          const av = p.avatar || {}, fav = p.fav && okSp(p.fav) ? p.fav : null;
+          const act = (icon, label, fn, variant = 'ghost') => btn({ icon, label, size: 'sm', variant, onClick: fn });
+          const refresh = async () => { try { fr = (await O.friends()).find((f) => f.trainer_id === tid) || null; } catch (e) { /* */ } draw(); };
+          const actions = mine ? null : !O.ready() ? V.publishCard(() => { O.friends().then(() => refresh()); })
+            : h('div', { class: 'pp-actions' },
+              !fr ? act('plus', t('online.addFriend'), () => friendAct('add', tid).then(refresh), 'primary')
+                : fr.status === 'incoming' ? [act('check', t('online.accept'), () => friendAct('add', tid).then(refresh), 'primary'), act('x', t('online.reject'), () => friendAct('reject', tid).then(refresh))]
+                  : fr.status === 'sent' ? [h('span', { class: 'chip sm' }, DK.icon('clock', 11), t('online.pendingShort')), act('x', t('online.cancelReq'), () => friendAct('remove', tid).then(refresh))]
+                    : [h('span', { class: 'chip sm pos' }, DK.icon('users', 11), t('online.mutual')), act('gift', t('online.sendGift'), () => giftTo(tid)), act('edit', t('online.sendMsg'), () => V.composeMessage(tid, p.name)), act('swap', t('online.inviteTrade'), () => inviteTrade(tid)),
+                      btn({ icon: 'x', label: t('online.removeFriend'), iconOnly: true, size: 'sm', variant: 'ghost', onClick: () => friendAct('remove', tid).then(refresh) })],
+              btn({ icon: 'alert', label: t('online.report'), iconOnly: true, size: 'sm', variant: 'ghost', onClick: () => reportDialog(tid, p.name) }));
+          const tabs = [['current', t('online.currentTeam')]];
+          if (o.build) tabs.unshift(['record', t('online.recordTeamShort', { board: t('online.board.' + (o.board || 'averno')) })]);
+          const teamBox = h('div', { class: 'pp-team' });
+          const showTeam = () => put(teamBox, teamTab === 'record' ? V.buildView(o.build) : V.buildView({ team: p.team || [] }));
+          const tabsEl = tabs.length > 1 ? segTabs(tabs, teamTab, (k) => { teamTab = k; tabsEl.querySelectorAll('button').forEach((b, i) => b.classList.toggle('on', tabs[i][0] === k)); showTeam(); }) : h('span', { class: 'tx-sub' }, DK.icon('users', 12), tabs[0][1]);
+          showTeam();
+          put(holder, 
+            h('div', { class: 'pp-hero' },
+              h('span', { class: 'pp-ava' }, V.avatar({ name: p.name, avatar: av.av || null, frame: av.fr || null }, { size: 64, avatar: av.av || (fav ? { kind: 'daskai', species: fav.s } : null) })),
+              h('div', { class: 'pp-who' }, h('b', { class: 'pp-name' }, p.name), p.title ? h('span', { class: 'pp-title' }, p.title) : null,
+                h('div', { class: 'pp-meta' }, h('span', { class: 'chip sm' }, '#' + p.trainer_id + (mine ? ' · ' + t('online.you') : '')), h('span', { class: 'chip sm' }, DK.icon('clock', 10), t('online.playtime', { h: Math.floor((p.playtime || 0) / 3600) })))),
+              fav ? h('div', { class: 'pp-fav', tip: t('online.favorite') }, V.dSprite(pseudoD(fav), { size: 48 }), h('small', null, DK.icon('heart', 10), fav.n || D.species[fav.s].name), h('small', { class: 'muted' }, `${t('common.lvl')} ${fav.l | 0}`)) : null),
+            actions, recordGrid(p.records || {}),
+            h('div', { class: 'pp-sec' }, tabsEl, teamBox));
+        };
+        if (!tid) { draw(); return holder; }
+        O.profile(tid).then(async (x) => {
+          p = x;
+          if (p && O.ready() && !mine) { try { fr = (await O.friends()).find((f) => f.trainer_id === tid) || null; } catch (e) { fr = null; } }
+          draw();
+        }).catch(() => put(holder, h('p', { class: 'warn-text' }, DK.icon('alert', 13), ' ', t('online.error'))));
+        return holder;
+      },
+    });
+  };
+
+  /* ---------------- Amigos y buzón ---------------- */
+  /** Añadir (= enviar o aceptar solicitud), rechazar o quitar, con su aviso. */
+  async function friendAct(kind, tid) {
+    const O = DK.online;
+    const r = kind === 'add' ? await O.addFriend(tid) : kind === 'reject' ? await O.rejectFriend(tid) : await O.removeFriend(tid);
+    const key = kind === 'add' ? (r === 'ok' ? 'sent' : r) : r === 'ok' ? (kind === 'reject' ? 'rejected' : 'removed') : r;
+    const good = ['sent', 'accepted', 'rejected', 'removed', 'pending', 'already'].includes(key);
+    toast(t('online.res.' + key), { icon: good ? 'check' : 'alert', kind: good ? 'good' : 'bad' });
+    return r;
+  }
+  async function giftTo(tid) { const r = await DK.online.send(tid, 'gift', {}); toast(t('online.res.' + (r === 'ok' ? 'giftSent' : r)), { icon: r === 'ok' ? 'gift' : 'alert', kind: r === 'ok' ? 'good' : 'bad' }); }
+  /** Invitar a intercambiar: abre una sala y le manda el código al buzón. */
+  function inviteTrade(tid) {
+    const m = V.tradeDialog(); if (!m) return;
+    DK.trade.host();
+    let sent = false;
+    const off = DK.on('trade:changed', async (s) => {
+      if (sent || !s || !s.code || s.role !== 'host' || (s.status !== 'waiting' && s.status !== 'open')) return;
+      sent = true; off();
+      const r = await DK.online.send(tid, 'trade', { code: s.code });
+      toast(t('online.res.' + (r === 'ok' ? 'inviteSent' : r)), { icon: r === 'ok' ? 'swap' : 'alert', kind: r === 'ok' ? 'good' : 'bad' });
+    });
+    m.promise.then(() => off());
+  }
+  function reportDialog(tid, name) {
+    const reasons = ['cheat', 'name', 'msg', 'other'];
+    DK.ui.modal({ title: t('online.reportTitle', { name }), icon: 'alert', size: 'sm', content: (close) => h('div', { class: 'stack-s' }, h('p', { class: 'muted small' }, t('online.reportText')),
+      reasons.map((r) => btn({ label: t('online.reason.' + r), variant: 'ghost', onClick: async () => { const x = await DK.online.report(tid, r); toast(t(x === 'ok' ? 'online.reported' : 'online.error'), { icon: 'check' }); DK.online.mute(tid, r === 'msg'); close(true); } }))) });
+  }
+  /** Escribir un mensaje (140 caracteres; se borra a las 24 h). */
+  V.composeMessage = (tid, name) => {
+    const ta = h('textarea', { class: 'pm-text', maxlength: 140, rows: 3, placeholder: t('online.msgPlaceholder') });
+    const left = h('small', { class: 'muted' }, '140');
+    ta.addEventListener('input', () => { left.textContent = String(140 - ta.value.length); });
+    return DK.ui.modal({ title: t('online.msgTo', { name }), icon: 'edit', size: 'sm', content: () => h('div', { class: 'stack-s' }, ta, h('div', { class: 'row between' }, h('small', { class: 'muted' }, t('online.msgNote')), left)),
+      actions: [{ label: t('common.cancel'), variant: 'ghost', value: false },
+        { label: t('online.send'), icon: 'next', variant: 'primary', onClick: async (close) => { const txt = ta.value.trim(); if (!txt) return; const r = await DK.online.send(tid, 'msg', { text: txt }); toast(t('online.res.' + (r === 'ok' ? 'msgSent' : r)), { icon: r === 'ok' ? 'check' : 'alert', kind: r === 'ok' ? 'good' : 'bad' }); if (r === 'ok') close(true); } }] }).promise;
+  };
+
+  /* ---------------- Buzón (v5.41: dos paneles, sin cerrar y abrir la ventana) ---------------- */
+  /** Lo que trae un regalo del equipo / de una noticia, en fichas. */
+  V.giftChips = (g) => {
+    if (!g) return null;
+    const out = [];
+    Object.entries(g.items || {}).forEach(([id, n]) => { const it = D.items[id]; if (it) out.push(h('span', { class: 'chip mb-gift' }, V.itemIcon(it, 18), `${DK.tr('items', it)} ×${n | 0}`)); });
+    if (g.coins) out.push(h('span', { class: 'chip mb-gift' }, DK.icon('coin', 14), Number(g.coins).toLocaleString(DK.i18n.lang)));
+    if (g.emblems) out.push(h('span', { class: 'chip mb-gift' }, DK.icon('award', 14), `${g.emblems} ${t('online.emblems')}`));
+    return out.length ? h('div', { class: 'mb-gifts' }, out) : null;
+  };
+  const giftToast = (out) => { if (Array.isArray(out) && out.length) toast(t('online.giftGot'), { icon: 'gift', kind: 'good' }); };
+  const agoTxt = (at) => { const m = Math.max(1, Math.round((Date.now() - new Date(at).getTime()) / 60000)); return m < 60 ? t('trade.agoMin', { n: m }) : m < 2880 ? t('trade.agoH', { n: Math.round(m / 60) }) : new Date(at).toLocaleDateString(DK.i18n.lang, { day: 'numeric', month: 'short' }); };
+  const fullDate = (at) => new Date(at).toLocaleString(DK.i18n.lang, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  /** Imagen de un mensaje (sólo https). Al pulsarla se abre en grande. */
+  V.mailImg = (u, cls = 'mb-img') => (DK.online.imgOk(u) ? h('a', { class: cls, href: u, target: '_blank', rel: 'noopener noreferrer' }, h('img', { src: u, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer', decoding: 'async' })) : null);
+  const narrow = () => window.matchMedia('(max-width: 700px)').matches; // (una sola columna en el buzón)
+  const KIND = { news: ['megaphone', 'news'], msg: ['edit', 'msg'], gift: ['gift', 'gift'], agift: ['gift', 'team'], admin: ['shield', 'team'], friend: ['users', 'friend'], friendok: ['check', 'friend'], trade: ['swap', 'trade'] };
+
+  /** Buzón y amigos. tab: inbox · friends · team */
+  V.mailbox = (tab = 'inbox') => {
+    const O = DK.online, me = O.enabled() ? O.me() : {};
+    // Todo vive en S: cambiar de pestaña, elegir un mensaje o recoger un regalo sólo vuelve a dibujar el contenido
+    const S = { tab, sel: null, items: null, friends: null, thread: null, claimed: [], read: new Set(), seen: { inbox: me.inboxSeen || 0, news: me.newsSeen || 0 }, busy: false, fsel: null };
+    const root = h('div', { class: 'mb' });
+    const m = DK.ui.modal({ title: t('online.mailTitle'), icon: 'mail', cls: 'mb-modal', closeX: true, size: 'wide', content: () => root });
+
+    const loadInbox = async () => {
+      const ready = O.ready();
+      const [news, list, claimed] = await Promise.all([O.news(), ready ? O.inbox() : Promise.resolve([]), O.newsClaimed()]);
+      O.markSeen(list, news);
+      S.claimed = claimed;
+      const it = news.map((n) => ({ key: 'n' + n.id, kind: 'news', at: n.created_at, pinned: n.pinned, unread: +n.id > S.seen.news, title: n.title, from: t('online.teamName'), text: n.body, img: n.img, gift: n.gift, raw: n }))
+        .concat(list.map((x) => { const b = x.body || {}, team = x.from_tid === '@TEAM';
+          return { key: 'm' + x.id, kind: x.kind, at: x.created_at, unread: +x.id > S.seen.inbox, team, from: team ? t('online.teamName') : x.from_name, tid: team ? null : x.from_tid,
+            title: t('online.k.' + x.kind, { name: team ? t('online.teamName') : x.from_name }), text: b.text || '', img: b.img, gift: x.kind === 'agift' ? b.gift : x.kind === 'gift' ? { items: { pocion: 1 } } : null, code: b.code, raw: x }; }));
+      it.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || new Date(b.at) - new Date(a.at));
+      S.items = it;
+      if (S.sel && !it.find((x) => x.key === S.sel)) S.sel = null;
+      if (!S.sel && it.length && !narrow()) S.sel = it[0].key;
+    };
+    const loadFriends = async () => { S.friends = await O.friends(); if (S.fsel && !S.friends.find((f) => f.trainer_id === S.fsel)) S.fsel = null; if (!S.fsel && S.friends.length && !narrow()) S.fsel = S.friends[0].trainer_id; };
+    const loadThread = async () => { S.thread = await O.supportThread(); };
+    const LOAD = { inbox: loadInbox, friends: loadFriends, team: loadThread };
+    async function reload(kind = S.tab) { S.busy = true; draw(); try { await LOAD[kind](); S.err = null; } catch (e) { S.err = true; } S.busy = false; draw(); }
+    const run = async (p) => { try { await p; } catch (e) { /* */ } await reload(); };
+
+    function draw() {
+      root.classList.toggle('show-detail', !!((S.tab === 'inbox' && S.sel) || (S.tab === 'friends' && S.fsel)));
+      put(root, header(), h('div', { class: 'mb-main' }, O.enabled() ? (S.tab === 'inbox' ? inboxView() : S.tab === 'friends' ? friendsView() : teamView()) : h('p', { class: 'muted' }, t('online.off'))));
+    }
+    function header() {
+      const n = S.items ? S.items.filter((x) => x.unread && !S.read.has(x.key)).length : O.unread;
+      return h('div', { class: 'mb-top' },
+        h('div', { class: 'mb-tabs', role: 'tablist' }, [['inbox', 'mail'], ['friends', 'users'], ['team', 'shield']].map(([k, ic]) => h('button', { class: 'mb-tab' + (k === S.tab ? ' on' : ''), type: 'button', role: 'tab', 'aria-selected': String(k === S.tab),
+          onClick: () => { if (k === S.tab) return; S.tab = k; if ((k === 'inbox' && !S.items) || (k === 'friends' && !S.friends) || (k === 'team' && !S.thread)) reload(k); else draw(); } },
+          DK.icon(ic, 15), h('span', null, t('online.tab.' + k)), k === 'inbox' && n ? h('i', { class: 'mb-count' }, String(n)) : k === 'friends' && S.friends && S.friends.some((f) => f.status === 'incoming') ? h('i', { class: 'mb-count' }, String(S.friends.filter((f) => f.status === 'incoming').length)) : null))),
+        h('button', { class: 'mb-id', type: 'button', tip: t('online.copyId'), onClick: () => { navigator.clipboard && navigator.clipboard.writeText(DK.trainer.id()).then(() => toast(t('trade.copied'), { icon: 'copy' }), () => {}); } },
+          h('small', null, t('trade.yourId')), h('b', null, '#' + DK.trainer.id()), DK.icon('copy', 13)));
+    }
+    const needProfile = () => h('div', { class: 'mb-empty' }, DK.icon('user', 34), h('p', null, t('online.needPublic')), V.publishCard(() => { S.items = S.friends = S.thread = null; reload(); }));
+    const empty = (ic, txt) => h('div', { class: 'mb-empty' }, DK.icon(ic, 34), h('p', { class: 'muted' }, txt));
+    const loadingEl = () => h('div', { class: 'mb-empty' }, h('span', { class: 'mb-spin' }), h('p', { class: 'muted' }, t('online.loading')));
+    const back = () => h('button', { class: 'mb-back', type: 'button', onClick: () => { if (S.tab === 'inbox') S.sel = null; else S.fsel = null; draw(); } }, DK.icon('back', 14), t('common.back'));
+
+    /* ----- Buzón ----- */
+    function inboxView() {
+      if (!S.items) return S.err ? empty('alert', t('online.error')) : loadingEl();
+      const ready = O.ready();
+      const list = h('div', { class: 'mb-list' + (S.busy ? ' busy' : '') },
+        S.items.length ? S.items.map((x) => { const [ic, tone] = KIND[x.kind] || ['mail', 'msg'];
+          return h('button', { class: `mb-item t-${tone}` + (x.key === S.sel ? ' on' : '') + (x.unread && !S.read.has(x.key) ? ' unread' : ''), type: 'button', onClick: () => { S.sel = x.key; S.read.add(x.key); draw(); } },
+            h('span', { class: 'mb-ic' }, DK.icon(x.pinned ? 'pin' : ic, 15)),
+            h('span', { class: 'mb-it' }, h('span', { class: 'mb-it-top' }, h('b', null, x.kind === 'news' ? x.title : x.from), h('small', null, agoTxt(x.at))),
+              h('small', { class: 'mb-snip' }, x.kind === 'news' ? (x.text || '').slice(0, 90) : x.text ? x.text.slice(0, 90) : x.title),
+              x.gift || x.img ? h('span', { class: 'mb-flags' }, x.gift ? DK.icon('gift', 11) : null, x.img ? DK.icon('image', 11) : null) : null)); })
+          : empty('mail', t('online.inboxEmpty')),
+        ready ? null : h('div', { class: 'mb-note' }, h('small', { class: 'muted' }, t('online.needPublicInbox')), V.publishCard(() => { S.items = null; reload(); })));
+      const cur = S.items.find((x) => x.key === S.sel);
+      return h('div', { class: 'mb-split' }, list, h('div', { class: 'mb-detail' }, cur ? detail(cur) : empty('mail', t('online.pickMsg'))));
+    }
+    function detail(x) {
+      const [ic, tone] = KIND[x.kind] || ['mail', 'msg'];
+      const take = (fn) => run(fn());
+      let actions = [];
+      const del = btn({ icon: 'trash', label: t('online.delete'), size: 'sm', variant: 'ghost', onClick: () => { S.sel = null; take(() => O.take(x.raw.id)); } });
+      if (x.kind === 'news') {
+        if (x.gift) actions.push(S.claimed.includes(+x.raw.id) ? h('span', { class: 'chip pos' }, DK.icon('check', 12), t('online.claimedShort'))
+          : O.ready() ? btn({ icon: 'gift', label: t('online.claim'), variant: 'primary', onClick: () => take(async () => { const r = await O.claimNews(x.raw); if (Array.isArray(r)) giftToast(r); else toast(t('online.gone'), { icon: 'alert', kind: 'bad' }); }) })
+            : h('small', { class: 'muted' }, t('online.needPublicShort')));
+      } else if (x.kind === 'gift' || x.kind === 'agift') {
+        actions.push(btn({ icon: 'gift', label: t('online.claim'), variant: 'primary', onClick: () => { S.sel = null; take(async () => { const r = await O.claimGift(x.raw); if (r === 'claimed') giftToast([1]); else toast(t('online.gone'), { icon: 'alert', kind: 'bad' }); }); } }), del);
+      } else if (x.kind === 'friend') {
+        actions.push(btn({ icon: 'check', label: t('online.accept'), variant: 'primary', onClick: () => { S.sel = null; S.friends = null; take(() => friendAct('add', x.tid)); } }),
+          btn({ icon: 'x', label: t('online.reject'), variant: 'ghost', onClick: () => { S.sel = null; take(() => friendAct('reject', x.tid)); } }));
+      } else if (x.kind === 'trade') {
+        actions.push(btn({ icon: 'swap', label: t('trade.join'), variant: 'primary', onClick: async () => { await O.take(x.raw.id); m.close(); const d = V.tradeDialog(); if (d) DK.trade.join(x.code); } }), del);
+      } else if (x.kind === 'msg') actions.push(btn({ icon: 'edit', label: t('online.reply'), variant: 'primary', onClick: () => V.composeMessage(x.tid, x.from) }), del);
+      else if (x.kind === 'admin') actions.push(btn({ icon: 'edit', label: t('online.reply'), variant: 'primary', onClick: () => { S.tab = 'team'; reload('team'); } }), del);
+      else actions.push(del);
+      return h('article', { class: 'mb-read t-' + tone },
+        back(),
+        h('header', { class: 'mb-read-h' }, h('span', { class: 'mb-ic big' }, DK.icon(x.pinned ? 'pin' : ic, 20)),
+          h('div', null, h('h4', null, x.kind === 'news' ? x.title : x.title), h('small', { class: 'muted' },
+            x.tid ? h('button', { class: 'linkish', type: 'button', onClick: () => V.publicProfile(x.tid) }, x.from + ' #' + x.tid) : x.from, ' · ', fullDate(x.at)))),
+        x.text ? h('p', { class: 'mb-text' }, x.text) : x.kind === 'friend' ? h('p', { class: 'mb-text' }, t('online.reqFrom')) : x.kind === 'friendok' ? h('p', { class: 'mb-text' }, t('online.reqOk'))
+          : x.kind === 'trade' ? h('p', { class: 'mb-text' }, t('online.inviteFrom', { code: x.code || '' })) : x.kind === 'gift' ? h('p', { class: 'mb-text' }, t('online.giftFrom')) : null,
+        V.mailImg(x.img),
+        x.gift ? h('div', { class: 'mb-giftbox' }, h('small', { class: 'bv-lbl' }, DK.icon('gift', 12), t('online.giftIn')), V.giftChips(x.gift)) : null,
+        actions.length ? h('div', { class: 'mb-acts' }, actions) : null);
+    }
+
+    /* ----- Amigos ----- */
+    function friendsView() {
+      if (!O.ready()) return needProfile();
+      if (!S.friends) return S.err ? empty('alert', t('online.error')) : loadingEl();
+      const inp = h('input', { class: 'trade-code-in mb-add-in', type: 'text', maxlength: 7, placeholder: 'ABC123', autocapitalize: 'characters', 'aria-label': t('online.friendId') });
+      inp.addEventListener('input', () => { inp.value = DK.trade.cleanCode(inp.value); });
+      const add = () => { if (inp.value.length === 6) run(friendAct('add', inp.value)); };
+      inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') add(); });
+      const grp = (st, key) => { const l = S.friends.filter((f) => f.status === st); return l.length ? [h('small', { class: 'mb-grp' }, t('online.grp.' + key, { n: l.length })), l.map((f) => { const av = f.avatar || {}, fv = f.fav && okSp(f.fav) ? f.fav : null;
+        return h('button', { class: 'mb-item mb-friend' + (f.trainer_id === S.fsel ? ' on' : '') + (st === 'incoming' ? ' unread' : ''), type: 'button', onClick: () => { S.fsel = f.trainer_id; draw(); } },
+          h('span', { class: 'mb-av' }, V.avatar({ name: f.name, avatar: av.av || null }, { size: 34, avatar: av.av || (fv ? { kind: 'daskai', species: fv.s } : null) })),
+          h('span', { class: 'mb-it' }, h('b', null, f.name), h('small', { class: 'mb-snip' }, '#' + f.trainer_id + (f.title ? ' · ' + f.title : '')))); })] : null; };
+      const list = h('div', { class: 'mb-list' + (S.busy ? ' busy' : '') },
+        h('div', { class: 'mb-add' }, inp, btn({ icon: 'plus', label: t('online.addFriend'), size: 'sm', variant: 'tone', onClick: add })),
+        S.friends.length ? [grp('incoming', 'incoming'), grp('friend', 'friends'), grp('sent', 'sent')] : h('p', { class: 'muted small mb-pad' }, t('online.friendsHelp')));
+      const f = S.friends.find((x) => x.trainer_id === S.fsel);
+      return h('div', { class: 'mb-split' }, list, h('div', { class: 'mb-detail' }, f ? friendDetail(f) : empty('users', S.friends.length ? t('online.pickFriend') : t('online.noFriends'))));
+    }
+    function friendDetail(f) {
+      const av = f.avatar || {}, fv = f.fav && okSp(f.fav) ? f.fav : null, r = f.records || {};
+      const acts = f.status === 'friend' ? [btn({ icon: 'gift', label: t('online.sendGift'), size: 'sm', variant: 'tone', onClick: () => giftTo(f.trainer_id) }),
+        btn({ icon: 'edit', label: t('online.sendMsg'), size: 'sm', variant: 'tone', onClick: () => V.composeMessage(f.trainer_id, f.name) }),
+        btn({ icon: 'swap', label: t('online.inviteTrade'), size: 'sm', variant: 'tone', onClick: () => { m.close(); inviteTrade(f.trainer_id); } }),
+        btn({ icon: 'x', label: t('online.removeFriend'), size: 'sm', variant: 'ghost', onClick: () => { S.fsel = null; run(friendAct('remove', f.trainer_id)); } })]
+        : f.status === 'incoming' ? [btn({ icon: 'check', label: t('online.accept'), variant: 'primary', onClick: () => { S.items = null; run(friendAct('add', f.trainer_id)); } }), btn({ icon: 'x', label: t('online.reject'), variant: 'ghost', onClick: () => { S.fsel = null; run(friendAct('reject', f.trainer_id)); } })]
+          : [h('span', { class: 'chip' }, DK.icon('clock', 12), t('online.pendingShort')), btn({ icon: 'x', label: t('online.cancelReq'), size: 'sm', variant: 'ghost', onClick: () => { S.fsel = null; run(friendAct('remove', f.trainer_id)); } })];
+      return h('article', { class: 'mb-read' }, back(),
+        h('header', { class: 'mb-read-h' }, h('span', { class: 'mb-av big' }, V.avatar({ name: f.name, avatar: av.av || null }, { size: 56, avatar: av.av || (fv ? { kind: 'daskai', species: fv.s } : null) })),
+          h('div', null, h('h4', null, f.name), h('small', { class: 'muted' }, '#' + f.trainer_id + (f.title ? ' · ' + f.title : '')),
+            h('div', null, h('span', { class: 'chip sm' + (f.status === 'friend' ? ' pos' : '') }, t('online.st.' + f.status))))),
+        recordGrid(r), h('div', { class: 'mb-acts' }, acts, btn({ icon: 'user', label: t('online.seeProfileShort'), size: 'sm', variant: 'ghost', onClick: () => V.publicProfile(f.trainer_id) })));
+    }
+
+    /* ----- Equipo Daskai (soporte) ----- */
+    function teamView() {
+      if (!O.ready()) return needProfile();
+      if (!S.thread) return S.err ? empty('alert', t('online.error')) : loadingEl();
+      const ta = h('textarea', { class: 'pm-text', maxlength: 500, rows: 2, placeholder: t('online.teamPlaceholder') });
+      const send = async () => { const txt = ta.value.trim(); if (!txt) return; const r = await O.support(txt); if (r !== 'ok') toast(t('online.res.' + r), { icon: 'alert', kind: 'bad' }); else reload('team'); };
+      ta.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
+      const log = h('div', { class: 'mb-chat' }, S.thread.length ? S.thread.map((x) => h('div', { class: 'mb-bubble' + (x.from_admin ? ' them' : ' me') },
+        x.from_admin ? h('small', { class: 'mb-who' }, DK.icon('shield', 11), t('online.teamName')) : null,
+        x.body ? h('p', null, x.body) : null, V.mailImg(x.img, 'mb-img sm'), h('small', { class: 'muted' }, agoTxt(x.created_at))))
+        : empty('shield', t('online.teamEmpty')));
+      setTimeout(() => { log.scrollTop = log.scrollHeight; }, 0);
+      return h('div', { class: 'mb-team' }, h('p', { class: 'muted small' }, t('online.teamHelp')), log,
+        h('div', { class: 'mb-compose' }, ta, btn({ icon: 'next', label: t('online.send'), iconOnly: true, variant: 'primary', onClick: send })));
+    }
+
+    draw(); reload();
+    return m;
+  };
+  V.friendsDialog = (tab) => V.mailbox(tab === 'friends' ? 'friends' : tab || 'inbox'); // (nombre antiguo)
+
+  // Aviso cuando llega algo nuevo al buzón (se consulta cada pocos minutos)
+  let lastUnread = 0;
+  DK.on('online:inbox', (e) => { const n = (e && e.n) | 0; if (n > lastUnread) toast(t('online.newInbox', { n }), { icon: 'mail', onClick: () => V.mailbox('inbox') }); lastUnread = n; });
+
+  /** Tarjeta para decidir si publicar (sale una vez, tras el primer récord). */
   V.publishAsk = (onDone) => {
     const O = DK.online; if (!O.shouldAsk()) return null;
-    const me = O.me(), name = (DK.store.state.player && DK.store.state.player.name) || '?';
+    const name = (DK.store.state.player && DK.store.state.player.name) || '?';
     const card = h('div', { class: 'card lb-ask' },
       h('b', null, DK.icon('globe', 15), ' ', t('online.askTitle')),
-      h('p', { class: 'muted small' }, t('online.askText', { name, n: me.pending.p_floors })),
+      h('p', { class: 'muted small' }, t('online.askText2', { name, id: DK.trainer.id() })),
       h('div', { class: 'row gap-s wrap' },
         btn({ icon: 'upload', label: t('online.askYes'), variant: 'primary', onClick: async () => { card.remove(); const r = await O.setPublish(true); toast(r === 'error' ? t('online.error') : t('online.sent'), { icon: r === 'error' ? 'alert' : 'trophy', kind: r === 'error' ? 'bad' : 'good' }); if (onDone) onDone(); } }),
         btn({ label: t('online.askNo'), variant: 'ghost', onClick: () => { card.remove(); O.setPublish(false); if (onDone) onDone(); } })));

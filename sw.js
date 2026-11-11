@@ -6,7 +6,7 @@
  * sube el número de CACHE para que los jugadores reciban la versión
  * nueva. (Sólo funciona servido por http/https, no con file://).
  * ============================================================= */
-const CACHE = 'daskai-v5.38.0';
+const CACHE = 'daskai-v5.41.3';
 const FILES = [
     './',
     './css/cursor.css',
@@ -158,6 +158,7 @@ self.addEventListener('activate', (e) => {
 // Primero la caché; si no está, red (y se guarda para la próxima vez)
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
+  if (/\/admin(\.html|\.css)?(\?|$)|\/js\/admin\//.test(new URL(e.request.url).pathname)) return; // v5.40: el panel de admin siempre de la red
   e.respondWith(caches.match(e.request).then((hit) => hit || fetch(e.request).then((res) => {
     if (res.ok && new URL(e.request.url).origin === location.origin) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(e.request, copy)); }
     return res;

@@ -37,6 +37,8 @@
   const newCode = () => Array.from({ length: 6 }, () => ALPHA[Math.floor(Math.random() * ALPHA.length)]).join('');
   const cleanCode = (c) => String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
   /** Huella corta de un texto (FNV-1a). */
+  /** JSON con las claves ordenadas (el mismo texto en los dos lados aunque el transporte cambie el orden). */
+  const canon = (v) => (Array.isArray(v) ? '[' + v.map(canon).join(',') + ']' : v && typeof v === 'object' ? '{' + Object.keys(v).sort().map((k) => JSON.stringify(k) + ':' + canon(v[k])).join(',') + '}' : JSON.stringify(v === undefined ? null : v));
   const hash = (s) => { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h >>> 0).toString(36); };
 
   /* ---------------- Transporte PeerJS ---------------- */
@@ -200,6 +202,8 @@
     name() { const s = st(); return (s && s.player && s.player.name) || '?'; },
     stamp(d) { if (d && !d.ot && st()) d.ot = { id: this.id(), name: this.name().slice(0, 20) }; return d; },
     isMine(d) { return !d || !d.ot || d.ot.id === this.id(); },
+    /** v5.39: otro ID (si el elegido ya lo tenía otro jugador): tus daskai pasan al nuevo. */
+    reroll() { const s = st(); if (!s) return; const old = this.id(); s.trainer.id = null; const nu = this.id(); (DK.party.all() || []).forEach((d) => { if (d.ot && d.ot.id === old) d.ot.id = nu; }); DK.store.save(); return nu; },
     label(d) { return d && d.ot ? `${d.ot.name} #${d.ot.id}` : ''; },
   };
   // los que ya tenías son tuyos
@@ -254,7 +258,9 @@
     /** Huella de las dos ofertas (la del anfitrión primero: los dos calculan la misma). */
     fingerprint() {
       const s = this.session; if (!s || !s.me.payload || !s.them.payload) return null;
-      const a = JSON.stringify(s.me.payload), b = JSON.stringify(s.them.payload);
+      // v5.38.1: JSON canónico (claves ordenadas): la base de datos del relé reordena las claves de lo que guarda y
+      // la huella de cada lado salía distinta, así que «aceptar» nunca coincidía
+      const a = canon(s.me.payload), b = canon(s.them.payload);
       return hash(s.role === 'host' ? a + '|' + b : b + '|' + a);
     },
     offer(uid) {

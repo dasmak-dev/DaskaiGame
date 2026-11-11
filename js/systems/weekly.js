@@ -34,8 +34,9 @@
     /** Cómo es el desafío de esta semana (fijo para la semana). */
     def(now) {
       const id = this.id(now), rnd = U.seeded('weekly-' + id);
-      const zones = Object.keys(D.zones).filter((z) => !D.zones[z].secretZone && DK.world.isUnlocked(z));
-      const kinds = DK.expedition.kinds().filter((k) => !k.locked).map((k) => k.id);
+      // v5.40: la misma zona para todos (cualquiera de las diez, aunque no la tengas abierta): los rivales se ajustan a tu equipo (levelFor)
+      const zones = Object.keys(D.zones).filter((z) => !D.zones[z].secretZone);
+      const kinds = DK.expedition.kinds().map((k) => k.id); // (con el desafío abierto, todos los tipos lo están)
       const curses = Object.keys(D.curses);
       const pickN = (arr, n) => { const a = arr.slice(), out = []; while (out.length < n && a.length) out.push(a.splice(Math.floor(rnd() * a.length), 1)[0]); return out; };
       return {
@@ -71,6 +72,7 @@
       const e = DK.expedition.start(pack);
       s.nextExpedition = prev;
       e.weekly = w.id;
+      e.weeklyLv = this.teamLevel(); // v5.40: nivel de referencia de los rivales
       // Pactos obligatorios de la semana (sin elegir)
       e.curseOffer = w.curses.slice();
       DK.curses.accept(w.curses);
@@ -80,6 +82,16 @@
       return e;
     },
 
+    /** v5.40: nivel medio de tu equipo (los rivales del desafío se miden con él). */
+    teamLevel() { const t = DK.party.active(); return t.length ? Math.round(t.reduce((a, d) => a + (d.level | 0), 0) / t.length) : 5; },
+    /**
+     * v5.40: nivel de un rival del desafío. La zona es la misma para todos, así que el nivel no sale de la zona
+     * sino de tu equipo: n (el nivel normal de la zona) sólo dice dónde cae dentro de ella (salvaje bajo… jefe).
+     */
+    levelFor(n, zoneId, base) {
+      const L = D.zones[zoneId].levels, rel = (n - L[0]) / Math.max(1, L[1] - L[0]);
+      return Math.max(1, Math.min(DK.config.maxLevel, Math.round(base - 2 + rel * 5)));
+    },
     /** Puntos de una expedición (en curso o terminada). */
     score(e, outcome) {
       const floors = (e.cleared || []).length, emblems = (e.log && e.log.emblems) || 0, coins = (e.loot && e.loot.coins) || 0;
