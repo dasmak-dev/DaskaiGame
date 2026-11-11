@@ -357,6 +357,17 @@ Se carga la última y sólo sobrescribe: paleta (piedra oscura, bronce, oro `--g
 - **Expedición:** al entrar en el mapa, el equipo, la mochila o un combate durante una expedición, `#zone-backdrop` (creado en `screens/expedition.js` con `screen:enter`) pinta detrás de todo la escena de la zona actual, oscurecida; `body.in-exp`.
 - **Combate:** la arena usa la escena de la zona (`components/scenes.js`, ahora con árboles muertos, ruinas, tumbas, cristales o tentáculos según la zona) y los **jefes tienen su propio fondo**: `DK.scenes.bossScene(zona, secreto)` → `boss_<escena>` (menhires bajo luna roja, bosque muerto, naufragio con tormenta, bosque de cristales, forja de lava, santuario con estatua, fauces del abismo, ruinas entre rayos) y `boss_secret` (cripta) para los jefes ocultos.
 
+### Cambios de la v5.44.0 — «Mesa de guerra»: nueva preparación de expedición
+
+- **Pantalla de zonas rehecha** (`js/screens/zones.js` + `css/war.css`, nuevo, cargado tras `pixel.css` y en la lista del `sw.js`). Debajo del mapa, `warTable(params, refresh)` monta dos columnas:
+  - Izquierda: `destCard` (arte de la zona, calaveras de peligro con `dangerOf`, 4 datos, línea «Esta expedición» con probabilidades pequeñas `.bt-kind .bt-odd`, botones Récords → `recordsModal` y Combate libre) y `contractCard` (contrato semanal en pergamino, sin sello).
+  - Derecha: `runesRow`, `rulesBox` (Abismo, corrupción, pesadilla, grabadas, Averno y serie; resumen más difícil/mejor), `formationBox` (6 cartas pequeñas con color de casa, líder discreto, arrastrar = `DK.party.moveInTeam`), `bagBox` (anillo de capacidad, bolsillos 5×2, «−» quita uno, el bolsillo «+» abre `V.packModal` con buscador y categorías) y `launchBar` (ruta, iconos con tooltip, botón granate «Partir/Al Abismo/Bajar»).
+  - Se redibuja con `redrawPrep` conservando el scroll. El atajo Enter se registra una sola vez (`offEnter`) para no acumular oyentes.
+  - Se quitaron `prepCard`, `weeklyCard` y `endgameBox`. Se mantienen las clases que usan los tests (`bt-prep`, `bt-team6 > bt-mon`, `pk-row`, `pk-empty`, `bt-go`, `rune-socket`, `egx-levels`).
+  - Tokens `--wt-*` en `.wt` con variantes para Exilio, Clásico y tema claro.
+- **Selector de runas** (`runePicker`, clase `rp2`): pestañas por grupo (Todas/Tamaño/Tipo/Bonificación) con contador y, dentro de cada grupo, subfiltros `.rp-s` (p. ej. Tamaño → Pequeñas / Medianas / XL) con cuántas tienes de cada una; las vacías salen desactivadas. Textos en `wt.sub.*`.
+- Textos nuevos en el bloque `wt` de `es.js`/`en.js`.
+
 ### Cambios de la v5.43.1 — clasificaciones nuevas, «cápsulas» discretas y sin parpadeos
 - **Panel, Soporte**: ya no se atenúa la pantalla mientras carga (sólo la barrita de arriba). Cambiar de conversación enseña al momento lo ya visto (`SUP.cache`) y sólo redibuja si hay algo nuevo; si eliges otra antes de que llegue, la respuesta vieja se ignora.
 - **Buzón (juego)**: elegir un mensaje o un amigo sólo cambia la parte derecha (`pickInbox` / `pickFriend`); al recargar tras una acción o una novedad se cambian la lista y el detalle, sin redibujar la ventana (`reload` ya no pinta «Cargando…» si había datos).

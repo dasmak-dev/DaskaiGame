@@ -566,6 +566,20 @@ DK.i18n.register('es', {
     giftFrom: 'Te ha regalado una poción.', inviteFrom: 'Te invita a intercambiar (sala {code}).', claim: 'Recoger', claimed: '¡Poción recogida! Está en tu bolsa de casa.', gone: 'Ya no está.', reply: 'Responder', delete: 'Borrar',
     newInbox: 'Tienes {n} cosa(s) nuevas en el buzón', mailTitle: 'Buzón', emblems: 'emblemas', giftGot: '¡Regalo recogido! Lo tienes en casa.', fromTeam: 'Equipo Daskai', teamName: 'Equipo Daskai', claimedShort: 'Recogido', needPublicShort: 'Activa tu perfil para recogerlo', teamGift: 'Un regalo del equipo', reqFrom: 'Quiere ser tu amigo.', reqOk: 'Ha aceptado tu solicitud: ya sois amigos.', accept: 'Aceptar', reject: 'Rechazar', cancelReq: 'Cancelar solicitud', news: 'Noticias', grp: { incoming: 'Solicitudes recibidas ({n})', friends: 'Amigos ({n})', sent: 'Solicitudes enviadas ({n})' }, teamPlaceholder: '¿En qué te podemos ayudar?', teamHelp: 'Escribe al equipo del juego: dudas, fallos o problemas. La respuesta te llegará aquí y al buzón.', teamEmpty: 'Aún no has escrito al equipo.', teamNote: 'Hasta 500 caracteres.', askText2: 'Se crea tu perfil público como «{name}» (ID #{id}) y tus récords salen en las clasificaciones con tu equipo. Puedes quitarlo cuando quieras.',
   },
+  // v5.44: mesa de guerra (preparar la expedición)
+  wt: {
+    dest: 'Destino', danger: 'Peligro', dangerTip: 'Lo duro que será: nivel de la zona frente a tu equipo, Corrupción, Pesadilla y Abismo.', foes: 'Rivales',
+    floors: '{n} pisos', modifier: 'modificador', noMod: 'Despejado', perBoss: 'emblemas por jefe', boss: 'jefe', from: 'desde {zone}', series: 'Serie de jefes',
+    noExit: 'Sin salida', noRecruits: 'Sin reclutas', bossesRow: 'jefes seguidos', record: 'récord', betweenShort: 'Hoguera', between: 'o mercader entre jefes', roundPrize: 'Premio', roundPrizeSub: 'por cada ronda',
+    contract: 'Contrato semanal', contractSub: 'La misma zona para todos · rivales a tu nivel (~{n})', week: 'Semana {n} · quedan {d} días', reward: 'Recompensa', rewarded: 'Cobrada esta semana',
+    sub: { small: 'Pequeñas', medium: 'Medianas', xl: 'XL', captura: 'Captura', combate: 'Combate', desafio: 'Desafío', oro: 'Oro', saber: 'Experiencia', elite: 'Élite', maldito: 'Malditas' },
+    runeN: 'Runa {n}', yourBest: 'Tu récord', sign: 'Firmar contrato', runesEmpty: 'Pulsa un hueco para engastar una runa.', runeNoneFilter: 'No tienes runas de este tipo.',
+    rules: 'Reglas de la aventura', rulesSub: 'más difícil = mejores premios', coins: 'monedas', nightmareShort: 'Rivales +{lv} Nv. y +{n}% · +{c}% monedas',
+    nmHarder: 'Pesadilla: +{lv} Nv. y +{n}%', nmEmblem: '+{n} emblema por jefe', engraveSub: 'Empiezas cada expedición con ellas',
+    formation: 'Formación', dragHint: 'arrastra para ordenar', lead: 'Líder: abre el combate', heal: 'Curar', items: 'Objetos', change: 'Cambiar',
+    bagSub: 'Lo que llevas al camino', add: 'Añadir', repeat: 'Repetir', noItems: 'No tienes objetos en casa.',
+    icBag: 'Objetos en la mochila', icTeam: 'Daskai en el equipo', icHeal: 'Curar a todos cuesta {n} monedas', go: 'Partir', goAbyss: 'Al Abismo', goAverno: 'Bajar',
+  },
   // v5.31: El Averno (bajada sin fin)
   averno: {
     title: 'El Averno', chip: 'Averno · piso {n} · Nv. {lv}', chipTip: 'Bajada sin fin. Tu récord: {best} pisos.',

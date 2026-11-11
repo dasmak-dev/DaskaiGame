@@ -186,186 +186,292 @@
       problems.length ? V.warnings(problems, async () => { if (await V.healDialog(team)) refresh(); }) : null);
   }
 
-  /* ---------------- Preparar la expedición (en la misma pantalla) ----------------
-   * Todo lo necesario para salir, sin abrumar:
-   *   - la zona de inicio (la elegida en el mapa) con sus datos en chips,
-   *   - el tipo de expedición (sale al azar; las Mejoras «Rumbo» suben uno),
-   *   - tu equipo (retratos con su vida) y la mochila (objetos en chips;
-   *     «Elegir objetos» abre el editor completo en un panel deslizante),
-   *   - avisos en una línea y el botón «Partir».
+  /* ================= Mesa de guerra (v5.44): preparar la expedición =================
+   * Izquierda: carta del destino (zona, peligro, datos, tipo de expedición) y el contrato semanal.
+   * Derecha: runas, reglas de la aventura (Abismo, Corrupción, Pesadilla, grabadas), formación,
+   * mochila y la barra de embarque con «Partir». Todo se redibuja solo (sin tocar el mapa del mundo).
    */
-  function prepCard(params, refresh) {
-    const E = DK.expedition;
-    const pv = E.preview(), z = D.zones[pv.zone];
-    const team = DK.party.active();
-    const ok = DK.party.aliveActive().length > 0;
-    params.pack = params.pack || {};
-    const pack = params.pack, cap = E.packCapacity(), used = E.packSize(pack);
-    const go = () => { if (!ok) return; E.start(pack); params.pack = {}; DK.audio.sfx('select'); DK.router.reset('expedition'); };
-    DK.keys.on('Enter', go);
-    const lvBonus = E.levelBonus(1) + ((pv.mod && D.mapMods[pv.mod].levels) || 0);
-    const best = E.bestDepth();
+  let offEnter = null;
+  const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'];
+  const wtHead = (title, sub, ...extra) => h('div', { class: 'wt-h' }, h('span', { class: 'wt-h-t' }, title), sub ? h('span', { class: 'wt-h-s' }, sub) : null, ...extra);
 
-    // Tipo de expedición: sale al azar salvo que pongas una runa de tipo (DK.runes)
-    const cur = E.kindDef(pv.kind), chances = E.kindChances(), sel = DK.runes.selected();
-    const kindBox = h('div', { class: 'bt-kind k-' + cur.id },
-      h('span', { class: 'bt-kind-icon' }, DK.icon(cur.icon, 24)),
-      h('div', { class: 'bt-kind-text' },
-        h('span', { class: 'bt-label' }, t('kind.rolled'), sel.kind ? h('span', { class: 'bt-rune-tag' }, DK.icon('rune', 11), t('kind.byRune')) : null),
-        h('b', { tip: t('kind.' + cur.id + '.desc') }, t('kind.' + cur.id + '.name')),
-        h('span', { class: 'chips' }, V.kindEffects(cur))),
-      sel.kind || cur.special ? null : h('div', { class: 'bt-kind-odds', tip: t('kind.chancesHint'), 'aria-label': t('kind.chances') },
-        E.kinds().map((k) => h('span', { class: 'bt-odd k-' + k.id + (k.id === cur.id ? ' on' : '') + (k.locked ? ' locked' : ''), tip: k.locked ? t('kind.locked') : `${t('kind.' + k.id + '.name')} · ${Math.round((chances[k.id] || 0) * 100)}%` },
-          DK.icon(k.locked ? 'lock' : k.icon, 13), h('small', null, k.locked ? '—' : Math.round((chances[k.id] || 0) * 100) + '%')))));
-
-    // Runas: 4 huecos; pulsa uno vacío para engastar una runa, uno lleno para quitarla
-    const slots = DK.runes.slots(), N = DK.runes.slotCount();
-    const sockets = Array.from({ length: N }, (_, i) => {
-      const id = slots[i];
-      if (!id) return h('button', { class: 'rune-socket empty', type: 'button', 'aria-label': t('rune.add'), tip: DK.runes.total() ? t('rune.add') : t('rune.none'),
-        onClick: () => runePicker(refresh) }, h('span', { class: 'rune-socket-ring' }, DK.icon('plus', 11)));
-      return h('button', { class: 'rune-socket full g-' + DK.runes.get(id).group, type: 'button', style: { '--rc': look(id)[0] }, 'aria-label': t('rune.remove', { name: V.runeName(id) }),
-        tip: `${V.runeTip(id)} · ${t('rune.tapOff')}`,
-        onClick: () => { DK.runes.unsocket(i); DK.audio.sfx('click'); refresh(); } },
-        h('span', { class: 'rune-socket-ring' }, V.runeGem(id, 28)), h('span', { class: 'rune-socket-x' }, DK.icon('x', 10)));
-    });
-    // Sin la mejora «Taller de runas» no hay huecos (se compra con emblemas tras el primer jefe)
-    const runeBox = !DK.runes.enabled() ? null : h('div', { class: 'bt-runes' },
-      h('div', { class: 'bt-runes-text' },
-        h('span', { class: 'bt-label' }, t('rune.title')),
-        slots.length ? h('span', { class: 'small muted' }, slots.map(V.runeEffect).join(' · ')) : null, // v5.2: sin «Al azar»
-        h('button', { class: 'bt-runes-help', type: 'button', tip: t('rune.help'), 'aria-label': t('rune.help'), onClick: () => DK.ui.toast(t('rune.help'), { icon: 'info' }) }, DK.icon('info', 12), ' ', t('rune.have', { n: DK.runes.total() }))),
-      h('div', { class: 'rune-sockets' }, sockets));
-
-    // Final del juego: Abismo, Corrupción, versión pesadilla y reliquias grabadas
-    const lateBox = endgameBox(refresh);
-
-    // Equipo (v4.98): dos columnas de tres con lo justo (dibujo, nombre, nivel y vida); al pulsar uno sale
-    // su ficha rápida, la misma que en la hoguera del campamento
-    const teamStrip = h('div', { class: 'bt-team bt-team6' }, Array.from({ length: DK.config.maxTeam }, (_, i) => {
-      const d = team[i];
-      if (!d) return h('button', { class: 'bt-mon empty', type: 'button', tip: t('home.manage'), 'aria-label': t('home.manage'), onClick: () => DK.router.go('team') }, DK.icon('plus', 16));
-      const s = DK.daskai.stats(d), hp = DK.util.percent(d.cur.hp, s.hp);
-      return h('button', { class: 'bt-mon' + V.frameCls(d) + (DK.daskai.isFainted(d) ? ' ko' : ''), type: 'button', tip: `${DK.daskai.name(d)} · ${t('common.lvl')} ${d.level} · ${d.cur.hp}/${s.hp}`,
-        onClick: () => { DK.audio.sfx('select'); V.quickStats(d, { onChange: refresh }); } },
-        i === 0 ? h('span', { class: 'bt-mon-lead', tip: t('pack.lead') }, DK.icon('crown', 10)) : null,
-        h('span', { class: 'bt-mon-spr' }, V.dSprite(d, { size: 48 })),
-        h('span', { class: 'bt-mon-info' },
-          h('span', { class: 'bt-mon-name' }, h('b', null, DK.daskai.name(d))),
-          h('span', { class: 'bt-mon-hp' + (hp < 30 ? ' crit' : hp < 60 ? ' mid' : '') }, h('i', { style: { width: hp + '%' } })),
-          h('small', { class: 'bt-mon-num' }, h('span', { class: 'bt-mon-lv' }, `${t('common.lvl')} ${d.level}`), ` · ${d.cur.hp}/${s.hp}`)));
-    }));
-
-    // Mochila (v4.98): lista que ocupa siempre lo mismo que el equipo (con scroll si hay muchos objetos):
-    // icono, nombre, efecto y «− ×N +»; vacía, una zona grande para elegir objetos.
-    const chosen = Object.keys(pack).filter((id) => pack[id] > 0);
-    const last = V.lastPack();
-    const openPack = () => { V.packModal(params, null).promise.then(() => refresh()); }; // v5.2: ventana centrada (antes un panel a la derecha)
-    const home = DK.bag.home();
-    const step = (id, n) => {
-      const cur = pack[id] || 0, k = Math.max(0, Math.min(cur + n, home[id] || 0, cur + cap - used));
-      if (k === cur) { if (n > 0) { DK.audio.sfx('error'); DK.ui.toast(used >= cap ? t('pack.full') : t('pack.noMore'), { icon: 'bag', kind: 'bad' }); } return; }
-      if (k) pack[id] = k; else delete pack[id];
-      DK.audio.sfx('select'); refresh();
-    };
-    const effect = (it) => (it.use ? V.useText(it) : it.desc) || '';
-    const packTiles = h('div', { class: 'pk-list-wrap' }, chosen.length ? h('div', { class: 'pk-list' },
-      chosen.map((id) => { const it = D.items[id]; return h('div', { class: 'pk-row r-' + it.rarity, tip: `${it.name} · ${effect(it)}` },
-        h('span', { class: 'pk-row-ico' }, V.itemIcon(it, 20)),
-        h('span', { class: 'pk-row-txt' }, h('b', null, it.name), h('small', null, effect(it))),
-        h('span', { class: 'pk-row-n' },
-          h('button', { class: 'pk-row-b', type: 'button', 'aria-label': t('pack.tapRemove', { name: it.name }), onClick: () => step(id, -1) }, DK.icon('minus', 12)),
-          h('b', null, '×' + pack[id]),
-          h('button', { class: 'pk-row-b', type: 'button', 'aria-label': t('pack.addOne', { name: it.name }), disabled: used >= cap || (home[id] || 0) <= pack[id], onClick: () => step(id, 1) }, DK.icon('plus', 12)))); }),
-      h('button', { class: 'pk-row add', type: 'button', onClick: openPack }, DK.icon('plus', 14), h('span', null, t('pack.addMore'))))
-      : h('button', { class: 'pk-empty', type: 'button', onClick: openPack }, DK.icon('bag', 28), h('b', null, t('pack.choose')), h('small', null, t('pack.emptyHint', { n: cap }))));
-    const packTools = h('div', { class: 'pk-tools' },
-      btn({ icon: 'sparkles', label: t('pack.suggestShort'), size: 'sm', variant: 'ghost', tip: t('pack.suggest'), onClick: () => { params.pack = E.suggestPack(); DK.audio.sfx('select'); refresh(); } }),
-      Object.keys(last).length ? btn({ icon: 'repeat', label: t('pack.repeatShort'), size: 'sm', variant: 'ghost', tip: t('pack.repeat'), onClick: () => { params.pack = Object.assign({}, last); DK.audio.sfx('select'); refresh(); } }) : null,
-      chosen.length ? btn({ icon: 'x', label: t('pack.clearShort'), size: 'sm', variant: 'ghost', tip: t('pack.clear'), onClick: () => { params.pack = {}; refresh(); } }) : null);
-
-    const notes = [
-      DK.rules.permadeath() ? h('span', { class: 'chip neg', tip: t('zones.permadeath') }, DK.icon('skull', 12), t('zones.hardMode')) : null,
-      DK.store.state.consolation ? h('span', { class: 'chip pos', tip: t('pack.consolation') }, DK.icon('crown', 12), t('pack.consolationShort')) : null,
-      DK.camp.value('provisiones') ? h('span', { class: 'chip pos', tip: t('pack.free', { n: DK.camp.value('provisiones') }) }, DK.icon('flask', 12), '+' + DK.camp.value('provisiones')) : null,
-      h('span', { class: 'chip', tip: t('brief.unlocksTip', { r: DK.camp.unlocked('relic').length, c: DK.camp.unlocked('curse').length }) }, DK.icon('amulet', 12), `${DK.camp.unlocked('relic').length} · ${DK.camp.unlocked('curse').length}`),
-      DK.rules.keepPack() ? h('span', { class: 'chip pos', tip: t('pack.riskKeep') + ' ' + t('exp.exitRuleTip') }, DK.icon('bag', 12), t('pack.riskKeepShort'))
-        : h('span', { class: 'chip neg', tip: t('pack.risk') + ' ' + t('exp.exitRuleTip') }, DK.icon('info', 12), t('pack.riskShort')),
-    ].filter(Boolean);
-    const problems = DK.world.warnings(pv.zone).filter((w) => w.kind !== 'good');
-
-    return h('section', { class: 'card bt-prep', style: { '--z1': z.colors[0], '--z2': z.colors[1] } },
-      h('div', { class: 'bt-prep-head' },
-        h('span', { class: 'bt-prep-icon' }, DK.icon(z.icon, 22)),
-        h('div', { class: 'grow' }, h('span', { class: 'bt-kicker' }, DK.icon('compass', 12), t('zones.heroNew')), h('h2', null, z.name)),
-        V.emblems(DK.camp.emblems())),
-      h('div', { class: 'chips bt-facts' },
-        V.sizeChip(pv.size),
-        h('span', { class: 'chip', tip: t('brief.levelsTip') }, DK.icon('star', 13), `${t('brief.levels')} ${t('common.lvl')} ${z.levels[0] + lvBonus}-${z.levels[1] + lvBonus}`),
-        V.modChip(pv.mod),
-        h('span', { class: 'chip pos', tip: t('brief.rewardTip') }, DK.icon('crown', 13), t('brief.rewardValue', { n: E.bossEmblems(pv.size, pv.kind) })),
-        best ? h('span', { class: 'chip' }, DK.icon('trophy', 13), t('exp.best', { n: best })) : null),
-      kindBox,
-      runeBox,
-      lateBox,
-      h('div', { class: 'bt-prep-grid' },
-        h('div', { class: 'bt-block' },
-          h('div', { class: 'bt-label-row' }, h('span', { class: 'bt-label' }, t('pack.team'), ` ${team.length}/${DK.config.maxTeam}`),
-            h('span', { class: 'grow' }),
-            h('button', { class: 'icon-btn bt-icon', type: 'button', tip: t('heal.button'), 'aria-label': t('heal.button'), onClick: async () => { if (await V.healDialog(team)) refresh(); } }, DK.icon('flask', 16)),
-            // Curar pagando monedas (caro): sólo si a alguien le falta vida o maná
-            (() => {
-              const c = E.healCost(team); if (!c) return null;
-              const poor = DK.wallet.get() < c;
-              return h('button', { class: 'bt-heal-coins' + (poor ? ' poor' : ''), type: 'button', disabled: poor, tip: poor ? t('healPay.poor', { n: c - DK.wallet.get() }) : t('healPay.tip'),
-                onClick: async () => {
-                  if (!(await DK.ui.confirm(t('healPay.title'), t('healPay.text', { n: c.toLocaleString(DK.i18n.lang) }), { okLabel: t('healPay.ok', { n: c.toLocaleString(DK.i18n.lang) }) }))) return;
-                  if (E.healPaid(team)) { DK.audio.sfx('heal'); DK.ui.toast(t('healPay.done', { n: c.toLocaleString(DK.i18n.lang) }), { icon: 'heart', kind: 'good' }); DK.app.renderRes && DK.app.renderRes(); refresh(); }
-                } }, DK.icon('heart', 13), DK.icon('coin', 12), c.toLocaleString(DK.i18n.lang));
-            })(),
-            h('button', { class: 'icon-btn bt-icon', type: 'button', tip: t('home.manage'), 'aria-label': t('home.manage'), onClick: () => DK.router.go('team') }, DK.icon('edit', 16))),
-          teamStrip),
-        h('div', { class: 'bt-block' },
-          h('div', { class: 'bt-label-row' }, h('span', { class: 'bt-label' }, t('pack.backpack')), h('span', { class: 'grow' }),
-            h('span', { class: 'pk-count' + (used >= cap ? ' full' : ''), tip: t('pack.capTip') }, h('b', null, used), '/' + cap)),
-          h('div', { class: 'cap-bar' + (used >= cap ? ' full' : ''), style: { '--p': Math.min(100, (used / cap) * 100) + '%' } }, h('span')),
-          packTiles,
-          packTools)),
-      problems.length ? V.warnings(problems, async () => { if (await V.healDialog(team)) refresh(); }) : null,
-      h('div', { class: 'bt-prep-foot' }, h('div', { class: 'chips' }, notes),
-        btn({ icon: 'flag', label: t('pack.go'), desc: t('pack.goDesc', { n: used }), size: 'lg', variant: 'primary', hotkey: '↵', disabled: !ok, cls: 'bt-go play-btn', onClick: go })));
+  /** Peligro de 1 a 5: nivel de la zona frente a tu equipo, más Corrupción, Pesadilla y Abismo. */
+  function dangerOf(n, z, lvBonus) {
+    const avg = DK.party.avgLevel(), top = (z.levels ? z.levels[1] : 100) + lvBonus, diff = top - avg;
+    let d = diff < -8 ? 1 : diff < -2 ? 2 : diff < 3 ? 3 : diff < 8 ? 4 : 5;
+    d += Math.floor((n.corruption || 0) / 2) + (n.nightmare && n.nightmare === n.zone ? 1 : 0) + (n.kind === 'abismo' ? 1 : 0);
+    return Math.max(1, Math.min(5, d));
   }
 
-  /* ---------------- Desafío semanal (DK.weekly) ---------------- */
-  /** Tarjeta compacta: el mapa fijo de la semana, sus pactos, tu récord y «Jugar». */
-  function weeklyCard(params) {
+  /** Ventana con los récords de la zona (antes en un desplegable). */
+  const recordsModal = (z) => DK.ui.modal({ title: `${t('zones.records')} · ${z.name}`, icon: 'trophy', content: () => recordsStrip(z) });
+
+  /** Carta del destino. */
+  function destCard(n, pv, refresh) {
+    const E = DK.expedition, z = D.zones[pv.zone], AVR = DK.averno;
+    const averno = AVR.isZone(pv.zone), abyss = pv.kind === 'abismo';
+    const lvBonus = E.levelBonus(1) + ((pv.mod && D.mapMods[pv.mod].levels) || 0);
+    const bossDone = z.boss && DK.world.boss(z.id).defeated > 0;
+    const art = h('div', { class: 'wt-art', style: { '--z1': z.colors[0], '--z2': z.colors[1] } }, DK.scenes.render(z.scene, z.colors),
+      h('span', { class: 'wt-zic' }, DK.icon(z.icon, 18)),
+      abyss ? h('div', { class: 'wt-series' }, DK.abyss.series(n.zone).map((zz) => V.sprite(D.zones[zz].boss.species, { size: 46, silhouette: true })))
+        : z.boss ? h('span', { class: 'wt-boss' + (bossDone ? ' seen' : '') }, V.sprite(z.boss.species, { size: 84, silhouette: !bossDone })) : null,
+      averno ? h('span', { class: 'wt-tag bad' }, DK.icon('flame', 11), t('averno.exitRule'))
+        : abyss ? h('span', { class: 'wt-tag abyss' }, DK.icon('moon', 11), t('wt.series'))
+          : bossDone ? h('span', { class: 'wt-tag good' }, DK.icon('crown', 11), t('zones.bossDone')) : null);
+    const danger = dangerOf(n, z, lvBonus);
+    const fact = (icon, b, s, cls = '', tip = null) => h('div', { class: 'wt-fact ' + cls, tip }, DK.icon(icon, 15), h('span', null, h('b', null, b), h('small', null, s)));
+    const facts = averno ? (() => { const r = AVR.rec(), A = D.endgame.averno;
+      return [fact('flame', `${t('common.lvl')} ${A.level.start}–${A.level.cap}`, t('wt.foes'), 'bad'), fact('trophy', r.best && r.best.floors ? String(r.best.floors) : '—', t('averno.bestTitle')),
+        fact('campfire', t('wt.noExit'), t('averno.rule3')), fact('paw', t('wt.noRecruits'), t('averno.rule4'))]; })()
+      : abyss ? [fact('crown', String(DK.abyss.series(n.zone).length), t('wt.bossesRow')), fact('trophy', String(DK.abyss.best(n.zone)), t('wt.record')),
+        fact('campfire', t('wt.betweenShort'), t('wt.between')), fact('gift', t('wt.roundPrize'), t('wt.roundPrizeSub'), 'good')]
+        : [fact(DK.config.expedition.sizes[pv.size] ? DK.config.expedition.sizes[pv.size].icon : 'map', t('size.' + pv.size + '.name'), t('wt.floors', { n: E.sizeFloors(pv.size) })),
+          pv.mod && D.mapMods[pv.mod] ? fact(D.mapMods[pv.mod].icon, t('mod.' + pv.mod + '.name'), t('wt.modifier'), 'good', t('mod.' + pv.mod + '.desc')) : fact('sun', t('wt.noMod'), t('wt.modifier')),
+          fact('emblem', '+' + E.bossEmblems(pv.size, pv.kind), t('wt.perBoss'), 'good'),
+          z.boss ? fact('crown', D.species[z.boss.species] && bossDone ? D.species[z.boss.species].name : '???', t('wt.boss')) : fact('crown', '—', t('wt.boss'))];
+    // Tipo de expedición: una línea con sus probabilidades en pequeño
+    const cur = E.kindDef(pv.kind), chances = E.kindChances(), sel = DK.runes.selected();
+    const kline = averno ? null : h('div', { class: 'wt-kind' },
+      h('span', { class: 'wt-kind-ic' }, DK.icon(cur.icon, 16)),
+      h('div', { class: 'wt-kind-t' }, h('small', null, t('kind.rolled'), sel.kind ? h('span', { class: 'wt-mini' }, ' · ', DK.icon('rune', 10), t('kind.byRune')) : null),
+        h('b', { tip: t('kind.' + cur.id + '.desc') }, t('kind.' + cur.id + '.name'))),
+      sel.kind || cur.special ? h('small', { class: 'wt-kind-d' }, t('kind.' + cur.id + '.desc')) : h('div', { class: 'wt-odds bt-kind', tip: t('kind.chancesHint') },
+        E.kinds().map((k) => h('span', { class: 'bt-odd wt-odd' + (k.id === cur.id ? ' on' : '') + (k.locked ? ' locked' : ''), tip: k.locked ? t('kind.locked') : `${t('kind.' + k.id + '.name')} · ${Math.round((chances[k.id] || 0) * 100)}%` },
+          DK.icon(k.locked ? 'lock' : k.icon, 11), h('i', null, k.locked ? '—' : Math.round((chances[k.id] || 0) * 100) + '%')))));
+    const free = DK.world.freeUnlocked(z.id), ok = DK.party.aliveActive().length > 0;
+    return h('section', { class: 'wt-dest', style: { '--z1': z.colors[0], '--z2': z.colors[1] } }, art,
+      h('div', { class: 'wt-dbody' },
+        h('div', null, h('span', { class: 'wt-kick' }, t('wt.dest')), h('h3', null, abyss ? t('abyss.title') : z.name), abyss ? h('small', { class: 'wt-from' }, t('wt.from', { zone: z.name })) : null),
+        h('div', { class: 'wt-danger', tip: t('wt.dangerTip') }, h('small', null, t('wt.danger')), h('span', { class: 'wt-skulls' }, [1, 2, 3, 4, 5].map((i) => h('i', { class: i <= danger ? 'on' : '' }))),
+          averno ? null : h('small', { class: 'wt-foes' }, t('wt.foes'), ' ', h('b', null, `${t('common.lvl')} ${z.levels[0] + lvBonus}–${z.levels[1] + lvBonus}`))),
+        h('div', { class: 'wt-facts' }, facts),
+        kline,
+        h('div', { class: 'wt-links' },
+          h('button', { class: 'wt-link', type: 'button', onClick: () => recordsModal(z) }, DK.icon('trophy', 13), t('zones.records')),
+          h('button', { class: 'wt-link', type: 'button', disabled: !free || !ok, tip: free ? t('zones.freeDesc') : t('zones.freeLocked'), onClick: () => DK.play.start(z.id) }, DK.icon(free ? 'swords' : 'lock', 13), t('zones.free')))));
+  }
+
+  /** Contrato semanal (el desafío): un pergamino. */
+  function contractCard(params) {
     if (!DK.weekly.unlocked()) return null;
-    const W = DK.weekly, w = W.def(), z = D.zones[w.zone], best = W.best(), tries = W.tries(), rw = W.reward();
+    const W = DK.weekly, w = W.def(), z = D.zones[w.zone], best = W.best(), rw = W.reward(), done = W.rec().rewarded;
     const go = () => {
       if (!DK.party.aliveActive().length) { DK.ui.toast(t('weekly.noTeam'), { icon: 'alert', kind: 'bad' }); return; }
       if (!W.start(params.pack || {})) return;
       params.pack = {}; DK.audio.sfx('select'); DK.router.reset('expedition');
     };
-    return h('section', { class: 'card wk-card', style: { '--z1': z.colors[0], '--z2': z.colors[1] } },
-      h('div', { class: 'wk-head' },
-        h('span', { class: 'wk-badge' }, DK.icon('trophy', 18)),
-        h('div', { class: 'grow' },
-          h('span', { class: 'bt-kicker' }, t('weekly.kicker', { n: w.week }), ' · ', t('weekly.left', { n: W.daysLeft() })),
-          h('h3', null, t('weekly.title'))),
-        h('div', { class: 'wk-best', tip: t('weekly.bestTip', { n: tries }) }, h('small', null, t('weekly.best')), h('b', null, best ? best.toLocaleString(DK.i18n.lang) : '—'))),
-      h('div', { class: 'chips' },
-        h('span', { class: 'chip' }, DK.icon(z.icon, 12), z.name),
-        V.sizeChip(w.size), V.modChip(w.mod),
-        h('span', { class: 'chip', tip: t('weekly.foesTip') }, DK.icon('swords', 12), t('weekly.foes', { n: W.teamLevel() })), // v5.40
-        h('span', { class: 'chip', tip: t('kind.' + w.kind + '.desc') }, DK.icon(DK.expedition.kindDef(w.kind).icon, 12), t('kind.' + w.kind + '.name')),
-        w.curses.map((id) => h('span', { class: 'chip neg', tip: t('curse.' + id + '.desc') }, DK.icon(D.curses[id].icon, 12), t('curse.' + id + '.name')))),
-      h('div', { class: 'wk-foot' },
-        h('span', { class: 'small muted' }, W.rec().rewarded ? t('weekly.rewarded') : t('weekly.reward', { e: rw.emblems })),
-        h('span', { class: 'grow' }),
-        btn({ icon: 'list', label: t('weekly.board'), iconOnly: true, size: 'sm', variant: 'ghost', onClick: () => weeklyBoard() }),
-        DK.online.enabled() ? btn({ icon: 'globe', label: t('online.boardsBtn'), iconOnly: true, size: 'sm', variant: 'ghost', onClick: () => V.leaderboard({ board: 'weekly' }) }) : null, // v5.39: tabla global semanal
-        btn({ icon: 'flag', label: t('weekly.play'), size: 'sm', variant: 'primary', onClick: go })));
+    const term = (icon, txt, cls = '', tip = null) => h('div', { class: 'wt-term ' + cls, tip }, DK.icon(icon, 13), h('span', null, txt));
+    return h('section', { class: 'wt-contract' },
+      h('div', { class: 'wt-c-rib' }, t('wt.week', { n: w.week, d: W.daysLeft() })),
+      h('div', { class: 'wt-c-kick' }, t('wt.contract')),
+      h('div', { class: 'wt-c-title' }, z.name),
+      h('div', { class: 'wt-c-sub' }, t('wt.contractSub', { n: W.teamLevel() })),
+      h('div', { class: 'wt-c-terms' },
+        term(z.icon, z.name), term(DK.config.expedition.sizes[w.size] ? DK.config.expedition.sizes[w.size].icon : 'map', t('size.' + w.size + '.name')),
+        w.mod && D.mapMods[w.mod] ? term(D.mapMods[w.mod].icon, t('mod.' + w.mod + '.name'), '', t('mod.' + w.mod + '.desc')) : null,
+        term(DK.expedition.kindDef(w.kind).icon, t('kind.' + w.kind + '.name'), '', t('kind.' + w.kind + '.desc')),
+        w.curses.map((id) => term(D.curses[id].icon, t('curse.' + id + '.name'), 'bad', t('curse.' + id + '.desc')))),
+      h('div', { class: 'wt-c-foot' },
+        h('div', null, h('small', null, t('wt.reward')), done ? h('span', { class: 'wt-c-r done' }, DK.icon('check', 12), t('wt.rewarded'))
+          : h('span', { class: 'wt-c-rs' }, h('span', { class: 'wt-c-r' }, DK.icon('emblem', 13), '×' + rw.emblems), DK.runes.enabled() ? h('span', { class: 'wt-c-r' }, DK.icon('rune', 13), t('wt.runeN', { n: ROMAN[rw.runeTier - 1] })) : null)),
+        h('div', { class: 'wt-c-best', tip: t('weekly.bestTip', { n: W.tries() }) }, h('small', null, t('wt.yourBest')), h('b', null, best ? best.toLocaleString(DK.i18n.lang) : '—'))),
+      h('div', { class: 'wt-c-btns' },
+        h('button', { class: 'wt-c-go', type: 'button', onClick: go }, DK.icon('edit', 14), t('wt.sign')),
+        h('button', { class: 'wt-c-ic', type: 'button', tip: t('weekly.board'), 'aria-label': t('weekly.board'), onClick: () => weeklyBoard() }, DK.icon('list', 15)),
+        DK.online.enabled() ? h('button', { class: 'wt-c-ic', type: 'button', tip: t('online.boardsBtn'), 'aria-label': t('online.boardsBtn'), onClick: () => V.leaderboard({ board: 'weekly' }) }, DK.icon('globe', 15)) : null));
   }
+
+  /** Runas: una fila fina con los huecos. */
+  function runesRow(refresh) {
+    if (!DK.runes.enabled()) return null;
+    const slots = DK.runes.slots(), N = DK.runes.slotCount();
+    const sockets = Array.from({ length: N }, (_, i) => {
+      const id = slots[i];
+      if (!id) return h('button', { class: 'rune-socket empty', type: 'button', 'aria-label': t('rune.add'), tip: DK.runes.total() ? t('rune.add') : t('rune.none'), onClick: () => runePicker(refresh) }, h('span', { class: 'rune-socket-ring' }, DK.icon('plus', 11)));
+      return h('button', { class: 'rune-socket full g-' + DK.runes.get(id).group, type: 'button', style: { '--rc': look(id)[0] }, 'aria-label': t('rune.remove', { name: V.runeName(id) }),
+        tip: `${V.runeTip(id)} · ${t('rune.tapOff')}`, onClick: () => { DK.runes.unsocket(i); DK.audio.sfx('click'); refresh(); } },
+        h('span', { class: 'rune-socket-ring' }, V.runeGem(id, 28)), h('span', { class: 'rune-socket-x' }, DK.icon('x', 10)));
+    });
+    return h('section', { class: 'wt-panel wt-runes' },
+      h('div', { class: 'wt-runes-t' }, h('span', { class: 'wt-h-t' }, t('rune.title')),
+        h('button', { class: 'wt-h-s linkish', type: 'button', tip: t('rune.help'), onClick: () => DK.ui.toast(t('rune.help'), { icon: 'info' }) }, DK.icon('info', 11), ' ', t('rune.have', { n: DK.runes.total() }))),
+      h('div', { class: 'rune-sockets' }, sockets),
+      h('small', { class: 'wt-runes-fx' }, slots.length ? slots.map(V.runeEffect).join(' · ') : t('wt.runesEmpty')));
+  }
+
+  /** Reglas de la aventura: casillas iguales (Abismo, Corrupción, Pesadilla, grabadas) y una línea de lo que cambia. */
+  function rulesBox(refresh) {
+    const E = DK.expedition, n = E.nextStart(), C = DK.corruption, G = D.endgame, AVR = DK.averno;
+    const cells = [], harder = [], better = [];
+    let extra = null;
+    const cell = (kind, icon, title, control, sub, on) => h('div', { class: 'wt-rule k-' + kind + (on ? ' on' : '') },
+      h('div', { class: 'wt-rule-h' }, DK.icon(icon, 15), h('b', null, title)), control, sub ? h('small', null, sub) : null);
+    if (AVR.isZone(n.zone)) {
+      const A = G.averno;
+      harder.push(t('averno.rule1'), t('averno.rule2'));
+      cells.push(cell('averno', 'flame', t('averno.title'), h('div', { class: 'wt-av-rules' }, [t('averno.rule3'), t('averno.rule4')].map((x) => h('span', null, x))), `${t('common.lvl')} ${A.level.start}–${A.level.cap}`, true));
+      cells.push(cell('board', 'trophy', t('online.boardsBtn'), btn({ icon: 'trophy', label: t('online.boardBtn'), size: 'sm', variant: 'ghost', onClick: () => V.leaderboard({ board: 'averno' }) }), null, false));
+    } else {
+      if (!AVR.unlocked() && C.visible() && n.zone === AVR.lastZone() && D.zones[AVR.zoneId()])
+        cells.push(cell('averno', 'lock', t('averno.lockedTitle'), h('small', { class: 'muted' }, t('averno.lockedHint', { zone: D.zones[n.zone].name, n: ROMAN[C.levels().length - 1] || C.levels().length })), null, false));
+      if (DK.abyss.unlocked()) {
+        const can = DK.abyss.available(n.zone);
+        if (n.kind === 'abismo' && !can) DK.abyss.set(false);
+        const on = n.kind === 'abismo' && can;
+        cells.push(cell('abyss', 'moon', t('abyss.title'), h('div', { class: 'wt-seg egx-seg' },
+          h('button', { class: on ? '' : 'on', type: 'button', 'aria-pressed': String(!on), onClick: () => { DK.abyss.set(false); refresh(); } }, t('abyss.normal')),
+          h('button', { class: on ? 'on' : '', type: 'button', disabled: !can, tip: can ? null : t('abyss.locked'), 'aria-pressed': String(on), onClick: () => { DK.abyss.set(true); DK.audio.sfx('select'); refresh(); } }, DK.icon(can ? 'moon' : 'lock', 11), t('abyss.enter'))),
+          can ? t('abyss.best', { n: DK.abyss.best(n.zone) }) : t('abyss.locked'), on));
+        if (on) {
+          const rounds = DK.abyss.rounds(n.zone);
+          extra = h('div', { class: 'wt-series-row abx-series' },
+            h('span', { class: 'wt-h-s' }, DK.icon('crown', 11), t('abyss.series'), rounds ? ' · ' + t('abyss.rounds', { n: rounds }) : ' · ' + t('abyss.first')),
+            h('div', { class: 'abx-row' }, DK.abyss.series(n.zone).map((z, i, a) => { const b = D.zones[z].boss;
+              return h('div', { class: 'abx-boss' + (i === a.length - 1 ? ' last' : ''), tip: `${b.title} · ${t('abyss.seriesTip', { lv: DK.abyss.bossLevel(n.zone, i) + E.levelBonus(1), zone: D.zones[z].name })}` },
+                h('span', { class: 'abx-n' }, i + 1), V.sprite(b.species, { size: 40 }), h('small', null, `${t('common.lvl')} ${DK.abyss.bossLevel(n.zone, i) + E.levelBonus(1)}`)); })));
+        }
+      }
+      if (C.visible()) {
+        const cur = n.corruption || 0, max = C.max(), def = C.def(cur);
+        const opt = (lv) => h('button', { class: (lv === cur ? 'on' : '') + (lv > max ? ' locked' : ''), type: 'button', disabled: lv > max, 'aria-pressed': String(lv === cur),
+          tip: lv > max ? t('corruption.lockedTip', { n: lv - 1 }) : lv ? t('corruption.levelN', { n: lv }) : t('corruption.none'),
+          onClick: () => { C.set(lv); DK.audio.sfx(lv ? 'select' : 'click'); refresh(); } }, lv > max ? DK.icon('lock', 10) : lv ? ROMAN[lv - 1] : '—');
+        cells.push(cell('cor', 'skull', t('corruption.title'), h('div', { class: 'wt-pips egx-levels' }, (max > 0 ? [1, 2, 3, 4, 5] : [0, 1, 2, 3, 4, 5]).map(opt)),
+          def ? t('corruption.foes', { lv: def.levels, n: Math.round(def.stat * 100) }) : (max < C.levels().length ? t('corruption.help', { n: max }) : t('corruption.helpMax')), cur > 0));
+        if (def) {
+          harder.push(t('corruption.foes', { lv: def.levels, n: Math.round(def.stat * 100) }), ...C.levels().slice(0, cur).map((l) => l.rule).filter(Boolean).map((r) => t('corruption.rule.' + r)));
+          better.push(t('corruption.rewardEmblems', { n: def.emblems }), '+' + Math.round(def.coins * 100) + '% ' + t('wt.coins'), t('corruption.rewardShiny', { n: Math.round(def.shiny * 100) }), t('corruption.rewardTier', { n: Math.round(def.tier * 100) }));
+        }
+      }
+      if (DK.nightmare.available(n.zone) && n.kind !== 'abismo') {
+        const on = n.nightmare === n.zone, N = G.nightmare;
+        cells.push(cell('nightmare', 'demon', t('nightmare.title'),
+          h('button', { class: 'wt-switch egx-switch' + (on ? ' on' : ''), type: 'button', role: 'switch', 'aria-checked': String(on), onClick: () => { DK.nightmare.toggle(); DK.audio.sfx('select'); refresh(); } }, h('i'), h('span', null, on ? t('nightmare.on') : t('nightmare.off'))),
+          t('wt.nightmareShort', { lv: N.levels, n: Math.round(N.stat * 100), c: Math.round(N.coins * 100) }), on));
+        if (on) { harder.push(t('wt.nmHarder', { lv: N.levels, n: Math.round(N.stat * 100) })); better.push('+' + Math.round(N.coins * 100) + '% ' + t('wt.coins'), t('wt.nmEmblem', { n: N.emblems })); }
+      }
+    }
+    const eng = DK.engrave.list();
+    if (eng.length) cells.push(cell('engrave', 'amulet', t('engrave.title'), h('div', { class: 'wt-eng' }, eng.map((id) => h('span', { class: 'wt-eng-r', tip: V.relicText ? V.relicText(D.relics[id]) : '' }, DK.icon(D.relics[id].icon, 11), D.relics[id].name))), t('wt.engraveSub'), false));
+    if (!cells.length) return null;
+    return h('section', { class: 'wt-panel wt-rules' }, wtHead(t('wt.rules'), t('wt.rulesSub')),
+      h('div', { class: 'wt-rgrid' + (cells.length === 1 ? ' one' : '') }, cells), extra,
+      harder.length || better.length ? h('div', { class: 'wt-sum' },
+        harder.length ? h('span', { class: 'bad' }, DK.icon('alert', 11), harder.join(' · ')) : null,
+        better.length ? h('span', { class: 'good' }, DK.icon('gift', 11), better.join(' · ')) : null) : null);
+  }
+
+  /** Formación: seis puestos; arrastra uno sobre otro para cambiar el orden, pulsa para ver su ficha. */
+  function formationBox(refresh) {
+    const E = DK.expedition, team = DK.party.active();
+    const healCost = E.healCost(team), poor = healCost && DK.wallet.get() < healCost;
+    let drag = null;
+    const cards = Array.from({ length: DK.config.maxTeam }, (_, i) => {
+      const d = team[i];
+      if (!d) return h('button', { class: 'wt-pc bt-mon empty', type: 'button', tip: t('home.manage'), 'aria-label': t('home.manage'), onClick: () => DK.router.go('team') }, DK.icon('plus', 16));
+      const s = DK.daskai.stats(d), sp = DK.daskai.species(d), hp = DK.util.percent(d.cur.hp, s.hp), mp = DK.util.percent(d.cur.mp, s.mp);
+      const c = h('button', { class: 'wt-pc bt-mon' + (i ? '' : ' lead') + (DK.daskai.isFainted(d) ? ' ko' : ''), type: 'button', draggable: 'true', style: { '--hc': D.houseColor(sp.house) },
+        tip: `${DK.daskai.name(d)} · ${t('common.lvl')} ${d.level} · ${d.cur.hp}/${s.hp}` + (i ? '' : ' · ' + t('wt.lead')),
+        onClick: () => { DK.audio.sfx('select'); V.quickStats(d, { onChange: refresh }); } },
+        i ? null : h('span', { class: 'wt-pc-crown', 'aria-label': t('wt.lead') }, '♛'),
+        h('span', { class: 'wt-pc-spr' }, V.dSprite(d, { size: 38 })),
+        h('span', { class: 'wt-pc-txt' }, h('b', null, DK.daskai.name(d)), h('small', null, `${t('common.lvl')} ${d.level}`)),
+        h('span', { class: 'wt-pc-bars' }, h('span', { class: 'wt-bar hp' + (hp < 30 ? ' crit' : '') }, h('i', { style: { width: hp + '%' } })), h('span', { class: 'wt-bar mp' }, h('i', { style: { width: mp + '%' } }))));
+      c.addEventListener('dragstart', (e) => { drag = d.uid; c.classList.add('dragging'); try { e.dataTransfer.setData('text/plain', d.uid); e.dataTransfer.effectAllowed = 'move'; } catch (er) { /* */ } });
+      c.addEventListener('dragend', () => c.classList.remove('dragging'));
+      c.addEventListener('dragover', (e) => { if (drag && drag !== d.uid) { e.preventDefault(); c.classList.add('over'); } });
+      c.addEventListener('dragleave', () => c.classList.remove('over'));
+      c.addEventListener('drop', (e) => { e.preventDefault(); c.classList.remove('over'); if (drag && drag !== d.uid) { DK.party.moveInTeam(drag, i); DK.audio.sfx('select'); drag = null; refresh(); } });
+      return c;
+    });
+    return h('section', { class: 'wt-panel wt-form' },
+      wtHead(t('wt.formation'), `${team.length}/${DK.config.maxTeam} · ${t('wt.dragHint')}`,
+        h('span', { class: 'wt-tools' },
+          healCost ? h('button', { class: 'wt-tool good' + (poor ? ' poor' : ''), type: 'button', disabled: poor, tip: poor ? t('healPay.poor', { n: healCost - DK.wallet.get() }) : t('healPay.tip'),
+            onClick: async () => {
+              if (!(await DK.ui.confirm(t('healPay.title'), t('healPay.text', { n: healCost.toLocaleString(DK.i18n.lang) }), { okLabel: t('healPay.ok', { n: healCost.toLocaleString(DK.i18n.lang) }) }))) return;
+              if (E.healPaid(team)) { DK.audio.sfx('heal'); DK.ui.toast(t('healPay.done', { n: healCost.toLocaleString(DK.i18n.lang) }), { icon: 'heart', kind: 'good' }); DK.app.renderRes && DK.app.renderRes(); refresh(); }
+            } }, DK.icon('heart', 12), t('wt.heal'), h('i', null, DK.icon('coin', 11), healCost.toLocaleString(DK.i18n.lang))) : null,
+          h('button', { class: 'wt-tool', type: 'button', tip: t('heal.button'), onClick: async () => { if (await V.healDialog(team)) refresh(); } }, DK.icon('flask', 12), t('wt.items')),
+          h('button', { class: 'wt-tool', type: 'button', tip: t('home.manage'), onClick: () => DK.router.go('team') }, DK.icon('edit', 12), t('wt.change')))),
+      h('div', { class: 'wt-party bt-team6' }, cards));
+  }
+
+  /** Mochila: anillo de capacidad, acciones y bolsillos con icono, nombre y cantidad; «+» abre la bolsa. */
+  function bagBox(params, refresh) {
+    const E = DK.expedition, pack = params.pack, cap = E.packCapacity(), used = E.packSize(pack), home = DK.bag.home();
+    const chosen = Object.keys(pack).filter((id) => pack[id] > 0 && D.items[id]);
+    const last = V.lastPack();
+    const openPack = () => { V.packModal(params, null).promise.then(() => refresh()); };
+    const minus = (id) => { const k = (pack[id] || 0) - 1; if (k > 0) pack[id] = k; else delete pack[id]; DK.audio.sfx('click'); refresh(); };
+    const C = 2 * Math.PI * 15, pct = Math.min(1, used / Math.max(1, cap));
+    const ring = h('span', { class: 'wt-ring' + (used >= cap ? ' full' : ''), tip: t('pack.capTip') });
+    ring.innerHTML = `<svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15" class="bg"/><circle cx="18" cy="18" r="15" class="fg" stroke-dasharray="${(C * pct).toFixed(1)} ${C.toFixed(1)}"/></svg>`;
+    ring.append(h('b', null, String(used), h('small', null, '/' + cap)));
+    const effect = (it) => (it.use ? V.useText(it) : it.desc) || '';
+    // un bolsillo por objeto distinto; luego «+» y huecos hasta completar 10 (o los que quepan)
+    const pockets = chosen.map((id) => { const it = D.items[id];
+      return h('div', { class: 'wt-pk full pk-row r-' + it.rarity, tip: `${it.name} · ${effect(it)}` },
+        h('button', { class: 'wt-pk-main', type: 'button', onClick: openPack }, h('span', { class: 'wt-pk-ic' }, V.itemIcon(it, 22)), h('span', { class: 'wt-pk-n' }, it.name), h('b', null, '×' + pack[id])),
+        h('button', { class: 'wt-pk-x', type: 'button', 'aria-label': t('pack.tapRemove', { name: it.name }), tip: t('pack.tapRemove', { name: it.name }), onClick: () => minus(id) }, DK.icon('minus', 10))); });
+    const slotsN = Math.max(10, Math.ceil((chosen.length + 1) / 5) * 5);
+    if (chosen.length < slotsN) pockets.push(h('button', { class: 'wt-pk add' + (chosen.length ? '' : ' pk-empty'), type: 'button', disabled: used >= cap && chosen.length > 0, onClick: openPack, 'aria-label': t('pack.choose') },
+      DK.icon('plus', 14), h('span', null, chosen.length ? t('wt.add') : t('pack.choose'))));
+    while (pockets.length < slotsN) pockets.push(h('div', { class: 'wt-pk' }));
+    return h('section', { class: 'wt-panel wt-bag' },
+      h('div', { class: 'wt-bag-h' }, ring,
+        h('div', { class: 'wt-bag-t' }, h('span', { class: 'wt-h-t' }, t('pack.backpack')), h('small', null, t('wt.bagSub'))),
+        h('div', { class: 'wt-tools' },
+          h('button', { class: 'wt-tool acc', type: 'button', tip: t('pack.suggest'), onClick: () => { params.pack = E.suggestPack(); DK.audio.sfx('select'); refresh(); } }, DK.icon('sparkles', 12), t('pack.suggestShort')),
+          Object.keys(last).length ? h('button', { class: 'wt-tool', type: 'button', tip: t('pack.repeat'), onClick: () => { params.pack = Object.assign({}, last); DK.audio.sfx('select'); refresh(); } }, DK.icon('repeat', 12), t('wt.repeat')) : null,
+          chosen.length ? h('button', { class: 'wt-tool', type: 'button', tip: t('pack.clear'), onClick: () => { params.pack = {}; refresh(); } }, t('pack.clearShort')) : null)),
+      h('div', { class: 'wt-pockets' }, pockets),
+      Object.keys(home).length ? null : h('small', { class: 'muted' }, t('wt.noItems')));
+  }
+
+  /** Barra de embarque: zona, insignias, iconos (con su explicación al pasar el ratón) y «Partir». */
+  function launchBar(n, pv, params, go, ok) {
+    const E = DK.expedition, z = D.zones[pv.zone], team = DK.party.active(), used = E.packSize(params.pack), cap = E.packCapacity();
+    const abyss = pv.kind === 'abismo', averno = DK.averno.isZone(pv.zone);
+    const cur = E.kindDef(pv.kind), cor = n.corruption || 0, nm = n.nightmare && n.nightmare === n.zone;
+    const problems = DK.world.warnings(pv.zone).filter((w) => w.kind !== 'good');
+    const healCost = E.healCost(team);
+    const ic = (icon, txt, cls, tip, onClick) => h(onClick ? 'button' : 'span', { class: 'wt-li ' + (cls || ''), tip, 'aria-label': tip, type: onClick ? 'button' : null, onClick }, DK.icon(icon, 13), txt != null ? h('em', null, txt) : null);
+    const icons = [
+      ic('bag', `${used}/${cap}`, used >= cap ? 'w' : '', t('wt.icBag')),
+      ic('paw', String(team.length), '', t('wt.icTeam')),
+      healCost ? ic('coin', healCost.toLocaleString(DK.i18n.lang), '', t('wt.icHeal', { n: healCost.toLocaleString(DK.i18n.lang) })) : null,
+      ...problems.map((w) => ic(w.icon, null, w.kind === 'bad' ? 'd' : 'w', w.text, w.action === 'heal' ? async () => { if (await V.healDialog(team)) DK.router.refresh(); } : null)),
+      DK.rules.permadeath() ? ic('skull', null, 'd', t('zones.permadeath')) : null,
+      DK.store.state.consolation ? ic('crown', null, 's', t('pack.consolation')) : null,
+      DK.camp.value('provisiones') ? ic('flask', '+' + DK.camp.value('provisiones'), 's', t('pack.free', { n: DK.camp.value('provisiones') })) : null,
+      DK.rules.keepPack() ? ic('shield', null, 's', t('pack.riskKeep') + ' ' + t('exp.exitRuleTip')) : ic('info', null, 'w', t('pack.risk') + ' ' + t('exp.exitRuleTip')),
+    ].filter(Boolean);
+    const summary = [averno ? t('averno.title') : t('kind.' + cur.id + '.name'), cor ? t('corruption.short', { n: ROMAN[cor - 1] }) : null, nm ? t('nightmare.title') : null].filter(Boolean).join(' · ');
+    return h('section', { class: 'wt-launch bt-prep-foot' },
+      h('div', { class: 'wt-launch-info' },
+        h('div', { class: 'wt-route' }, h('span', { class: 'wt-route-z', style: { '--z1': z.colors[0] } }, DK.icon(z.icon, 13)), h('b', null, abyss ? t('abyss.title') : z.name),
+          averno ? null : h('span', { class: 'wt-badge k', tip: t('kind.' + cur.id + '.name') }, DK.icon(cur.icon, 11)),
+          cor ? h('span', { class: 'wt-badge c', tip: t('corruption.levelN', { n: cor }) }, ROMAN[cor - 1]) : null,
+          nm ? h('span', { class: 'wt-badge c', tip: t('nightmare.title') }, DK.icon('demon', 11)) : null),
+        h('div', { class: 'wt-icons' }, icons)),
+      h('button', { class: 'wt-go bt-go play-btn', type: 'button', disabled: !ok, tip: summary, 'aria-label': `${t('wt.go')} · ${summary}`, onClick: go },
+        h('span', { class: 'wt-go-ar' }, DK.icon('next', 14)), h('b', null, averno ? t('wt.goAverno') : abyss ? t('wt.goAbyss') : t('wt.go')), h('kbd', null, '↵')));
+  }
+
+  /** La mesa de guerra entera. */
+  function warTable(params, refresh) {
+    const E = DK.expedition, n = E.nextStart(), pv = E.preview();
+    const ok = DK.party.aliveActive().length > 0;
+    params.pack = params.pack || {};
+    const go = () => { if (!ok) return; E.start(params.pack); params.pack = {}; DK.audio.sfx('select'); DK.router.reset('expedition'); };
+    if (offEnter) offEnter(); offEnter = DK.keys.on('Enter', go); // (sólo uno, aunque se redibuje)
+    return h('div', { class: 'wt bt-prep' },
+      h('div', { class: 'wt-left' }, destCard(n, pv, refresh), contractCard(params)),
+      h('div', { class: 'wt-right' }, runesRow(refresh), rulesBox(refresh), formationBox(refresh), bagBox(params, refresh), launchBar(n, pv, params, go, ok)));
+  }
+
   /** Tabla de récords local: intentos de esta semana y mejores de las anteriores. */
   function weeklyBoard() {
     const W = DK.weekly, board = W.board(), past = W.past();
@@ -380,85 +486,6 @@
       past.length ? h('div', { class: 'stack-s' }, h('span', { class: 'bt-label' }, t('weekly.past')),
         h('div', { class: 'chips' }, past.map((p) => h('span', { class: 'chip' }, DK.icon('trophy', 12), t('weekly.pastItem', { n: p.week, s: p.best.toLocaleString(DK.i18n.lang) }))))) : null,
       h('p', { class: 'muted small' }, t('weekly.scoring'))) });
-  }
-
-  /**
-   * Bloque del final del juego en la preparación (sólo lo que ya se ha abierto).
-   * v4.60b: «Reglas de la aventura»: un panel con estilo de advertencia (rojo oscuro) y una fila
-   * por regla: icono, nombre, qué hace y su control a la derecha; la activa brilla.
-   */
-  function endgameBox(refresh) {
-    const E = DK.expedition, n = E.nextStart(), C = DK.corruption, G = D.endgame;
-    const rows = [];
-    const row = (kind, icon, title, desc, control, on, extra) => h('div', { class: 'egx-row k-' + kind + (on ? ' on' : '') },
-      h('span', { class: 'egx-ico' }, DK.icon(icon, 18)),
-      h('div', { class: 'egx-main' }, h('b', null, title), desc ? h('small', null, desc) : null),
-      h('div', { class: 'egx-ctl' }, control),
-      extra ? h('div', { class: 'egx-extra' }, extra) : null);
-    // v5.31: El Averno: su propia fila (sin abismo, corrupción ni pesadilla)
-    const AVR = DK.averno;
-    if (AVR.isZone(n.zone)) {
-      const r = AVR.rec(), A = G.averno;
-      rows.push(row('averno', 'flame', t('averno.title'), t('averno.help'), h('div', { class: 'row gap-s wrap' }, h('span', { class: 'chip neg' }, DK.icon('flame', 12), `${t('common.lvl')} ${A.level.start}–${A.level.cap}`),
-        btn({ icon: 'trophy', label: t('online.boardBtn'), size: 'sm', variant: 'ghost', onClick: () => V.leaderboard({ board: 'averno' }) })), true, [
-        h('div', { class: 'egx-list bad' }, h('span', { class: 'egx-k' }, DK.icon('alert', 12), t('endgameBox.harder')),
-          h('span', null, t('averno.rule1')), h('span', null, t('averno.rule2')), h('span', null, t('averno.rule3')), h('span', null, t('averno.rule4'))),
-        r.best && r.best.floors ? h('div', { class: 'egx-list good' }, h('span', { class: 'egx-k' }, DK.icon('trophy', 12), t('averno.bestTitle')),
-          h('span', null, t('averno.bestLine', { floors: r.best.floors, maps: r.best.maps, lv: r.best.level }))) : null]));
-      return h('section', { class: 'egx hot', 'aria-label': t('endgameBox.title') }, rows);
-    }
-    // Pista para abrirlo: en la última zona, cuando ya se ve la Corrupción
-    if (!AVR.unlocked() && C.visible() && n.zone === AVR.lastZone() && D.zones[AVR.zoneId()]) {
-      rows.push(row('averno', 'lock', t('averno.lockedTitle'), t('averno.lockedHint', { zone: D.zones[n.zone].name, n: ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'][C.levels().length - 1] || C.levels().length }), null, false));
-    }
-    // El Abismo (v5.1): boss rush de la zona elegida; enseña la serie de jefes con su nivel
-    if (DK.abyss.unlocked()) {
-      const can = DK.abyss.available(n.zone);
-      if (n.kind === 'abismo' && !can) DK.abyss.set(false); // al cambiar a una zona sin su jefe vencido
-      const on = n.kind === 'abismo' && can;
-      const zr = DK.abyss.best(n.zone), rounds = DK.abyss.rounds(n.zone);
-      const series = on ? h('div', { class: 'abx-series' },
-        h('span', { class: 'abx-lbl' }, DK.icon('crown', 12), t('abyss.series'), rounds ? h('small', null, ' · ' + t('abyss.rounds', { n: rounds })) : h('small', { class: 'good-text' }, ' · ' + t('abyss.first'))),
-        h('div', { class: 'abx-row' }, DK.abyss.series(n.zone).map((z, i, a) => { const b = D.zones[z].boss, last = i === a.length - 1;
-          return h('div', { class: 'abx-boss' + (last ? ' last' : ''), tip: `${b.title} · ${t('abyss.seriesTip', { lv: DK.abyss.bossLevel(n.zone, i) + E.levelBonus(1), zone: D.zones[z].name })}` },
-            h('span', { class: 'abx-n' }, i + 1), V.sprite(b.species, { size: 46 }), h('b', null, b.title), h('small', null, `${t('common.lvl')} ${DK.abyss.bossLevel(n.zone, i) + E.levelBonus(1)}`)); }))) : null;
-      rows.push(row('abyss', 'moon', t('abyss.title'), can ? `${t('abyss.best', { n: zr })} · ${t('abyss.help')}` : t('abyss.locked'),
-        h('div', { class: 'egx-seg' },
-          h('button', { class: on ? '' : 'on', type: 'button', 'aria-pressed': String(!on), onClick: () => { DK.abyss.set(false); refresh(); } }, t('abyss.normal')),
-          h('button', { class: on ? 'on' : '', type: 'button', disabled: !can, tip: can ? null : t('abyss.locked'), 'aria-pressed': String(on), onClick: () => { DK.abyss.set(true); DK.audio.sfx('select'); refresh(); } }, DK.icon(can ? 'moon' : 'lock', 12), t('abyss.enter'))), on, series));
-    }
-    // Corrupción: niveles 1-5 (se ven tras el jefe de la 3ª zona)
-    if (C.visible()) {
-      const cur = n.corruption || 0, max = C.max();
-      const opt = (lv) => h('button', { class: (lv === cur ? 'on' : '') + (lv > max ? ' locked' : ''), type: 'button', disabled: lv > max, 'aria-pressed': String(lv === cur), tip: lv > max ? t('corruption.lockedTip', { n: lv - 1 }) : lv ? t('corruption.levelN', { n: lv }) : t('corruption.none'),
-        onClick: () => { C.set(lv); DK.audio.sfx(lv ? 'select' : 'click'); refresh(); } }, lv > max ? DK.icon('lock', 11) : lv ? ['I', 'II', 'III', 'IV', 'V'][lv - 1] : '—');
-      const def = C.def(cur);
-      const rules = C.levels().slice(0, cur).map((l) => l.rule).filter(Boolean);
-      const extra = def ? [
-        h('div', { class: 'egx-list bad' }, h('span', { class: 'egx-k' }, DK.icon('alert', 12), t('endgameBox.harder')),
-          h('span', null, t('corruption.foes', { lv: def.levels, n: Math.round(def.stat * 100) })), ...rules.map((r) => h('span', null, t('corruption.rule.' + r)))),
-        h('div', { class: 'egx-list good' }, h('span', { class: 'egx-k' }, DK.icon('gift', 12), t('endgameBox.rewards')),
-          h('span', null, DK.icon('emblem', 11), t('corruption.rewardEmblems', { n: def.emblems })), h('span', null, DK.icon('coin', 11), '+' + Math.round(def.coins * 100) + '%'),
-          h('span', null, DK.icon('sparkles', 11), t('corruption.rewardShiny', { n: Math.round(def.shiny * 100) })), h('span', null, DK.icon('rune', 11), t('corruption.rewardTier', { n: Math.round(def.tier * 100) }))),
-      ] : null;
-      rows.push(row('cor', 'skull', t('corruption.title'), cur ? (cur === max && max < C.levels().length ? t('corruption.nextHint', { n: max + 1 }) : t('corruption.levelN', { n: cur })) : (max < C.levels().length ? t('corruption.help', { n: max }) : t('corruption.helpMax')),
-        h('div', { class: 'egx-levels' }, (max > 0 ? [1, 2, 3, 4, 5] : [0, 1, 2, 3, 4, 5]).map(opt)), cur > 0, extra));
-    }
-    // Versión pesadilla de la zona (códice al 100%)
-    if (DK.nightmare.available(n.zone) && n.kind !== 'abismo') {
-      const on = n.nightmare === n.zone, N = G.nightmare;
-      rows.push(row('nightmare', 'demon', t('nightmare.title'), t('nightmare.desc', { lv: N.levels, n: Math.round(N.stat * 100), c: Math.round(N.coins * 100), e: N.emblems }),
-        h('button', { class: 'egx-switch' + (on ? ' on' : ''), type: 'button', role: 'switch', 'aria-checked': String(on), onClick: () => { DK.nightmare.toggle(); DK.audio.sfx('select'); refresh(); } },
-          h('i'), h('span', null, on ? t('nightmare.on') : t('nightmare.off'))), on));
-    }
-    // Reliquias grabadas (salen siempre)
-    const eng = DK.engrave.list();
-    if (eng.length) rows.push(row('engrave', 'amulet', t('engrave.title'), null,
-      h('div', { class: 'chips' }, eng.map((id) => h('span', { class: 'chip pos', tip: V.relicText ? V.relicText(D.relics[id]) : '' }, DK.icon(D.relics[id].icon, 12), D.relics[id].name))), false));
-    if (!rows.length) return null;
-    const hot = (n.corruption || 0) > 0 || n.kind === 'abismo' || (n.nightmare && n.nightmare === n.zone);
-    // v4.62: sin título y sin rojo; discreto, con un filo dorado a la izquierda que se enciende si hay alguna activa
-    return h('section', { class: 'egx' + (hot ? ' hot' : ''), 'aria-label': t('endgameBox.title'), tip: t('endgameBox.sub') }, rows);
   }
 
   /**
@@ -483,22 +510,36 @@
           V.runeAffixes(id).map((x) => h('small', { class: 'rune-aff' }, x))),
         h('span', { class: 'rune-pick-n' }, locked ? DK.icon('lock', 12) : '×' + Math.max(0, free)));
     };
-    DK.ui.modal({ title: t('rune.title'), icon: 'rune', cls: 'rune-modal', content: (close) => {
-      const host = h('div', { class: 'stack-s' });
+    // v5.44: filtro por clase y, dentro, por runa concreta (p. ej. Tamaño → Pequeño · Mediano · XL)
+    let sub = 'all';
+    const GROUPS = [['all', 'rune.allGroups', 'rune'], ['size', 'rune.size', 'map'], ['kind', 'rune.kind', 'flag'], ['bonus', 'rune.bonus', 'coin']];
+    DK.ui.modal({ title: t('rune.title'), icon: 'rune', cls: 'rune-modal rp2', size: 'wide', content: (close) => {
+      const host = h('div', { class: 'rp' });
+      const have = () => Object.keys(DK.runes.all()).filter((id) => DK.runes.count(id) > 0 && DK.runes.get(id));
+      const n = (list) => list.reduce((a, id) => a + DK.runes.count(id), 0);
       const draw = () => {
-        const ids = Object.keys(DK.runes.all()).filter((id) => DK.runes.count(id) > 0 && DK.runes.get(id) && (filter === 'all' || DK.runes.get(id).group === filter));
-        const seg = DK.ui.segmented({ value: filter, onChange: (v) => { filter = v; draw(); },
-          options: [{ value: 'all', label: t('rune.allGroups') }, { value: 'size', label: t('rune.size'), icon: 'map' }, { value: 'kind', label: t('rune.kind'), icon: 'flag' }, { value: 'bonus', label: t('rune.bonus'), icon: 'coin' }] });
+        const all = have();
+        const inGroup = all.filter((id) => filter === 'all' || DK.runes.get(id).group === filter);
+        const ids = inGroup.filter((id) => sub === 'all' || DK.runes.parse(id).base === sub);
+        const groups = h('div', { class: 'rp-groups', role: 'tablist' }, GROUPS.map(([g, key, ic]) => { const c = n(all.filter((id) => g === 'all' || DK.runes.get(id).group === g));
+          return h('button', { class: 'rp-g' + (g === filter ? ' on' : ''), type: 'button', role: 'tab', disabled: !c && g !== 'all', onClick: () => { filter = g; sub = 'all'; draw(); } }, DK.icon(ic, 14), h('span', null, t(key)), h('i', null, String(c))); }));
+        // runas concretas de la clase elegida (con las que tienes de cada una)
+        const bases = filter === 'all' ? [] : DK.runes.defs(filter).filter((d) => !d.late || DK.corruption.visible() || inGroup.some((id) => DK.runes.parse(id).base === d.id)).map((d) => d.id);
+        const subs = bases.length ? h('div', { class: 'rp-subs' },
+          h('button', { class: 'rp-s' + (sub === 'all' ? ' on' : ''), type: 'button', onClick: () => { sub = 'all'; draw(); } }, t('rune.allGroups'), h('i', null, String(n(inGroup)))),
+          bases.map((b) => { const c = n(inGroup.filter((id) => DK.runes.parse(id).base === b)), def = DK.runes.defs(filter).find((d) => d.id === b);
+            return h('button', { class: 'rp-s' + (sub === b ? ' on' : '') + (c ? '' : ' none'), type: 'button', disabled: !c, onClick: () => { sub = b; draw(); } }, DK.icon(def.icon, 12), t('wt.sub.' + b), h('i', null, String(c))); })) : null;
         host.replaceChildren(
-          h('p', { class: 'muted small' }, t('rune.pickHelp2')),
-          seg,
-          ...[3, 2, 1].map((tier) => {
-            const list = ids.filter((id) => DK.runes.parse(id).tier === tier).sort((a, b) => ord[DK.runes.parse(a).rarity] - ord[DK.runes.parse(b).rarity] || gOrd[DK.runes.get(a).group] - gOrd[DK.runes.get(b).group]);
-            if (!list.length) return null;
-            return h('div', { class: 'stack-s rune-tier-group t' + tier }, h('span', { class: 'bt-label' }, t('rune.tierN', { n: ['I', 'II', 'III'][tier - 1] }), h('span', { class: 'muted' }, ' · ' + list.reduce((a, id) => a + DK.runes.count(id), 0))),
-              h('div', { class: 'rune-pick-grid' }, list.map((id) => tile(id, close))));
-          }).filter(Boolean),
-          ids.length ? null : h('p', { class: 'muted small' }, t('rune.none')));
+          h('div', { class: 'rp-top' }, groups, h('small', { class: 'muted rp-help' }, t('rune.pickHelp2'))),
+          subs,
+          h('div', { class: 'rp-list' },
+            ...[3, 2, 1].map((tier) => {
+              const list = ids.filter((id) => DK.runes.parse(id).tier === tier).sort((a, b) => ord[DK.runes.parse(a).rarity] - ord[DK.runes.parse(b).rarity] || gOrd[DK.runes.get(a).group] - gOrd[DK.runes.get(b).group]);
+              if (!list.length) return null;
+              return h('div', { class: 'rune-tier-group t' + tier }, h('span', { class: 'rp-tier' }, t('rune.tierN', { n: ['I', 'II', 'III'][tier - 1] }), h('i', null, String(n(list)))),
+                h('div', { class: 'rune-pick-grid' }, list.map((id) => tile(id, close))));
+            }).filter(Boolean),
+            ids.length ? null : h('div', { class: 'rp-empty' }, DK.icon('rune', 26), h('p', { class: 'muted' }, all.length ? t('wt.runeNoneFilter') : t('rune.none')))));
       };
       draw();
       return host;
@@ -587,8 +628,8 @@
     }, 0);
     return h('section', { class: 'card wm2-card' },
       h('div', { class: 'panel-head' }, DK.icon('map', 18), h('h3', null, t('zones.worldMap')),
-        h('span', { class: 'chip' }, DK.icon('flag', 13), t('zones.unlockedN', { n: unlocked.length, total: all.length })),
-        h('span', { class: 'grow' }), h('span', { class: 'muted small wm2-help' }, t('zones.pickHint'))),
+        h('span', { class: 'wm2-count' }, DK.icon('flag', 12), t('zones.unlockedN', { n: unlocked.length, total: all.length })),
+        h('span', { class: 'muted small wm2-help' }, t('zones.pickHint'))),
       scroll);
   }
 
@@ -620,12 +661,10 @@
       }
       // La preparación se redibuja SOLA (runas, pesadilla, corrupción, mochila…) para que
       // el mapa del mundo y el resto de la página no parpadeen al tocarla.
-      const prepHost = h('div', { class: 'bt-prep-host' });
-      const redrawPrep = () => { const y = window.scrollY; prepHost.replaceChildren(prepCard(params, redrawPrep)); window.scrollTo(0, y); };
+      const prepHost = h('div', { class: 'bt-prep-host wt-host' });
+      const redrawPrep = () => { const y = window.scrollY; prepHost.replaceChildren(warTable(params, redrawPrep)); window.scrollTo(0, y); };
       redrawPrep();
-      return h('div', { class: 'screen zones-screen bt-screen' },
-        worldMap(sel, choose),
-        h('div', { class: 'bt-main' }, prepHost, h('div', { class: 'bt-side' }, weeklyCard(params), sel ? zoneCard(sel) : null)));
+      return h('div', { class: 'screen zones-screen bt-screen wt-screen' }, worldMap(sel, choose), prepHost);
     },
   });
 })();

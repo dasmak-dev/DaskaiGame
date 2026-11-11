@@ -6,7 +6,7 @@
  * sube el número de CACHE para que los jugadores reciban la versión
  * nueva. (Sólo funciona servido por http/https, no con file://).
  * ============================================================= */
-const CACHE = 'daskai-v5.43.1';
+const CACHE = 'daskai-v5.44.0';
 const FILES = [
     './',
     './css/cursor.css',
@@ -24,6 +24,7 @@ const FILES = [
     './css/motion.css',
     './css/juice.css',
     './css/pixel.css',
+    './css/war.css',
     // v4.73: «?v=» cambia con cada icono nuevo para que el móvil instalado vea que ha cambiado
     './icons/icon-192.png?v=473',
     './icons/icon-512.png?v=473',

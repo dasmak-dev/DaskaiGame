@@ -565,6 +565,20 @@ DK.i18n.register('en', {
     giftFrom: 'Sent you a potion.', inviteFrom: 'Invites you to trade (room {code}).', claim: 'Claim', claimed: 'Potion claimed! It’s in your home bag.', gone: 'It’s gone.', reply: 'Reply', delete: 'Delete',
     newInbox: 'You have {n} new thing(s) in your inbox', mailTitle: 'Inbox', emblems: 'emblems', giftGot: 'Gift claimed! It’s at home.', fromTeam: 'Daskai team', teamName: 'Daskai team', claimedShort: 'Claimed', needPublicShort: 'Turn on your profile to claim it', teamGift: 'A gift from the team', reqFrom: 'Wants to be your friend.', reqOk: 'Accepted your request: you’re friends now.', accept: 'Accept', reject: 'Decline', cancelReq: 'Cancel request', news: 'News', grp: { incoming: 'Requests received ({n})', friends: 'Friends ({n})', sent: 'Requests sent ({n})' }, teamPlaceholder: 'How can we help?', teamHelp: 'Write to the game’s team: questions, bugs or problems. The reply will show up here and in your inbox.', teamEmpty: 'You haven’t written to the team yet.', teamNote: 'Up to 500 characters.', askText2: 'This creates your public profile as «{name}» (ID #{id}) and your records appear on the leaderboards with your team. You can remove it any time.',
   },
+  // v5.44: war table (expedition prep)
+  wt: {
+    dest: 'Destination', danger: 'Danger', dangerTip: 'How hard it will be: zone level against your team, Corruption, Nightmare and Abyss.', foes: 'Foes',
+    floors: '{n} floors', modifier: 'modifier', noMod: 'Clear', perBoss: 'emblems per boss', boss: 'boss', from: 'from {zone}', series: 'Boss series',
+    noExit: 'No way out', noRecruits: 'No recruits', bossesRow: 'bosses in a row', record: 'record', betweenShort: 'Campfire', between: 'or merchant between bosses', roundPrize: 'Prize', roundPrizeSub: 'every round',
+    contract: 'Weekly contract', contractSub: 'Same zone for everyone · foes at your level (~{n})', week: 'Week {n} · {d} days left', reward: 'Reward', rewarded: 'Claimed this week',
+    sub: { small: 'Small', medium: 'Medium', xl: 'XL', captura: 'Capture', combate: 'Combat', desafio: 'Challenge', oro: 'Gold', saber: 'Experience', elite: 'Elite', maldito: 'Cursed' },
+    runeN: 'Rune {n}', yourBest: 'Your best', sign: 'Sign contract', runesEmpty: 'Tap a slot to set a rune.', runeNoneFilter: 'You have no runes of this kind.',
+    rules: 'Rules of the adventure', rulesSub: 'harder = better rewards', coins: 'coins', nightmareShort: 'Foes +{lv} Lv. and +{n}% · +{c}% coins',
+    nmHarder: 'Nightmare: +{lv} Lv. and +{n}%', nmEmblem: '+{n} emblem per boss', engraveSub: 'You start every expedition with them',
+    formation: 'Formation', dragHint: 'drag to reorder', lead: 'Leader: opens the battle', heal: 'Heal', items: 'Items', change: 'Change',
+    bagSub: 'What you take on the road', add: 'Add', repeat: 'Repeat', noItems: 'You have no items at home.',
+    icBag: 'Items in the backpack', icTeam: 'Daskai in the team', icHeal: 'Healing everyone costs {n} coins', go: 'Depart', goAbyss: 'To the Abyss', goAverno: 'Descend',
+  },
   // v5.31: The Underworld (endless descent)
   averno: {
     title: 'The Underworld', chip: 'Underworld · floor {n} · Lv. {lv}', chipTip: 'Endless descent. Your record: {best} floors.',
