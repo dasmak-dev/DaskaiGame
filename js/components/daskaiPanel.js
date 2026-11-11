@@ -112,6 +112,8 @@
         h('div', { class: 'dp-badges' },
         V.level(d.level), h('span', { class: 'dp-kind' }, V.housesBadge(d), V.roleBadge(d, { neutral: true })), V.shinyTag(d), V.tempTag(d), V.statusTag(d.status),
         d.locked ? h('span', { class: 'badge lock', tip: t('lock.locked') }, DK.icon('lock', 12)) : null,
+        // v5.37: entrenador original (si no es tuyo, se marca)
+        d.ot ? h('span', { class: 'badge ot' + (DK.trainer.isMine(d) ? '' : ' other'), tip: DK.trainer.isMine(d) ? t('trade.otMine', { id: d.ot.id }) : t('trade.otOther', { name: d.ot.name, id: d.ot.id }) }, DK.icon(DK.trainer.isMine(d) ? 'user' : 'swap', 11), DK.trainer.isMine(d) ? '#' + d.ot.id : `${d.ot.name} #${d.ot.id}`) : null,
         DK.daskai.isFainted(d) ? h('span', { class: 'badge bad' }, DK.icon('skull', 13), t('common.fainted')) : null,
         active ? h('span', { class: 'badge good' }, DK.icon('check', 13), isLeader ? t('detail.teamLeader') : t('team.inTeam')) : null));
     }

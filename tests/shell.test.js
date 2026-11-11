@@ -159,5 +159,29 @@ module.exports = {
       check(r.seasonQ && r.noSeasonInBody && !r.oldAsk && r.oldSent === 0, 'la tabla es de la temporada actual y lo pendiente de otra temporada no se envía: ' + JSON.stringify(r));
       check(r.sent === 'new' && r.floors === 40 && r.secret >= 32 && r.rows === 1, 'al aceptar publicar se envía el récord pendiente con su secreto: ' + JSON.stringify(r));
     }),
+  }, {
+    name: 'v5.37: intercambio por relé (base de datos): funciona aunque uno tarde en volver, con entrenador original e historial',
+    run: async (browser, view) => {
+      const { newGame } = require('./helpers');
+      const msgs = []; let nid = 0;
+      const db = (path, b) => { if (path.includes('trade_send')) { msgs.push({ id: ++nid, room: b.p_room, sender: b.p_sender, body: b.p_body }); return nid; }
+        if (path.includes('trade_poll')) return msgs.filter((m) => m.room === b.p_room && m.id > (b.p_after || 0)).map(({ id, sender, body }) => ({ id, sender, body })); return []; };
+      const A = await newGame(browser, view, { name: 'Ana', slot: 7 }), B = await newGame(browser, view, { name: 'Beto', slot: 8 });
+      for (const p of [A, B]) { await p.exposeFunction('__db', db); await p.evaluate(() => { DK.trade.useTransport(null); DK.online.fetch = async (url, o) => ({ ok: true, json: async () => window.__db(url, o.body ? JSON.parse(o.body) : null) }); }); }
+      const ids = await Promise.all([A, B].map((p) => p.evaluate(() => ({ tid: DK.trainer.id(), ot: DK.party.all()[0].ot && DK.party.all()[0].ot.id }))));
+      await A.evaluate(() => { DK.party.all()[0].level = 30; DK.views.tradeDialog(); DK.trade.host(); }); await sleep(300);
+      const code = await A.evaluate(() => DK.trade.session.code);
+      await B.evaluate((c) => { DK.views.tradeDialog(); DK.trade.join(c); }, code); await sleep(3500);
+      const open = await Promise.all([A, B].map((p) => p.evaluate(() => [DK.trade.session.status, !!DK.trade.session.tx.relay])));
+      await A.evaluate(() => DK.trade.offer(DK.party.all()[0].uid)); await B.evaluate(() => DK.trade.offer(DK.party.all()[0].uid)); await sleep(2600);
+      await A.evaluate(() => DK.trade.lock()); await B.evaluate(() => DK.trade.lock()); await sleep(4000);
+      const r = await Promise.all([A, B].map((p) => p.evaluate(() => { const d = DK.party.all()[0]; return { st: DK.trade.session.status, lv: d.level, ot: d.ot, mine: DK.trainer.isMine(d), log: (DK.store.state.tradeLog || []).length, panel: (() => { const el = DK.views.daskaiPanel(d, {}); return !!el.querySelector('.badge.ot.other'); })() }; })));
+      await A.context().close(); await B.context().close();
+      check(ids.every((x) => /^[A-Z0-9]{6}$/.test(x.tid) && x.ot === x.tid), 'cada partida tiene su ID de entrenador y sus daskai lo llevan: ' + JSON.stringify(ids));
+      check(open.every((x) => x[0] === 'open' && x[1]), 'los dos deberían conectarse por el relé: ' + JSON.stringify(open));
+      check(r[0].st === 'done' && r[1].st === 'done' && r[1].lv === 30 && r[0].lv === 5, 'el intercambio por relé debería completarse: ' + JSON.stringify(r));
+      check(r[1].ot && r[1].ot.name === 'Ana' && r[1].ot.id === ids[0].tid && !r[1].mine && r[1].panel, 'el recibido conserva su entrenador original y se marca: ' + JSON.stringify(r[1]));
+      check(r[0].log === 1 && r[1].log === 1, 'queda en el historial de intercambios');
+    },
 }],
 };

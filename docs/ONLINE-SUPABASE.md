@@ -166,3 +166,52 @@ end $$;
 revoke all on function public.submit_averno(uuid, text, text, int, int, int, jsonb, text) from public;
 grant execute on function public.submit_averno(uuid, text, text, int, int, int, jsonb, text) to anon;
 ```
+
+## 4. Relé de los intercambios (v5.37)
+
+Los intercambios usan la misma base de datos como «buzón»: cada jugador deja sus mensajes en la sala (código de 6
+caracteres) y recoge los del otro cada segundo. Así funcionan en cualquier red (también de móvil a móvil, donde las
+conexiones directas suelen fallar) y aunque uno salga un momento de la app para pasar el código. Los mensajes se
+borran solos a las 3 horas. Si este SQL no está ejecutado, el juego usa la conexión directa (PeerJS) como antes.
+
+```sql
+-- v5.37: relé para los intercambios (funciona de móvil a móvil y aunque salgas un momento de la app)
+create table if not exists public.trade_msgs (
+  id         bigint generated always as identity primary key,
+  room       text not null check (room ~ '^[A-Z0-9]{6}$'),
+  sender     text not null check (char_length(sender) between 4 and 40),
+  body       jsonb not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists trade_msgs_room_id on public.trade_msgs (room, id);
+create index if not exists trade_msgs_created on public.trade_msgs (created_at);
+alter table public.trade_msgs enable row level security;
+revoke all on public.trade_msgs from anon, authenticated;
+
+-- Dejar un mensaje en una sala (con límite de mensajes por minuto; los de hace más de 3 horas se borran)
+create or replace function public.trade_send(p_room text, p_sender text, p_body jsonb) returns bigint
+language plpgsql security definer set search_path = public as $$
+declare n int; new_id bigint;
+begin
+  if p_room is null or p_room !~ '^[A-Z0-9]{6}$' or p_sender is null or char_length(p_sender) not between 4 and 40
+     or p_body is null or pg_column_size(p_body) > 20000 then return -1; end if;
+  select count(*) into n from public.trade_msgs where room = p_room and created_at > now() - interval '1 minute';
+  if n > 200 then return -2; end if;
+  delete from public.trade_msgs where created_at < now() - interval '3 hours';
+  insert into public.trade_msgs (room, sender, body) values (p_room, p_sender, p_body) returning id into new_id;
+  return new_id;
+end $$;
+
+-- Recoger los mensajes de una sala posteriores a uno dado
+create or replace function public.trade_poll(p_room text, p_after bigint) returns table (id bigint, sender text, body jsonb)
+language sql stable security definer set search_path = public as $$
+  select m.id, m.sender, m.body from public.trade_msgs m
+  where m.room = p_room and m.id > coalesce(p_after, 0) and m.created_at > now() - interval '3 hours'
+  order by m.id limit 100
+$$;
+
+revoke all on function public.trade_send(text, text, jsonb) from public;
+revoke all on function public.trade_poll(text, bigint) from public;
+grant execute on function public.trade_send(text, text, jsonb) to anon;
+grant execute on function public.trade_poll(text, bigint) to anon;
+```

@@ -2164,9 +2164,7 @@ button.gt-affix:hover { border-color: rgba(255, 255, 255, .12); background: rgba
 .codex-sparks i.rune { width: auto; height: auto; background: none; box-shadow: none; font: 700 11px/1 serif; color: #ddd6fe; text-shadow: 0 0 6px #8b5cf6, 0 0 12px #7c3aed; }
 @keyframes codexSpark { 0% { transform: translate(0, 0) scale(.6) rotate(0); opacity: 0; } 15% { opacity: 1; } 60% { opacity: .85; } 100% { transform: translate(var(--dx, 0), -70px) scale(1.1) rotate(25deg); opacity: 0; } }
 .a-lectern { --dur: 3.4s; }
-.camp-anim.n16 .fr { animation: cf16 var(--dur) steps(1, end) infinite; animation-delay: calc((var(--i) / 16 - 1) * var(--dur) + var(--d)); }
-@keyframes cf16 { 0% { opacity: 1; } 6.25% { opacity: 0; } 100% { opacity: 0; } }
-.s-lectern .camp-anim { animation: codexFloatGlow 3.6s steps(4, end) infinite; }
+@media (hover: hover) and (pointer: fine) { .s-lectern .camp-anim { animation: codexFloatGlow 3.6s steps(4, end) infinite; } } /* (v5.37: en el móvil sin filtro animado) */
 @keyframes codexFloatGlow { 0%, 100% { filter: drop-shadow(0 0 3px rgba(167, 139, 250, .35)); } 50% { filter: drop-shadow(0 0 9px rgba(167, 139, 250, .75)); } }
 :root[data-motion="reduced"] :is(.camp-firelight, .camp-mon, .camp-motes i, .codex-sparks i, .s-lectern .camp-anim) { animation: none; }
 :root[data-motion="reduced"] :is(.camp-motes, .codex-sparks) { display: none; }

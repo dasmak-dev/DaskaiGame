@@ -85,12 +85,57 @@
       close() { dead = true; try { if (conn) conn.close(); } catch (e) { /* */ } try { if (peer) peer.destroy(); } catch (e) { /* */ } },
     };
   }
-  let transportFactory = peerTransport;
+  /**
+   * v5.37: transporte por RELÉ (Supabase): los mensajes se dejan en una tabla (trade_send) y cada uno recoge los
+   * del otro cada ~1 s (trade_poll). Funciona en cualquier red (también de móvil a móvil, donde las conexiones
+   * directas suelen fallar) y aguanta que uno salga un momento de la app para pasar el código: los mensajes esperan.
+   */
+  function relayTransport(h) {
+    const me = 'p' + Math.random().toString(36).slice(2, 12);
+    let room = '', role = '', peer = null, after = 0, timer = 0, dead = false, opened = false, fails = 0, since = 0;
+    const post = (body) => DK.online.rpc('trade_send', { p_room: room, p_sender: me, p_body: body });
+    const open = () => { if (opened) return; opened = true; h.open(); };
+    const schedule = (ms) => { clearTimeout(timer); if (!dead) timer = setTimeout(poll, ms != null ? ms : document.hidden ? 4000 : opened ? 1100 : 1600); };
+    const onVis = () => { if (!document.hidden && !dead) schedule(0); };
+    document.addEventListener('visibilitychange', onVis);
+    async function poll() {
+      if (dead) return;
+      try {
+        const rows = await DK.online.rpc('trade_poll', { p_room: room, p_after: after });
+        fails = 0;
+        for (const r of Array.isArray(rows) ? rows : []) {
+          after = Math.max(after, +r.id || 0);
+          const b = r.body || {};
+          if (r.sender === me || (b.to && b.to !== me)) continue;
+          if (role === 'host' && b.k === 'join') { if (!peer) { peer = r.sender; await post({ k: 'welcome', to: peer }); open(); } else if (peer !== r.sender) post({ k: 'busy', to: r.sender }).catch(() => {}); continue; }
+          if (role === 'guest' && b.k === 'welcome') { if (!peer) { peer = r.sender; open(); } continue; }
+          if (b.k === 'busy') { h.message({ t: 'busy' }); continue; }
+          if (!peer || r.sender !== peer) continue;
+          if (b.k === 'msg') h.message(b.m);
+          else if (b.k === 'close') h.closed();
+        }
+      } catch (e) { if (++fails > 10) { dead = true; h.error('network'); return; } }
+      if (role === 'guest' && !opened && Date.now() - since > 180000) { dead = true; h.error('notFound'); return; }
+      schedule();
+    }
+    /** ¿Está la base de datos preparada? (si no, se usa la conexión directa) */
+    const probe = () => DK.online.rpc('trade_poll', { p_room: room, p_after: 2147483647 });
+    return {
+      relay: true,
+      async host(code) { role = 'host'; room = code; await probe(); h.ready(code); schedule(0); },
+      async join(code) { role = 'guest'; room = code; since = Date.now(); await probe(); h.ready(code); await post({ k: 'join' }); schedule(0); },
+      send(m) { if (peer && !dead) post({ k: 'msg', to: peer, m }).catch(() => { /* reintento: el siguiente envío */ }); },
+      close() { const p = peer; dead = true; clearTimeout(timer); document.removeEventListener('visibilitychange', onVis); if (p) post({ k: 'close', to: p }).catch(() => {}); },
+    };
+  }
+  /** Transporte por defecto: el relé si hay base de datos (y está preparada); si no, la conexión directa. */
+  const autoTransport = (h) => (DK.online && DK.online.enabled() && DK.trade.relayOk !== false ? relayTransport(h) : peerTransport(h));
+  let transportFactory = autoTransport;
 
   /* ---------------- Exportar / importar un daskai ---------------- */
   // Lo que viaja con el daskai (lo demás es de tu partida: uid, equipo, vida, estados, marcas…)
   const KEYS = ['species', 'level', 'exp', 'nature', 'passive', 'genes', 'role', 'growth', 'natureGrowth', 'moves', 'learned', 'look', 'house2',
-    'forms', 'form', 'extra', 'gname', 'nickname', 'shiny', 'variant', 'stars', 'evoBonus', 'talents', 'talentsAuto', 'tonics', 'legendary', 'legacy'];
+    'forms', 'form', 'extra', 'gname', 'nickname', 'shiny', 'variant', 'stars', 'evoBonus', 'talents', 'talentsAuto', 'tonics', 'legendary', 'legacy', 'ot'];
   function exportD(d) {
     const out = {};
     KEYS.forEach((k) => { if (d[k] !== undefined && d[k] !== null) out[k] = JSON.parse(JSON.stringify(d[k])); });
@@ -140,16 +185,32 @@
     if (raw.tonics && typeof raw.tonics === 'object') { const to = {}; D.statKeys.forEach((k) => { const v = num(raw.tonics[k], 0, 100, 0); if (v) to[k] = Math.round(v); }); d.tonics = to; }
     if (raw.legendary === true) d.legendary = true;
     if (raw.legacy) { const lg = smallJSON(raw.legacy, 400); if (lg !== undefined) d.legacy = lg; }
+    // v5.37: entrenador original (si no viene, el de quien te lo da no se sabe: queda sin marcar)
+    if (raw.ot && typeof raw.ot === 'object' && /^[A-Z0-9]{6}$/.test(String(raw.ot.id || ''))) d.ot = { id: String(raw.ot.id), name: txt(raw.ot.name, 20) || '?' }; else d.ot = { id: '------', name: '?' };
     d.equip = [null, null]; d.status = null;
     DK.daskai.touch(); DK.daskai.fullHeal(d);
     return d;
   }
 
+  /* ---------------- v5.37: entrenador original (de quién es cada daskai) ----------------
+   * state.trainer = { id } (6 caracteres, sale una vez por partida). Cada daskai lleva d.ot = { id, name }: quien lo
+   * consiguió. Al intercambiarlo lo conserva, así se sabe de quién era. */
+  DK.trainer = {
+    id() { const s = st(); if (!s) return ''; s.trainer = s.trainer || {}; if (!s.trainer.id) s.trainer.id = Array.from({ length: 6 }, () => ALPHA[Math.floor(Math.random() * ALPHA.length)]).join(''); return s.trainer.id; },
+    name() { const s = st(); return (s && s.player && s.player.name) || '?'; },
+    stamp(d) { if (d && !d.ot && st()) d.ot = { id: this.id(), name: this.name().slice(0, 20) }; return d; },
+    isMine(d) { return !d || !d.ot || d.ot.id === this.id(); },
+    label(d) { return d && d.ot ? `${d.ot.name} #${d.ot.id}` : ''; },
+  };
+  // los que ya tenías son tuyos
+  DK.on('game:loaded', () => { (DK.party.all() || []).forEach((d) => DK.trainer.stamp(d)); });
+
   /* ---------------- Sesión ---------------- */
   const T = {
     session: null,
     PROTO,
-    useTransport(fn) { transportFactory = fn || peerTransport; },
+    useTransport(fn) { transportFactory = fn || autoTransport; },
+    relayOk: null, // false = la base de datos aún no tiene las tablas del relé → conexión directa
     cleanCode,
     /** ¿Se puede ofrecer? null = sí; si no, la clave del motivo. */
     canOffer(d) {
@@ -169,7 +230,7 @@
       const self = this;
       const h = {
         ready() { if (self.session !== s) return; s.status = role === 'host' ? 'waiting' : 'connecting'; self.emit(); },
-        open() { if (self.session !== s) return; s.status = 'open'; self.send({ t: 'hello', v: PROTO, ver: DK.version, name: (st().player && st().player.name) || '' }); if (s.me.payload) self.send({ t: 'offer', d: s.me.payload }); self.emit(); },
+        open() { if (self.session !== s) return; s.status = 'open'; self.send({ t: 'hello', v: PROTO, ver: DK.version, name: (st().player && st().player.name) || '', tid: DK.trainer.id(), av: (st().player && st().player.avatar && st().player.avatar.kind === 'daskai') ? st().player.avatar.species : (DK.party.leader() || {}).species }); if (s.me.payload) self.send({ t: 'offer', d: s.me.payload }); self.emit(); },
         message(m) { if (self.session === s) self.onMessage(m); },
         closed() { if (self.session !== s || s.status === 'done') return; s.status = 'closed'; self.emit(); },
         error(kind) {
@@ -179,8 +240,11 @@
           s.status = 'error'; s.error = kind; self.emit();
         },
       };
-      s.tx = transportFactory(h);
-      (role === 'host' ? s.tx.host(code) : s.tx.join(code)).catch(() => h.error('load'));
+      const go = () => { s.tx = transportFactory(h); (role === 'host' ? s.tx.host(s.code) : s.tx.join(s.code)).catch(() => {
+        // el relé no está preparado (falta el SQL): se prueba con la conexión directa
+        if (s.tx && s.tx.relay && self.session === s) { self.relayOk = false; try { s.tx.close(); } catch (e) { /* */ } go(); return; }
+        h.error('load'); }); };
+      go();
       this.emit();
       return s;
     },
@@ -219,6 +283,7 @@
       switch (m.t) {
         case 'hello':
           s.them.name = txt(m.name, 20) || '?'; s.them.ver = txt(m.ver, 16) || '';
+          s.them.tid = /^[A-Z0-9]{6}$/.test(String(m.tid || '')) ? m.tid : ''; s.them.av = D.species[m.av] ? m.av : null;
           if (m.v !== PROTO) { s.status = 'error'; s.error = 'version'; }
           break;
         case 'busy': s.status = 'error'; s.error = 'busy'; break;
@@ -255,6 +320,9 @@
       if (!state.team.length && P.all().length) state.team.push(P.all()[0].uid);
       if (DK.boxes && DK.boxes.sync) DK.boxes.sync();
       state.stats.trades = (state.stats.trades || 0) + 1;
+      // v5.37: historial de intercambios (los 20 últimos)
+      const snap = (d) => ({ species: d.species, name: DK.daskai.name(d), level: d.level, shiny: !!d.shiny });
+      state.tradeLog = [{ at: Date.now(), gave: snap(mine), got: snap(theirs), with: s.them.name || '?', tid: s.them.tid || '' }].concat(state.tradeLog || []).slice(0, 20);
       s.done = { gave: DK.daskai.name(mine), got: theirs.uid }; s.status = 'done';
       DK.store.save();
       DK.emit('trade:done', { gave: mine, got: theirs });

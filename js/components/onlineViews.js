@@ -28,7 +28,8 @@
         h('span', null, h('small', null, t('trade.nature')), h('b', null, D.natures[d.nature] ? DK.tr('natures', D.natures[d.nature]) : '—')),
         h('span', null, h('small', null, t('trade.passive')), h('b', null, D.passives[d.passive] ? DK.tr('passives', D.passives[d.passive]) : '—'))),
       h('div', { class: 'tc-stats' }, ['hp', 'mp', 'atk', 'matk', 'def', 'mdef', 'spd'].map(stat)),
-      h('div', { class: 'tc-moves' }, (d.moves || []).map((m) => (D.moves[m] ? h('span', { class: 'chip sm' }, DK.tr('moves', D.moves[m])) : null))));
+      h('div', { class: 'tc-moves' }, (d.moves || []).map((m) => (D.moves[m] ? h('span', { class: 'chip sm' }, DK.tr('moves', D.moves[m])) : null))),
+      d.ot ? h('small', { class: 'tc-ot muted' }, DK.icon('user', 10), ' ', t('trade.ot'), ': ', h('b', null, d.ot.name), ' #' + d.ot.id) : null);
   };
 
   /** Elegir uno de tus daskai, por grupos como en las cajas. filter(d) → null (vale) o la clave del motivo. */
@@ -57,13 +58,25 @@
     }).promise;
   };
 
-  /* ---------------- Intercambio ---------------- */
+  /* ---------------- Intercambio (v5.37: rediseño) ---------------- */
+  /** Placa de un jugador: dibujo, nombre e ID de entrenador. */
+  const plate = (who, { name, tid, species, avatarOf, on, cls = '' }) => h('div', { class: 'tx-plate ' + who + (on ? ' on' : '') + ' ' + cls },
+    h('span', { class: 'tx-ava' }, avatarOf ? V.avatar(avatarOf, { size: 44 }) : species && D.species[species] ? V.sprite(species, { size: 44 }) : h('b', null, (name || '?').charAt(0).toUpperCase())),
+    h('span', { class: 'tx-who' }, h('b', null, name || '…'), h('small', null, tid ? '#' + tid : t('trade.waitingPlayer'))));
+  /** Pasos: 1 conectar · 2 elegir · 3 aceptar · 4 hecho */
+  const steps = (n) => h('ol', { class: 'tx-steps', 'aria-label': t('trade.title') }, ['stepConnect', 'stepPick', 'stepAccept', 'stepDone'].map((k, i) =>
+    h('li', { class: i + 1 < n ? 'done' : i + 1 === n ? 'on' : '' }, h('span', null, i + 1 < n ? DK.icon('check', 11) : String(i + 1)), h('small', null, t('trade.' + k)))));
+  /** Código de la sala en fichas grandes. */
+  const codeTiles = (code) => h('span', { class: 'tx-code', 'aria-label': code }, code.split('').map((c, i) => h('i', { class: i === 3 ? 'gap' : '' }, c)));
+  const fmtAgo = (at) => { const m = Math.round((Date.now() - at) / 60000); return m < 60 ? t('trade.agoMin', { n: Math.max(1, m) }) : m < 1440 ? t('trade.agoH', { n: Math.round(m / 60) }) : t('trade.agoD', { n: Math.round(m / 1440) }); };
+
   V.tradeDialog = () => {
     const T = DK.trade;
     if (!T.available()) { toast(t('trade.why.expedition'), { icon: 'lock', kind: 'bad' }); return null; }
-    let off = null, input = null;
+    let off = null;
+    const meP = DK.store.state.player || {};
     const m = DK.ui.modal({
-      title: t('trade.title'), icon: 'swap', cls: 'trade-modal', closeX: true, dismissable: true,
+      title: t('trade.title'), icon: 'swap', cls: 'trade-modal tx', closeX: true, dismissable: true,
       content: () => {
         const holder = h('div', { class: 'trade-body' });
         const draw = () => holder.replaceChildren(view());
@@ -76,61 +89,95 @@
 
     function view() {
       const s = T.session;
-      if (!s) {
-        input = h('input', { class: 'trade-code-in', type: 'text', maxlength: 7, placeholder: 'ABC123', autocomplete: 'off', spellcheck: 'false', 'aria-label': t('trade.codeLabel') });
-        const join = () => { if (!T.join(input.value)) { DK.audio.sfx('error'); input.classList.add('bad'); } };
-        input.addEventListener('keydown', (e) => { if (e.key === 'Enter') join(); });
-        return h('div', { class: 'stack' },
-          h('p', { class: 'muted small' }, t('trade.intro')),
-          h('div', { class: 'trade-start' },
-            h('div', { class: 'trade-opt' }, DK.icon('plus', 22), h('b', null, t('trade.hostTitle')), h('small', { class: 'muted' }, t('trade.hostText')),
-              btn({ icon: 'globe', label: t('trade.host'), variant: 'primary', onClick: () => { DK.audio.sfx('select'); T.host(); } })),
-            h('div', { class: 'trade-opt' }, DK.icon('users', 22), h('b', null, t('trade.joinTitle')), h('small', { class: 'muted' }, t('trade.joinText')),
-              h('div', { class: 'row gap-s' }, input, btn({ icon: 'next', label: t('trade.join'), variant: 'tone', onClick: join })))),
-          h('p', { class: 'muted small trade-note' }, DK.icon('info', 12), ' ', t('trade.note')));
-      }
-      // Error o sala cerrada
+      if (!s) return startView();
       if (s.status === 'error' || s.status === 'closed') {
-        return h('div', { class: 'stack trade-msg' }, DK.icon(s.status === 'closed' ? 'exit' : 'alert', 30),
+        return h('div', { class: 'tx-msg' }, h('span', { class: 'tx-msg-ico bad' }, DK.icon(s.status === 'closed' ? 'exit' : 'alert', 30)),
           h('b', null, s.status === 'closed' ? t('trade.closed') : t('trade.err.' + (s.error || 'conn'))),
-          btn({ icon: 'refresh', label: t('trade.again'), variant: 'tone', onClick: () => { T.close(); } }));
+          s.error === 'notFound' ? h('small', { class: 'muted' }, t('trade.notFoundHelp')) : null,
+          btn({ icon: 'refresh', label: t('trade.again'), variant: 'primary', onClick: () => T.close() }));
       }
-      // Hecho
-      if (s.status === 'done') {
-        const got = DK.party.get(s.done.got);
-        return h('div', { class: 'stack trade-done' }, h('b', { class: 'good-text' }, DK.icon('checkCircle', 18), ' ', t('trade.doneTitle')),
-          h('p', { class: 'muted small' }, t('trade.doneText', { gave: s.done.gave, got: got ? DK.daskai.name(got) : '?', name: s.them.name })),
-          got ? V.tradeCard(got, { cls: 'got' }) : null,
-          h('div', { class: 'row gap-s' }, btn({ icon: 'users', label: t('trade.toTeam'), variant: 'primary', onClick: () => { m.close(true); DK.router.reset('team'); } }),
-            btn({ icon: 'swap', label: t('trade.another'), variant: 'ghost', onClick: () => T.close() })));
-      }
-      // Sala: código y estado
-      const code = h('div', { class: 'trade-code' },
-        h('small', { class: 'muted' }, t(s.role === 'host' ? 'trade.yourCode' : s.status === 'open' ? 'trade.room' : 'trade.joining')),
-        h('b', { class: 'tc-code' }, s.code.slice(0, 3) + ' ' + s.code.slice(3)),
-        s.role === 'host' ? btn({ icon: 'copy', label: t('trade.copy'), size: 'sm', variant: 'ghost', iconOnly: true, onClick: () => { navigator.clipboard && navigator.clipboard.writeText(s.code).then(() => toast(t('trade.copied'), { icon: 'copy' }), () => {}); } }) : null,
-        h('span', { class: 'chip ' + (s.status === 'open' ? 'pos' : '') }, DK.icon(s.status === 'open' ? 'checkCircle' : 'clock', 12), t('trade.st.' + s.status, { name: s.them.name || '?' })));
-      if (s.status !== 'open') return h('div', { class: 'stack' }, code, h('p', { class: 'muted small' }, t(s.role === 'host' ? 'trade.waitHelp' : 'trade.connHelp')));
+      if (s.status === 'done') return doneView(s);
+      return roomView(s);
+    }
+
+    function startView() {
+      const input = h('input', { class: 'trade-code-in', type: 'text', maxlength: 7, placeholder: 'ABC123', autocomplete: 'off', autocapitalize: 'characters', spellcheck: 'false', 'aria-label': t('trade.codeLabel') });
+      const join = () => { if (!T.join(input.value)) { DK.audio.sfx('error'); input.classList.add('bad'); input.focus(); } else DK.audio.sfx('select'); };
+      input.addEventListener('keydown', (e) => { if (e.key === 'Enter') join(); });
+      input.addEventListener('input', () => { input.value = T.cleanCode(input.value); input.classList.remove('bad'); });
+      const log = (DK.store.state.tradeLog || []).slice(0, 5);
+      return h('div', { class: 'stack tx-start' },
+        h('div', { class: 'tx-hero' },
+          h('div', { class: 'tx-hero-art', 'aria-hidden': 'true' }, h('span', { class: 'tx-orb a' }, V.sprite((DK.party.leader() || {}).species || Object.keys(D.species)[0], { size: 54 })), h('span', { class: 'tx-orb-swap' }, DK.icon('swap', 20)), h('span', { class: 'tx-orb b' }, DK.icon('question', 26))),
+          h('div', null, h('b', null, t('trade.heroTitle')), h('p', { class: 'muted small' }, t('trade.intro')),
+            h('span', { class: 'chip sm tx-myid', tip: t('trade.yourIdTip') }, DK.icon('user', 11), t('trade.yourId'), ' ', h('b', null, '#' + DK.trainer.id())))),
+        h('div', { class: 'tx-choices' },
+          h('div', { class: 'tx-choice host' }, h('span', { class: 'tx-choice-ico' }, DK.icon('plus', 22)),
+            h('b', null, t('trade.hostTitle')), h('small', { class: 'muted' }, t('trade.hostText')),
+            btn({ icon: 'globe', label: t('trade.host'), variant: 'primary', onClick: () => { DK.audio.sfx('select'); T.host(); } })),
+          h('div', { class: 'tx-choice join' }, h('span', { class: 'tx-choice-ico' }, DK.icon('users', 22)),
+            h('b', null, t('trade.joinTitle')), h('small', { class: 'muted' }, t('trade.joinText')),
+            h('div', { class: 'tx-join-row' }, input, btn({ icon: 'next', label: t('trade.join'), variant: 'tone', onClick: join })))),
+        log.length ? h('div', { class: 'tx-log' }, h('span', { class: 'tx-sub' }, DK.icon('clock', 12), t('trade.history')),
+          log.map((x) => h('div', { class: 'tx-log-row' },
+            h('span', { class: 'tx-log-mon' }, V.sprite(x.gave.species, { size: 30, shiny: x.gave.shiny }), h('small', null, x.gave.name)),
+            h('span', { class: 'tx-log-arrow' }, DK.icon('swap', 13)),
+            h('span', { class: 'tx-log-mon' }, V.sprite(x.got.species, { size: 30, shiny: x.got.shiny }), h('small', null, x.got.name)),
+            h('small', { class: 'muted tx-log-with' }, `${x.with}${x.tid ? ' #' + x.tid : ''} · ${fmtAgo(x.at)}`)))) : null,
+        h('p', { class: 'muted small trade-note' }, DK.icon('info', 12), ' ', t(DK.online && DK.online.enabled() && T.relayOk !== false ? 'trade.noteRelay' : 'trade.note')));
+    }
+
+    function roomView(s) {
+      const open = s.status === 'open';
       const mine = s.me.uid ? DK.party.get(s.me.uid) : null;
-      const pick = async () => { const uid = await V.pickOwnDaskai({ filter: (d) => T.canOffer(d) }); if (uid) { T.offer(uid); DK.audio.sfx('select'); } };
       const fp = T.fingerprint(), iLock = !!fp && s.me.locked === fp, theyLock = !!fp && s.them.locked === fp;
-      const mySide = h('div', { class: 'trade-side me' + (iLock ? ' locked' : '') },
-        h('span', { class: 'ts-lbl' }, DK.icon('arrowUp', 13), t('trade.youGive')),
-        mine ? V.tradeCard(mine) : h('button', { class: 'trade-empty', type: 'button', onClick: pick }, DK.icon('plus', 22), t('trade.pick')),
-        mine && !iLock ? btn({ icon: 'swap', label: t('trade.change'), size: 'sm', variant: 'ghost', onClick: pick }) : null,
-        iLock ? h('span', { class: 'chip pos' }, DK.icon('check', 12), t('trade.youAccepted')) : null);
-      const theirSide = h('div', { class: 'trade-side them' + (theyLock ? ' locked' : '') },
-        h('span', { class: 'ts-lbl' }, DK.icon('arrowDown', 13), t('trade.youGet', { name: s.them.name || '?' })),
-        s.them.d ? V.tradeCard(s.them.d) : h('div', { class: 'trade-empty wait' }, DK.icon('clock', 20), s.them.bad ? t('trade.badOffer') : t('trade.waitOffer', { name: s.them.name || '?' })),
-        theyLock ? h('span', { class: 'chip pos' }, DK.icon('check', 12), t('trade.theyAccepted', { name: s.them.name || '?' })) : null);
-      const can = !!fp;
-      return h('div', { class: 'stack' }, code,
+      const stepN = !open ? 1 : !fp ? 2 : 3;
+      const share = async () => {
+        const text = t('trade.shareText', { code: s.code });
+        try { if (navigator.share) { await navigator.share({ title: t('trade.title'), text }); return; } } catch (e) { /* cancelado */ }
+        try { await navigator.clipboard.writeText(s.code); toast(t('trade.copied'), { icon: 'copy' }); } catch (e) { /* */ }
+      };
+      const head = h('div', { class: 'tx-head' },
+        plate('me', { name: meP.name, tid: DK.trainer.id(), avatarOf: meP, on: true }),
+        h('span', { class: 'tx-link ' + (open ? 'on' : 'wait') }, h('i'), h('i'), h('i'), DK.icon(open ? 'swap' : 'clock', 16)),
+        plate('them', { name: open ? s.them.name : '', tid: open ? s.them.tid : '', species: s.them.av, on: open }));
+      const room = h('div', { class: 'tx-room' + (open ? ' small' : '') },
+        h('small', { class: 'muted' }, t(s.role === 'host' ? 'trade.yourCode' : open ? 'trade.room' : 'trade.joining')),
+        codeTiles(s.code),
+        s.role === 'host' && !open ? btn({ icon: navigator.share ? 'share' : 'copy', label: t(navigator.share ? 'trade.share' : 'trade.copy'), size: 'sm', variant: 'tone', onClick: share }) : null);
+      if (!open) {
+        return h('div', { class: 'stack tx-room-wrap' }, steps(stepN), head, room,
+          h('p', { class: 'tx-wait muted small' }, h('span', { class: 'tx-dots' }, h('i'), h('i'), h('i')), ' ', t(s.role === 'host' ? 'trade.waitHelp' : 'trade.connHelp')),
+          s.role === 'host' ? h('p', { class: 'muted small' }, DK.icon('info', 12), ' ', t('trade.leaveOk')) : null);
+      }
+      const pick = async () => { const uid = await V.pickOwnDaskai({ filter: (d) => T.canOffer(d) }); if (uid) { T.offer(uid); DK.audio.sfx('select'); } };
+      const side = (who, d, locked, emptyEl, lbl, extra) => h('div', { class: 'tx-side ' + who + (locked ? ' locked' : '') + (d ? ' filled' : '') },
+        h('span', { class: 'tx-side-lbl' }, lbl, locked ? h('span', { class: 'tx-ok' }, DK.icon('check', 11), t('trade.ok')) : null),
+        d ? V.tradeCard(d) : emptyEl, extra);
+      const mySide = side('me', mine, iLock, h('button', { class: 'trade-empty', type: 'button', onClick: pick }, h('span', { class: 'tx-plus' }, DK.icon('plus', 22)), h('b', null, t('trade.pick')), h('small', { class: 'muted' }, t('trade.pickHelp'))),
+        t('trade.youGive'), mine && !iLock ? btn({ icon: 'swap', label: t('trade.change'), size: 'sm', variant: 'ghost', onClick: pick }) : null);
+      const theirSide = side('them', s.them.d, theyLock, h('div', { class: 'trade-empty wait' }, h('span', { class: 'tx-dots' }, h('i'), h('i'), h('i')), h('small', null, s.them.bad ? t('trade.badOffer') : t('trade.waitOffer', { name: s.them.name || '?' }))),
+        t('trade.youGet', { name: s.them.name || '?' }), null);
+      const both = iLock && theyLock;
+      return h('div', { class: 'stack tx-room-wrap' }, steps(both ? 4 : stepN), head, room,
         s.them.ver && s.them.ver !== DK.version ? h('p', { class: 'small warn-text' }, DK.icon('alert', 12), ' ', t('trade.verWarn', { a: DK.version, b: s.them.ver })) : null,
-        h('div', { class: 'trade-sides' }, mySide, h('span', { class: 'trade-arrow', 'aria-hidden': 'true' }, DK.icon('swap', 22)), theirSide),
-        h('div', { class: 'row gap-s wrap trade-actions' },
-          iLock ? btn({ icon: 'undo', label: t('trade.undo'), variant: 'ghost', onClick: () => T.unlock() })
-            : btn({ icon: 'check', label: t('trade.accept'), variant: 'primary', disabled: !can, onClick: () => { T.lock(); DK.audio.sfx('select'); } }),
-          h('small', { class: 'muted' }, can ? t('trade.acceptHelp') : t('trade.needBoth'))));
+        h('div', { class: 'trade-sides tx-sides' + (both ? ' swapping' : '') }, mySide, h('span', { class: 'trade-arrow tx-arrow', 'aria-hidden': 'true' }, DK.icon('swap', 22)), theirSide),
+        h('div', { class: 'tx-actions' },
+          both ? h('b', { class: 'good-text' }, h('span', { class: 'tx-dots' }, h('i'), h('i'), h('i')), ' ', t('trade.swapping'))
+            : iLock ? [h('small', { class: 'muted' }, t('trade.waitAccept', { name: s.them.name || '?' })), btn({ icon: 'undo', label: t('trade.undo'), variant: 'ghost', onClick: () => T.unlock() })]
+            : [h('small', { class: 'muted' }, fp ? (theyLock ? t('trade.theyAccepted', { name: s.them.name || '?' }) : t('trade.acceptHelp')) : t('trade.needBoth')),
+              btn({ icon: 'check', label: t('trade.accept'), variant: 'primary', disabled: !fp, onClick: () => { T.lock(); DK.audio.sfx('select'); } })]));
+    }
+
+    function doneView(s) {
+      const got = DK.party.get(s.done.got);
+      return h('div', { class: 'stack tx-done' }, steps(5),
+        h('div', { class: 'tx-burst', 'aria-hidden': 'true' }, Array.from({ length: 12 }, (_, i) => h('i', { style: { '--a': (i * 30) + 'deg', '--d': (i % 3) * 0.08 + 's' } }))),
+        h('b', { class: 'tx-done-title' }, DK.icon('checkCircle', 20), ' ', t('trade.doneTitle')),
+        h('p', { class: 'muted small' }, t('trade.doneText', { gave: s.done.gave, got: got ? DK.daskai.name(got) : '?', name: s.them.name })),
+        got ? V.tradeCard(got, { cls: 'got' }) : null,
+        h('div', { class: 'row gap-s wrap tx-done-btns' }, btn({ icon: 'users', label: t('trade.toTeam'), variant: 'primary', onClick: () => { m.close(true); DK.router.reset('team'); } }),
+          btn({ icon: 'swap', label: t('trade.another'), variant: 'ghost', onClick: () => T.close() })));
     }
     return m;
   };

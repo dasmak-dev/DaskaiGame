@@ -458,16 +458,28 @@
   }
 
   /**
-   * Dibujo animado (components/campArt.js): fotogramas apilados que
-   * css/motion.css alterna (.camp-anim.n3 …). Conserva el tamaño del dibujo
-   * antiguo (`base`). null si no hay versión animada.
+   * Dibujo animado (components/campArt.js). v5.37: los fotogramas se pintan UNA vez en una tira (imagen PNG, n
+   * fotogramas en fila) y se anima sólo su posición con steps(n): un único elemento, sin capas apiladas que se
+   * enciendan y apaguen (en el móvil, los relojes de cada capa se desfasaban y el dibujo parpadeaba). Conserva el
+   * tamaño del dibujo antiguo (`base`). null si no hay versión animada.
    */
+  const stripCache = {};
+  const cvURL = (frames) => {
+    const w = frames[0].w, hh = frames[0].h, cv = document.createElement('canvas'); cv.width = w * frames.length; cv.height = hh;
+    const g = cv.getContext('2d'); if (!g) return null;
+    frames.forEach((f, i) => f.g.forEach((row, y) => row.forEach((c, x) => { if (c) { g.fillStyle = c; g.fillRect(i * w + x, y, 1, 1); } })));
+    return cv.toDataURL('image/png');
+  };
   function animArt(name, scale, delay = 0) {
     const a = DK.pix.animated && DK.pix.animated(name); if (!a) return null;
-    const k = (scale * a.base) / a.frames[0].w;
-    return h('span', { class: `camp-anim a-${name} n${a.frames.length}`, style: delay ? { '--d': delay + 's' } : null },
-      ...a.frames.map((cv, i) => { const el = pixSvg(cv, k, 'fr fr' + i); el.style.setProperty('--i', i); return el; }),
-      a.over ? pixSvg(a.over, k, 'fr-top') : null);
+    const f0 = a.frames[0], n = a.frames.length, k = (scale * a.base) / f0.w, W = f0.w * k, H = f0.h * k;
+    const url = stripCache[name] || (stripCache[name] = cvURL(a.frames));
+    if (!url) return null;
+    const over = a.over ? (stripCache[name + ':over'] || (stripCache[name + ':over'] = cvURL([a.over]))) : null;
+    const box = h('span', { class: `camp-anim a-${name} n${n}`, style: Object.assign({ width: W + 'px', height: H + 'px', '--n': n }, delay ? { '--d': delay + 's' } : {}) },
+      h('i', { class: 'ca-strip', style: { width: W * n + 'px', height: H + 'px', backgroundImage: `url(${url})` } }),
+      over ? h('i', { class: 'ca-over', style: { width: W + 'px', height: H + 'px', backgroundImage: `url(${over})` } }) : null);
+    return box;
   }
 
   /**

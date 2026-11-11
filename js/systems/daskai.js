@@ -727,6 +727,7 @@
       // v5.29: quien llega ya con nivel trae elegidos (al azar) los talentos de sus niveles anteriores;
       // sólo eliges los que gane subiendo contigo
       api.autoTalents(d);
+      if (DK.trainer) DK.trainer.stamp(d); // v5.37: entrenador original
       this.all().push(d);
       if (DK.looks) DK.looks.see(d);
       if (this.st().team.length < DK.config.maxTeam) this.st().team.push(d.uid);

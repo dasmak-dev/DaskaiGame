@@ -357,6 +357,32 @@ Se carga la última y sólo sobrescribe: paleta (piedra oscura, bronce, oro `--g
 - **Expedición:** al entrar en el mapa, el equipo, la mochila o un combate durante una expedición, `#zone-backdrop` (creado en `screens/expedition.js` con `screen:enter`) pinta detrás de todo la escena de la zona actual, oscurecida; `body.in-exp`.
 - **Combate:** la arena usa la escena de la zona (`components/scenes.js`, ahora con árboles muertos, ruinas, tumbas, cristales o tentáculos según la zona) y los **jefes tienen su propio fondo**: `DK.scenes.bossScene(zona, secreto)` → `boss_<escena>` (menhires bajo luna roja, bosque muerto, naufragio con tormenta, bosque de cristales, forja de lava, santuario con estatua, fauces del abismo, ruinas entre rayos) y `boss_secret` (cripta) para los jefes ocultos.
 
+### Cambios de la v5.37 — intercambio por relé y rediseñado, entrenador original y móvil sin parpadeos
+
+- **Intercambio de móvil a móvil**: la conexión directa (WebRTC/PeerJS) falla a menudo entre redes móviles y,
+  además, al salir a otra app para pasar el código el móvil corta la conexión. Nuevo transporte por **relé**
+  (`relayTransport` en `systems/trade.js`): los mensajes se dejan en la tabla `trade_msgs` de Supabase
+  (`trade_send`) y cada jugador recoge los del otro cada ~1 s (`trade_poll`; cada 4 s con la pestaña oculta y al
+  volver, al momento). El invitado deja un `join`, el anfitrión responde `welcome` (o `busy`) y a partir de ahí
+  viaja el mismo protocolo de siempre dentro de `{ k: 'msg', to, m }`. Se usa siempre que la base de datos esté
+  configurada; si falta el SQL (`docs/ONLINE-SUPABASE.md`, apartado 4) cae a PeerJS (`DK.trade.relayOk = false`).
+  `DK.online.rpc(nombre, cuerpo)` llama a las funciones de la base de datos.
+- **Ventana de intercambio rediseñada** (`V.tradeDialog`): pasos (conectar · elegir · aceptar · hecho), placas de
+  los dos jugadores con su ID, código en fichas grandes con botón Compartir (`navigator.share`), tarjetas grandes,
+  animación al intercambiar y al terminar, e historial de los últimos intercambios (`state.tradeLog`).
+- **Entrenador original** (`DK.trainer`): `state.trainer.id` (6 caracteres) y `d.ot = { id, name }` en cada daskai
+  (se pone al conseguirlo en `party.add` y, a los que ya tenías, al cargar). Viaja en los intercambios (saneado) y se
+  ve en la ficha (`badge.ot`, dorado si no es tuyo) y en la tarjeta del intercambio.
+- **Móvil sin parpadeos**:
+  - Dibujos animados del campamento: antes eran N capas apiladas con animaciones de opacidad desfasadas (en el
+    móvil se desincronizaban y parpadeaban). Ahora `animArt` pinta los fotogramas en una tira PNG y anima su
+    posición con `steps(n)` (`.ca-strip`); el arcón se abre igual con `tentOpen`.
+  - Sin `backdrop-filter` en pantallas táctiles (sobre fondos animados parpadeaba), sin sacudir la arena entera en el
+    móvil (sólo vibra), sin `mix-blend-mode` en el resplandor de la hoguera y sin filtro animado en el códice.
+- **Combate en el móvil más sencillo** (≤ 600 px): fichas de vida compactas (nombre en una línea, etiquetas
+  pequeñas, sólo la vida con números, maná y experiencia como líneas finas, intención en una línea) y sin la cinta
+  del orden de turno.
+
 ### Cambios de la v5.36 — arcón más oscuro, sin mochila
 
 - Se quita de nuevo la mochila (no se leía como tal): `tent` vuelve a 50×32 y `base` 30. La madera del arcón pasa a

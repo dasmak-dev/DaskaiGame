@@ -41,6 +41,8 @@
 
   DK.online = {
     fetch: null, // (las pruebas ponen aquí un fetch falso)
+    /** v5.37: llamada a una función de la base de datos (la usa el intercambio por relé) */
+    rpc(name, body) { return call('rpc/' + name, { method: 'POST', body: body || {} }); },
     /** v5.34: la tabla es por temporada: al empezar una nueva queda vacía (las anteriores se guardan) */
     season() { return seasonNow(); },
     daysLeft() { return Math.max(0, Math.ceil((t0() + seasonNow() * SEA().days * DAY - Date.now()) / DAY)); },
