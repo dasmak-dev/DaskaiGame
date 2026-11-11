@@ -183,6 +183,10 @@
      * Barra de accesos (abajo, como la barra de objetos de un juego). En
      * pantallas estrechas, si no caben, las fijas (`pin`) y «Más».
      */
+    /** v5.24: estilo de la barra inferior (atributo data-dock en <html>): 'big' = icono grande y sólo el nombre de la
+     *  sección activa · 'mix' = icono grande y texto pequeño · 'classic' = icono pequeño y texto. */
+    dockStyle() { return document.documentElement.dataset.dock || 'big'; },
+    dockIconSize() { return this.dockStyle() === 'classic' ? 22 : 32; },
     renderNav() {
       if (!dock || !lastEntry) return;
       const { h } = DK.ui;
@@ -194,7 +198,7 @@
       const make = (it) => {
         const badge = it.badge ? it.badge() : '';
         const b = h('button', { class: 'dock-slot' + (active === it.id ? ' active' : '') + (it.id === 'battle' || it.id === 'expmap' ? ' main' : ''), type: 'button', 'aria-current': active === it.id ? 'page' : null, tip: val(it.label) },
-          h('span', { class: 'dock-icon' }, DK.icon(it.icon, 22), badge ? h('span', { class: 'nav-dot' }, badge) : null),
+          h('span', { class: 'dock-icon' }, DK.icon(it.icon, DK.app.dockIconSize()), badge ? h('span', { class: 'nav-dot' }, badge) : null),
           h('span', { class: 'dock-label' }, val(it.label)));
         b.addEventListener('click', () => go(it));
         return b;

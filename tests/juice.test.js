@@ -378,10 +378,10 @@ module.exports = {
       for (const on of [true, false]) {
         await p.evaluate((on) => { DK.settings.set('pixelArt', on); const z = DK.data.zones[Object.keys(DK.data.zones)[0]]; document.querySelector('#app, body').append(Object.assign(document.createElement('div'), { id: 'pxtest' })); document.getElementById('pxtest').append(DK.scenes.render(z.scene, z.colors), DK.ambient.page(z.scene)); }, on);
         await S(900);
-        px[on] = await p.evaluate(() => { const r = { img: document.querySelectorAll('#pxtest img.px-layer').length, svg: document.querySelectorAll('#pxtest svg').length, attr: document.documentElement.dataset.px }; document.getElementById('pxtest').remove(); return r; });
+        px[on] = await p.evaluate(() => { const r = { img: document.querySelectorAll('#pxtest img.px-layer, #pxtest .pxs-l').length, /* v5.25: el paisaje va por capas (.pxs-l) */ svg: document.querySelectorAll('#pxtest svg').length, attr: document.documentElement.dataset.px }; document.getElementById('pxtest').remove(); return r; });
       }
       check(px.true.img >= 3 && px.true.svg === 0 && px.true.attr === 'on', 'con pixel art el fondo debería ser imagen: ' + JSON.stringify(px.true));
-      check(px.false.img === 0 && px.false.svg >= 3 && px.false.attr === 'off', 'sin pixel art el fondo es SVG: ' + JSON.stringify(px.false));
+      check(px.false.attr === 'off' && px.false.img >= 7, 'sin pixel art el paisaje también va por capas (suaves): ' + JSON.stringify(px.false)); // v5.25b
       // Marcos: todos con su CSS y su nombre, en grupos; los básicos siempre están
       const fr = await p.evaluate(() => { const all = DK.avatars.frames(); return { n: all.length, noCss: all.filter((f) => !f.css || !f.group).map((f) => f.id), basicLocked: DK.avatars.framesOf('basic').filter((f) => !f.unlocked).length, names: all.filter((f) => /^profile\.|^pass\./.test(DK.avatars.frameName(f))).map((f) => f.id), feats: DK.avatars.framesOf('feat').length }; });
       check(fr.n >= 30 && !fr.noCss.length && !fr.basicLocked && fr.feats >= 8, 'marcos: ' + JSON.stringify(fr));
@@ -401,6 +401,144 @@ module.exports = {
         await p.evaluate((tab) => DK.router.reset('profile', { edit: true, edTab: tab }), tab); await S(400);
         check(await p.evaluate(() => !!document.querySelector('.profile-editor')), 'no se abre la pestaña ' + tab);
       }
+    }),
+  }, {
+    name: 'v5.21: iconos de objetos en pixel art (hoja items-px) con el ajuste «Pixel art»',
+    views: ['desktop'],
+    run: (browser, view) => play(browser, view, async (p) => {
+      const r = await p.evaluate(async () => {
+        const A = DK.itemsPx, ids = Object.keys(DK.data.items);
+        const missing = ids.filter((k) => A.ids[k] === undefined), idx = Object.values(A.ids);
+        const img = await new Promise((res) => { const im = new Image(); im.onload = () => res([im.naturalWidth, im.naturalHeight]); im.onerror = () => res(null); im.src = A.src; });
+        DK.settings.set('pixelArt', true); const on = DK.views.itemIcon(DK.data.items.pocion);
+        const gear = DK.views.itemIcon(DK.data.items.anillo_brasas, 22, { ring: '#c084fc' });
+        DK.settings.set('pixelArt', false); const off = DK.views.itemIcon(DK.data.items.pocion);
+        const unknown = (DK.settings.set('pixelArt', true), DK.views.itemIcon(Object.assign({}, DK.data.items.pocion, { id: 'nuevo_sin_icono' })));
+        return { missing, dup: idx.length - new Set(idx).size, img, max: Math.max(...idx), cols: A.cols, rows: A.rows,
+          on: on.classList.contains('ii-px') && !!on.querySelector('.ii-spr'), off: !off.classList.contains('ii-px') && !!off.querySelector('svg'),
+          ring: gear.classList.contains('has-ring') && gear.style.getPropertyValue('--ring') === '#c084fc', unknown: !unknown.classList.contains('ii-px') };
+      });
+      check(!r.missing.length && r.dup === 0, 'objetos sin icono o repetidos: ' + JSON.stringify(r));
+      check(r.img && r.img[0] === r.cols * 16 && r.img[1] === r.rows * 16 && r.max < r.cols * r.rows, 'la hoja no cuadra: ' + JSON.stringify(r));
+      check(r.on && r.off && r.ring && r.unknown, 'icono en pixel art / vectorial / rareza / objeto nuevo: ' + JSON.stringify(r));
+    }),
+  }, {
+    name: 'v5.22: iconos de la interfaz del dataset (pixel art en tonos / silueta limpia) y siluetas de objetos',
+    views: ['desktop'],
+    run: (browser, view) => play(browser, view, async (p) => {
+      const r = await p.evaluate(() => {
+        const A = DK.iconsPx, names = Object.keys(A.ids);
+        DK.settings.set('pixelArt', true);
+        const px = DK.icon('swords', 32), arrow = DK.icon('back', 32), small = DK.icon('swords', 18);
+        DK.settings.set('pixelArt', false);
+        const gl = DK.icon('swords', 32), skip = DK.icon('flame', 32), share = DK.icon.svg('trophy');
+        const item = DK.views.itemIcon(DK.data.items.pocion);
+        DK.settings.set('pixelArt', true);
+        return { n: names.length, mask: A.src.startsWith('data:image/png'), px: px.classList.contains('icon-px') && !!px.querySelector('.ipx') && px.style.width === '32px', small: !small.classList.contains('icon-px') && !!small.querySelector('svg'),
+          ipx16: px.querySelector('.ipx').style.width, arrow: !!arrow.querySelector('svg') && !arrow.classList.contains('icon-px'),
+          gl: gl.classList.contains('icon-gl') && gl.querySelector('path').getAttribute('fill-rule') === 'evenodd', skip: !skip.classList.contains('icon-gl') && !!skip.querySelector('svg'),
+          share: share.includes('evenodd'), itemGlyph: !!item.querySelector('path[fill-rule="evenodd"]'),
+          glyphsItems: Object.keys(DK.itemsPx.glyphs).length, items: Object.keys(DK.data.items).length };
+      });
+      check(r.n >= 100 && r.mask, 'iconos de interfaz: ' + JSON.stringify(r));
+      check(r.px && r.ipx16 === '32px' && r.arrow && r.small, 'pixel art: máscara nítida de 32 px, flechas de trazo y en pequeño (< 28 px) el icono de siempre: ' + JSON.stringify(r));
+      check(r.gl && r.skip && r.share, 'estilo limpio: silueta, excepciones de trazo y tarjeta: ' + JSON.stringify(r));
+      check(r.itemGlyph && r.glyphsItems === r.items, 'siluetas de objetos: ' + JSON.stringify(r));
+    }),
+  }, {
+    name: 'v5.23: iconos de Ajustes y del Equipo, compuestos (grupo, silenciado, ojo tachado) y arcón con mochila',
+    views: ['desktop'],
+    run: (browser, view) => play(browser, view, async (p) => {
+      const r = await p.evaluate(() => {
+        const A = DK.iconsPx.ids, need = ['users', 'user', 'volume', 'volumeOff', 'eye', 'eyeOff', 'accessibility', 'keyboard', 'gauge', 'image', 'type', 'layers', 'vibrate', 'play', 'pause', 'skip', 'download', 'upload', 'help'];
+        const tent = DK.pix.animated('tent');
+        return { missing: need.filter((n) => A[n] === undefined), tentW: tent.frames[0].w, tentBase: tent.base, frames: tent.frames.length };
+      });
+      check(!r.missing.length, 'faltan iconos: ' + r.missing);
+      check(r.tentW === 76 && Math.abs(r.tentBase - 45.6) < 0.01 && r.frames === 3, 'arcón con mochila: ' + JSON.stringify(r));
+    }),
+  }, {
+    name: 'v5.24: iconos pequeños de trazo, barra inferior con iconos grandes (y su ajuste) y mochila del arcón',
+    views: ['desktop'],
+    run: (browser, view) => play(browser, view, async (p) => {
+      const r = await p.evaluate(async () => {
+        const S = (ms) => new Promise((res) => setTimeout(res, ms)), out = {};
+        out.small = !DK.icon('swords', 20).classList.contains('icon-px') && !DK.icon('swords', 20).classList.contains('icon-gl');
+        DK.settings.set('dock', 'big'); DK.router.reset('hub'); await S(300);
+        const slots = [...document.querySelectorAll('.dock-slot:not(.dock-more)')];
+        out.big = document.documentElement.dataset.dock === 'big' && slots.every((b) => b.querySelector('.dock-icon .icon').style.width === '32px' || !!b.querySelector('.dock-icon svg'));
+        out.hidden = slots.filter((b) => !b.classList.contains('active')).every((b) => getComputedStyle(b.querySelector('.dock-label')).position === 'absolute');
+        DK.settings.set('dock', 'classic'); DK.app.renderNav(); await S(100);
+        out.classic = document.documentElement.dataset.dock === 'classic' && getComputedStyle(document.querySelector('.dock-slot:not(.active) .dock-label')).position !== 'absolute';
+        DK.settings.set('dock', 'big');
+        out.tentW = DK.pix.animated('tent').frames[0].w;
+        return out;
+      });
+      check(r.small, 'los iconos pequeños deberían ser los de trazo');
+      check(r.big && r.hidden && r.classic, 'barra inferior: ' + JSON.stringify(r));
+      check(r.tentW === 76, 'arcón con mochila: ' + r.tentW);
+    }),
+  }, {
+    name: 'v5.25: fondos por capas en pixel art (suaves), icono de equipo, terreno con detalle y botín con registro',
+    views: ['desktop'],
+    run: (browser, view) => play(browser, view, async (p) => {
+      const r = await p.evaluate(async () => {
+        const S = (ms) => new Promise((res) => setTimeout(res, ms)), out = {};
+        DK.settings.set('pixelArt', true);
+        const host = document.createElement('div'); host.className = 'arena'; host.style.cssText = 'position:fixed;left:0;top:0;width:800px;height:360px';
+        document.body.append(host);
+        out.kits = Object.keys(DK.scenes.list).filter((id) => !DK.pixelScene.has(id));
+        const sc = DK.scenes.render('forest', ['#4ade80', '#14532d']); host.append(sc); await S(200);
+        const ls = [...sc.querySelectorAll('.pxs-l')];
+        out.layers = ls.map((l) => l.className.replace('pxs-l pxs-', '').split(' ')[0]);
+        const mv = sc.querySelector('.pxs-mid'), cs = getComputedStyle(mv);
+        out.drift = cs.animationName === 'pxsDrift' && cs.animationTimingFunction === 'linear';
+        out.svg = sc.querySelectorAll('svg').length;
+        const sp = sc.querySelector('.sp'); out.sp = sp ? getComputedStyle(sp).animationTimingFunction : 'none';
+        out.wide = mv.getBoundingClientRect().width > 800;
+        DK.settings.set('pixelArt', false);
+        const clean = DK.scenes.render('forest', ['#4ade80', '#14532d']); out.clean = clean.classList.contains('pxs-smooth') && clean.querySelectorAll('.pxs-l').length === 7 && !clean.querySelector('svg.scene-far');
+        DK.settings.set('pixelArt', true); host.remove();
+        out.users = DK.icon('users', 20).innerHTML.includes('<ellipse'); // v5.27: zarpa de oso
+        // v5.25b: avisos del equipo
+        const d0 = DK.party.all()[0]; out.needs = Array.isArray(DK.daskai.needs(d0));
+        const lv = d0.level; d0.level = Math.max(d0.level, DK.config.talentEvery); out.needTalent = DK.daskai.needs(d0).includes('talent') || !!(d0.talents && Object.keys(d0.talents).length);
+        out.badge = DK.menus.list ? true : true; d0.level = lv;
+        const im = new Image(); im.src = DK.pix.terrain(['#86efac', '#16a34a'], 'v525'); await im.decode(); out.terrain = im.width;
+        out.lang = ['battle.endLog', 'battle.endPeek', 'battle.endShow'].every((k) => DK.i18n.t(k) !== k);
+        return out;
+      });
+      check(!r.kits.length, 'escenas sin kit de capas: ' + r.kits);
+      check(r.layers.join() === 'sky,far,far2,fog,mid,rays,near' && r.svg === 0, 'las 7 capas del bosque: ' + JSON.stringify(r.layers));
+      check(r.drift && r.wide, 'las capas deberían desplazarse en bucle y suaves: ' + JSON.stringify(r));
+      check(!/steps/.test(r.sp), 'partículas a saltos: ' + r.sp);
+      check(r.clean, 'sin pixel art: 7 capas suaves');
+      check(r.users, 'el icono de equipo pequeño debería ser la zarpa');
+      check(r.needs && r.needTalent, 'avisos del equipo: ' + JSON.stringify(r));
+      check(r.terrain === 96, 'tesela del terreno: ' + r.terrain);
+      check(r.lang, 'faltan textos del botín');
+    }),
+  }, {
+    name: 'v5.27: mapa del mundo ilustrado, talentos en filas compactas y fotos de perfil por cajas',
+    views: ['desktop'],
+    run: (browser, view) => play(browser, view, async (p) => {
+      const r = await p.evaluate(async () => {
+        const S = (ms) => new Promise((res) => setTimeout(res, ms)), out = {};
+        DK.router.reset('zones'); await S(300);
+        const art = document.querySelector('.wm2-art'); out.art = !!art && /^url\("?data:image\/png/.test(art.style.backgroundImage); out.oldDeco = document.querySelectorAll('.wm2-deco, .wm2-region').length;
+        const d = DK.party.all()[0]; const lv = d.level, tal = d.talents; d.level = DK.config.talentEvery; d.talents = {};
+        DK.views.talentDialog(d); await S(300);
+        const rows = [...document.querySelectorAll('.tl-modal .tl-opt')]; out.rows = rows.length; out.best = document.querySelectorAll('.tl-modal .tl-opt.best').length;
+        const hs = rows.map((x) => x.getBoundingClientRect().height); out.modalH = document.querySelector('.tl-modal').getBoundingClientRect().height;
+        out.chips = document.querySelectorAll('.tl-modal .tl-chip').length;
+        document.querySelectorAll('.modal-backdrop').forEach((m) => m.remove()); d.level = lv; d.talents = tal;
+        DK.router.reset('profile', { edit: true }); await S(300);
+        out.groups = [...document.querySelectorAll('.pe-groups .pe-chip')].map((b) => b.textContent);
+        return out;
+      });
+      check(r.art && r.oldDeco === 0, 'mapa ilustrado: ' + JSON.stringify(r));
+      check(r.rows === 3 && r.best === 1 && r.chips >= 3 && r.modalH < 640, 'ventana de talentos compacta: ' + JSON.stringify(r));
+      check(r.groups.length >= 2, 'fotos de perfil por grupos: ' + JSON.stringify(r.groups));
     }),
 }],
 };

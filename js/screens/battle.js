@@ -852,7 +852,13 @@
         lost: ['skull', t('battle.lostTitle'), lostLoot && lostLoot.boss ? t('battle.lostBoss', { n: Math.round(DK.config.expedition.bossDeathLoss * 100), pack: DK.rules.keepPack() ? t('pack.keepText') : t('pack.loseText') }) : lostLoot ? t('battle.lostExp', { pack: DK.rules.keepPack() ? t('pack.keepText') : t('pack.loseText') }) : t('battle.lostText')],
       };
       const [ic, title, sub] = titles[outcome];
-      banner.replaceChildren(h('div', { class: 'banner-card ' + outcome }, DK.icon(ic, 34), h('h2', null, title), h('p', null, sub),
+      // v5.25: desde el botín se puede ver el registro del combate (panel lateral) o plegar la ventana para ver la arena
+      const fold = (on) => banner.classList.toggle('folded', on);
+      const bannerTools = h('div', { class: 'banner-tools' },
+        btn({ icon: 'list', label: t('battle.endLog'), size: 'sm', variant: 'ghost', hotkey: 'L', onClick: () => expandLog() }),
+        btn({ icon: 'eye', label: t('battle.endPeek'), size: 'sm', variant: 'ghost', onClick: () => fold(true) }));
+      const unfold = h('button', { class: 'banner-unfold', type: 'button', onClick: () => fold(false) }, DK.icon('gift', 16), t('battle.endShow'));
+      banner.replaceChildren(unfold, h('div', { class: 'banner-card ' + outcome }, DK.icon(ic, 34), h('h2', null, title), h('p', null, sub),
         r ? rewardsView(r) : null,
         r && r.shared && r.shared.length ? h('div', { class: 'team-exp' }, r.shared.map((x) => {
           const d = DK.party.get(x.uid); if (!d) return null;
@@ -869,7 +875,8 @@
         st.dead && st.dead.length ? h('div', { class: 'exp-summary' }, h('b', null, DK.icon('skull', 14), ' ', t('battle.fallenTitle')),
           h('div', { class: 'chips' }, st.dead.map((x) => h('span', { class: 'chip neg' }, DK.icon('skull', 13), `${x.name} · ${t('common.lvl')} ${x.level}`)))) : null,
         lostLoot && lostLoot.recruits && lostLoot.recruits.length ? h('div', { class: 'exp-summary' }, h('b', null, t('exp.recruitsLeft')),
-          h('div', { class: 'chips' }, lostLoot.recruits.map((x) => h('span', { class: 'chip neg' }, DK.icon('paw', 13), x.name)))) : null));
+          h('div', { class: 'chips' }, lostLoot.recruits.map((x) => h('span', { class: 'chip neg' }, DK.icon('paw', 13), x.name)))) : null,
+        bannerTools));
       banner.classList.add('show');
 
       const goHub = () => DK.router.reset(DK.store.state.gameOver ? 'gameOver' : 'hub');

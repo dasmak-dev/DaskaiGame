@@ -506,16 +506,14 @@
     const W = PAD * 2 + STEP * (stops.length - 1);
     const pts = stops.map((s, i) => [PAD + i * STEP, yAt(i)]);
 
-    // Terreno: una franja por parada con los colores de su zona (gris si no se conoce)
-    const fogCols = ['#94a3b8', '#334155'];
-    // (Las posiciones van respecto al centro del mapa, que ocupa al menos todo el ancho de la tarjeta.)
+    // v5.27: el terreno es una ilustración en pixel art (components/worldArt.js): un bioma por zona, con transiciones
+    // tramadas, árboles, rocas, agua, lava, ruinas… con sombra, y niebla en lo que aún no conoces. Se dibuja SIDE px
+    // más allá de cada extremo porque el mapa puede ser más ancho que el recorrido.
+    const SIDE = 700;
     const cx = (x) => `calc(50% + ${Math.round(x - W / 2)}px)`;
-    const regions = stops.map((s, i) => {
-      const cols = s.z && !s.locked ? s.z.colors : fogCols;
-      const first = i === 0, last = i === stops.length - 1;
-      const style = { left: first ? '0' : cx(pts[i][0] - STEP / 2), right: last ? '0' : null, width: last ? null : first ? cx(pts[i][0] + STEP / 2) : STEP + 'px', backgroundImage: `url(${DK.pix.terrain(cols, 'wm-' + i)})` };
-      return h('span', { class: 'wm2-region' + (s.z && !s.locked ? '' : ' fog'), style });
-    });
+    const art = h('span', { class: 'wm2-art', style: { left: cx(-SIDE), width: (W + SIDE * 2) + 'px', height: MAP_H + 'px',
+      backgroundImage: `url(${DK.worldArt.render({ stops: stops.map((s) => (s.z && !s.locked ? { scene: s.z.scene, colors: s.z.colors } : { fog: true })), pts, W, H: MAP_H, SIDE, STEP, PAD })})` } });
+    const regions = [art];
 
     // Camino: curvas suaves entre paradas (de tierra hasta la última conocida, de puntos después)
     const ns = 'http://www.w3.org/2000/svg';
@@ -533,22 +531,7 @@
       });
     });
 
-    // Adornos: árboles, arbustos y rocas lejos del camino
-    const rnd = DK.util.seeded('wm-decor-' + stops.length);
-    const kinds = ['pine', 'pine', 'bush', 'rock', 'pine', 'bush'];
-    const decor = [];
-    // (también a los lados del camino, por si el mapa es más ancho que el recorrido)
-    const SIDE = 420;
-    for (let i = 0, tries = 0; i < stops.length * 4 + 10 && tries < 300; tries++) {
-      const x = -SIDE + rnd() * (W + SIDE * 2), y = 14 + rnd() * (MAP_H - 30);
-      const near = pts.some(([px, py]) => Math.abs(px - x) < 54 && Math.abs(py - y) < 62);
-      const k = Math.min(stops.length - 1, Math.max(0, Math.round((x - PAD) / STEP)));
-      const onRoad = Math.abs(y - (pts[k][1])) < 30;
-      if (near || onRoad) continue;
-      const kind = kinds[Math.floor(rnd() * kinds.length)];
-      decor.push(h('span', { class: 'wm2-deco' + (stops[k].z && !stops[k].locked ? '' : ' fog'), style: { left: cx(x), top: y + 'px' } }, DK.pix.svg(DK.pix.sprites[kind](Math.floor(rnd() * 3)), 2)));
-      i++;
-    }
+    const decor = []; // v5.27: los adornos ya van dibujados en la ilustración
 
     // Paradas
     const leader = DK.party.active()[0];

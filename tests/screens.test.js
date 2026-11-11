@@ -14,7 +14,8 @@ module.exports = {
         const d = DK.party.all()[0]; d.level = 24; d.exp = 0; DK.daskai.gainExp(d, DK.daskai.expToNext(d));
         document.querySelectorAll('.modal-backdrop').forEach((m) => m.remove());
         DK.views.talentDialog(d); await new Promise((res) => setTimeout(res, 300));
-        const rows = document.querySelectorAll('.tc-table tbody tr').length, ups = document.querySelectorAll('.tc-table .tc-v small.up').length;
+        // v5.27: el comparador va dentro de cada opción (chips «ATQ 17 → 20 +3»)
+        const rows = new Set([...document.querySelectorAll('.tl-modal .tl-delta')].map((x) => x.textContent.split(' ')[0])).size, ups = document.querySelectorAll('.tl-modal .tl-delta small.up').length;
         return { rows, ups, n: DK.data.statKeys.length };
       });
       check(r.rows >= 1 && r.rows <= r.n && r.ups >= 1, 'comparador de talentos: ' + JSON.stringify(r));

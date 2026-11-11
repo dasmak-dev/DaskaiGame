@@ -624,6 +624,18 @@
 
     /** ¿Puede evolucionar ahora? */
     canEvolve(d) { const n = api.nextForm(d); return !!(n && d.level >= n.level); },
+    /**
+     * v5.25: lo que tiene pendiente un daskai (para el «!» del menú Equipo y de su casilla):
+     * 'evolve' (puede evolucionar), 'talent' (talento por elegir), 'moves' (hueco de ataque libre y ataques aprendidos sin poner).
+     */
+    needs(d) {
+      if (!d || d.temp) return [];
+      const out = [];
+      if (api.canEvolve(d)) out.push('evolve');
+      if (api.talentsPending(d).length) out.push('talent');
+      if ((d.moves || []).length < DK.config.maxMoves && (d.learned || []).some((m) => !d.moves.includes(m))) out.push('moves');
+      return out;
+    },
 
     /**
      * Evoluciona al daskai. Conserva nivel, ataques y proporción de vida.

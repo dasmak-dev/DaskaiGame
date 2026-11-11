@@ -215,7 +215,12 @@
     render(id, colors) {
       const sc = SCENES[id] || SCENES.meadow;
       const layer = h('div', { class: 'scene scene-' + id, style: { '--z1': colors[0], '--z2': colors[1] } });
-      layer.innerHTML = svg(sc.far(colors), 'scene-far') + (sc.near ? svg(sc.near(colors), 'scene-near') : '');
+      // v5.25: fondo de 7 capas con paralaje (components/pixelScene.js). En pixel art, a píxel; si no, suave y con
+      // desenfoque de profundidad (v5.25b: en todos los estilos). Las escenas sin kit siguen con su SVG.
+      const layered = DK.pixelScene && DK.pixelScene.has(id) && SCENES[id];
+      const smooth = !(DK.pixelBg && DK.pixelBg.on());
+      if (layered) { layer.classList.add('pxs'); if (smooth) layer.classList.add('pxs-smooth'); layer.append(DK.pixelScene.build(id, colors, { smooth })); }
+      else layer.innerHTML = svg(sc.far(colors), 'scene-far') + (sc.near ? svg(sc.near(colors), 'scene-near') : '');
       const pWrap = h('div', { class: 'scene-particles' });
       const p = sc.particles;
       if (p) for (let i = 0; i < p.n; i++) {

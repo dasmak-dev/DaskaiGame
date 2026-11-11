@@ -8,7 +8,7 @@
  *  - Gráficos: últimos combates, resultados, victorias por casa y por zona.
  *  - Estadísticas detalladas, daskai más usados y últimos logros.
  *
- * params: { edit: bool, edTab: 'pic'|'frame'|'card', avTab: 'daskai'|'icon'|'image' }
+ * params: { edit: bool, edTab: 'daskai'|'icon'|'image'|'frame'|'card', peOpen: {desplegables abiertos} } (v5.25: en móvil, hoja a pantalla completa)
  * Las estadísticas se registran en systems/progress.js (evento battle:end).
  * ============================================================= */
 (function () {
@@ -54,7 +54,7 @@
     nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') nameInput.blur(); });
     const lead = DK.party.active()[0];
     const color = lead ? D.houseColor(DK.daskai.species(lead).house) : 'var(--gold)';
-    const pic = h('button', { class: 'profile-pic', type: 'button', tip: t('profile.changePic'), onClick: () => { params.edit = !params.edit; refresh(); } },
+    const pic = h('button', { class: 'profile-pic', type: 'button', tip: t('profile.changePic'), onClick: () => toggleEdit(params, refresh) },
       V.avatar(p, { size: 104 }), h('span', { class: 'profile-pic-edit' }, DK.icon('edit', 14)));
     const decided = s.wins + s.losses, rate = decided ? Math.round((s.wins / decided) * 100) : 0;
     const R = 24, C = 2 * Math.PI * R;
@@ -77,7 +77,7 @@
             h('span', null, DK.icon('folder', 12), t('profile.slot', { n: DK.store.slot })),
             diff ? h('span', null, DK.icon(diff.icon, 12), t('difficulty.' + st.difficulty + '.name')) : null),
           h('div', { class: 'ph-actions' },
-            btn({ icon: 'edit', label: params.edit ? t('profile.doneEditing') : t('profile.customize'), size: 'sm', variant: params.edit ? 'primary' : 'tone', onClick: () => { params.edit = !params.edit; refresh(); } }),
+            btn({ icon: 'edit', label: params.edit && !sheetMode() ? t('profile.doneEditing') : t('profile.customize'), size: 'sm', variant: params.edit && !sheetMode() ? 'primary' : 'tone', onClick: () => toggleEdit(params, refresh) }),
             btn({ icon: 'share', label: t('share.button'), size: 'sm', variant: 'tone', onClick: () => DK.shareCard.open() })))),
       h('div', { class: 'ph-stats' },
         h('div', { class: 'ph-stat ring' }, ring, h('span', null, t('profile.winRate'))),
@@ -90,7 +90,7 @@
    * v5.20: editor del perfil en tres pestañas (dentro de la pantalla, sin ventana):
    *   Foto (daskai · icono con su fondo · imagen propia) · Marco (por grupos) · Tarjeta (para compartir, con vista previa)
    */
-  function editor(params, refresh) {
+  function editor(params, refresh, sheet = false) {
     const p = DK.store.state.player;
     const saveP = () => { DK.store.save(); DK.app.renderNav(); };
     const set = (av) => { p.avatar = av; saveP(); DK.audio.sfx('select'); refresh(); };
@@ -104,31 +104,45 @@
       catch (e) { DK.ui.toast(t('profile.imageError'), { icon: 'x', kind: 'bad' }); }
     });
 
-    /* --- Foto --- */
-    const picTab = () => DK.ui.tabs({
-      active: params.avTab, onChange: (id) => (params.avTab = id),
-      items: [
-        { id: 'daskai', label: t('profile.tabDaskai'), icon: 'paw', render: () => h('div', { class: 'avatar-opts' },
-          opt(null, V.avatar(p, { size: 56, avatar: null, frame: 'none' }), t('profile.leader')),
-          DK.avatars.knownSpecies().map((sp) => opt({ kind: 'daskai', species: sp }, V.avatar(p, { size: 56, avatar: { kind: 'daskai', species: sp }, frame: 'none' }), D.species[sp].name)),
-          DK.party.all().filter((d) => d.shiny).map((d) => opt({ kind: 'daskai', species: d.species, shiny: true }, V.avatar(p, { size: 56, avatar: { kind: 'daskai', species: d.species, shiny: true }, frame: 'none' }), `${D.species[d.species].name} · ${t('common.shiny')}`))) },
-        { id: 'icon', label: t('profile.tabIcon'), icon: 'star', render: () => {
-          const cur = p.avatar && p.avatar.kind === 'icon' ? p.avatar : { icon: 'user', color: DK.avatars.colors[0] };
-          const swatch = (c) => h('button', { class: 'color-opt' + (p.avatar && p.avatar.kind === 'icon' && p.avatar.color === c ? ' selected' : ''), type: 'button', style: { background: DK.avatars.bgCss(c) }, 'aria-label': c, onClick: () => set({ kind: 'icon', icon: cur.icon, color: c }) });
-          return h('div', { class: 'stack-s' },
-            h('div', { class: 'avatar-opts' }, DK.avatars.icons.map((ic) => opt({ kind: 'icon', icon: ic, color: cur.color }, V.avatar(p, { size: 48, avatar: { kind: 'icon', icon: ic, color: cur.color }, frame: 'none' })))),
-            sub('contrast', t('profile.iconBg')),
-            h('div', { class: 'color-opts' }, DK.avatars.colors.filter((c) => !c.startsWith('g:')).map(swatch)),
-            h('div', { class: 'color-opts' }, DK.avatars.colors.filter((c) => c.startsWith('g:')).map(swatch)));
-        } },
-        { id: 'image', label: t('profile.tabImage'), icon: 'upload', render: () => h('div', { class: 'stack-s' },
-          h('p', { class: 'muted small' }, t('profile.imageHint')),
-          h('div', { class: 'row gap-s wrap' },
-            btn({ icon: 'upload', label: t('profile.upload'), variant: 'primary', onClick: () => file.click() }),
-            p.avatar && p.avatar.kind === 'image' ? btn({ icon: 'trash', label: t('profile.removeImage'), variant: 'ghost', onClick: () => set(null) }) : null),
-          file) },
-      ],
-    });
+    /* --- Foto: daskai · icono con su fondo · imagen propia (v5.25: pestañas planas, sin pestañas dentro de pestañas) --- */
+    // v5.27: los daskai, por grupos como en las cajas: Equipo · Caja 1, 2… · Vistos (del códice, sin tenerlos)
+    const daskaiTab = () => {
+      const groups = [{ id: 'team', label: t('party.title'), icon: 'users', list: DK.party.active() }];
+      if (DK.boxes) DK.boxes.list().forEach((bx, i) => groups.push({ id: 'box' + i, label: DK.boxes.name(i), icon: 'cube', list: bx.slots.filter(Boolean).map((uid) => DK.party.get(uid)).filter(Boolean) }));
+      const owned = new Set(DK.party.all().map((d) => d.species));
+      groups.push({ id: 'seen', label: t('profile.avSeen'), icon: 'eye', species: DK.avatars.knownSpecies().filter((sp) => !owned.has(sp)) });
+      const shown = groups.filter((g) => (g.list || g.species).length);
+      const cur = shown.find((g) => g.id === params.avGroup) || shown[0];
+      const opts = [];
+      if (cur) {
+        const seen = new Set();
+        const add = (sp, shiny) => { const k = sp + (shiny ? '*' : ''); if (seen.has(k) || !D.species[sp]) return; seen.add(k);
+          const av = shiny ? { kind: 'daskai', species: sp, shiny: true } : { kind: 'daskai', species: sp };
+          opts.push(opt(av, V.avatar(p, { size: 56, avatar: av, frame: 'none' }), D.species[sp].name + (shiny ? ' ★' : ''))); };
+        if (cur.list) cur.list.forEach((d) => add(d.species, d.shiny)); else cur.species.forEach((sp) => add(sp));
+      }
+      return h('div', { class: 'stack-s' },
+        h('div', { class: 'pe-chips pe-groups' },
+          h('button', { class: 'pe-chip' + (!p.avatar ? ' on' : ''), type: 'button', onClick: () => set(null) }, DK.icon('crown', 14), t('profile.leader')),
+          shown.map((g) => h('button', { class: 'pe-chip' + (cur && g.id === cur.id ? ' on' : ''), type: 'button', 'aria-pressed': String(cur && g.id === cur.id),
+            onClick: () => { params.avGroup = g.id; refresh(); } }, DK.icon(g.icon, 14), g.label, h('small', { class: 'muted' }, String((g.list || g.species).length))))),
+        opts.length ? h('div', { class: 'avatar-opts pe-grid' }, opts) : h('p', { class: 'muted small' }, t('profile.avEmpty')));
+    };
+    const iconTab = () => {
+      const cur = p.avatar && p.avatar.kind === 'icon' ? p.avatar : { icon: 'user', color: DK.avatars.colors[0] };
+      const swatch = (c) => h('button', { class: 'color-opt' + (p.avatar && p.avatar.kind === 'icon' && p.avatar.color === c ? ' selected' : ''), type: 'button', style: { background: DK.avatars.bgCss(c) }, 'aria-label': c, onClick: () => set({ kind: 'icon', icon: cur.icon, color: c }) });
+      return h('div', { class: 'stack-s' },
+        h('div', { class: 'avatar-opts pe-grid' }, DK.avatars.icons.map((ic) => opt({ kind: 'icon', icon: ic, color: cur.color }, V.avatar(p, { size: 48, avatar: { kind: 'icon', icon: ic, color: cur.color }, frame: 'none' })))),
+        sub('contrast', t('profile.iconBg')),
+        h('div', { class: 'color-opts' }, DK.avatars.colors.filter((c) => !c.startsWith('g:')).map(swatch)),
+        h('div', { class: 'color-opts' }, DK.avatars.colors.filter((c) => c.startsWith('g:')).map(swatch)));
+    };
+    const imageTab = () => h('div', { class: 'stack-s' },
+      h('p', { class: 'muted small' }, t('profile.imageHint')),
+      h('div', { class: 'row gap-s wrap' },
+        btn({ icon: 'upload', label: t('profile.upload'), variant: 'primary', onClick: () => file.click() }),
+        p.avatar && p.avatar.kind === 'image' ? btn({ icon: 'trash', label: t('profile.removeImage'), variant: 'ghost', onClick: () => set(null) }) : null),
+      file);
 
     /* --- Marco (por grupos, con cuántos tienes de cada uno) --- */
     const frameTab = () => h('div', { class: 'stack-s' },
@@ -137,12 +151,14 @@
         const list = DK.avatars.framesOf(g);
         if (!list.length) return null;
         const got = list.filter((f) => f.unlocked).length;
-        return h('div', { class: 'pe-group' },
-          sub(['user', 'home', 'trophy', 'sparkles', 'flag'][DK.avatars.GROUPS.indexOf(g)], t('profile.frameGroup.' + g), h('span', { class: 'chip sm' }, `${got}/${list.length}`)),
-          h('div', { class: 'avatar-opts' }, list.map((f) => h('button', { class: 'avatar-opt' + (p.frame === f.id ? ' selected' : '') + (f.unlocked ? '' : ' locked'), type: 'button', disabled: !f.unlocked,
+        const gi = DK.avatars.GROUPS.indexOf(g), open = (params.peOpen || {})['f' + gi] ?? gi === 0;
+        const det = h('details', { class: 'pe-group pe-acc', open: open || null, onToggle: () => { params.peOpen = Object.assign(params.peOpen || {}, { ['f' + gi]: det.open }); } },
+          h('summary', null, sub(['user', 'home', 'trophy', 'sparkles', 'flag'][gi], t('profile.frameGroup.' + g), h('span', { class: 'chip sm' }, `${got}/${list.length}`))),
+          h('div', { class: 'avatar-opts pe-grid' }, list.map((f) => h('button', { class: 'avatar-opt' + (p.frame === f.id ? ' selected' : '') + (f.unlocked ? '' : ' locked'), type: 'button', disabled: !f.unlocked,
             tip: f.unlocked ? DK.avatars.frameName(f) : DK.avatars.frameName(f) + ' — ' + f.reqText(),
             onClick: () => { p.frame = f.id; saveP(); DK.audio.sfx('select'); refresh(); } },
           V.avatar(p, { size: 52, frame: f.id }), f.unlocked ? null : h('span', { class: 'avatar-lock' }, DK.icon('lock', 14))))));
+        return det;
       }));
 
     /* --- Tarjeta para compartir --- */
@@ -157,44 +173,70 @@
       const motto = h('input', { class: 'input', value: p.motto || '', maxlength: 48, placeholder: t('profile.mottoPh'), 'aria-label': t('profile.motto') });
       motto.addEventListener('change', () => { p.motto = motto.value.trim(); saveP(); refresh(); });
       const nStats = o.stats.length;
+      /** v5.25: cada grupo de opciones es un desplegable (en móvil la lista ya no es eterna); se recuerda cuáles están abiertos */
+      const acc = (id, icon, label, extra, ...body) => { const open = (params.peOpen || {})[id] ?? ['theme', 'stats'].includes(id);
+        const det = h('details', { class: 'pe-acc', open: open || null, onToggle: () => { params.peOpen = Object.assign(params.peOpen || {}, { [id]: det.open }); } },
+          h('summary', null, sub(icon, label, extra)), h('div', { class: 'pe-acc-body' }, ...body));
+        return det; };
       return h('div', { class: 'pe-card' },
         h('div', { class: 'stack-s pe-card-left' }, preview,
           h('div', { class: 'row gap-s wrap' }, btn({ icon: 'share', label: t('share.button'), variant: 'primary', onClick: () => SC.open() }),
             btn({ icon: 'refresh', label: t('profile.card.reset'), variant: 'ghost', onClick: () => { p.card = null; saveP(); refresh(); } }))),
         h('div', { class: 'stack-s pe-card-opts' },
-          sub('contrast', t('profile.card.theme')),
-          h('div', { class: 'pe-themes' }, Object.keys(SC.THEMES).map((id) => { const [a, b2, acc] = SC.swatch(id);
-            return h('button', { class: 'pe-theme' + (o.theme === id ? ' on' : ''), type: 'button', tip: t('profile.card.themes.' + id), 'aria-label': t('profile.card.themes.' + id), style: { background: `linear-gradient(135deg, ${a}, ${b2})`, '--acc': acc }, onClick: () => setCard({ theme: id }) }, h('i')); })),
-          sub('grid', t('profile.card.pattern')),
-          h('div', { class: 'pe-chips' }, SC.PATTERNS.map((id) => chip(o.pattern === id, t('profile.card.patterns.' + id), () => setCard({ pattern: id })))),
-          sub('maximize', t('profile.card.border')),
-          h('div', { class: 'pe-chips' }, SC.BORDERS.map((id) => chip(o.border === id, t('profile.card.borders.' + id), () => setCard({ border: id })))),
-          sub('chart', t('profile.card.stats'), h('span', { class: 'chip sm' + (nStats >= 6 ? ' pos' : '') }, `${nStats}/6`)),
-          h('p', { class: 'muted small' }, t('profile.card.statsHint')),
-          h('div', { class: 'pe-chips' }, Object.entries(SC.STATS).map(([id, [icon]]) => {
-            const i = o.stats.indexOf(id), on = i >= 0;
-            return h('button', { class: 'pe-chip' + (on ? ' on' : ''), type: 'button', disabled: !on && nStats >= 6, 'aria-pressed': String(on),
-              onClick: () => setCard({ stats: on ? (o.stats.length > 1 ? o.stats.filter((k) => k !== id) : o.stats) : o.stats.concat(id) }) },
-              on ? h('b', { class: 'pe-n' }, String(i + 1)) : DK.icon(icon, 14), t('share.stat.' + id));
-          })),
-          sub('paw', t('profile.card.show')),
-          h('div', { class: 'pe-chips' }, SC.SHOW.map((id) => chip(o.show === id, t('profile.card.shows.' + id), () => setCard({ show: id }), { favorite: 'heart', team: 'users', none: 'eyeOff' }[id])),
-            chip(o.houses, t('profile.card.houses'), () => setCard({ houses: !o.houses }), 'chart')),
-          sub('edit', t('profile.motto')), motto));
+          acc('theme', 'contrast', t('profile.card.theme'), null,
+            h('div', { class: 'pe-themes' }, Object.keys(SC.THEMES).map((id) => { const [a, b2, acc2] = SC.swatch(id);
+              return h('button', { class: 'pe-theme' + (o.theme === id ? ' on' : ''), type: 'button', tip: t('profile.card.themes.' + id), 'aria-label': t('profile.card.themes.' + id), style: { background: `linear-gradient(135deg, ${a}, ${b2})`, '--acc': acc2 }, onClick: () => setCard({ theme: id }) }, h('i')); }))),
+          acc('pattern', 'grid', t('profile.card.pattern'), null, h('div', { class: 'pe-chips' }, SC.PATTERNS.map((id) => chip(o.pattern === id, t('profile.card.patterns.' + id), () => setCard({ pattern: id }))))),
+          acc('border', 'maximize', t('profile.card.border'), null, h('div', { class: 'pe-chips' }, SC.BORDERS.map((id) => chip(o.border === id, t('profile.card.borders.' + id), () => setCard({ border: id }))))),
+          acc('stats', 'chart', t('profile.card.stats'), h('span', { class: 'chip sm' + (nStats >= 6 ? ' pos' : '') }, `${nStats}/6`),
+            h('p', { class: 'muted small' }, t('profile.card.statsHint')),
+            h('div', { class: 'pe-chips' }, Object.entries(SC.STATS).map(([id, [icon]]) => {
+              const i = o.stats.indexOf(id), on = i >= 0;
+              return h('button', { class: 'pe-chip' + (on ? ' on' : ''), type: 'button', disabled: !on && nStats >= 6, 'aria-pressed': String(on),
+                onClick: () => setCard({ stats: on ? (o.stats.length > 1 ? o.stats.filter((k) => k !== id) : o.stats) : o.stats.concat(id) }) },
+                on ? h('b', { class: 'pe-n' }, String(i + 1)) : DK.icon(icon, 14), t('share.stat.' + id));
+            }))),
+          acc('show', 'paw', t('profile.card.show'), null,
+            h('div', { class: 'pe-chips' }, SC.SHOW.map((id) => chip(o.show === id, t('profile.card.shows.' + id), () => setCard({ show: id }), { favorite: 'heart', team: 'users', none: 'eyeOff' }[id])),
+              chip(o.houses, t('profile.card.houses'), () => setCard({ houses: !o.houses }), 'chart'))),
+          acc('motto', 'edit', t('profile.motto'), null, motto)));
     };
 
-    params.edTab = params.edTab || 'pic';
+    if (params.edTab === 'pic') params.edTab = params.avTab || 'daskai';
+    params.edTab = params.edTab || 'daskai';
     const tabs = DK.ui.tabs({
-      active: params.edTab, onChange: (id) => (params.edTab = id),
+      active: params.edTab, onChange: (id) => (params.edTab = id), cls: 'pe-tabs',
       items: [
-        { id: 'pic', label: t('profile.picTitle'), icon: 'user', render: picTab },
+        { id: 'daskai', label: t('profile.tabDaskai'), icon: 'paw', render: daskaiTab },
+        { id: 'icon', label: t('profile.tabIcon'), icon: 'star', render: iconTab },
+        { id: 'image', label: t('profile.tabImage'), icon: 'upload', render: imageTab },
         { id: 'frame', label: t('profile.frames'), icon: 'sparkle', render: frameTab },
         { id: 'card', label: t('profile.tabCard'), icon: 'image', render: cardTab },
       ],
     });
+    if (sheet) {
+      // v5.25: en la hoja de móvil, arriba una vista previa en vivo de la foto con su marco, nombre y título
+      const title = p.title && DK.avatars.titles().find((x) => x.id === p.title);
+      return h('div', { class: 'pe-sheet-inner' },
+        h('div', { class: 'pe-live' }, V.avatar(p, { size: 64 }), h('div', { class: 'pe-live-id' }, title ? h('small', null, title.label) : null, h('b', null, p.name))),
+        tabs);
+    }
     return h('div', { class: 'card profile-editor' },
       h('div', { class: 'panel-head' }, DK.icon('edit', 18), h('h3', null, t('profile.customize')),
         h('span', { class: 'grow' }), btn({ icon: 'check', label: t('profile.doneEditing'), size: 'sm', variant: 'tone', onClick: () => { params.edit = false; refresh(); } })), tabs);
+  }
+
+  /** v5.25: en pantallas estrechas el editor se abre en una hoja a pantalla completa (y no debajo de la cabecera) */
+  const sheetMode = () => window.matchMedia('(max-width: 720px)').matches;
+  function toggleEdit(params, refresh) {
+    if (!sheetMode()) { params.edit = !params.edit; refresh(); return; }
+    params.edit = false;
+    const wrap = h('div', { class: 'pe-sheet-body' });
+    const draw = () => { const y = wrap.closest('.modal-body') ? wrap.closest('.modal-body').scrollTop : 0; wrap.replaceChildren(editor(params, draw, true)); if (wrap.closest('.modal-body')) wrap.closest('.modal-body').scrollTop = y; };
+    draw();
+    const m = DK.ui.modal({ title: t('profile.customize'), icon: 'edit', cls: 'pe-sheet', closeX: true, content: wrap,
+      actions: [{ icon: 'check', label: t('profile.doneEditing'), variant: 'primary', value: true }] });
+    m.promise.then(() => refresh());
   }
 
   /* ---------- Resumen y gráficos ---------- */

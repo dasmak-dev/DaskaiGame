@@ -1,0 +1,1106 @@
+{
+ "source": "https://huggingface.co/datasets/Angais/pixel-art-atlas-1.4m",
+ "license": "CC0-1.0",
+ "retrieved": "2026-11-10",
+ "icons": {
+  "bell": {
+   "i": 0,
+   "file": "train-009.parquet",
+   "row_id": 874149,
+   "subject": "bell icon",
+   "caption": "tall silver bell icon",
+   "sha1": "e3be32af79d3"
+  },
+  "power": {
+   "i": 1,
+   "file": "train-008.parquet",
+   "row_id": 846060,
+   "subject": "power button icon",
+   "caption": "thin-ringed power button icon",
+   "sha1": "7502491ed43e"
+  },
+  "exit": {
+   "i": 2,
+   "file": "train-010.parquet",
+   "row_id": 960624,
+   "subject": "exit door symbol",
+   "caption": "ajar exit door symbol with an arrow pointing out",
+   "sha1": "2e41cad3b4b9"
+  },
+  "bag": {
+   "i": 3,
+   "file": "train-007.parquet",
+   "row_id": 686895,
+   "subject": "backpack icon",
+   "caption": "backpack icon with a top handle",
+   "sha1": "a8e4877165e7"
+  },
+  "book": {
+   "i": 4,
+   "file": "train-001.parquet",
+   "row_id": 172392,
+   "subject": "book icon",
+   "caption": "sparkling blue book icon with a white outline",
+   "sha1": "791c1cb0c291"
+  },
+  "book2": {
+   "i": 5,
+   "file": "train-001.parquet",
+   "row_id": 148436,
+   "subject": "open book",
+   "caption": "open book",
+   "sha1": "3e04460daa4d"
+  },
+  "tome": {
+   "i": 6,
+   "file": "train-014.parquet",
+   "row_id": 1398848,
+   "subject": "tome",
+   "caption": "tome",
+   "sha1": "0608c01b1c5f"
+  },
+  "swords": {
+   "i": 7,
+   "file": "train-001.parquet",
+   "row_id": 172417,
+   "subject": "crossed swords icon",
+   "caption": "black crossed swords icon",
+   "sha1": "eb13c34882d2"
+  },
+  "sword": {
+   "i": 8,
+   "file": "train-001.parquet",
+   "row_id": 180330,
+   "subject": "sword icon",
+   "caption": "cracked gray sword icon with a thick dark outline",
+   "sha1": "a9d930319e4f"
+  },
+  "dagger": {
+   "i": 9,
+   "file": "train-000.parquet",
+   "row_id": 91984,
+   "subject": "dagger sheath",
+   "caption": "dagger sheath with green trim",
+   "sha1": "b13b8ae61cef"
+  },
+  "wand": {
+   "i": 10,
+   "file": "train-010.parquet",
+   "row_id": 1031130,
+   "subject": "gem-tipped wand",
+   "caption": "diagonal gold gem-tipped wand",
+   "sha1": "92f917756f31"
+  },
+  "staff": {
+   "i": 11,
+   "file": "train-001.parquet",
+   "row_id": 139490,
+   "subject": "orb staff",
+   "caption": "dark brown orb staff with a hanging charm",
+   "sha1": "d6201a802b86"
+  },
+  "shield": {
+   "i": 12,
+   "file": "train-000.parquet",
+   "row_id": 25585,
+   "subject": "shield icon",
+   "caption": "shield icon",
+   "sha1": "7662e6eb0751"
+  },
+  "shieldStar": {
+   "i": 13,
+   "file": "train-007.parquet",
+   "row_id": 669882,
+   "subject": "shield up arrow icon",
+   "caption": "kite-shaped shield up arrow icon with a plus sign",
+   "sha1": "bbc78c173078"
+  },
+  "wind": {
+   "i": 14,
+   "file": "train-009.parquet",
+   "row_id": 867723,
+   "subject": "wind gust icon",
+   "caption": "wavy wind gust icon with a looping curl",
+   "sha1": "df60d805b756"
+  },
+  "heart": {
+   "i": 15,
+   "file": "train-001.parquet",
+   "row_id": 154898,
+   "subject": "heart icon",
+   "caption": "dim heart icon with a small highlight",
+   "sha1": "44c3791986ea"
+  },
+  "regen": {
+   "i": 16,
+   "file": "train-004.parquet",
+   "row_id": 393877,
+   "subject": "heart with plus icon",
+   "caption": "heart with plus icon with a soft glow",
+   "sha1": "8bca800bd75b"
+  },
+  "sparkle": {
+   "i": 17,
+   "file": "train-003.parquet",
+   "row_id": 327045,
+   "subject": "sparkle icon",
+   "caption": "glowing sparkle icon",
+   "sha1": "fed58defcc81"
+  },
+  "sparkles": {
+   "i": 18,
+   "file": "train-011.parquet",
+   "row_id": 1087192,
+   "subject": "dizzy stars icon",
+   "caption": "scattered dizzy stars icon with a white outline",
+   "sha1": "3f5c55e53894"
+  },
+  "star": {
+   "i": 19,
+   "file": "train-000.parquet",
+   "row_id": 66953,
+   "subject": "empty star icon",
+   "caption": "sparkling empty star icon with a thick dark outline",
+   "sha1": "034e592a6447"
+  },
+  "sun": {
+   "i": 20,
+   "file": "train-007.parquet",
+   "row_id": 707390,
+   "subject": "sun icon",
+   "caption": "glossy sun icon with a dotted ring",
+   "sha1": "9fa4d3b810fb"
+  },
+  "moon": {
+   "i": 21,
+   "file": "train-005.parquet",
+   "row_id": 559632,
+   "subject": "crescent moon",
+   "caption": "thin crescent moon",
+   "sha1": "44b726a832c1"
+  },
+  "flame": {
+   "i": 22,
+   "file": "train-008.parquet",
+   "row_id": 784538,
+   "subject": "fire icon",
+   "caption": "curling fire icon with sparks flying",
+   "sha1": "b35fbe9de54a"
+  },
+  "droplet": {
+   "i": 23,
+   "file": "train-006.parquet",
+   "row_id": 581582,
+   "subject": "water drop icon",
+   "caption": "bright water drop icon with a drip trail",
+   "sha1": "a3c3aca9adb8"
+  },
+  "mountain": {
+   "i": 24,
+   "file": "train-006.parquet",
+   "row_id": 604536,
+   "subject": "jagged rock",
+   "caption": "tall limestone jagged rock with a broken tip",
+   "sha1": "047cdf7da198"
+  },
+  "leaf": {
+   "i": 25,
+   "file": "train-005.parquet",
+   "row_id": 508330,
+   "subject": "oak leaf",
+   "caption": "tiny oak leaf with visible veins in bright colors",
+   "sha1": "67bb924d5ebf"
+  },
+  "flee": {
+   "i": 26,
+   "file": "train-007.parquet",
+   "row_id": 743073,
+   "subject": "dash skill symbol",
+   "caption": "bold dash skill symbol with speed lines",
+   "sha1": "17d8977a09a8"
+  },
+  "chart": {
+   "i": 27,
+   "file": "train-008.parquet",
+   "row_id": 756780,
+   "subject": "bar chart icon",
+   "caption": "falling blue bar chart icon with a base line",
+   "sha1": "d31d43d0f701"
+  },
+  "flask": {
+   "i": 28,
+   "file": "train-010.parquet",
+   "row_id": 1006782,
+   "subject": "erlenmeyer flask",
+   "caption": "three-quarter-view sky blue erlenmeyer flask with a stopper top",
+   "sha1": "2cdc8b451efa"
+  },
+  "gem": {
+   "i": 29,
+   "file": "train-012.parquet",
+   "row_id": 1133134,
+   "subject": "gem icon",
+   "caption": "pointed gray gem icon",
+   "sha1": "361d5a9e164f"
+  },
+  "anvil": {
+   "i": 30,
+   "file": "train-008.parquet",
+   "row_id": 838433,
+   "subject": "anvil",
+   "caption": "anvil",
+   "sha1": "ae40c779fbdd"
+  },
+  "fur": {
+   "i": 31,
+   "file": "train-004.parquet",
+   "row_id": 464359,
+   "subject": "fur pelt",
+   "caption": "white fur pelt with ragged edges",
+   "sha1": "4faea6e7538d"
+  },
+  "scales": {
+   "i": 32,
+   "file": "train-008.parquet",
+   "row_id": 802494,
+   "subject": "balance scales",
+   "caption": "tall balance scales in high contrast",
+   "sha1": "d7a8036a830d"
+  },
+  "scale": {
+   "i": 33,
+   "file": "train-004.parquet",
+   "row_id": 408853,
+   "subject": "dragon scale",
+   "caption": "black dragon scale with a pointed tip",
+   "sha1": "193d1b6d3bea"
+  },
+  "thread": {
+   "i": 34,
+   "file": "train-006.parquet",
+   "row_id": 604115,
+   "subject": "spool of thread",
+   "caption": "tall brown spool of thread with a notched rim in earthy colors",
+   "sha1": "349f23151e6a"
+  },
+  "coral": {
+   "i": 35,
+   "file": "train-014.parquet",
+   "row_id": 1386425,
+   "subject": "brain coral",
+   "caption": "frozen brain coral with a chipped side in flat colors",
+   "sha1": "2c8381a28db0"
+  },
+  "cave": {
+   "i": 36,
+   "file": "train-008.parquet",
+   "row_id": 812926,
+   "subject": "rock arch",
+   "caption": "narrow slate rock arch in high contrast",
+   "sha1": "74ade1278b43"
+  },
+  "emblem": {
+   "i": 37,
+   "file": "train-000.parquet",
+   "row_id": 8678,
+   "subject": "medal icon",
+   "caption": "medal icon",
+   "sha1": "d6b0e68a45d4"
+  },
+  "campfire": {
+   "i": 38,
+   "file": "train-004.parquet",
+   "row_id": 408540,
+   "subject": "campfire",
+   "caption": "burnt-out campfire with tall flames",
+   "sha1": "65f3e5690a46"
+  },
+  "dumbbell": {
+   "i": 39,
+   "file": "train-002.parquet",
+   "row_id": 258574,
+   "subject": "dumbbell",
+   "caption": "dumbbell",
+   "sha1": "86b2dd535808"
+  },
+  "hammer": {
+   "i": 40,
+   "file": "train-013.parquet",
+   "row_id": 1247099,
+   "subject": "war hammer",
+   "caption": "top-down white war hammer with a four-pronged face in high contrast",
+   "sha1": "bcb4628e5744"
+  },
+  "amulet": {
+   "i": 41,
+   "file": "train-003.parquet",
+   "row_id": 350931,
+   "subject": "sun amulet",
+   "caption": "enchanted obsidian sun amulet on a gold chain",
+   "sha1": "29d203780d4c"
+  },
+  "chalice": {
+   "i": 42,
+   "file": "train-012.parquet",
+   "row_id": 1132397,
+   "subject": "chalice",
+   "caption": "three-quarter-view tall-stemmed silver chalice with a flared base",
+   "sha1": "29a0f0f8f2a0"
+  },
+  "rune": {
+   "i": 43,
+   "file": "train-008.parquet",
+   "row_id": 758224,
+   "subject": "rune tile",
+   "caption": "tilted rune tile",
+   "sha1": "f7b22c895925"
+  },
+  "fang": {
+   "i": 44,
+   "file": "train-012.parquet",
+   "row_id": 1171049,
+   "subject": "wolf fang",
+   "caption": "side-view curved wolf fang with a long root",
+   "sha1": "2453d8bb2577"
+  },
+  "feather": {
+   "i": 45,
+   "file": "train-008.parquet",
+   "row_id": 831621,
+   "subject": "feather",
+   "caption": "blue feather in high contrast",
+   "sha1": "de686550a736"
+  },
+  "pouch": {
+   "i": 46,
+   "file": "train-011.parquet",
+   "row_id": 1090322,
+   "subject": "coin pouch",
+   "caption": "burlap coin pouch with a knotted top",
+   "sha1": "d0a31b22dd8b"
+  },
+  "crystal": {
+   "i": 47,
+   "file": "train-009.parquet",
+   "row_id": 867408,
+   "subject": "mana crystal symbol",
+   "caption": "twin white mana crystal symbol with a diamond shape",
+   "sha1": "e251af3d03e3"
+  },
+  "potion": {
+   "i": 48,
+   "file": "train-003.parquet",
+   "row_id": 294339,
+   "subject": "potion icon",
+   "caption": "white potion icon with a drop shadow",
+   "sha1": "8b4ba2f73741"
+  },
+  "potionLarge": {
+   "i": 49,
+   "file": "train-009.parquet",
+   "row_id": 875548,
+   "subject": "tall potion bottle",
+   "caption": "white tall potion bottle with a square base",
+   "sha1": "73a9f9d579a2"
+  },
+  "etherBottle": {
+   "i": 50,
+   "file": "train-014.parquet",
+   "row_id": 1337133,
+   "subject": "teardrop potion bottle",
+   "caption": "upright crystal teardrop potion bottle with a long curved neck",
+   "sha1": "980d2365b33b"
+  },
+  "pill": {
+   "i": 51,
+   "file": "train-002.parquet",
+   "row_id": 255546,
+   "subject": "pill capsule",
+   "caption": "tiny red pill capsule",
+   "sha1": "5a5099b4556c"
+  },
+  "jar": {
+   "i": 52,
+   "file": "train-006.parquet",
+   "row_id": 617580,
+   "subject": "apothecary jar",
+   "caption": "tall glass apothecary jar with a finial lid",
+   "sha1": "39a93861553e"
+  },
+  "elixir": {
+   "i": 53,
+   "file": "train-008.parquet",
+   "row_id": 807937,
+   "subject": "elixir bottle",
+   "caption": "white elixir bottle with a long neck",
+   "sha1": "c5f7430025f3"
+  },
+  "berry": {
+   "i": 54,
+   "file": "train-002.parquet",
+   "row_id": 228029,
+   "subject": "healing berry",
+   "caption": "tiny healing berry with a small leaf",
+   "sha1": "a60a7f6cf33d"
+  },
+  "vial": {
+   "i": 55,
+   "file": "train-005.parquet",
+   "row_id": 491267,
+   "subject": "potion vial",
+   "caption": "tall crimson potion vial",
+   "sha1": "fca7000e12f6"
+  },
+  "claw": {
+   "i": 56,
+   "file": "train-008.parquet",
+   "row_id": 766205,
+   "subject": "dragon claw",
+   "caption": "hooked dragon claw with a sharp tip",
+   "sha1": "e4adf7dd99ca"
+  },
+  "ring": {
+   "i": 57,
+   "file": "train-000.parquet",
+   "row_id": 92826,
+   "subject": "signet ring",
+   "caption": "tiny iron signet ring with glowing runes",
+   "sha1": "f697e19e2f22"
+  },
+  "boot": {
+   "i": 58,
+   "file": "train-011.parquet",
+   "row_id": 1119118,
+   "subject": "lace-up boot",
+   "caption": "knee-high leather lace-up boot with a side zipper",
+   "sha1": "91b998eff4b8"
+  },
+  "boots": {
+   "i": 59,
+   "file": "train-009.parquet",
+   "row_id": 925421,
+   "subject": "winged boot symbol",
+   "caption": "leaping gray winged boot symbol",
+   "sha1": "78ef2f4e53f9"
+  },
+  "pearl": {
+   "i": 60,
+   "file": "train-006.parquet",
+   "row_id": 619129,
+   "subject": "pearl",
+   "caption": "tiny pearl with a pointed tip in muted colors",
+   "sha1": "f6419cfac826"
+  },
+  "drum": {
+   "i": 61,
+   "file": "train-013.parquet",
+   "row_id": 1243738,
+   "subject": "war drum",
+   "caption": "tall brown war drum",
+   "sha1": "62585ffa1826"
+  },
+  "prism": {
+   "i": 62,
+   "file": "train-011.parquet",
+   "row_id": 1060348,
+   "subject": "crystal prism",
+   "caption": "top-down blue crystal prism with sharp edges in high contrast",
+   "sha1": "de4a770a41a4"
+  },
+  "armor": {
+   "i": 63,
+   "file": "train-012.parquet",
+   "row_id": 1132886,
+   "subject": "armor chestplate symbol",
+   "caption": "heavy armor chestplate symbol with a raised collar",
+   "sha1": "b561250b175a"
+  },
+  "cloak": {
+   "i": 64,
+   "file": "train-009.parquet",
+   "row_id": 929660,
+   "subject": "hooded cloak",
+   "caption": "tattered wool hooded cloak with a jagged hem in muted colors",
+   "sha1": "c38c42c1eaac"
+  },
+  "earring": {
+   "i": 65,
+   "file": "train-012.parquet",
+   "row_id": 1139036,
+   "subject": "teardrop earring",
+   "caption": "front-view upside-down gold teardrop earring with a hollow frame",
+   "sha1": "adce461f6607"
+  },
+  "brazier": {
+   "i": 66,
+   "file": "train-003.parquet",
+   "row_id": 327387,
+   "subject": "brazier",
+   "caption": "brazier",
+   "sha1": "5704171ce643"
+  },
+  "sprout": {
+   "i": 67,
+   "file": "train-008.parquet",
+   "row_id": 771446,
+   "subject": "seedling sprout",
+   "caption": "pale green seedling sprout with a thin stem",
+   "sha1": "1c3e7ce7c2d5"
+  },
+  "carapace": {
+   "i": 68,
+   "file": "train-007.parquet",
+   "row_id": 721364,
+   "subject": "beetle shell",
+   "caption": "side-view domed beetle shell",
+   "sha1": "dd8378392755"
+  },
+  "dust": {
+   "i": 69,
+   "file": "train-014.parquet",
+   "row_id": 1354564,
+   "subject": "jar of fairy dust",
+   "caption": "tall jar of fairy dust with a bulging lid",
+   "sha1": "072414fe504b"
+  },
+  "starTear": {
+   "i": 70,
+   "file": "train-014.parquet",
+   "row_id": 1385557,
+   "subject": "star crystal",
+   "caption": "cracked yellow star crystal with long thin points in muted colors",
+   "sha1": "242d9ab97364"
+  },
+  "shell": {
+   "i": 71,
+   "file": "train-014.parquet",
+   "row_id": 1343038,
+   "subject": "conch shell",
+   "caption": "top-down long cream conch shell with a pointed tip",
+   "sha1": "4157670e95db"
+  },
+  "cube": {
+   "i": 72,
+   "file": "train-006.parquet",
+   "row_id": 637469,
+   "subject": "cube icon",
+   "caption": "stacked teal cube icon",
+   "sha1": "2053af3124d4"
+  },
+  "lock": {
+   "i": 73,
+   "file": "train-004.parquet",
+   "row_id": 439014,
+   "subject": "lock icon",
+   "caption": "faded silver lock icon with a tall shackle",
+   "sha1": "cfafbd7edb82"
+  },
+  "map": {
+   "i": 74,
+   "file": "train-007.parquet",
+   "row_id": 677690,
+   "subject": "treasure map",
+   "caption": "jagged-edged treasure map with a big x",
+   "sha1": "925d7cd4a4fc"
+  },
+  "bed": {
+   "i": 75,
+   "file": "train-007.parquet",
+   "row_id": 684798,
+   "subject": "bed",
+   "caption": "side-view blue bed",
+   "sha1": "39b793014f63"
+  },
+  "save": {
+   "i": 76,
+   "file": "train-003.parquet",
+   "row_id": 348850,
+   "subject": "floppy disk icon",
+   "caption": "shiny floppy disk icon with a drop shadow",
+   "sha1": "7d58f0f3a0fe"
+  },
+  "edit": {
+   "i": 77,
+   "file": "train-004.parquet",
+   "row_id": 389487,
+   "subject": "pencil icon",
+   "caption": "gray pencil icon with a red notification dot",
+   "sha1": "c1d4038d1e8f"
+  },
+  "refresh": {
+   "i": 78,
+   "file": "train-003.parquet",
+   "row_id": 302237,
+   "subject": "circular arrows icon",
+   "caption": "thin gray circular arrows icon",
+   "sha1": "03fba055a652"
+  },
+  "repeat": {
+   "i": 79,
+   "file": "train-003.parquet",
+   "row_id": 374513,
+   "subject": "circular arrows icon",
+   "caption": "thin teal circular arrows icon",
+   "sha1": "969566c96b5b"
+  },
+  "home": {
+   "i": 80,
+   "file": "train-002.parquet",
+   "row_id": 210543,
+   "subject": "home icon",
+   "caption": "dim home icon with a drop shadow",
+   "sha1": "82c4a7ad821c"
+  },
+  "crown": {
+   "i": 81,
+   "file": "train-000.parquet",
+   "row_id": 20153,
+   "subject": "crown icon",
+   "caption": "dim yellow crown icon with a small highlight",
+   "sha1": "b34e8326170a"
+  },
+  "helmet": {
+   "i": 82,
+   "file": "train-012.parquet",
+   "row_id": 1200561,
+   "subject": "visored helmet",
+   "caption": "tall steel visored helmet with a lift peg in high contrast",
+   "sha1": "b30e3c606189"
+  },
+  "helm": {
+   "i": 83,
+   "file": "train-014.parquet",
+   "row_id": 1327845,
+   "subject": "great helm",
+   "caption": "pointed great helm",
+   "sha1": "f0846a03699c"
+  },
+  "forgeRune": {
+   "i": 84,
+   "file": "train-005.parquet",
+   "row_id": 543304,
+   "subject": "blacksmith anvil marker",
+   "caption": "red blacksmith anvil marker with a flat face",
+   "sha1": "4c06d4e2066e"
+  },
+  "info": {
+   "i": 85,
+   "file": "train-007.parquet",
+   "row_id": 743586,
+   "subject": "lightbulb icon",
+   "caption": "yellow lightbulb icon with a pointed tip",
+   "sha1": "4dd86e5cd80d"
+  },
+  "orb": {
+   "i": 86,
+   "file": "train-001.parquet",
+   "row_id": 135299,
+   "subject": "sphere icon",
+   "caption": "glowing blue sphere icon",
+   "sha1": "d66f42c5ec69"
+  },
+  "trophy": {
+   "i": 87,
+   "file": "train-007.parquet",
+   "row_id": 699777,
+   "subject": "trophy icon",
+   "caption": "slim white trophy icon",
+   "sha1": "74810b1e1abd"
+  },
+  "target": {
+   "i": 88,
+   "file": "train-006.parquet",
+   "row_id": 649809,
+   "subject": "target crosshair icon",
+   "caption": "segmented target crosshair icon with four tick marks",
+   "sha1": "47db78ff3884"
+  },
+  "gift": {
+   "i": 89,
+   "file": "train-012.parquet",
+   "row_id": 1160092,
+   "subject": "wrapped gift box",
+   "caption": "tall wrapped gift box with a crossed ribbon",
+   "sha1": "4accbaf298b9"
+  },
+  "skull": {
+   "i": 90,
+   "file": "train-001.parquet",
+   "row_id": 94720,
+   "subject": "skull icon",
+   "caption": "shiny silver skull icon with a sparkle",
+   "sha1": "b370215f0e9e"
+  },
+  "footprints": {
+   "i": 91,
+   "file": "train-011.parquet",
+   "row_id": 1048737,
+   "subject": "paw print icon",
+   "caption": "three-toed paw print icon",
+   "sha1": "c05518e1872c"
+  },
+  "paw": {
+   "i": 92,
+   "file": "train-011.parquet",
+   "row_id": 1045958,
+   "subject": "paw print icon",
+   "caption": "clawed black paw print icon with oval toes",
+   "sha1": "a52a524163b4"
+  },
+  "smile": {
+   "i": 93,
+   "file": "train-000.parquet",
+   "row_id": 9889,
+   "subject": "smiley face icon",
+   "caption": "white smiley face icon",
+   "sha1": "f08dc714e265"
+  },
+  "dna": {
+   "i": 94,
+   "file": "train-014.parquet",
+   "row_id": 1406202,
+   "subject": "dna model",
+   "caption": "tall dna model in flat colors",
+   "sha1": "2f6049be1478"
+  },
+  "craftCog": {
+   "i": 95,
+   "file": "train-009.parquet",
+   "row_id": 914606,
+   "subject": "gear icon",
+   "caption": "few-toothed gear icon",
+   "sha1": "efa762996f04"
+  },
+  "settings": {
+   "i": 96,
+   "file": "train-009.parquet",
+   "row_id": 914606,
+   "subject": "gear icon",
+   "caption": "few-toothed gear icon",
+   "sha1": "efa762996f04"
+  },
+  "demon": {
+   "i": 97,
+   "file": "train-008.parquet",
+   "row_id": 770298,
+   "subject": "horned demon",
+   "caption": "towering horned demon in high contrast",
+   "sha1": "60fdfa19e75d"
+  },
+  "poison": {
+   "i": 98,
+   "file": "train-006.parquet",
+   "row_id": 616664,
+   "subject": "poison drop icon",
+   "caption": "bright poison drop icon with a drip trail",
+   "sha1": "5f8b4be6cc7d"
+  },
+  "hand": {
+   "i": 99,
+   "file": "train-010.parquet",
+   "row_id": 959429,
+   "subject": "healing hands symbol",
+   "caption": "cupped healing hands symbol with rising bubbles",
+   "sha1": "b67664459312"
+  },
+  "compass": {
+   "i": 100,
+   "file": "train-001.parquet",
+   "row_id": 138241,
+   "subject": "compass",
+   "caption": "black compass with ornate details",
+   "sha1": "723c6c4322db"
+  },
+  "dice": {
+   "i": 101,
+   "file": "train-000.parquet",
+   "row_id": 1576,
+   "subject": "pair of dice",
+   "caption": "pair of dice with a sparkle",
+   "sha1": "e2f255bc8e70"
+  },
+  "music": {
+   "i": 102,
+   "file": "train-006.parquet",
+   "row_id": 629603,
+   "subject": "music note icon",
+   "caption": "small black music note icon",
+   "sha1": "ba0e96197836"
+  },
+  "coin": {
+   "i": 103,
+   "file": "train-003.parquet",
+   "row_id": 357727,
+   "subject": "coin icon",
+   "caption": "yellow coin icon with a black outline",
+   "sha1": "52ebcf608375"
+  },
+  "shop": {
+   "i": 104,
+   "file": "train-005.parquet",
+   "row_id": 561600,
+   "subject": "shopping cart icon",
+   "caption": "deep black shopping cart icon",
+   "sha1": "70513d304627"
+  },
+  "scroll": {
+   "i": 105,
+   "file": "train-008.parquet",
+   "row_id": 795748,
+   "subject": "rolled scroll",
+   "caption": "top-down upright rolled scroll with a curled edge peeking",
+   "sha1": "e0101c124fe2"
+  },
+  "award": {
+   "i": 106,
+   "file": "train-000.parquet",
+   "row_id": 37861,
+   "subject": "medal on ribbon",
+   "caption": "medal on ribbon",
+   "sha1": "f4ac656c77bf"
+  },
+  "bolt": {
+   "i": 107,
+   "file": "train-002.parquet",
+   "row_id": 233819,
+   "subject": "lightning bolt icon",
+   "caption": "lightning bolt icon with a small highlight",
+   "sha1": "7697c0b4a902"
+  },
+  "snowflake": {
+   "i": 108,
+   "file": "train-011.parquet",
+   "row_id": 1089521,
+   "subject": "snowflake icon",
+   "caption": "six-armed snowflake icon with dot tips",
+   "sha1": "002b66bae1e9"
+  },
+  "folder": {
+   "i": 109,
+   "file": "train-013.parquet",
+   "row_id": 1261317,
+   "subject": "folder icon",
+   "caption": "closed folder icon",
+   "sha1": "f7c91119b2ac"
+  },
+  "trash": {
+   "i": 110,
+   "file": "train-011.parquet",
+   "row_id": 1063391,
+   "subject": "trash can icon",
+   "caption": "lid-open trash can icon with vertical ridges",
+   "sha1": "d15ba14d004e"
+  },
+  "search": {
+   "i": 111,
+   "file": "train-007.parquet",
+   "row_id": 708106,
+   "subject": "magnifying glass icon",
+   "caption": "upright magnifying glass icon",
+   "sha1": "620b3c5e3f61"
+  },
+  "globe": {
+   "i": 112,
+   "file": "train-000.parquet",
+   "row_id": 5158,
+   "subject": "globe icon",
+   "caption": "white globe icon",
+   "sha1": "f1496be24eeb"
+  },
+  "flag": {
+   "i": 113,
+   "file": "train-006.parquet",
+   "row_id": 625879,
+   "subject": "flag icon",
+   "caption": "tall-poled flag icon",
+   "sha1": "f54d51ac804f"
+  },
+  "clock": {
+   "i": 114,
+   "file": "train-001.parquet",
+   "row_id": 101157,
+   "subject": "clock icon",
+   "caption": "silver clock icon with a drop shadow",
+   "sha1": "d2566f13ffed"
+  },
+  "smartphone": {
+   "i": 115,
+   "file": "train-000.parquet",
+   "row_id": 22931,
+   "subject": "smartphone",
+   "caption": "giant white smartphone with a red power light",
+   "sha1": "dcc9ec149b02"
+  },
+  "accessibility": {
+   "i": 116,
+   "file": "train-001.parquet",
+   "row_id": 109634,
+   "subject": "wheelchair",
+   "caption": "wheelchair",
+   "sha1": "46ffc8ce5029"
+  },
+  "contrast": {
+   "i": 117,
+   "file": "train-006.parquet",
+   "row_id": 658648,
+   "subject": "moon behind cloud",
+   "caption": "side-view crescent moon behind cloud in bright colors",
+   "sha1": "31eb3ca9e5e3"
+  },
+  "gauge": {
+   "i": 118,
+   "file": "train-008.parquet",
+   "row_id": 844238,
+   "subject": "speedometer",
+   "caption": "small speedometer",
+   "sha1": "5821ebd34751"
+  },
+  "help": {
+   "i": 119,
+   "file": "train-001.parquet",
+   "row_id": 97148,
+   "subject": "question mark",
+   "caption": "black question mark with a white outline",
+   "sha1": "4fa10dd10d77"
+  },
+  "image": {
+   "i": 120,
+   "file": "train-011.parquet",
+   "row_id": 1065734,
+   "subject": "framed painting",
+   "caption": "framed painting with a torn corner",
+   "sha1": "68d6974e9aa2"
+  },
+  "keyboard": {
+   "i": 121,
+   "file": "train-007.parquet",
+   "row_id": 676038,
+   "subject": "keyboard",
+   "caption": "full-sized keyboard with a number pad",
+   "sha1": "545dcb9b01ce"
+  },
+  "layers": {
+   "i": 122,
+   "file": "train-003.parquet",
+   "row_id": 342555,
+   "subject": "stack of paper",
+   "caption": "tiny stack of paper",
+   "sha1": "eab4eaca6703"
+  },
+  "maximize": {
+   "i": 123,
+   "file": "train-005.parquet",
+   "row_id": 551046,
+   "subject": "zoom in icon",
+   "caption": "bold zoom in icon with a curved glint",
+   "sha1": "bf5e401b1265"
+  },
+  "type": {
+   "i": 124,
+   "file": "train-012.parquet",
+   "row_id": 1137265,
+   "subject": "letter tile",
+   "caption": "three-quarter-view thin letter tile in warm colors",
+   "sha1": "48cc1b60cfa9"
+  },
+  "vibrate": {
+   "i": 125,
+   "file": "train-002.parquet",
+   "row_id": 263887,
+   "subject": "flip phone",
+   "caption": "giant gray flip phone",
+   "sha1": "e9a771f4ffd4"
+  },
+  "volume": {
+   "i": 126,
+   "file": "train-003.parquet",
+   "row_id": 291684,
+   "subject": "speaker icon",
+   "caption": "bright black speaker icon",
+   "sha1": "262fdb8d7544"
+  },
+  "eye": {
+   "i": 127,
+   "file": "train-000.parquet",
+   "row_id": 10196,
+   "subject": "eye icon",
+   "caption": "dim white eye icon with a small highlight",
+   "sha1": "5c6a49e26730"
+  },
+  "play": {
+   "i": 128,
+   "file": "train-000.parquet",
+   "row_id": 89362,
+   "subject": "play button icon",
+   "caption": "thin cyan play button icon with a black outline",
+   "sha1": "1cfcdf7c972f"
+  },
+  "pause": {
+   "i": 129,
+   "file": "train-001.parquet",
+   "row_id": 126065,
+   "subject": "pause button icon",
+   "caption": "thin red pause button icon",
+   "sha1": "fd97b45c6a6a"
+  },
+  "skip": {
+   "i": 130,
+   "file": "train-008.parquet",
+   "row_id": 771811,
+   "subject": "fast forward icon",
+   "caption": "fast forward icon with hollow triangles",
+   "sha1": "5f4e3a73fe35"
+  },
+  "download": {
+   "i": 131,
+   "file": "train-002.parquet",
+   "row_id": 207353,
+   "subject": "download arrow icon",
+   "caption": "download arrow icon",
+   "sha1": "52b50acab1a8"
+  },
+  "upload": {
+   "i": 132,
+   "file": "train-001.parquet",
+   "row_id": 142594,
+   "subject": "up arrow icon",
+   "caption": "thin up arrow icon with a 3d bevel",
+   "sha1": "e9d697b7ada1"
+  },
+  "user": {
+   "i": 133,
+   "file": "train-011.parquet",
+   "row_id": 1092871,
+   "subject": "person",
+   "caption": "side-view standing straight navy person with a t-shirt and jeans",
+   "sha1": "97fef5a16c82"
+  },
+  "users": {
+   "i": 134,
+   "composed": true,
+   "file": "train-011.parquet",
+   "row_id": 1045958,
+   "subject": "paw print icon",
+   "caption": "clawed black paw print icon with oval toes",
+   "sha1": "a52a524163b4"
+  },
+  "volumeOff": {
+   "i": 135,
+   "composed": true,
+   "file": "train-003.parquet",
+   "row_id": 291684,
+   "subject": "speaker icon",
+   "caption": "bright black speaker icon",
+   "sha1": "262fdb8d7544"
+  },
+  "eyeOff": {
+   "i": 136,
+   "composed": true,
+   "file": "train-000.parquet",
+   "row_id": 10196,
+   "subject": "eye icon",
+   "caption": "dim white eye icon with a small highlight",
+   "sha1": "5c6a49e26730"
+  }
+ }
+}

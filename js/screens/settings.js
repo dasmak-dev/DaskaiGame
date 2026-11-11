@@ -25,6 +25,8 @@
             options: [{ value: 'auto', label: t('settings.themeAuto'), icon: 'refresh' }, { value: 'light', label: t('settings.themeLight'), icon: 'sun' }, { value: 'dark', label: t('settings.themeDark'), icon: 'moon' }] })),
           rowSeg('layers', t('settings.uiStyle'), segmented({ value: ['exile', 'clean', 'classic'].includes(S.get('uiStyle')) ? S.get('uiStyle') : 'clean', onChange: (v) => S.set('uiStyle', v),
             options: [{ value: 'exile', label: t('settings.styleExile'), icon: 'skull', tip: t('settings.styleExileTip') }, { value: 'clean', label: t('settings.styleClean'), icon: 'sparkle' }, { value: 'classic', label: t('settings.styleClassic'), icon: 'shield' }] })),
+          rowSeg('grid', t('settings.dock'), segmented({ value: S.get('dock') || 'big', onChange: (v) => { S.set('dock', v); DK.app.renderNav(); },
+            options: [{ value: 'big', label: t('settings.dockBig'), tip: t('settings.dockBigTip') }, { value: 'mix', label: t('settings.dockMix') }, { value: 'classic', label: t('settings.dockClassic') }] })),
           rowSeg('type', t('settings.textSize'), segmented({ value: S.get('textSize'), onChange: set('textSize'),
             options: [['sm', 'S'], ['md', 'M'], ['lg', 'L'], ['xl', 'XL']].map(([v, l]) => ({ value: v, label: l })) })),
           h('div', { class: 'setting-row', tip: t('uiScale.desc') }, DK.icon('maximize', 18), h('span', { class: 'setting-text' }, h('b', null, t('uiScale.label')), h('small', { class: 'muted' }, t('uiScale.desc'))),

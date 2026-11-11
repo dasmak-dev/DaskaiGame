@@ -4,7 +4,8 @@
  *   · Las capas SVG del paisaje se cambian por imágenes pequeñas (components/pixelBg.js):
  *     aquí se escalan sin suavizar (.px-layer).
  *   · Cielos del combate y de la expedición en 8 bandas de color (degradados «por escalones»).
- *   · Partículas cuadradas sin halo que se mueven a saltos (steps).
+ *   · Partículas cuadradas sin halo (v5.25: se mueven suaves, sin «steps», que se notaba como tirones).
+ *   · v5.25: fondos por capas con paralaje (components/pixelScene.js → .pxs).
  * Generado a mano desde los degradados de battle.css y grim.css: si cambias uno de esos
  * cielos, cambia también aquí sus colores.
  * ============================================================= */
@@ -20,22 +21,72 @@
 :root[data-px="on"] .arena.is-boss { background: linear-gradient(180deg, color-mix(in srgb, color-mix(in srgb, var(--z2) 45%, #120404) 6%, #1a0606) 0.0% 12.5%, color-mix(in srgb, color-mix(in srgb, var(--z2) 45%, #120404) 19%, #1a0606) 12.5% 25.0%, color-mix(in srgb, color-mix(in srgb, var(--z2) 45%, #120404) 31%, #1a0606) 25.0% 37.5%, color-mix(in srgb, color-mix(in srgb, var(--z2) 45%, #120404) 44%, #1a0606) 37.5% 50.0%, color-mix(in srgb, color-mix(in srgb, var(--z2) 45%, #120404) 56%, #1a0606) 50.0% 62.5%, color-mix(in srgb, color-mix(in srgb, var(--z2) 45%, #120404) 69%, #1a0606) 62.5% 75.0%, color-mix(in srgb, color-mix(in srgb, var(--z2) 45%, #120404) 81%, #1a0606) 75.0% 87.5%, color-mix(in srgb, color-mix(in srgb, var(--z2) 45%, #120404) 94%, #1a0606) 87.5% 100.0%) !important; }
 :root[data-px="on"] .arena.is-secret { background: linear-gradient(180deg, color-mix(in srgb, #1e0b2e 8%, #0f0618) 0.0% 16.67%, color-mix(in srgb, #1e0b2e 25%, #0f0618) 16.67% 33.33%, color-mix(in srgb, #1e0b2e 42%, #0f0618) 33.33% 50.0%, color-mix(in srgb, #1e0b2e 58%, #0f0618) 50.0% 66.67%, color-mix(in srgb, #1e0b2e 75%, #0f0618) 66.67% 83.33%, color-mix(in srgb, #1e0b2e 92%, #0f0618) 83.33% 100.0%) !important; }
 :root[data-px="on"] .arena::before { background: radial-gradient(ellipse 80% 75% at 50% 55%, transparent 0 50%, rgba(0, 0, 0, .16) 50% 64%, rgba(0, 0, 0, .34) 64% 80%, rgba(0, 0, 0, .55) 80%); }
+:root[data-px="on"] .arena:has(.scene.pxs)::before { background: radial-gradient(ellipse 90% 85% at 50% 50%, transparent 0 62%, rgba(0, 0, 0, .12) 62% 80%, rgba(0, 0, 0, .3) 80%); } /* v5.25: viñeta más suave con el fondo por capas */
 :root[data-px="on"] #zone-backdrop .zb-sky { background: linear-gradient(180deg, color-mix(in srgb, color-mix(in srgb, var(--z1) 18%, #0b0807) 7%, color-mix(in srgb, var(--z2) 55%, #000)) 0.0% 10.0%, color-mix(in srgb, color-mix(in srgb, var(--z1) 18%, #0b0807) 21%, color-mix(in srgb, var(--z2) 55%, #000)) 10.0% 20.0%, color-mix(in srgb, color-mix(in srgb, var(--z1) 18%, #0b0807) 36%, color-mix(in srgb, var(--z2) 55%, #000)) 20.0% 30.0%, color-mix(in srgb, color-mix(in srgb, var(--z1) 18%, #0b0807) 50%, color-mix(in srgb, var(--z2) 55%, #000)) 30.0% 40.0%, color-mix(in srgb, color-mix(in srgb, var(--z1) 18%, #0b0807) 64%, color-mix(in srgb, var(--z2) 55%, #000)) 40.0% 50.0%, color-mix(in srgb, color-mix(in srgb, var(--z1) 18%, #0b0807) 79%, color-mix(in srgb, var(--z2) 55%, #000)) 50.0% 60.0%, color-mix(in srgb, color-mix(in srgb, var(--z1) 18%, #0b0807) 93%, color-mix(in srgb, var(--z2) 55%, #000)) 60.0% 70.0%, color-mix(in srgb, color-mix(in srgb, var(--z1) 18%, #0b0807) 17%, color-mix(in srgb, var(--z1) 18%, #0b0807)) 70.0% 80.0%, color-mix(in srgb, color-mix(in srgb, var(--z1) 18%, #0b0807) 50%, color-mix(in srgb, var(--z1) 18%, #0b0807)) 80.0% 90.0%, color-mix(in srgb, color-mix(in srgb, var(--z1) 18%, #0b0807) 83%, color-mix(in srgb, var(--z1) 18%, #0b0807)) 90.0% 100.0%); }
 :root[data-px="on"] #zone-backdrop::after { background:
   linear-gradient(180deg, rgba(8, 5, 4, .55) 0 20%, rgba(8, 5, 4, .66) 20% 40%, rgba(8, 5, 4, .78) 40% 60%, rgba(8, 5, 4, .86) 60% 80%, rgba(8, 5, 4, .95) 80%),
   radial-gradient(ellipse at center, transparent 0 50%, rgba(0, 0, 0, .35) 50% 75%, rgba(0, 0, 0, .7) 75%); }
+:root[data-px="on"] #zone-backdrop:has(.scene.pxs)::after { background: /* v5.25: el fondo por capas se deja ver más */
+  linear-gradient(180deg, rgba(8, 5, 4, .3) 0 25%, rgba(8, 5, 4, .42) 25% 50%, rgba(8, 5, 4, .55) 50% 75%, rgba(8, 5, 4, .68) 75%),
+  radial-gradient(ellipse at center, transparent 0 55%, rgba(0, 0, 0, .25) 55% 80%, rgba(0, 0, 0, .5) 80%); }
 :root[data-px="on"][data-theme="light"] #zone-backdrop::after { background: linear-gradient(180deg, rgba(233, 223, 203, .55) 0 33%, rgba(233, 223, 203, .7) 33% 66%, rgba(233, 223, 203, .85) 66%); }
 /* el filtro de la arena suavizaría los píxeles al escalar: se aplica igual, pero sin desenfoques */
 :root[data-px="on"] .ps-side svg, :root[data-px="on"] .ps-side img { filter: none; }
 
-/* Partículas: cuadraditos sin halo que se mueven a saltos */
-:root[data-px="on"] .scene .sp, :root[data-px="on"] .amb .am { border-radius: 0 !important; box-shadow: none !important; filter: none !important; animation-timing-function: steps(10, jump-none) !important; image-rendering: pixelated; }
+/* Partículas: cuadraditos sin halo. v5.25: movimiento suave (antes iban a saltos con steps() y parecía que el juego iba con tirones) */
+:root[data-px="on"] .scene .sp, :root[data-px="on"] .amb .am { border-radius: 0 !important; box-shadow: none !important; filter: none !important; image-rendering: pixelated; }
 :root[data-px="on"] .scene .sp { width: 6px; height: 6px; }
-:root[data-px="on"] .amb-cloud { border-radius: 0 !important; filter: none !important; animation-timing-function: steps(40, jump-none) !important; }
-:root[data-px="on"] .amb-fx { animation-timing-function: steps(6, jump-none) !important; }
+:root[data-px="on"] .amb-cloud { border-radius: 0 !important; filter: none !important; }
+
+/* v5.25: fondo por capas (components/pixelScene.js). Cada capa es una tira que se repite en horizontal, escalada al
+ * alto de la escena (la tira mide el doble de ancho que de alto: 200cqh) y desplazada una tira entera en bucle. */
+.scene.pxs { container-type: size; }
+.pxs-l { position: absolute; left: 0; top: 0; bottom: 0; width: calc(100% + 200cqh); background-repeat: repeat-x; background-size: auto 100%;
+  image-rendering: pixelated; image-rendering: crisp-edges; pointer-events: none; }
+.pxs-move { animation: pxsDrift 120s linear infinite; will-change: transform; }
+@keyframes pxsDrift { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-200cqh, 0, 0); } }
+.pxs-rays { animation: pxsBreath 7s ease-in-out infinite alternate; }
+@keyframes pxsBreath { from { opacity: .55; } to { opacity: 1; } }
+.scene.pxs .scene-particles { z-index: 1; }
+:root[data-motion="reduced"] .pxs-l { animation: none !important; }
 
 /* Plataformas: elipse de píxeles (3 tonos) en lugar del degradado suave */
 :root[data-px="on"] .platform { border-radius: 0; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 10' preserveAspectRatio='none' shape-rendering='crispEdges' fill='%23fff'%3E%3Crect x='11' y='0' width='18' height='1' fill-opacity='0.09'/%3E%3Crect x='6' y='1' width='9' height='1' fill-opacity='0.09'/%3E%3Crect x='15' y='1' width='10' height='1' fill-opacity='0.2'/%3E%3Crect x='25' y='1' width='9' height='1' fill-opacity='0.09'/%3E%3Crect x='3' y='2' width='6' height='1' fill-opacity='0.09'/%3E%3Crect x='9' y='2' width='22' height='1' fill-opacity='0.2'/%3E%3Crect x='31' y='2' width='6' height='1' fill-opacity='0.09'/%3E%3Crect x='1' y='3' width='5' height='1' fill-opacity='0.09'/%3E%3Crect x='6' y='3' width='7' height='1' fill-opacity='0.2'/%3E%3Crect x='13' y='3' width='14' height='1' fill-opacity='0.34'/%3E%3Crect x='27' y='3' width='7' height='1' fill-opacity='0.2'/%3E%3Crect x='34' y='3' width='5' height='1' fill-opacity='0.09'/%3E%3Crect x='0' y='4' width='5' height='1' fill-opacity='0.09'/%3E%3Crect x='5' y='4' width='6' height='1' fill-opacity='0.2'/%3E%3Crect x='11' y='4' width='18' height='1' fill-opacity='0.34'/%3E%3Crect x='29' y='4' width='6' height='1' fill-opacity='0.2'/%3E%3Crect x='35' y='4' width='5' height='1' fill-opacity='0.09'/%3E%3Crect x='0' y='5' width='5' height='1' fill-opacity='0.09'/%3E%3Crect x='5' y='5' width='6' height='1' fill-opacity='0.2'/%3E%3Crect x='11' y='5' width='18' height='1' fill-opacity='0.34'/%3E%3Crect x='29' y='5' width='6' height='1' fill-opacity='0.2'/%3E%3Crect x='35' y='5' width='5' height='1' fill-opacity='0.09'/%3E%3Crect x='1' y='6' width='5' height='1' fill-opacity='0.09'/%3E%3Crect x='6' y='6' width='7' height='1' fill-opacity='0.2'/%3E%3Crect x='13' y='6' width='14' height='1' fill-opacity='0.34'/%3E%3Crect x='27' y='6' width='7' height='1' fill-opacity='0.2'/%3E%3Crect x='34' y='6' width='5' height='1' fill-opacity='0.09'/%3E%3Crect x='3' y='7' width='6' height='1' fill-opacity='0.09'/%3E%3Crect x='9' y='7' width='22' height='1' fill-opacity='0.2'/%3E%3Crect x='31' y='7' width='6' height='1' fill-opacity='0.09'/%3E%3Crect x='6' y='8' width='9' height='1' fill-opacity='0.09'/%3E%3Crect x='15' y='8' width='10' height='1' fill-opacity='0.2'/%3E%3Crect x='25' y='8' width='9' height='1' fill-opacity='0.09'/%3E%3Crect x='11' y='9' width='18' height='1' fill-opacity='0.09'/%3E%3C/svg%3E") center / 100% 100% no-repeat; image-rendering: pixelated; }
 /* Rayos de luz, calor y niebla en escalones */
 :root[data-px="on"] .fx-rays b, :root[data-px="on"] .fx-sunbeam b { background: linear-gradient(180deg, rgba(255,250,220,.2) 0 20%, rgba(255,250,220,.13) 20% 40%, rgba(255,250,220,.07) 40% 60%, transparent 60%); }
 :root[data-px="on"] .fx-heat { background: linear-gradient(0deg, rgba(249,115,22,.22) 0 25%, rgba(249,115,22,.12) 25% 55%, rgba(249,115,22,.05) 55% 80%, transparent 80%); }
+
+/* v5.20: iconos de objetos en pixel art (components/itemViews.js → pixelIcon, hoja icons/items-px.png).
+ * El sprite ocupa la caja .item-icon (su tamaño lo pone cada pantalla); la rareza es un contorno de píxel. */
+.item-icon.ii-px { display: inline-grid; place-items: center; background: none !important; box-shadow: none !important; border-radius: 0 !important; padding: 0 !important; overflow: visible; }
+.item-icon.ii-px .ii-spr { display: block; width: 100%; height: 100%; background-repeat: no-repeat; image-rendering: pixelated; image-rendering: crisp-edges;
+  filter: drop-shadow(0 2px 0 rgba(0, 0, 0, .45)); }
+.item-icon.ii-px.has-ring .ii-spr { filter: drop-shadow(1px 0 0 var(--ring)) drop-shadow(-1px 0 0 var(--ring)) drop-shadow(0 1px 0 var(--ring)) drop-shadow(0 -1px 0 var(--ring)) drop-shadow(0 2px 0 rgba(0, 0, 0, .45)); }
+.item-icon.ii-px.r-legendario .ii-spr { animation: iiPxGlow 2.4s steps(4) infinite; }
+@keyframes iiPxGlow { 50% { opacity: .82; } }
+:root[data-motion="reduced"] .item-icon.ii-px .ii-spr { animation: none; }
+
+/* v5.22: iconos de la interfaz (core/icons.js). En pixel art: máscara en tonos (icons/ui-px.png) pintada con el
+ * color del texto; en el estilo limpio: silueta SVG rellena. */
+.icon.icon-px { align-items: center; justify-content: center; }
+.icon-px .ipx { display: block; background: currentColor; flex: none;
+  -webkit-mask: var(--ipx-img) var(--ipx-pos) / var(--ipx-size) no-repeat; mask: var(--ipx-img) var(--ipx-pos) / var(--ipx-size) no-repeat;
+  image-rendering: pixelated; }
+.icon-gl svg { stroke: none; }
+
+/* v5.24: barra inferior con iconos grandes (core/app.js → dockStyle). 'big': sin texto salvo la sección activa;
+ * 'mix': icono grande y texto pequeño. El nombre sigue en la ayuda al pasar el ratón y para lectores de pantalla. */
+:root:not([data-dock="classic"]) .dock-slot .dock-icon .icon { width: 32px; height: 32px; }
+:root:not([data-dock="classic"]) .dock-slot .dock-icon svg { width: 30px; height: 30px; }
+:root[data-dock="big"] .dock-slot:not(.active) .dock-label {
+  position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+:root[data-dock="mix"] .dock-slot .dock-label { font-size: .68rem; }
+/* v5.25: con el fondo por capas, los laterales antiguos (árboles/rocas rasterizados) sobran: el primer plano ya enmarca */
+:root[data-px="on"] #zone-backdrop:has(.scene.pxs) .ps-side { display: none; }
+/* v5.25b: el fondo de 7 capas también sin pixel art: suave (la imagen ya viene desenfocada por profundidad) */
+.scene.pxs-smooth .pxs-l { image-rendering: auto; }
+#zone-backdrop:has(.scene.pxs) .ps-side { display: none; }
+:root:not([data-px="on"]) #zone-backdrop:has(.scene.pxs)::after { background:
+  linear-gradient(180deg, rgba(8, 5, 4, .3), rgba(8, 5, 4, .45) 45%, rgba(8, 5, 4, .7)),
+  radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, .45)); }
+:root:not([data-px="on"])[data-theme="light"] #zone-backdrop:has(.scene.pxs)::after { background: linear-gradient(180deg, rgba(233, 223, 203, .4), rgba(233, 223, 203, .7)); }

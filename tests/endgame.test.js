@@ -129,7 +129,7 @@ module.exports = {
         out.cantSkip = C.set(3) === 1;
         DK.expedition.start({});
         const e = DK.expedition.active();
-        const foe = DK.daskai.create('chispon', 5, { wild: true });
+        const foe = DK.daskai.create('chispon', 30, { wild: true }); // v5.27: nivel 30 (a nivel 5 el +10 % a veces se perdía al redondear)
         const s1 = DK.daskai.stats(foe).atk;
         e.corruption = 0; DK.daskai.touch(); const s0 = DK.daskai.stats(foe).atk; e.corruption = 1; DK.daskai.touch();
         out.stronger = s1 > s0;

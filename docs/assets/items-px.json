@@ -1,0 +1,913 @@
+{
+ "source": "https://huggingface.co/datasets/Angais/pixel-art-atlas-1.4m",
+ "license": "CC0-1.0",
+ "retrieved": "2026-11-10",
+ "tile": 16,
+ "cols": 16,
+ "icons": {
+  "pocion": {
+   "i": 0,
+   "file": "train-014.parquet",
+   "row_id": 1320713,
+   "subject": "round potion flask",
+   "caption": "small emerald green round potion flask with a flat-bottomed base",
+   "sha1": "af56cbe1fdb3"
+  },
+  "superpocion": {
+   "i": 1,
+   "file": "train-002.parquet",
+   "row_id": 260718,
+   "subject": "round potion flask",
+   "caption": "green round potion flask",
+   "sha1": "d028922fa4fe"
+  },
+  "hiperpocion": {
+   "i": 2,
+   "file": "train-014.parquet",
+   "row_id": 1353776,
+   "subject": "potion decanter",
+   "caption": "faceted green potion decanter with a curved handle in muted colors",
+   "sha1": "45ca34c3bcee"
+  },
+  "eter": {
+   "i": 3,
+   "file": "train-012.parquet",
+   "row_id": 1138852,
+   "subject": "potion vial",
+   "caption": "crystal potion vial with a neck loop",
+   "sha1": "aee835013646"
+  },
+  "supereter": {
+   "i": 4,
+   "file": "train-003.parquet",
+   "row_id": 323668,
+   "subject": "long-necked potion bottle",
+   "caption": "swirling long-necked potion bottle with bubbles inside",
+   "sha1": "0fe80aa45b62"
+  },
+  "antidoto": {
+   "i": 5,
+   "file": "train-005.parquet",
+   "row_id": 508773,
+   "subject": "antidote bottle",
+   "caption": "antidote bottle with a wide mouth",
+   "sha1": "4b1ebeb78ecb"
+  },
+  "balsamo": {
+   "i": 6,
+   "file": "train-002.parquet",
+   "row_id": 202136,
+   "subject": "ointment tube",
+   "caption": "yellow ointment tube with a red stripe",
+   "sha1": "100da441e490"
+  },
+  "panacea": {
+   "i": 7,
+   "file": "train-003.parquet",
+   "row_id": 300191,
+   "subject": "star-shaped potion bottle",
+   "caption": "sparkling star-shaped potion bottle with a wax-sealed cork",
+   "sha1": "344bb2627827"
+  },
+  "elixir": {
+   "i": 8,
+   "file": "train-002.parquet",
+   "row_id": 278834,
+   "subject": "elixir bottle",
+   "caption": "yellow elixir bottle with a gold cap",
+   "sha1": "5d67bfff372c"
+  },
+  "pocion_media": {
+   "i": 9,
+   "file": "train-000.parquet",
+   "row_id": 71962,
+   "subject": "heart-shaped potion bottle",
+   "caption": "emerald green heart-shaped potion bottle with a floating sparkle",
+   "sha1": "fa09f279f718"
+  },
+  "pocion_total": {
+   "i": 10,
+   "file": "train-005.parquet",
+   "row_id": 534640,
+   "subject": "heart-shaped potion bottle",
+   "caption": "orange heart-shaped potion bottle with a bow at the neck",
+   "sha1": "755c3da0a0e6"
+  },
+  "eter_medio": {
+   "i": 11,
+   "file": "train-003.parquet",
+   "row_id": 321944,
+   "subject": "teardrop potion bottle",
+   "caption": "crystal teardrop potion bottle with a floating sparkle",
+   "sha1": "251306df20c6"
+  },
+  "eter_total": {
+   "i": 12,
+   "file": "train-002.parquet",
+   "row_id": 229986,
+   "subject": "star-shaped potion bottle",
+   "caption": "half-full purple star-shaped potion bottle with bubbles inside",
+   "sha1": "cf36197c77ed"
+  },
+  "restaurador": {
+   "i": 13,
+   "file": "train-003.parquet",
+   "row_id": 344122,
+   "subject": "elixir bottle",
+   "caption": "ancient elixir bottle with a wax-sealed cork",
+   "sha1": "3cd5648511af"
+  },
+  "tonico_vigor": {
+   "i": 14,
+   "file": "train-002.parquet",
+   "row_id": 263599,
+   "subject": "tonic bottle",
+   "caption": "yellow tonic bottle with a gold cap",
+   "sha1": "7c9913754c61"
+  },
+  "cristal_vinculo": {
+   "i": 15,
+   "file": "train-002.parquet",
+   "row_id": 191259,
+   "subject": "water orb",
+   "caption": "enchanted light blue water orb",
+   "sha1": "ccf95b47d3f7"
+  },
+  "cristal_mayor": {
+   "i": 16,
+   "file": "train-007.parquet",
+   "row_id": 660626,
+   "subject": "cosmic orb",
+   "caption": "faceted cosmic orb with a spiral nebula",
+   "sha1": "2e17c887e5e5"
+  },
+  "baya_saber": {
+   "i": 17,
+   "file": "train-013.parquet",
+   "row_id": 1268324,
+   "subject": "mana berry",
+   "caption": "ripe mana berry with three-pointed leaves",
+   "sha1": "2b413a8d3cc3"
+  },
+  "tonico_exp": {
+   "i": 18,
+   "file": "train-001.parquet",
+   "row_id": 185975,
+   "subject": "tonic bottle",
+   "caption": "cursed golden tonic bottle",
+   "sha1": "1da27cc17b01"
+  },
+  "cristal_sabio": {
+   "i": 19,
+   "file": "train-002.parquet",
+   "row_id": 199122,
+   "subject": "mana crystal",
+   "caption": "tiny purple mana crystal",
+   "sha1": "f3b34625ca5a"
+  },
+  "pluma_fenix": {
+   "i": 20,
+   "file": "train-007.parquet",
+   "row_id": 693569,
+   "subject": "phoenix feather",
+   "caption": "three-quarter-view orange phoenix feather with a golden quill",
+   "sha1": "e5f68c41a528"
+  },
+  "tonico_fuerza": {
+   "i": 21,
+   "file": "train-014.parquet",
+   "row_id": 1368467,
+   "subject": "tonic bottle",
+   "caption": "slim orange tonic bottle",
+   "sha1": "e9be66de1fee"
+  },
+  "tonico_magia": {
+   "i": 22,
+   "file": "train-001.parquet",
+   "row_id": 123809,
+   "subject": "tonic bottle",
+   "caption": "swirling glass tonic bottle with a cork stopper",
+   "sha1": "4c896f35d840"
+  },
+  "tonico_hierro": {
+   "i": 23,
+   "file": "train-000.parquet",
+   "row_id": 86667,
+   "subject": "tonic bottle",
+   "caption": "swirling black tonic bottle",
+   "sha1": "e5bbf7ecdd05"
+  },
+  "tonico_espiritu": {
+   "i": 24,
+   "file": "train-000.parquet",
+   "row_id": 10907,
+   "subject": "tonic bottle",
+   "caption": "violet tonic bottle with bubbles inside",
+   "sha1": "654897b8f7ed"
+  },
+  "tonico_viento": {
+   "i": 25,
+   "file": "train-007.parquet",
+   "row_id": 739709,
+   "subject": "tonic bottle",
+   "caption": "three-quarter-view fizzing glass tonic bottle with a dropper top",
+   "sha1": "188cf2ea3a2c"
+  },
+  "tonico_vida": {
+   "i": 26,
+   "file": "train-001.parquet",
+   "row_id": 165771,
+   "subject": "tonic bottle",
+   "caption": "red tonic bottle with a skull label",
+   "sha1": "2d08c2f3ca27"
+  },
+  "tonico_mana": {
+   "i": 27,
+   "file": "train-008.parquet",
+   "row_id": 818083,
+   "subject": "tonic bottle",
+   "caption": "square cyan tonic bottle with a long neck",
+   "sha1": "bf14cc22e0e8"
+  },
+  "elixir_olvido": {
+   "i": 28,
+   "file": "train-005.parquet",
+   "row_id": 508482,
+   "subject": "chalice",
+   "caption": "top-down pewter chalice with a twisted stem",
+   "sha1": "c330cc109b89"
+  },
+  "esencia_ancestral": {
+   "i": 29,
+   "file": "train-000.parquet",
+   "row_id": 89683,
+   "subject": "star-cut gem",
+   "caption": "enchanted yellow star-cut gem in a gold setting",
+   "sha1": "da4036713f3e"
+  },
+  "garra_afilada": {
+   "i": 30,
+   "file": "train-002.parquet",
+   "row_id": 253517,
+   "subject": "tiger claws",
+   "caption": "enchanted tiger claws",
+   "sha1": "2285598f4a14"
+  },
+  "colmillo_umbrio": {
+   "i": 31,
+   "file": "train-001.parquet",
+   "row_id": 105248,
+   "subject": "kris dagger",
+   "caption": "enchanted steel kris dagger with a purple tassel",
+   "sha1": "34900252251b"
+  },
+  "amuleto_arcano": {
+   "i": 32,
+   "file": "train-013.parquet",
+   "row_id": 1256001,
+   "subject": "rune amulet",
+   "caption": "top-down cursed iron rune amulet with a hole at the top",
+   "sha1": "605ac5744eed"
+  },
+  "orbe_solar": {
+   "i": 33,
+   "file": "train-007.parquet",
+   "row_id": 710540,
+   "subject": "flame orb",
+   "caption": "floating golden flame orb with a hot core",
+   "sha1": "1883604bdd34"
+  },
+  "escama_dura": {
+   "i": 34,
+   "file": "train-013.parquet",
+   "row_id": 1283392,
+   "subject": "dragon shield",
+   "caption": "crystal dragon shield with claw marks",
+   "sha1": "bf6878eee441"
+  },
+  "coraza_obsidiana": {
+   "i": 35,
+   "file": "train-010.parquet",
+   "row_id": 995434,
+   "subject": "gothic plate armor",
+   "caption": "tall steel gothic plate armor with pointed sabatons in high contrast",
+   "sha1": "033010c9ab5c"
+  },
+  "velo_mistico": {
+   "i": 36,
+   "file": "train-000.parquet",
+   "row_id": 42271,
+   "subject": "shadow cloak",
+   "caption": "violet shadow cloak",
+   "sha1": "847e4e4e24d1"
+  },
+  "pluma_veloz": {
+   "i": 37,
+   "file": "train-006.parquet",
+   "row_id": 657428,
+   "subject": "winged boot symbol",
+   "caption": "flying teal winged boot symbol",
+   "sha1": "5dbf3f72bb60"
+  },
+  "botas_viento": {
+   "i": 38,
+   "file": "train-008.parquet",
+   "row_id": 773018,
+   "subject": "winged boot symbol",
+   "caption": "flared teal winged boot symbol",
+   "sha1": "62be4948fed7"
+  },
+  "corazon_roca": {
+   "i": 39,
+   "file": "train-010.parquet",
+   "row_id": 1026618,
+   "subject": "helmet",
+   "caption": "pointed iron helmet with a visor",
+   "sha1": "4366f9e08942"
+  },
+  "anillo_brasas": {
+   "i": 40,
+   "file": "train-004.parquet",
+   "row_id": 438357,
+   "subject": "dragon ring",
+   "caption": "royal dragon ring with a tail wrapped around",
+   "sha1": "b786c2069e99"
+  },
+  "perla_marina": {
+   "i": 41,
+   "file": "train-002.parquet",
+   "row_id": 247138,
+   "subject": "solitaire ring",
+   "caption": "platinum solitaire ring with a sparkling diamond",
+   "sha1": "0d09f7c2a03e"
+  },
+  "amuleto_vida": {
+   "i": 42,
+   "file": "train-003.parquet",
+   "row_id": 375165,
+   "subject": "heart pendant",
+   "caption": "heart pendant with a green gem",
+   "sha1": "5e532b9488db"
+  },
+  "corona_celeste": {
+   "i": 43,
+   "file": "train-010.parquet",
+   "row_id": 1001180,
+   "subject": "imperial crown",
+   "caption": "wide gold imperial crown with a blue gem",
+   "sha1": "3e90e3cb108e"
+  },
+  "amuleto_curativo": {
+   "i": 44,
+   "file": "train-012.parquet",
+   "row_id": 1174823,
+   "subject": "sun amulet",
+   "caption": "spiky bone sun amulet with alternating long and short points",
+   "sha1": "4bc352fe033d"
+  },
+  "tambor_guerra": {
+   "i": 45,
+   "file": "train-008.parquet",
+   "row_id": 806858,
+   "subject": "horned helmet",
+   "caption": "pointed copper horned helmet with a blue plume",
+   "sha1": "46255f59d1b5"
+  },
+  "pluma_huracan": {
+   "i": 46,
+   "file": "train-009.parquet",
+   "row_id": 857457,
+   "subject": "feathered cloak",
+   "caption": "three-quarter-view wing-shaped teal feathered cloak in bright colors",
+   "sha1": "78afa2222ad7"
+  },
+  "raiz_maestra": {
+   "i": 47,
+   "file": "train-003.parquet",
+   "row_id": 323457,
+   "subject": "druid staff",
+   "caption": "enchanted wooden druid staff with vines wrapped around",
+   "sha1": "e9b91620a0f8"
+  },
+  "colmillo_vampiro": {
+   "i": 48,
+   "file": "train-006.parquet",
+   "row_id": 647351,
+   "subject": "serrated dagger",
+   "caption": "saw-toothed serrated dagger",
+   "sha1": "25f4b44ac2e0"
+  },
+  "ascua_eterna": {
+   "i": 49,
+   "file": "train-001.parquet",
+   "row_id": 135703,
+   "subject": "sun staff",
+   "caption": "sun staff with a red gem",
+   "sha1": "d9ce8c447f77"
+  },
+  "caracola_marea": {
+   "i": 50,
+   "file": "train-004.parquet",
+   "row_id": 380302,
+   "subject": "water orb",
+   "caption": "tiny water orb with sparkles",
+   "sha1": "dd90e0cb86b0"
+  },
+  "prisma_juicio": {
+   "i": 51,
+   "file": "train-001.parquet",
+   "row_id": 110440,
+   "subject": "hero's sword",
+   "caption": "gold hero's sword",
+   "sha1": "e855a2838575"
+  },
+  "martillo_tierra": {
+   "i": 52,
+   "file": "train-003.parquet",
+   "row_id": 366608,
+   "subject": "dwarven hammer",
+   "caption": "iron dwarven hammer",
+   "sha1": "bbbd03981f6a"
+  },
+  "corazon_musgo": {
+   "i": 53,
+   "file": "train-001.parquet",
+   "row_id": 115050,
+   "subject": "clover charm",
+   "caption": "tiny clover charm on a silver chain",
+   "sha1": "2ac7a71df909"
+  },
+  "emblema_furia": {
+   "i": 54,
+   "file": "train-001.parquet",
+   "row_id": 182864,
+   "subject": "viking sword",
+   "caption": "crimson viking sword",
+   "sha1": "0277e4208c2e"
+  },
+  "caparazon_viejo": {
+   "i": 55,
+   "file": "train-000.parquet",
+   "row_id": 46530,
+   "subject": "round shield",
+   "caption": "glowing steel round shield with a quartered pattern",
+   "sha1": "aba25763778b"
+  },
+  "pluma_ligera": {
+   "i": 56,
+   "file": "train-012.parquet",
+   "row_id": 1214205,
+   "subject": "elven boots",
+   "caption": "snug blue elven boots with leaf-shaped cuffs",
+   "sha1": "cb4927f7e65f"
+  },
+  "cristal_vital": {
+   "i": 57,
+   "file": "train-003.parquet",
+   "row_id": 327314,
+   "subject": "band ring",
+   "caption": "iron band ring with a green gem",
+   "sha1": "ba0dd8e34708"
+  },
+  "pendiente_arcano": {
+   "i": 58,
+   "file": "train-003.parquet",
+   "row_id": 339859,
+   "subject": "spiral ring",
+   "caption": "iron spiral ring with a purple gem",
+   "sha1": "82cbae6882fa"
+  },
+  "sello_equilibrio": {
+   "i": 59,
+   "file": "train-006.parquet",
+   "row_id": 642667,
+   "subject": "signet ring",
+   "caption": "chunky gold signet ring with a pearl",
+   "sha1": "a4f7b114d39b"
+  },
+  "brasero_vivo": {
+   "i": 60,
+   "file": "train-003.parquet",
+   "row_id": 335486,
+   "subject": "lantern staff",
+   "caption": "gold lantern staff with floating sparkles",
+   "sha1": "cc49cb210e4d"
+  },
+  "pelaje": {
+   "i": 61,
+   "file": "train-009.parquet",
+   "row_id": 904427,
+   "subject": "fur pelt",
+   "caption": "pristine fur pelt with a bushy tail",
+   "sha1": "c8aa0d05627c"
+  },
+  "fragmento_garra": {
+   "i": 62,
+   "file": "train-006.parquet",
+   "row_id": 582633,
+   "subject": "animal claw",
+   "caption": "side-view small animal claw with a pointed tip in muted colors",
+   "sha1": "90f4d407eda6"
+  },
+  "escama": {
+   "i": 63,
+   "file": "train-008.parquet",
+   "row_id": 831900,
+   "subject": "dragon scale",
+   "caption": "frosted dragon scale with a pointed tip in flat colors",
+   "sha1": "a48dcb26f17c"
+  },
+  "pluma": {
+   "i": 64,
+   "file": "train-008.parquet",
+   "row_id": 844450,
+   "subject": "peacock feather",
+   "caption": "top-down trailing peacock feather with a blue center in high contrast",
+   "sha1": "b2377088b683"
+  },
+  "hilo": {
+   "i": 65,
+   "file": "train-007.parquet",
+   "row_id": 693151,
+   "subject": "spool of thread",
+   "caption": "short green spool of thread",
+   "sha1": "fe8d01853854"
+  },
+  "gota": {
+   "i": 66,
+   "file": "train-002.parquet",
+   "row_id": 261339,
+   "subject": "water drop",
+   "caption": "light blue water drop with a soft glow",
+   "sha1": "fdfe74630547"
+  },
+  "brasa": {
+   "i": 67,
+   "file": "train-003.parquet",
+   "row_id": 370803,
+   "subject": "ember",
+   "caption": "orange ember with a soft glow",
+   "sha1": "8723721107b3"
+  },
+  "coral": {
+   "i": 68,
+   "file": "train-012.parquet",
+   "row_id": 1183965,
+   "subject": "staghorn coral",
+   "caption": "three-quarter-view branching staghorn coral",
+   "sha1": "6a10da4ff69a"
+  },
+  "polvo_brillante": {
+   "i": 69,
+   "file": "train-004.parquet",
+   "row_id": 459693,
+   "subject": "jar of fairy dust",
+   "caption": "three-quarter-view tall jar of fairy dust in warm colors",
+   "sha1": "6d1882ce0d81"
+  },
+  "esencia_sombria": {
+   "i": 70,
+   "file": "train-010.parquet",
+   "row_id": 976804,
+   "subject": "shadow orb",
+   "caption": "dripping shadow orb in flat colors",
+   "sha1": "e943c72a8c1f"
+  },
+  "piedra_runica": {
+   "i": 71,
+   "file": "train-011.parquet",
+   "row_id": 1041975,
+   "subject": "holed rune stone",
+   "caption": "side-view tall granite holed rune stone",
+   "sha1": "31ce91708658"
+  },
+  "obsidiana": {
+   "i": 72,
+   "file": "train-004.parquet",
+   "row_id": 423275,
+   "subject": "obsidian shard",
+   "caption": "ancient obsidian shard embedded in stone",
+   "sha1": "bf0b8b1b1269"
+  },
+  "nucleo_arcano": {
+   "i": 73,
+   "file": "train-001.parquet",
+   "row_id": 105279,
+   "subject": "cube crystal",
+   "caption": "purple cube crystal with sparkles",
+   "sha1": "c9b256f4d59a"
+  },
+  "lagrima_estelar": {
+   "i": 74,
+   "file": "train-000.parquet",
+   "row_id": 85063,
+   "subject": "star crystal",
+   "caption": "yellow star crystal",
+   "sha1": "e34404a927da"
+  },
+  "fragmento_abisal": {
+   "i": 75,
+   "file": "train-001.parquet",
+   "row_id": 166833,
+   "subject": "crystal shard",
+   "caption": "purple crystal shard with a chipped edge",
+   "sha1": "d266e64bdee5"
+  },
+  "fragmento_vacio": {
+   "i": 76,
+   "file": "train-007.parquet",
+   "row_id": 673341,
+   "subject": "amethyst",
+   "caption": "double-ended amethyst with many small points",
+   "sha1": "41adda260e4e"
+  },
+  "corazon_vacio": {
+   "i": 77,
+   "file": "train-005.parquet",
+   "row_id": 491676,
+   "subject": "void orb",
+   "caption": "warped void orb with tendrils",
+   "sha1": "cb33a8d10e96"
+  },
+  "filo_vacio": {
+   "i": 78,
+   "file": "train-001.parquet",
+   "row_id": 129299,
+   "subject": "longsword",
+   "caption": "glowing obsidian longsword with a black hilt",
+   "sha1": "b3ded123e091"
+  },
+  "egida_vacio": {
+   "i": 79,
+   "file": "train-001.parquet",
+   "row_id": 147498,
+   "subject": "kite shield",
+   "caption": "legendary purple kite shield",
+   "sha1": "67f29fa969b0"
+  },
+  "corona_vacio": {
+   "i": 80,
+   "file": "train-001.parquet",
+   "row_id": 95124,
+   "subject": "spiked crown",
+   "caption": "crystal spiked crown with purple amethysts",
+   "sha1": "d6801548e152"
+  },
+  "fragmento_forja": {
+   "i": 81,
+   "file": "train-002.parquet",
+   "row_id": 193760,
+   "subject": "crystal shard",
+   "caption": "black crystal shard with sparkles",
+   "sha1": "9ec282d67b15"
+  },
+  "piedra_transmutacion": {
+   "i": 82,
+   "file": "train-003.parquet",
+   "row_id": 342546,
+   "subject": "sapphire",
+   "caption": "tiny sapphire with a bright sparkle",
+   "sha1": "cad5a44ffd83"
+  },
+  "piedra_alteracion": {
+   "i": 83,
+   "file": "train-005.parquet",
+   "row_id": 479892,
+   "subject": "ice shard",
+   "caption": "flying cyan ice shard",
+   "sha1": "8e7387ec5a13"
+  },
+  "piedra_purga": {
+   "i": 84,
+   "file": "train-006.parquet",
+   "row_id": 638263,
+   "subject": "flat stone",
+   "caption": "limestone flat stone with a smooth top",
+   "sha1": "b863ffbcd17d"
+  },
+  "piedra_regia": {
+   "i": 85,
+   "file": "train-008.parquet",
+   "row_id": 831037,
+   "subject": "topaz",
+   "caption": "raw topaz in a gold setting",
+   "sha1": "88c731c7e3d1"
+  },
+  "piedra_caos": {
+   "i": 86,
+   "file": "train-005.parquet",
+   "row_id": 557809,
+   "subject": "amber stone",
+   "caption": "teardrop amber stone with a bug trapped inside in flat colors",
+   "sha1": "a15ff46dd07d"
+  },
+  "piedra_divina": {
+   "i": 87,
+   "file": "train-006.parquet",
+   "row_id": 614002,
+   "subject": "star-cut gem",
+   "caption": "flat yellow star-cut gem",
+   "sha1": "cea90a0b624f"
+  },
+  "esquirla_jefe": {
+   "i": 88,
+   "file": "train-013.parquet",
+   "row_id": 1295873,
+   "subject": "ruby",
+   "caption": "side-view ruby with a jagged chipped corner in flat colors",
+   "sha1": "ba03689201a2"
+  },
+  "corazon_jefe": {
+   "i": 89,
+   "file": "train-011.parquet",
+   "row_id": 1038438,
+   "subject": "dragon heart",
+   "caption": "burning yellow dragon heart in flat colors",
+   "sha1": "efa44a5944f4"
+  },
+  "piedra_alquimia": {
+   "i": 90,
+   "file": "train-006.parquet",
+   "row_id": 576081,
+   "subject": "pile of gold nuggets",
+   "caption": "raw pile of gold nuggets in muted colors",
+   "sha1": "d9150fa05dc4"
+  },
+  "piedra_aumento": {
+   "i": 91,
+   "file": "train-011.parquet",
+   "row_id": 1103681,
+   "subject": "power crystal",
+   "caption": "side-view spinning power crystal",
+   "sha1": "d25b6bfcee7c"
+  },
+  "piedra_exaltacion": {
+   "i": 92,
+   "file": "train-001.parquet",
+   "row_id": 112037,
+   "subject": "star-cut gem",
+   "caption": "radiant golden star-cut gem",
+   "sha1": "f6e6d17d0f57"
+  },
+  "piedra_anulacion": {
+   "i": 93,
+   "file": "train-004.parquet",
+   "row_id": 399523,
+   "subject": "moonstone",
+   "caption": "small moonstone embedded in stone",
+   "sha1": "8505a524c2e0"
+  },
+  "piedra_templado": {
+   "i": 94,
+   "file": "train-003.parquet",
+   "row_id": 375668,
+   "subject": "ember",
+   "caption": "cursed ember with a soft glow",
+   "sha1": "62e018c83560"
+  },
+  "sello_forja": {
+   "i": 95,
+   "file": "train-003.parquet",
+   "row_id": 325737,
+   "subject": "padlock",
+   "caption": "iron padlock with a sparkle",
+   "sha1": "d70fbdf979bc"
+  },
+  "eco_legendario": {
+   "i": 96,
+   "file": "train-013.parquet",
+   "row_id": 1269737,
+   "subject": "sunburst crown",
+   "caption": "side-view wavy sunburst crown in flat colors",
+   "sha1": "2c855a283863"
+  },
+  "piedra_cambio": {
+   "i": 97,
+   "file": "train-006.parquet",
+   "row_id": 581034,
+   "subject": "twin crystal",
+   "caption": "uneven teal twin crystal",
+   "sha1": "d2c4c8727573"
+  },
+  "piedra_nucleo": {
+   "i": 98,
+   "file": "train-002.parquet",
+   "row_id": 250176,
+   "subject": "heart-cut gem",
+   "caption": "diamond heart-cut gem with a star-shaped glint",
+   "sha1": "76500b28f7a8"
+  },
+  "racion_viaje": {
+   "i": 99,
+   "file": "train-001.parquet",
+   "row_id": 156027,
+   "subject": "travel ration bundle",
+   "caption": "travel ration bundle with sparkles around it",
+   "sha1": "d595df2dd23c"
+  },
+  "tiza_runica": {
+   "i": 100,
+   "file": "train-001.parquet",
+   "row_id": 117341,
+   "subject": "piece of chalk",
+   "caption": "half-used piece of chalk with a sharp tip",
+   "sha1": "72fcd3a9dd8d"
+  },
+  "savia_runica": {
+   "i": 101,
+   "file": "train-004.parquet",
+   "row_id": 413059,
+   "subject": "jar of honey",
+   "caption": "tiny jar of honey with sparkles around it",
+   "sha1": "5deb79c02e0b"
+  },
+  "perla_runica": {
+   "i": 102,
+   "file": "train-004.parquet",
+   "row_id": 462586,
+   "subject": "pearl",
+   "caption": "side-view baroque pearl",
+   "sha1": "c68f4f3a5d5e"
+  },
+  "cuarzo_eco": {
+   "i": 103,
+   "file": "train-014.parquet",
+   "row_id": 1375153,
+   "subject": "quartz crystal",
+   "caption": "white quartz crystal on a small display stand",
+   "sha1": "97d05e54fa42"
+  },
+  "ceniza_runica": {
+   "i": 104,
+   "file": "train-007.parquet",
+   "row_id": 722938,
+   "subject": "lidded urn",
+   "caption": "three-quarter-view gold lidded urn with a ringed neck",
+   "sha1": "544a93ef9008"
+  },
+  "tinta_sagrada": {
+   "i": 105,
+   "file": "train-001.parquet",
+   "row_id": 178541,
+   "subject": "inkwell",
+   "caption": "yellow inkwell with green paint",
+   "sha1": "df4abff0476f"
+  },
+  "tinta_abisal": {
+   "i": 106,
+   "file": "train-006.parquet",
+   "row_id": 578729,
+   "subject": "ink bottle",
+   "caption": "teal ink bottle with a quill in it",
+   "sha1": "1b4dde4445f6"
+  },
+  "escarcha_celeste": {
+   "i": 107,
+   "file": "train-012.parquet",
+   "row_id": 1145306,
+   "subject": "ice shard",
+   "caption": "tilted teal ice shard with a serrated edge",
+   "sha1": "b2ec512eafeb"
+  },
+  "polvo_vacio": {
+   "i": 108,
+   "file": "train-010.parquet",
+   "row_id": 1005004,
+   "subject": "jar of fairy dust",
+   "caption": "tipped-over jar of fairy dust with a fat round belly",
+   "sha1": "657ef9f3c09c"
+  },
+  "glifo_ascenso": {
+   "i": 109,
+   "file": "train-005.parquet",
+   "row_id": 514011,
+   "subject": "rune tablet",
+   "caption": "tan rune tablet with a raised border in high contrast",
+   "sha1": "18e66f926d0f"
+  },
+  "corazon_runico": {
+   "i": 110,
+   "file": "train-002.parquet",
+   "row_id": 268989,
+   "subject": "heart crystal",
+   "caption": "tiny yellow heart crystal with a soft glow",
+   "sha1": "24d876ef87b3"
+  },
+  "ambar_fosil": {
+   "i": 111,
+   "file": "train-010.parquet",
+   "row_id": 976326,
+   "subject": "insect in amber",
+   "caption": "teardrop insect in amber with a mosquito inside",
+   "sha1": "49cb338d9dce"
+  },
+  "lagrima_glaciar": {
+   "i": 112,
+   "file": "train-000.parquet",
+   "row_id": 11971,
+   "subject": "ice shard",
+   "caption": "glowing ice shard with small droplets around",
+   "sha1": "dff69ca83397"
+  }
+ }
+}

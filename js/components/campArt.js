@@ -4,7 +4,7 @@
  * Sustituye los dibujos sencillos de los lugares del campamento por
  * versiones con sombreado (luz por la izquierda), contorno oscuro,
  * texturas y VARIOS FOTOGRAMAS para animarlos:
- *   tent    (Inventario) arcón/alijo alargado y robusto: al pasar el ratón la tapa se levanta un poco (3, v4.96)
+ *   tent    (Inventario) arcón/alijo oscuro con la mochila de expedición apoyada al lado: al pasar el ratón la tapa se levanta (3, v4.96 · v5.23)
  *   fire    hoguera: una sola llama grande que ondula y se mece, troncos, brasas y chispas (8, v4.95)
  *   anvil   yunque sobre tocón con lingote al rojo y chispas (3)
  *   dummy   (Exploraciones) mapa de pergamino en un atril: camino que se dibuja hasta la X (8)
@@ -40,17 +40,70 @@
   const W = { l: '#b07a43', m: '#8b5a2b', d: '#5c3a1c', dd: '#3b2414' };
   const STONE = { l: '#8a8290', m: '#625a68', d: '#433c48', dd: '#2a2430' };
 
+  /**
+   * v5.25b: mochila de expedición apoyada junto al arcón, dibujada a mano a la misma escala que el arcón (1 píxel del
+   * lienzo = 1 píxel del dibujo) y con su misma paleta: cuero, hebillas de hierro y un petate enrollado encima.
+   * Se inclina un poco hacia el arcón. (x, y) = esquina superior izquierda de la caja de 21×23.
+   */
+  function backpack(c, x0, y0) {
+    // v5.27: más volumen: 6 tonos de cuero (luz arriba a la izquierda), oclusión bajo la solapa y el bolsillo,
+    // costuras, brillos en el borde, rollo con espiral en la punta y sombra de contacto en el suelo
+    const LT = { hl: '#c58c52', hi: '#a9713d', l: '#8e5b2f', m: '#764824', md: '#633b1d', d: '#4c2d15', dd: '#341e0d', k: '#221208' };
+    const IR = { hi: '#c9ced4', l: '#8a929c', m: '#5a616b', d: '#2a2e35' };
+    const RL = { hl: '#c06a58', hi: '#a24a3c', l: '#843a2b', m: '#652b20', d: '#431913' };   // petate de lana
+    const H = 23, set = (x, y, col) => c.set(x0 + x - Math.floor((H - 1 - y) / 8), y0 + y, col); // inclinación hacia la izquierda
+    const rect = (x, y, w, hh, col) => { for (let j = 0; j < hh; j++) for (let i = 0; i < w; i++) set(x + i, y + j, col); };
+    c.rect(x0 - 2, y0 + H, 24, 1, 'rgba(0,0,0,.5)').rect(x0, y0 + H + 1, 19, 1, 'rgba(0,0,0,.25)');  // sombra en el suelo
+    // asa de arriba (con brillo)
+    rect(8, 0, 5, 1, LT.d); set(9, 0, LT.l); set(7, 1, LT.dd); set(13, 1, LT.dd);
+    // cuerpo: degradado de izquierda (luz) a derecha (sombra) y oscuro abajo
+    for (let y = 5; y < H; y++) for (let x = 1; x <= 18; x++) {
+      if (y === 5 && (x < 3 || x > 16)) continue; if (y === 6 && (x < 2 || x > 17)) continue; if (y === H - 1 && (x < 3 || x > 16)) continue; if (y === H - 2 && (x < 2 || x > 17)) continue;
+      const col = x === 1 ? LT.l : x === 2 ? LT.hi : x >= 18 ? LT.k : x >= 17 ? LT.dd : x >= 15 ? LT.d : x >= 13 ? LT.md : LT.m;
+      set(x, y, y >= H - 2 ? (x <= 2 ? LT.md : LT.dd) : col);
+    }
+    for (let x = 3; x <= 14; x++) set(x, 6, LT.hi);
+    // solapa con borde oscuro, luz arriba y sombra (oclusión) debajo
+    const fb = (x) => 12 - Math.round(((x - 9.5) / 6.5) ** 2 * 2.4);                         // borde de abajo de la solapa, en U
+    for (let x = 2; x <= 17; x++) for (let y = 6; y <= fb(x); y++) {
+      const edge = y === fb(x);
+      set(x, y, edge ? LT.dd : y === 6 ? LT.hl : y < 8 ? LT.hi : x >= 15 ? LT.md : x <= 3 ? LT.hi : LT.l);
+    }
+    for (let x = 4; x <= 15; x += 2) set(x, fb(x) - 2, LT.md);                              // costura de la solapa
+    for (let x = 2; x <= 17; x++) set(x, fb(x) + 1, LT.d);                                  // sombra bajo la solapa
+    // correas con hebilla de hierro (brillo y sombra)
+    for (const sx of [6, 13]) { rect(sx, 9, 1, 7, LT.dd); set(sx + 1, 15, LT.md); rect(sx - 1, 13, 3, 2, IR.m); set(sx - 1, 13, IR.hi); set(sx, 13, IR.l); set(sx + 1, 14, IR.d); set(sx, 14, IR.d); }
+    // bolsillo delantero: bisel de luz arriba e izquierda, sombra abajo/derecha y sombra proyectada
+    for (let y = 16; y <= 21; y++) for (let x = 4; x <= 15; x++) set(x, y, y === 16 ? LT.hl : y === 21 || x === 15 ? LT.dd : x === 4 ? LT.hi : y === 17 ? LT.l : x >= 13 ? LT.md : LT.m);
+    for (let y = 17; y <= 21; y++) set(16, y, LT.k);                                       // sombra a la derecha del bolsillo
+    rect(5, 18, 10, 1, LT.d); for (let x = 5; x <= 14; x += 2) set(x, 20, LT.md);          // tapa del bolsillo y costura
+    set(9, 17, IR.hi); set(10, 17, IR.l); set(10, 18, IR.d);                                // botón
+    // bolsillo lateral con su sombra
+    rect(18, 13, 2, 7, LT.d); set(18, 13, LT.l); set(19, 13, LT.m); rect(18, 19, 2, 1, LT.dd); set(19, 14, LT.dd); set(19, 15, LT.dd);
+    // petate enrollado encima: luz arriba, sombra abajo, ataduras y espiral en la punta
+    for (let y = 1; y <= 4; y++) for (let x = 2; x <= 17; x++) set(x, y, y === 1 ? (x < 9 ? RL.hl : RL.hi) : y === 4 ? RL.d : x <= 3 ? RL.hi : x >= 15 ? RL.m : RL.l);
+    for (let x = 3; x <= 16; x += 3) set(x, 3, RL.m);                                      // pliegues de la lana
+    for (const tx of [5, 14]) { rect(tx, 1, 1, 4, LT.dd); set(tx, 1, LT.d); }
+    set(2, 1, RL.l); set(17, 4, RL.d);
+    rect(18, 1, 1, 4, RL.m); set(18, 2, RL.d); set(18, 3, RL.hi); set(19, 2, RL.l); set(19, 3, RL.m);   // espiral del extremo
+    for (let x = 3; x <= 16; x++) set(x, 5, LT.dd);                                         // sombra del rollo sobre la mochila
+    return c;
+  }
+
   const ART = {
     /* ---------- Arcón / alijo (v4.96: Inventario) ---------- */
     // El típico alijo de los ARPG: arcón alargado y robusto de tablones gruesos con tapa abombada,
     // tres flejes de hierro remachados, cantoneras, patas de hierro y una gran cerradura dorada.
     // Quieto; al pasar el ratón (css/motion.css, .a-tent) la tapa se levanta un poco (0 → 2)
     // y asoma el brillo del oro de dentro.
-    tent: { base: 30, frames: 3, draw(f) {
-      const c = canvas(50, 32);
-      const WD = { hi: '#c98a4b', l: '#a8693a', m: '#87512a', d: '#5f3519', dd: '#3b200d' };
-      const IR = { hi: '#b9c0c8', l: '#8a929c', m: '#5a616b', d: '#353a42', dd: '#1f2329' };
-      const GD = { hi: '#fff3b0', l: '#f2c94c', m: '#c8952a', d: '#7a5410' };
+    // v5.23: más oscuro (madera tostada y hierro ennegrecido) y con la MOCHILA de expedición apoyada en su
+    // costado derecho (manta enrollada, solapa con hebilla, bolsillo y correa). Lienzo 76 px (antes 50): base
+    // 45.6 para conservar el mismo tamaño de píxel en pantalla.
+    tent: { base: 45.6, frames: 3, draw(f) {
+      const c = canvas(76, 32);
+      const WD = { hi: '#9a6436', l: '#7d4d28', m: '#613a1d', d: '#432611', dd: '#28150a' };
+      const IR = { hi: '#9aa1aa', l: '#6b737d', m: '#474d56', d: '#2a2e35', dd: '#17191e' };
+      const GD = { hi: '#fff3b0', l: '#e8bd45', m: '#b8862a', d: '#6e4a0e' };
       const lift = [0, 2, 4][f];
       const X0 = 3, X1 = 46, Y0 = 15, Y1 = 28;   // caja
       c.rect(2, 30, 46, 2, 'rgba(0,0,0,.45)');
@@ -59,7 +112,7 @@
       /* caja: tablones horizontales gruesos con vetas */
       for (let y = Y0; y <= Y1; y++) for (let x = X0; x <= X1; x++) {
         const row = Math.floor((y - Y0) / 4.5);
-        c.set(x, y, x === X0 ? WD.l : x === X1 ? WD.dd : row % 2 ? WD.m : '#94592e');
+        c.set(x, y, x === X0 ? WD.l : x === X1 ? WD.dd : row % 2 ? WD.m : '#6c4120');
       }
       [Y0 + 4, Y0 + 9].forEach((y) => c.rect(X0, y, X1 - X0 + 1, 1, WD.dd));
       [[9, 17], [30, 21], [16, 26], [37, 17], [41, 25]].forEach(([x, y]) => c.rect(x, y, 4, 1, WD.d));
@@ -78,7 +131,7 @@
       for (let y = LY1 - LH; y <= LY1; y++) {
         const k = (LY1 - y) / LH, inset = Math.round(Math.pow(k, 2.2) * 5);
         for (let x = X0 - 1 + inset; x <= X1 + 1 - inset; x++) {
-          const col = y === LY1 ? WD.dd : y === LY1 - 1 ? WD.d : k > 0.8 ? WD.hi : x <= X0 + inset ? WD.l : x >= X1 - inset ? WD.d : k > 0.5 ? WD.l : '#9a5f31';
+          const col = y === LY1 ? WD.dd : y === LY1 - 1 ? WD.d : k > 0.8 ? WD.hi : x <= X0 + inset ? WD.l : x >= X1 - inset ? WD.d : k > 0.5 ? WD.l : '#73461f';
           c.set(x, y, col);
         }
       }
@@ -111,6 +164,7 @@
       [[21, Y0 + 1], [28, Y0 + 1], [21, Y0 + 6], [28, Y0 + 6]].forEach(([x, y]) => c.set(x, y, GD.hi));
       // destello en la cerradura al abrir
       if (f === 2) c.set(26, Y0 - 1 - lift - LH + 3, '#fffbe6').set(22, Y0 + 1, '#fffbe6');
+      backpack(c, 52, 7);
       return outline(c);
     } },
 

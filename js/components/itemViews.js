@@ -55,7 +55,9 @@
       + (ring ? `<path d="${HEX}" fill="none" stroke="${ring}" stroke-width="2.4" stroke-opacity=".9" transform="translate(24 24) scale(1.08) translate(-24 -24)"/>` : '')
       + `<path d="${HEX}" fill="url(#${id})" stroke="${c}" stroke-opacity=".75" stroke-width="1.6"/>`
       + `<path d="M24 8 37 15.5v17L24 40 11 32.5v-17z" fill="none" stroke="${c}" stroke-opacity=".22" stroke-width="1"/>`
-      + `<g transform="translate(11 11) scale(1.0833)" filter="url(#${id}f)" fill="none" stroke="${mix(c, '#ffffff', 0.35)}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${STONE_RUNE[it.id] || 'M12 4v16'}"/></g>`
+      + (DK.itemsPx && DK.itemsPx.glyphs && DK.itemsPx.glyphs[it.id] // v5.22: silueta del sprite de la piedra
+        ? `<g transform="translate(12 12)" filter="url(#${id}f)"><path fill-rule="evenodd" fill="${mix(c, '#ffffff', 0.4)}" d="${DK.itemsPx.glyphs[it.id]}"/></g>`
+        : `<g transform="translate(11 11) scale(1.0833)" filter="url(#${id}f)" fill="none" stroke="${mix(c, '#ffffff', 0.35)}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${STONE_RUNE[it.id] || 'M12 4v16'}"/></g>`)
       + `<ellipse cx="18" cy="12" rx="7" ry="3" fill="#fff" opacity=".16"/></svg>`;
     return span;
   }
@@ -70,7 +72,39 @@
     return el;
   };
 
+  /**
+   * v5.20: icono en pixel art (hoja icons/items-px.png, DK.itemsPx) cuando el ajuste «Pixel art» está activo.
+   * La rareza se marca con un contorno de píxel de su color (--ring); sin hoja para ese objeto → null.
+   */
+  function pixelIcon(it, o) {
+    const A = DK.itemsPx, id = it && it.id, i = A && id != null ? A.ids[id] : undefined;
+    if (i === undefined || DK.settings.get('pixelArt') === false) return null;
+    const ring = o.ring !== undefined ? o.ring : it.category === 'equipo' ? null : RING[it.rarity];
+    const col = i % A.cols, row = Math.floor(i / A.cols);
+    const span = document.createElement('span');
+    span.className = 'item-icon ii ii-px r-' + it.rarity + ' c-' + it.category + (ring ? ' has-ring' : '');
+    span.style.setProperty('--c', it.color || '#888');
+    if (ring) span.style.setProperty('--ring', ring);
+    const spr = document.createElement('i');
+    spr.className = 'ii-spr';
+    spr.style.backgroundImage = `url(${A.src})`;
+    spr.style.backgroundSize = `${A.cols * 100}% ${A.rows * 100}%`;
+    spr.style.backgroundPosition = `${A.cols > 1 ? (col / (A.cols - 1)) * 100 : 0}% ${A.rows > 1 ? (row / (A.rows - 1)) * 100 : 0}%`;
+    span.append(spr);
+    if (it.name && o.tip !== false) span.dataset.tip = V.itemTipText(it);
+    return span;
+  }
+
+  /** v5.22: dibujo dentro del icono limpio = silueta del sprite del objeto (o su icono de trazo si no tiene). */
+  function glyphOf(it, color) {
+    const g = DK.itemsPx && DK.itemsPx.glyphs && DK.itemsPx.glyphs[it.id];
+    if (g) return `<g transform="translate(10 10) scale(1.1667)"><path fill-rule="evenodd" fill="${color}" d="${g}"/></g>`;
+    return `<g transform="translate(11 11) scale(1.0833)" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${DK.icon.raw(it.icon)}</g>`;
+  }
+
   V.itemIcon = (it, size = 22, o = {}) => {
+    const px = pixelIcon(it, o);
+    if (px) return px;
     if (it.category === 'forja') return stoneIcon(it, size);
     const c = /^#[0-9a-f]{6}$/i.test(it.color || '') ? it.color : '#c0392b';
     const id = 'ii' + (++iiN), shape = SHAPES[it.category] || SHAPES.pieza, ring = o.ring !== undefined ? o.ring : it.category === 'equipo' ? null : RING[it.rarity];
@@ -82,7 +116,7 @@
     span.style.setProperty('--c', c);
     span.innerHTML = `<svg viewBox="-2 -2 52 52" aria-hidden="true"><defs><radialGradient id="${id}" cx="38%" cy="32%" r="75%"><stop offset="0" stop-color="${c}"/><stop offset=".6" stop-color="${dark}"/><stop offset="1" stop-color="${deep}"/></radialGradient></defs>`
       + ringShape + fillShape
-      + `<g transform="translate(11 11) scale(1.0833)" fill="none" stroke="${light}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${DK.icon.raw(it.icon)}</g>`
+      + glyphOf(it, light)
       + `<ellipse cx="17" cy="12" rx="8" ry="3.6" fill="#fff" opacity=".2"/></svg>`;
     if (it.name && o.tip !== false) span.dataset.tip = V.itemTipText(it); // v4.78: al pasar el ratón, qué hace
     return span;

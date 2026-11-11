@@ -113,6 +113,7 @@ body.in-exp { background: #0b0807 !important; }
 .arena .scene { filter: saturate(.8) brightness(.85); }
 .arena.is-boss { background: linear-gradient(180deg, #1a0606 0%, color-mix(in srgb, var(--z2) 45%, #120404) 100%) !important; box-shadow: 0 0 0 2px #b3261e, inset 0 0 60px rgba(179, 38, 30, .35), 0 0 40px rgba(179, 38, 30, .3) !important; }
 .arena.is-boss .scene { filter: saturate(.9) brightness(.95); }
+.arena .scene.pxs { filter: none; } /* v5.25: el fondo por capas ya trae su propia luz */
 .arena.is-secret { background: linear-gradient(180deg, #0f0618 0%, #1e0b2e 100%) !important; box-shadow: 0 0 0 2px #7e22ce, inset 0 0 60px rgba(126, 34, 206, .35), 0 0 40px rgba(126, 34, 206, .3) !important; }
 .scene-bolt { animation: boltFlash 5s steps(1) infinite; }
 @keyframes boltFlash { 0%, 100% { opacity: 0; } 40% { opacity: .75; } 42% { opacity: 0; } 44% { opacity: .5; } 46% { opacity: 0; } }
@@ -2963,3 +2964,54 @@ body[data-nav="on"] .wb-side { max-height: calc(100vh - 96px - 96px); }
 .rune-socket { width: 38px; height: 38px; }
 .rune-socket-ring { width: 100%; height: 100%; }
 @media (max-width: 600px) { .rune-socket { width: 38px; height: 38px; } .rune-sockets { gap: 12px; justify-content: flex-start; } }
+/* v5.25: «!» de algo pendiente (evolucionar, talento, ataques) en las casillas de los daskai */
+.need-mark { position: absolute; top: -2px; left: -2px; z-index: 4; display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%;
+  background: #f59e0b; color: #1a1006; font: 900 .78rem/1 var(--font, system-ui); box-shadow: 0 0 0 2px rgba(10, 8, 12, .9), 0 0 10px rgba(245, 158, 11, .6);
+  animation: needPulse 1.8s ease-in-out infinite; pointer-events: auto; }
+@keyframes needPulse { 50% { transform: scale(1.12); box-shadow: 0 0 0 2px rgba(10, 8, 12, .9), 0 0 16px rgba(245, 158, 11, .9); } }
+.pc-mon .need-mark { top: 2px; left: auto; right: 2px; width: 16px; height: 16px; font-size: .7rem; }
+:root[data-motion="reduced"] .need-mark { animation: none; }
+
+/* v5.27: talentos compactos (components/talentViews.js → optRow): una fila por opción, todas iguales */
+.tl-compact.modal { width: min(600px, 100%); }
+.tl-compact .tl-head { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--border); }
+.tl-compact .tl-head-t { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.tl-dlg { display: flex; flex-direction: column; gap: 8px; }
+.tl-dlg .tl-hint { margin: 0; }
+.tl-opts { display: flex; flex-direction: column; gap: 6px; }
+.tl-opt { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 9px 10px 9px 12px;
+  border-radius: 12px; border: 1px solid var(--border); border-left: 3px solid var(--tc); color: var(--text); font: inherit; cursor: var(--cur-pointer);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--tc) 12%, var(--surface-2)), var(--surface-2) 55%); transition: border-color .15s, transform .12s, box-shadow .15s; }
+.tl-opt:hover, .tl-opt:focus-visible { border-color: color-mix(in srgb, var(--tc) 70%, var(--border)); border-left-color: var(--tc); transform: translateX(2px); box-shadow: 0 0 0 1px color-mix(in srgb, var(--tc) 35%, transparent); }
+.tl-opt.best { box-shadow: 0 0 0 1px color-mix(in srgb, #eab308 55%, transparent), 0 0 18px -8px #eab308; }
+.tl-opt .tl-ico { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 10px; color: var(--tc); background: color-mix(in srgb, var(--tc) 18%, transparent); border: 1px solid color-mix(in srgb, var(--tc) 40%, transparent); }
+.tl-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.tl-top { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.tl-top .tl-name { font-size: .98rem; }
+.tl-best { display: inline-flex; align-items: center; gap: 3px; padding: 1px 6px; border-radius: 999px; background: #eab308; color: #1c1404; font-size: .64rem; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; }
+.tl-opt .tl-stars { display: inline-flex; gap: 1px; margin-left: auto; color: var(--muted); }
+.tl-opt .tl-stars .on, .tl-opt .tl-stars .icon.on { color: #facc15; }
+.tl-desc { font-size: .78rem; color: var(--muted); line-height: 1.3; }
+.tl-desc em { font-style: normal; color: color-mix(in srgb, #facc15 75%, var(--muted)); }
+.tl-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 1px; }
+.tl-chip, .tl-delta { display: inline-flex; align-items: center; gap: 3px; padding: 1px 7px; border-radius: 999px; font-size: .72rem; font-weight: 700; white-space: nowrap; }
+.tl-chip { color: color-mix(in srgb, var(--tc) 55%, #fff); background: color-mix(in srgb, var(--tc) 16%, transparent); }
+.tl-chip.neg { color: #fca5a5; background: rgba(239, 68, 68, .14); }
+.tl-delta { color: var(--text); background: var(--surface); border: 1px solid var(--border); font-weight: 600; }
+.tl-delta s { text-decoration: none; color: var(--muted); }
+.tl-delta small.up { color: #4ade80; font-weight: 800; } .tl-delta small.down { color: #f87171; font-weight: 800; }
+.tl-go { display: inline-flex; align-items: center; gap: 4px; padding: 6px 10px; border-radius: 9px; font-size: .8rem; font-weight: 700; color: var(--tc); background: color-mix(in srgb, var(--tc) 14%, transparent); }
+.tl-opt.best .tl-go { background: #eab308; color: #1c1404; }
+.tl-track.mini { flex: 0 1 220px; gap: 4px; padding-top: 2px; }
+.tl-track.mini .tl-node small { font-size: .62rem; }
+.tl-track.mini .tl-dot { width: 24px; height: 24px; }
+.tl-sec-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: space-between; }
+.talent-section .tl-tier.pending { padding: 8px; }
+.talent-section .tl-lvl { display: block; margin-bottom: 4px; }
+@media (max-width: 600px) {
+  .tl-opt { grid-template-columns: 30px minmax(0, 1fr) auto; padding: 8px 8px 8px 9px; gap: 8px; }
+  .tl-opt .tl-ico { width: 30px; height: 30px; }
+  .tl-opt .tl-go { padding: 8px 7px; font-size: 0; gap: 0; }
+  .tl-compact .tl-head, .tl-sec-head { flex-wrap: wrap; }
+  .tl-compact .tl-head .tl-track, .tl-sec-head .tl-track { flex: 1 1 100% !important; }
+}

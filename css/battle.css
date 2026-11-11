@@ -405,3 +405,20 @@
 .badge.timed.up { color: #4ade80; background: rgba(74, 222, 128, .14); border: 1px solid rgba(74, 222, 128, .35); }
 .badge.timed.down { color: #f87171; background: rgba(248, 113, 113, .14); border: 1px solid rgba(248, 113, 113, .35); }
 :root[data-theme="light"] .badge.timed.up { color: #15803d; } :root[data-theme="light"] .badge.timed.down { color: #b91c1c; }
+
+/* v5.25: herramientas del panel final (registro del combate y plegar para ver la arena) */
+.banner-card { position: relative; max-height: calc(100% - 16px); overflow: auto; }
+.battle-banner.show .banner-card { pointer-events: auto; }
+.banner-tools { display: flex; justify-content: center; gap: 6px; margin-top: 4px; padding-top: 8px; border-top: 1px solid var(--border); align-self: stretch; }
+.banner-tools .btn { padding-inline: 8px; }
+.battle-banner .banner-unfold { display: none; }
+.battle-banner.folded { background: none; backdrop-filter: none; place-items: end center; }
+.battle-banner.folded .banner-card { display: none; }
+.battle-banner.folded .banner-unfold { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 14px; padding: 7px 14px; border-radius: 999px; pointer-events: auto;
+  background: var(--surface); border: 1px solid color-mix(in srgb, #eab308 55%, var(--border)); color: var(--text); font: inherit; font-weight: 600; cursor: var(--cur-pointer);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .35); }
+
+/* el icono del objeto ocupa su hueco (no pisa el nombre) */
+.rw-item-ico { height: 36px; }
+.rw-item-ico .item-icon { width: 32px !important; height: 32px !important; }
+@media (max-width: 600px) { .rw-item-ico { height: 30px; } .rw-item-ico .item-icon { width: 28px !important; height: 28px !important; } }

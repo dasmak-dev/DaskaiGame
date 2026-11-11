@@ -6,7 +6,7 @@
  * sube el número de CACHE para que los jugadores reciban la versión
  * nueva. (Sólo funciona servido por http/https, no con file://).
  * ============================================================= */
-const CACHE = 'daskai-v5.20.0';
+const CACHE = 'daskai-v5.27.0';
 const FILES = [
     './',
     './css/cursor.css',
@@ -55,6 +55,8 @@ const FILES = [
     './js/components/camp.js',
     './js/components/campArt.js',
     './js/components/pixelBg.js',
+    './js/components/pixelScene.js',
+    './js/components/worldArt.js',
     './js/components/scenes.js',
     './js/core/app.js',
     './js/core/bgfx.js',
@@ -87,6 +89,9 @@ const FILES = [
     './js/data/gear.js',
     './js/data/missions.js',
     './js/data/gen/data.js',
+    './js/data/gen/itemsPx.js',
+    './js/data/gen/iconsPx.js',
+    './icons/items-px.png?v=5230',
     './js/data/moves.js',
     './js/data/recipes.js',
     './js/data/shop.js',

@@ -175,6 +175,14 @@
     return m;
   };
 
+  /** v5.25: «!» en la casilla del daskai si tiene algo pendiente (evolucionar, talento, ataques). La ayuda dice qué. */
+  V.needMark = (d) => {
+    const n = DK.daskai.needs(d);
+    if (!n.length) return null;
+    const tip = n.map((k) => t('needs.' + k)).join(' · ');
+    return h('span', { class: 'need-mark', tip, 'aria-label': tip }, '!');
+  };
+
   /** Punto verde de «recién conseguido» (v4.62) en las casillas de equipo y cajas; se va al abrir su ficha. */
   V.newDot = (d) => (DK.daskai.isNew(d) ? h('span', { class: 'new-dot', tip: t('newMark.tip'), 'aria-label': t('newMark.label') }) : null);
 
@@ -190,7 +198,7 @@
       role: onClick ? 'button' : null, tabindex: onClick ? '0' : null, draggable: draggable ? 'true' : null, dataset: { uid: d.uid },
     },
       draggable ? h('span', { class: 'drag-handle', tip: t('team.dragTip') }, DK.icon('grip', 16)) : null,
-      h('div', { class: 'dk-row-sprite', style: { '--c': D.houseColor(sp.house) } }, V.dSprite(d, { size: compact ? 44 : 56 }), V.formPips(d)),
+      h('div', { class: 'dk-row-sprite', style: { '--c': D.houseColor(sp.house) } }, V.dSprite(d, { size: compact ? 44 : 56 }), V.formPips(d), V.needMark(d)),
       h('div', { class: 'dk-row-main' },
         h('div', { class: 'dk-row-title' }, h('span', { class: 'dk-name' }, DK.daskai.name(d)), V.speciesSub(d), V.level(d.level)),
         h('div', { class: 'dk-row-tags' }, V.housesBadge(d), V.roleBadge(d), V.shinyTag(d), V.tempTag(d), V.statusTag(d.status),

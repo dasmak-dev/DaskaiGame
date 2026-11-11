@@ -85,9 +85,7 @@
   }
   /** SVG de un icono en color sólido. */
   function iconSvg(name, color) {
-    const el = DK.icon(name, 24).querySelector('svg');
-    if (!el) return null;
-    return el.outerHTML.replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ').replace(/currentColor/g, color);
+    return DK.icon.svg(name, 24).replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ').replace(/currentColor/g, color);
   }
   async function drawIcon(ctx, name, color, x, y, size) {
     const svg = iconSvg(name, color); const img = svg && await svgImage(svg);

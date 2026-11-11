@@ -357,6 +357,125 @@ Se carga la última y sólo sobrescribe: paleta (piedra oscura, bronce, oro `--g
 - **Expedición:** al entrar en el mapa, el equipo, la mochila o un combate durante una expedición, `#zone-backdrop` (creado en `screens/expedition.js` con `screen:enter`) pinta detrás de todo la escena de la zona actual, oscurecida; `body.in-exp`.
 - **Combate:** la arena usa la escena de la zona (`components/scenes.js`, ahora con árboles muertos, ruinas, tumbas, cristales o tentáculos según la zona) y los **jefes tienen su propio fondo**: `DK.scenes.bossScene(zona, secreto)` → `boss_<escena>` (menhires bajo luna roja, bosque muerto, naufragio con tormenta, bosque de cristales, forja de lava, santuario con estatua, fauces del abismo, ruinas entre rayos) y `boss_secret` (cripta) para los jefes ocultos.
 
+### Cambios de la v5.27 — mapa del mundo ilustrado, talentos compactos, fotos por cajas, zarpa de oso y mochila con volumen
+
+- **Mapa del mundo (`components/worldArt.js`, nuevo; `screens/zones.js` → `worldMap`).** El terreno ya no son teselas repetidas con adornos sueltos: es una sola ilustración en pixel art generada en el navegador. Se dibuja a la mitad de resolución y se muestra sin suavizar (`.wm2-art`).
+  - Un bioma por zona según su escena (`biome()`): suelo de tres tonos con ruido y tramado, más elementos con sombra hacia abajo a la derecha (`OBJ`). Por ejemplo: árboles, pinos, arbustos, flores, charcas con nenúfares, troncos, setas, palmeras y conchas, estalagmitas y cristales que brillan, lava y rocas incandescentes, columnas y losas, juncos, pinos nevados, picos de hielo, nubes, algas y puntos bioluminiscentes.
+  - Otros rasgos del suelo: mar con espuma en la costa, ríos de lava en el volcán y grietas en la cueva y el glaciar.
+  - Las zonas se mezclan en sus bordes con un tramado ondulado. El camino lleva tierra pisada y se deja despejado, igual que las paradas. Lo aún desconocido sale cubierto de niebla.
+  - Se dibujan 700 px más a cada lado, porque el mapa puede ser más ancho que el recorrido. Caché de 8 entradas, por paradas y tamaño. La primera vez tarda unos 0,3 s.
+- **Talentos (`components/talentViews.js` → `optRow`).** Cada opción es una fila compacta, todas de la misma altura, sin perder información:
+  - icono, nombre, «Recomendado» y estrellas de encaje;
+  - descripción y por qué encaja;
+  - chips con los efectos y con cómo quedan sus atributos (`ATQ 17 → 20 +3`, `deltasOf`), que sustituyen a la tabla comparativa;
+  - botón «Elegir».
+
+  La ventana (`.tl-compact`) lleva una cabecera pequeña con la pista de niveles en mini (`track(d, true)`). La sección de la ficha usa las mismas filas. En móvil, el botón queda como una flecha.
+- **Fotos de perfil (`screens/profile.js` → `daskaiTab`).** Se eligen por grupos, como en las cajas: «Tu líder actual» · Equipo · Caja 1, 2… · Vistos (especies del códice que aún no tienes). Se recuerda el grupo en `params.avGroup` y no se repiten las especies dentro de un grupo.
+- **Icono de equipo (`users`).** Es una zarpa de oso: almohadilla, cuatro dedos y garras.
+  - Pixel art: `tools/atlas/final.py` → `compose`.
+  - Trazo: `core/icons.js`.
+- **Mochila del campamento (`campArt.js` → `backpack`).** Tiene 8 tonos de cuero en la paleta del arcón, una solapa en U con costura y sombra debajo, un bolsillo con bisel y su sombra, hebillas con brillo, un petate con pliegues y espiral, y sombra de contacto en el suelo.
+- **Pruebas.**
+  - `juice.test.js`, «v5.27».
+  - `screens.test.js`: el comparador de talentos se comprueba ahora en los chips `.tl-delta`.
+  - `endgame.test.js`: el rival de la prueba de Corrupción es de nivel 30; a nivel 5, el +10 % a veces se perdía al redondear.
+
+### Cambios de la v5.26 — 7 capas en todos los estilos, perfil en móvil, avisos del equipo, esfera de vínculo y mochila nueva
+
+- **Fondos de 7 capas siempre (`components/pixelScene.js`).**
+  - Orden fijo en `ORDER`: `sky`, `far`, `far2`, `fog`, `mid`, `rays`, `near`. `far2` es la capa intermedia nueva: una loma con elementos de la escena, en `FAR2` (una función por kit). `rays` se añade a todos los kits.
+  - El paralaje es más rápido para que se note (`SPEED`: lejana 150 s por tira … primer plano 30 s).
+  - Sin pixel art, `DK.scenes.render` también usa las capas (`build(id, colors, { smooth: true })`): cada tira se pinta al doble de tamaño, suavizada y con un desenfoque de profundidad por capa (`BLUR`; el fondo y el primer plano, más borrosos). Se pinta tres veces seguidas para que el desenfoque «dé la vuelta» y la tira siga encajando.
+  - Clase `.pxs-smooth` (`css/pixel.css`). La caché distingue el modo pixel del suave.
+  - Con esto el fondo por capas se ve en los tres estilos (limpio, exilio y clásico), con o sin pixel art.
+- **Editor del perfil (`screens/profile.js`).**
+  - Pestañas planas: Daskai · Icono · Tu imagen · Marcos · Tarjeta. `params.edTab`; el antiguo `'pic'` se lee como `'daskai'`.
+  - Rejillas `.pe-grid`. Los grupos de marcos y las opciones de la tarjeta son desplegables `.pe-acc`, y se recuerda cuáles están abiertos en `params.peOpen`.
+  - En pantallas de ≤ 720 px (`sheetMode()`), «Personalizar» abre una hoja a pantalla completa (`toggleEdit` → `DK.ui.modal`, clase `pe-sheet`). Arriba lleva una vista previa en vivo de la foto con el marco, el nombre y el título. La hoja se repinta sola con cada cambio, sin recargar la pantalla. Estilos en `css/layout.css`.
+- **Avisos del equipo.** `DK.daskai.needs(d)` devuelve `'evolve'`, `'talent'` y/o `'moves'` (hueco de ataque libre con ataques aprendidos sin poner).
+  - El menú Equipo muestra «!» si algún daskai tiene algo pendiente.
+  - Cada casilla lleva `V.needMark(d)`: una burbuja ámbar con la lista en la ayuda. Sale en el equipo, la reserva, las cajas y en `daskaiRow`. Textos en `needs.*`.
+- **Icono de equipo (`users`).** Es una «esfera de vínculo»: la cápsula del equipo con una gema en rombo.
+  - Pixel art: dibujada a mano en `tools/atlas/final.py` → `compose`.
+  - Trazo: en `core/icons.js`.
+- **Mochila del campamento (`campArt.js` → `backpack`).** Está dibujada a mano a la misma escala que el arcón (1:1), con cuero, hebillas de hierro y un petate enrollado, y algo inclinada. Ya no sale del dataset, así que se quitó `_scene` de `docs/assets/icons-px.json`.
+- **Pruebas.** `juice.test.js` v5.20 y v5.25: las 7 capas, la versión suave y los avisos.
+
+### Cambios de la v5.25 — fondos por capas en pixel art, botín con registro, icono de equipo y mochila nueva
+
+- **Fondos por capas (`js/components/pixelScene.js`, nuevo).** Con el ajuste «Pixel art», `DK.scenes.render` ya no pixela el SVG de la escena: dibuja el paisaje en capas al estilo de los metroidvania.
+  - Capas: `sky` (cielo en bandas tramadas, estrellas, luna/sol, auroras), `far` (siluetas lejanas casi del color del cielo), `fog` (niebla en bandas), `mid` (siluetas con luz de contorno y textura), `rays` (haces de luz que «respiran») y `near` (primer plano casi negro).
+  - Cada capa es una tira de 400×200 px que encaja por los lados. Se escala al alto de la escena (`background-size: auto 100%`) y se desplaza una tira entera en bucle con `transform` (`.pxs-move`, `@keyframes pxsDrift` con unidades `cqh`; `.scene.pxs` es `container-type: size`). Velocidades en `DK.pixelScene.SPEED`.
+  - Hay un kit por escena en `KITS` (meadow, forest, beach, cave, volcano, temple, abyss, sky, swamp, glacier). Las de jefe usan el mismo kit teñido de rojo; `boss_secret`, el del abismo en violeta. La paleta sale de los dos colores de la zona (`palette()`), con variante para el tema claro.
+  - Se guardan en caché (24 entradas) por escena + colores + tema. Para una escena nueva, añade su función a `KITS`; si no la tiene, se usa el SVG pixelado de antes.
+  - En la expedición, el fondo (`#zone-backdrop`) usa las mismas capas, con un oscurecido más suave, y se ocultan los laterales antiguos (`.ps-side`).
+- **Animaciones suaves.** Se quitaron los `steps()` de las partículas y nubes del modo pixel (`css/pixel.css`): daban sensación de tirones.
+- **Terreno del mapa.** `DK.pix.terrain` (`components/camp.js`) genera una tesela de 96 px con manchas tramadas, matas de hierba con luz, piedrecitas, florecillas y grietas. Se muestra a 192 px.
+- **Botín (`screens/battle.js` → `end()`).**
+  - La tarjeta lleva abajo «Registro del combate» (tecla L, abre el cajón del registro) y «Ver combate», que pliega la tarjeta y deja una píldora «Mostrar botín» abajo.
+  - Los iconos de los objetos miden 32 px fijos, así ya no tapan el nombre.
+  - Textos: `battle.endLog`, `endPeek` y `endShow`.
+- **Icono de equipo (`users`).** Ahora son dos huellas (una grande delante y otra pequeña detrás):
+  - En pixel art, dibujadas a mano en la rejilla de 16 (`tools/atlas/final.py` → `compose`).
+  - En trazo, rellenas en `core/icons.js`.
+- **Mochila del campamento.** Es el mismo dibujo que el icono «bag» de la interfaz, recoloreado a cuero marrón (`campArt.js` → `BACKPACK`). Su procedencia está en `docs/assets/icons-px.json` → `_scene.backpack`, y `final.py` la vuelve a escribir.
+- **Pruebas.** `juice.test.js`, «v5.25» (además, la de v5.20 cuenta también las capas `.pxs-l`).
+
+### Cambios de la v5.24 — iconos pequeños de trazo, barra con iconos grandes y mochila nueva
+
+- **Iconos pequeños** (`core/icons.js`): los del dataset sólo se usan a partir de `DK.icon.BIG` (28 px). Por debajo vuelven los de trazo de siempre, en los dos modos, porque a 14–20 px se leían mal.
+- **Barra inferior** (`app.dockStyle()/dockIconSize()`, ajuste `dock`, atributo `data-dock`, `css/pixel.css`):
+  - `big` (por defecto): iconos de 32 px y el nombre sólo en la sección activa; el resto, en la ayuda y para lectores de pantalla.
+  - `mix`: iconos grandes y texto pequeño.
+  - `classic`: como antes.
+  - Se elige en Ajustes → Apariencia → «Barra inferior».
+- **Mochila del arcón** (`campArt.js → backpack()`): sprite «hiking backpack» del dataset, dibujado a ×2 (cada píxel ocupa 2×2 del arcón). Paleta y filas van en `BACKPACK`/`BACKPACK_PAL`; la procedencia, en `docs/assets/icons-px.json → _scene.backpack`. El lienzo pasa a 76 px (`base` 45.6) y la posición del arcón se ajusta un poco (x 17 / xm 16.5 / xs 21).
+- **`_dataset/`** no lo usa el juego. Sólo hace falta para volver a elegir iconos con `tools/atlas` (ver `docs/ASSETS.md`).
+- Pruebas: `juice` «v5.24»; la de «Fondo animado» compara el dibujo del icono, no su tamaño.
+
+### Cambios de la v5.23 — equipo fiel a su tipo, iconos que se leen en pequeño, Ajustes/Equipo y arcón con mochila
+
+- **Equipo:** el icono de cada pieza sale de su objeto base y, en las listas, la pieza se muestra por su TIPO. Por eso 16 bases se eligieron de nuevo para que encajen con su tipo, conservando su color:
+  - Dagas: colmillo umbrío y colmillo vampírico.
+  - Yelmo: tambor de guerra (ahora un yelmo con cuernos).
+  - Botas: pluma ligerísima.
+  - Anillos: de brasas (antes un planeta con anillos), perla marina, cristal vital y pendiente arcano.
+  - Báculo: brasero vivo.
+  - Espada: filo del vacío.
+  - Orbe: caracola de la marea.
+  - Escudo: escama dura.
+  - Amuletos: amuleto de vida (corazón) y corazón de musgo (trébol).
+  - Fuera del equipo, el sello de mejora pasa a ser un candado cerrado.
+  - `pick.py` acepta temas exactos con `'=tema'`.
+- **Iconos de la interfaz en pixel art, en positivo** (`trace.solid`): toda la forma opaca y los trazos interiores tallados (alfa 70) o en semitono (175). Antes el contorno oscuro era lo opaco y el relleno casi transparente, y en pequeño parecía un negativo apagado.
+- **Más iconos:**
+  - Ajustes: accesibilidad, contraste, indicador, ayuda, imagen, teclado, capas, ampliar, tipo de letra, vibración, volumen, play, pausa, avanzar, descargar y subir.
+  - Persona.
+  - Compuestos en `final.py → COMPOSE`, porque el dataset no los trae: `users` (dos personas, la de atrás más oscura; botón «Equipo» del campamento y de la barra), `volumeOff` (altavoz con X) y `eyeOff` (ojo con barra).
+  - Siguen de trazo las flechas de navegación, cerrar, aceptar y el desplegable.
+- **Arcón del campamento** (`campArt.js → tent`, lienzo 68 px, `base` 40.8): madera tostada y hierro ennegrecido. Lleva al lado la **mochila de expedición** (`backpack()`) apoyada y ladeada, con manta roja enrollada, solapa de cuero con hebilla, bolsillo y correa.
+- Prueba: `juice` «v5.23».
+
+### Cambios de la v5.22 — iconos de toda la interfaz desde el dataset, con silueta en el estilo limpio
+
+- **Dataset completo** (15 `.parquet`, 1,4 M iconos). Se rehízo la elección de los 113 iconos de objetos: ahora casi todos tienen el color exacto del objeto y las pociones siguen una progresión de tamaño.
+- **Iconos de la interfaz** (`core/icons.js → DK.icon`, `js/data/gen/iconsPx.js`): 116 de los 164 iconos (espadas, escudo, poción, gema, corona, calavera, mochila, yunque, hoguera, mapa, trofeo, engranaje, papelera, lupa…) salen de temas del dataset (muchos son iconos de verdad: «gear icon», «trash can icon»…).
+  - **Pixel art:** la máscara 16×16 en 4 tonos (`icons/ui-px.png`, incrustada como `data:`) se pinta con `currentColor` (clase `.icon-px` / `.ipx`, `mask-image`). Siempre a 16/32/48 px exactos para que sea nítida, centrada en el hueco pedido.
+  - **Estilo limpio:** silueta suave rellena (`.icon-gl`, `fill-rule evenodd`) con los trazos interiores tallados.
+  - Excepciones: flechas y controles (atrás, siguiente, play…) siguen de trazo en los dos estilos; `CLEAN_SKIP` (llama, gota, moneda, poción…) usa el sprite en pixel art y el trazo en el limpio.
+  - `DK.icon.svg(nombre)` devuelve el SVG para pintar fuera de la página (tarjeta de compartir).
+- **Objetos en estilo limpio** (`itemViews.js → glyphOf`, también las piedras de forja): la silueta del mismo sprite va dentro de su forma de color, así cada objeto es «el mismo» en los dos estilos.
+- **Trazador** `tools/atlas/trace.py`: máscara → ampliación ×10 con desenfoque → marching squares → simplificación (Douglas-Peucker por mitades); los trazos interiores son píxeles oscuros que no tocan el borde. Generación completa: `tools/atlas/final.py` (`UP`, `CLEAN_SKIP`).
+- Pruebas: `juice` «v5.22»; `craft` «Fondo animado» compara el icono entero (ya no siempre es `<svg>`).
+
+### Cambios de la v5.21 — iconos de objetos en pixel art
+
+- **Hoja `icons/items-px.png`** (16 × 8 iconos de 16 px), con un icono para cada uno de los 113 objetos. Se eligieron de los tres primeros `.parquet` del dataset [pixel-art-atlas-1.4m](https://huggingface.co/datasets/Angais/pixel-art-atlas-1.4m) (unos 281.000 iconos, CC0 1.0, generados por IA). Licencia, riesgos y cómo regenerarla en **`docs/ASSETS.md`**; procedencia de cada icono (archivo, `row_id`, descripción, sha1) en `docs/assets/items-px.json`.
+- **En el juego** (`components/itemViews.js → pixelIcon`, `js/data/gen/itemsPx.js`, `css/pixel.css`): con el ajuste «Pixel art», `V.itemIcon` (y por tanto `V.gearIcon`, inventario, crafteo, combate, tienda…) pinta el sprite de la hoja escalado sin suavizar. La rareza va como contorno de píxel de su color (`--ring`, cuatro `drop-shadow` de 1 px) y los legendarios parpadean un poco. Sin el ajuste, o para objetos nuevos que no estén en la hoja, se queda el icono vectorial.
+- **Herramienta** `tools/atlas/`: lector de Parquet propio (Thrift compact + zstd vía `libzstd` con ctypes, páginas v1/v2 y diccionario), puntuación de candidatos (tema por `queries.py`, parecido de color con `item.color`, cobertura, nº de colores y contorno oscuro) y `final.py` con el índice elegido para cada objeto (sin repetir icono). `_dataset/` está en `.gitignore` y fuera del zip de itch.io.
+- Prueba: `juice` «v5.21».
+
 ### Cambios de la v5.20 — perfil más personalizable y fondos en pixel art
 
 - **Editor del perfil en tres pestañas** (`screens/profile.js → editor`, `params.edTab`): Foto (daskai · icono · tu imagen) · Marcos (por grupos con «tienes/total») · Tarjeta (vista previa en vivo + opciones). El lema (`player.motto`) ya se puede escribir y sale bajo el nombre y en la tarjeta.

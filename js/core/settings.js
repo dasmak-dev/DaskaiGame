@@ -26,6 +26,7 @@
     showTraits: false,      // Códice: pestaña «Rasgos» y rasgos en la ficha (v4.48, oculto por defecto)
     bgFx: true,             // fondo animado de remolino (core/bgfx.js) fuera de la expedición
     pixelArt: true,         // daskai en pixel art (false = dibujo suave)
+    dock: 'big',            // v5.24: barra inferior: 'big' (iconos grandes) · 'mix' (iconos y texto) · 'classic'
     autoBattle: false,      // los combates empiezan en modo automático
     autoPause: true,        // el automático se pausa si tu daskai baja del 30% de vida
     autoHeal: true,         // el automático usa un objeto curativo cuando tu daskai está en zona crítica
@@ -98,6 +99,7 @@
       el.dataset.colorblind = this.data.colorblind ? 'on' : 'off';
       el.dataset.motion = this.reducedMotion() ? 'reduced' : 'full';
       el.dataset.px = this.data.pixelArt === false ? 'off' : 'on'; // v5.20: fondos en pixel art (css/pixel.css)
+      el.dataset.dock = ['big', 'mix', 'classic'].includes(this.data.dock) ? this.data.dock : 'big'; // v5.24: barra inferior
       el.dataset.hotkeys = this.data.showHotkeys ? 'on' : 'off';
       el.dataset.cursor = this.data.customCursor === false ? 'native' : 'game';
       if (DK.i18n) DK.i18n.setLang(this.data.lang);

@@ -20,7 +20,8 @@
     back: p('M19 12H5', 'M12 19l-7-7 7-7'),
     next: p('M5 12h14', 'M12 5l7 7-7 7'),
     chevronDown: p('M6 9l6 6 6-6'),
-    users: c(9, 7, 4) + p('M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2', 'M16 3.13a4 4 0 0 1 0 7.75', 'M21 21v-2a4 4 0 0 0-3-3.85'),
+    // v5.27: zarpa de oso (almohadilla, cuatro dedos y garras)
+    users: '<path fill="currentColor" stroke="none" d="M4.6 16.4c0-2.9 3.3-5 7.4-5s7.4 2.1 7.4 5c0 2.6-1.7 4.6-3.8 4.6-1.5 0-2.1-.9-3.6-.9s-2.1.9-3.6.9c-2.1 0-3.8-2-3.8-4.6z"/><ellipse fill="currentColor" stroke="none" cx="3.6" cy="11.2" rx="1.9" ry="2.2"/><path fill="currentColor" stroke="none" d="M2.7 9.6L3.6 7.0L4.5 9.6z"/><ellipse fill="currentColor" stroke="none" cx="8.2" cy="7" rx="1.9" ry="2.2"/><path fill="currentColor" stroke="none" d="M7.3 5.4L8.2 2.8L9.1 5.4z"/><ellipse fill="currentColor" stroke="none" cx="15.8" cy="7" rx="1.9" ry="2.2"/><path fill="currentColor" stroke="none" d="M14.9 5.4L15.8 2.8L16.7 5.4z"/><ellipse fill="currentColor" stroke="none" cx="20.4" cy="11.2" rx="1.9" ry="2.2"/><path fill="currentColor" stroke="none" d="M19.5 9.6L20.4 7.0L21.3 9.6z"/>',
     user: c(12, 8, 4) + p('M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1'),
     bag: p('M6 9a6 6 0 0 1 12 0v11a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2z', 'M9 9V6a3 3 0 0 1 6 0v3', 'M9 14h6'),
     book: p('M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z', 'M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5', 'M9 7h7', 'M9 11h5'),
@@ -194,11 +195,43 @@
    * @param {string} cls   clases extra
    * @returns {HTMLSpanElement}
    */
+  /**
+   * v5.22: muchos iconos vienen de js/data/gen/iconsPx.js (dataset de pixel art, CC0):
+   *   · con el ajuste «Pixel art» → icono de 16 px en tonos, pintado con el color del texto (máscara icons/ui-px.png)
+   *   · estilo limpio → su silueta suave (relleno, con los trazos interiores tallados)
+   * Los que no están en iconsPx siguen siendo de trazo (objeto I de arriba).
+   */
+  const pixelOn = () => !(DK.settings && DK.settings.get && DK.settings.get('pixelArt') === false);
   DK.icon = function (name, size = 20, cls = '') {
     const span = document.createElement('span');
     span.className = 'icon ' + cls;
+    // v5.24: los iconos del dataset sólo a partir de 28 px; en pequeño se leen mejor los de trazo de siempre
+    const A = DK.iconsPx, k = A && size >= DK.icon.BIG ? A.ids[name] : undefined;
+    if (k !== undefined) {
+      if (pixelOn()) {
+        if (!A._css) { A._css = 1; document.documentElement.style.setProperty('--ipx-img', `url("${A.src}")`); } // una vez
+        const col = k % A.cols, row = Math.floor(k / A.cols), m = document.createElement('i');
+        m.className = 'ipx'; m.setAttribute('aria-hidden', 'true');
+        // nítido: el dibujo usa un múltiplo exacto de 16 px, centrado en el hueco del tamaño pedido
+        const d = size < 24 ? 16 : size < 40 ? 32 : Math.round(size / 16) * 16;
+        span.style.width = span.style.height = size + 'px';
+        m.style.width = m.style.height = d + 'px';
+        m.style.setProperty('--ipx-pos', `${A.cols > 1 ? (col / (A.cols - 1)) * 100 : 0}% ${A.rows > 1 ? (row / (A.rows - 1)) * 100 : 0}%`);
+        m.style.setProperty('--ipx-size', `${A.cols * 100}% ${A.rows * 100}%`);
+        span.classList.add('icon-px'); span.append(m);
+        return span;
+      }
+      if (A.glyphs[name]) { span.classList.add('icon-gl'); span.innerHTML = DK.icon.svg(name, size); return span; }
+    }
     span.innerHTML = `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[name] || I.question}</svg>`;
     return span;
+  };
+  DK.icon.BIG = 28;
+  /** SVG (texto) de un icono para pintarlo fuera de la página (p. ej. la tarjeta de compartir): silueta si la hay. */
+  DK.icon.svg = (name, size = 24) => {
+    const g = DK.iconsPx && DK.iconsPx.glyphs[name];
+    return g ? `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="${g}"/></svg>`
+      : `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[name] || I.question}</svg>`;
   };
   /** Trazos SVG de un icono (para dibujarlo dentro de otro SVG, p. ej. los iconos de objeto). */
   DK.icon.raw = (name) => I[name] || I.question;

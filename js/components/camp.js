@@ -65,15 +65,37 @@
   DK.pix.terrain = (colors, seed = 't') => {
     const key = colors.join('|') + seed;
     if (terrainCache[key]) return terrainCache[key];
-    const S = 48, cv = document.createElement('canvas'); cv.width = S; cv.height = S;
+    // v5.25: tesela de 96 px con más detalle: manchas de tierra tramadas, matas de hierba con luz, piedrecitas,
+    // florecillas y grietas. Todo se dibuja «dando la vuelta» por los bordes para que la tesela encaje.
+    const S = 96, cv = document.createElement('canvas'); cv.width = S; cv.height = S;
     const g = cv.getContext('2d'); if (!g) return '';
     const mix = (a, b, k) => { const p = (x) => [1, 3, 5].map((i) => parseInt(x.slice(i, i + 2), 16)); const A = p(a), B = p(b); return `rgb(${A.map((v, i) => Math.round(v * (1 - k) + B[i] * k)).join(',')})`; };
+    const px = (x, y, w = 1, hh = 1) => { for (const ox of [0, -S]) for (const oy of [0, -S]) g.fillRect(x + ox, y + oy, w, hh); };
+    const W = (v) => ((Math.floor(v) % S) + S) % S;
+    const B = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
     const [c1, c2] = colors;
-    g.fillStyle = mix(c2, '#0b1020', 0.55); g.fillRect(0, 0, S, S);
+    const base = mix(c2, '#0b1020', 0.55), dark = mix(c2, '#0b1020', 0.68), lite = mix(c2, '#0b1020', 0.42);
+    g.fillStyle = base; g.fillRect(0, 0, S, S);
     const rnd = DK.util.seeded('terrain-' + key);
-    for (let i = 0; i < 70; i++) { g.fillStyle = mix(c2, '#0b1020', 0.35 + rnd() * 0.25); g.fillRect(Math.floor(rnd() * S), Math.floor(rnd() * S), 2 + Math.floor(rnd() * 3), 2); }
-    for (let i = 0; i < 26; i++) { const x = Math.floor(rnd() * S), y = Math.floor(rnd() * S); g.fillStyle = mix(c1, c2, 0.45); g.fillRect(x, y, 1, 2); g.fillRect(x + 2, y + 1, 1, 1); }
-    for (let i = 0; i < 4; i++) { g.fillStyle = mix(c1, '#ffffff', 0.4); g.fillRect(Math.floor(rnd() * S), Math.floor(rnd() * S), 1, 1); }
+    // manchas grandes (más oscuras o más claras) con borde tramado
+    for (let i = 0; i < 7; i++) {
+      const cx = rnd() * S, cy = rnd() * S, r = 8 + rnd() * 14, col = rnd() < .55 ? dark : lite; g.fillStyle = col;
+      for (let y = -r; y <= r; y++) for (let x = -r * 1.4; x <= r * 1.4; x++) { const d = Math.hypot(x / 1.4, y) / r; if (d < .7 || (d < 1 && B[((cy + y) & 3) * 4 + ((cx + x) & 3)] / 16 > (d - .7) / .3)) px(W(cx + x), W(cy + y)); }
+    }
+    for (let i = 0; i < 160; i++) { g.fillStyle = mix(c2, '#0b1020', 0.35 + rnd() * 0.3); px(Math.floor(rnd() * S), Math.floor(rnd() * S), 1 + Math.floor(rnd() * 3), 1); }
+    // matas de hierba: tallos oscuros con la punta iluminada
+    for (let i = 0; i < 34; i++) { const x = Math.floor(rnd() * S), y = Math.floor(rnd() * S);
+      g.fillStyle = mix(c1, c2, 0.62); px(x, y, 1, 3); px(x + 2, y + 1, 1, 2); px(x - 2, y + 1, 1, 2);
+      g.fillStyle = mix(c1, c2, 0.3); px(x, y, 1, 1); px(x + 2, y + 1, 1, 1); }
+    // piedrecitas con brillo arriba y sombra abajo
+    for (let i = 0; i < 9; i++) { const x = Math.floor(rnd() * S), y = Math.floor(rnd() * S), w = 2 + Math.floor(rnd() * 2);
+      g.fillStyle = 'rgba(0,0,0,.35)'; px(x, y + 2, w + 1, 1); g.fillStyle = mix('#8a8290', c2, .45); px(x, y, w, 2); g.fillStyle = mix('#c9c2cf', c2, .35); px(x, y, w - 1, 1); }
+    // florecillas (pocas): 4 pétalos y el centro
+    const FL = ['#f9a8d4', '#fde68a', '#c4b5fd', '#ffffff'];
+    for (let i = 0; i < 6; i++) { const x = Math.floor(rnd() * S), y = Math.floor(rnd() * S); g.fillStyle = mix(FL[i % FL.length], c2, .35); px(x - 1, y); px(x + 1, y); px(x, y - 1); px(x, y + 1); g.fillStyle = mix('#facc15', c2, .2); px(x, y); }
+    // grietas finas
+    for (let i = 0; i < 3; i++) { let x = rnd() * S, y = rnd() * S; g.fillStyle = mix(c2, '#000000', .7); for (let k = 0; k < 10; k++) { px(W(x), W(y)); x += rnd() < .5 ? 1 : 0; y += 1; if (rnd() < .3) x -= 1; } }
+    for (let i = 0; i < 6; i++) { g.fillStyle = mix(c1, '#ffffff', 0.4); px(Math.floor(rnd() * S), Math.floor(rnd() * S), 1, 1); }
     return (terrainCache[key] = cv.toDataURL());
   };
 
@@ -212,7 +234,7 @@
   const SPOTS = [
     { id: 'path', sprite: 'portal', screen: 'zones', nav: 'battle', x: 66, y: 54, xm: 66, ym: 53, xs: 72, ys: 54, label: () => t('scene.path'), main: true },
     { id: 'board', sprite: 'board', screen: 'progress', nav: 'progress', x: 40, y: 50, xm: 39, ym: 48, xs: 28, ys: 51, label: () => t('scene.board') },
-    { id: 'tent', sprite: 'tent', screen: 'inventory', nav: 'inventory', x: 16, y: 57, xm: 15, ym: 57, xs: 20, ys: 68, label: () => t('scene.tent') },
+    { id: 'tent', sprite: 'tent', screen: 'inventory', nav: 'inventory', x: 17, y: 57, xm: 16.5, ym: 57, xs: 21, ys: 68, label: () => t('scene.tent') },
     { id: 'anvil', sprite: 'anvil', screen: 'craft', nav: 'craft', x: 83, y: 71, xm: 84, ym: 71, xs: 84, ys: 71, label: () => t('scene.anvil') },
     { id: 'fire', sprite: 'fire', screen: 'team', nav: 'team', x: 49, y: 82, xm: 48, ym: 82, xs: 52, ys: 85, label: () => t('scene.fire'), fire: true },
     { id: 'lectern', sprite: 'lectern', screen: 'codex', nav: 'codex', x: 10, y: 92, xm: 12, ym: 94, xs: 13, ys: 94, label: () => t('scene.lectern') },
