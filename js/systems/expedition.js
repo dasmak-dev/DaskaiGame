@@ -1149,7 +1149,7 @@
         map: e.map, cleared: e.cleared.slice(), pending: e.pending, step: e.step, total: e.total,
         relics: e.relics.slice(), nodes: e.log.nodes, toBag: e.log.toBag, lootSpent: e.log.lootSpent, recipes: e.log.recipes.slice(),
         fallen: (e.log.fallen || []).slice(), difficulty: DK.rules.difficulty(),
-        size: e.size || 'small', mod: e.mod || null, marks: e.marks || null,
+        size: e.size || 'small', mod: e.mod || null, marks: e.marks || null, corruption: e.corruption || 0, nightmare: !!e.nightmare,
         emblems: e.log.emblems || 0, timeline: (e.log.timeline || []).slice(), secrets: (e.log.secrets || []).slice(), shortcuts: e.log.shortcuts || 0, runes: (e.log.runes || []).slice(), runesUsed: (e.runesUsed || []).slice(),
         // Desafío semanal: puntos, récord y premio (DK.weekly)
         weekly: e.weekly && DK.weekly ? DK.weekly.record(e, outcome) : null,
@@ -1160,6 +1160,7 @@
       st().expHistory = st().expHistory || [];
       st().expHistory.unshift(st().lastExpedition);
       st().expHistory.length = Math.min(st().expHistory.length, DK.config.expHistorySize);
+      DK.emit('expedition:snap', st().lastExpedition); // v5.45: para las estadísticas anónimas (systems/telemetry.js)
     },
 
     /** Terminar y cobrar (sólo tras derrotar a un jefe). */

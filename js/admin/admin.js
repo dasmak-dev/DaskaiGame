@@ -187,12 +187,13 @@
     reports: (open) => rpc('admin_reports', { p_open: open }), closeReport: (id, tid) => rpc('admin_report_close', { p_report: id || null, p_tid: tid || null }),
     news: () => rpc('admin_news_list'), newsSave: (n) => rpc('admin_news_save', n.p_img ? n : (({ p_img, ...x }) => x)(n)), // (sin imagen funciona también con la base de datos de la v5.40) newsDelete: (id) => rpc('admin_news_delete', { p_news: id }),
     send: (tid, text, gift, img) => rpc('admin_send', Object.assign({ p_tid: tid, p_text: text, p_gift: gift || null }, img ? { p_img: img } : {})),
+    analytics: (d) => rpc('admin_analytics', { p_days: d }), clans: () => rpc('admin_clans'), clanDelete: (id) => rpc('admin_clan_delete', { p_clan: id }),
     threads: () => rpc('admin_threads'), thread: (tid) => rpc('admin_thread', { p_tid: tid }), dms: (tid) => rpc('admin_dms', { p_tid: tid }), log: () => rpc('admin_log_list', { p_limit: 300 }),
   };
 
   /* ---------------- Estructura ---------------- */
   const NAV = [['home', 'Resumen', 'chart'], ['players', 'Jugadores', 'users'], ['support', 'Soporte', 'mail'], ['reports', 'Denuncias', 'alert'],
-    ['flagged', 'Sospechosos', 'flag'], ['boards', 'Clasificaciones', 'trophy'], ['news', 'Noticias', 'megaphone'], ['gifts', 'Regalos', 'gift'], ['log', 'Registro', 'list'], ['settings', 'Ajustes', 'settings']];
+    ['flagged', 'Sospechosos', 'flag'], ['boards', 'Clasificaciones', 'trophy'], ['news', 'Noticias', 'megaphone'], ['gifts', 'Regalos', 'gift'], ['stats', 'Estadísticas', 'compass'], ['clans', 'Clanes', 'crown'], ['log', 'Registro', 'list'], ['settings', 'Ajustes', 'settings']];
   let badges = {};
   /*
    * v5.42.1: el marco (menú, cabecera y cuerpo) se crea UNA vez; al cambiar de sección o pulsar un botón sólo se
@@ -644,6 +645,29 @@
       el('small', { class: 'muted' }, 'Los objetos llegan a la bolsa de casa al recogerlos en el buzón. Máx. 999 por objeto, 1 000 000 de monedas y 500 emblemas.'))));
   }
 
+  /* ---------------- v5.45: estadísticas anónimas y clanes ---------------- */
+  const KIND = { exp: ['Expediciones por zona y final', 'Zona · final', 'pisos de media'], death: ['Dónde se cae (zona · piso)', 'Zona · piso', null], boss: ['Jefes', 'Zona · resultado', null],
+    kind: ['Tipo de expedición', 'Tipo · final', null], size: ['Tamaño del mapa', 'Tamaño · final', null], rune: ['Runas usadas', 'Runa · final', null], corr: ['Corrupción', 'Nivel · final', null],
+    nightmare: ['Pesadilla', 'Final', null], fallen: ['Daskai caídos (permadeath)', 'Zona · nivel', null], duel: ['Duelos', 'Resultado', null], active: ['Jugadores activos (días-jugador)', '', null],
+    version: ['Versiones', 'Versión', null], lang: ['Idiomas', 'Idioma', null], teamlv: ['Nivel máximo del equipo', 'Nivel', null] };
+  const OUT = { completed: 'completada', retreat: 'retirada', campfire: 'hoguera', lost: 'perdida', lostBoss: 'perdida en el jefe', won: 'ganado', fled: 'huida', normal: 'normal', abismo: 'Abismo', averno: 'Averno', small: 'pequeño', medium: 'mediano', xl: 'XL' };
+  const zoneLbl = (key) => key.split(':').map((x, i) => (i === 0 && D().zones && D().zones[x] ? D().zones[x].name : OUT[x] || x.replace(/^f(\d+)$/, 'piso $1').replace(/^d(\d+)$/, 'mapa $1'))).join(' · ');
+  const statsView = (days) => section('stats', 'Estadísticas anónimas', async () => {
+    const rows = await API.analytics(days);
+    const by = {}; (rows || []).forEach((r) => (by[r.kind] = by[r.kind] || []).push(r));
+    const pick = el('div', { class: 'row gap-s' }, [7, 30, 90].map((d) => btn(d + ' días', () => go('stats/' + d), d === days ? 'asm' : 'ghost asm')));
+    if (!rows || !rows.length) return [pick, card(null, el('p', { class: 'muted' }, 'Aún no hay datos. Los juegos envían contadores cada 10 minutos (si el jugador no lo ha desactivado en Ajustes).'))];
+    const order = Object.keys(KIND).filter((k) => by[k]).concat(Object.keys(by).filter((k) => !KIND[k]));
+    return [pick, el('p', { class: 'muted small' }, 'Sólo contadores, sin ID de jugador. «n» = veces; «media» = valor medio cuando lo hay (p. ej. pisos completados).'),
+      order.map((k) => { const [title, head, avg] = KIND[k] || [k, 'Clave', null]; const list = by[k].sort((a, b) => b.n - a.n).slice(0, 40); const tot = list.reduce((a, r) => a + r.n, 0);
+        return card(title, table([head || 'Clave', 'n', '%', avg || ''], list.map((r) => el('tr', null, el('td', null, zoneLbl(r.key)), el('td', null, r.n), el('td', { class: 'muted' }, Math.round((r.n / Math.max(1, tot)) * 100) + '%'), el('td', null, avg && r.n ? (r.sum / r.n).toFixed(1) : ''))))); })];
+  });
+  const clansView = () => section('clans', 'Clanes', async () => {
+    const list = await API.clans();
+    return list.length ? card(null, table(['Etiqueta', 'Nombre', 'Miembros', 'Contrato', 'Creado', ''], list.map((c) => el('tr', null, el('td', { class: 'mono' }, c.tag), el('td', null, c.name, c.descr ? el('div', { class: 'small muted' }, c.descr) : null), el('td', null, c.members + '/20'), el('td', null, c.week), el('td', { class: 'nowrap' }, fmtD(c.created_at)),
+      el('td', null, btn('Borrar', async () => { const r = await ask('Borrar clan', `Escribe ${c.tag} para borrar el clan «${c.name}» (sus miembros quedan sin clan).`, '', { ok: 'Borrar', danger: true }); if (r && r.trim().toUpperCase() === c.tag) { try { await API.clanDelete(c.id); toast('Clan borrado'); clansView(); } catch (e) { toast(e.message, true); } } }, 'ghost danger-t asm', 'trash')))))) : card(null, el('p', { class: 'muted' }, 'Aún no hay clanes.'));
+  });
+
   /* ---------------- Registro y ajustes ---------------- */
   const LOGTXT = { ban: 'Baneo', unban: 'Quitó baneo', rename: 'Renombró', score_ok: 'Récord visible', score_flag: 'Ocultó récord', score_delete: 'Borró récord', reset_scores: 'Borró récords', delete_player: 'Borró jugador', report_close: 'Cerró denuncias', news_save: 'Guardó noticia', news_delete: 'Borró noticia', send: 'Envió mensaje/regalo' };
   const logView = () => section('log', 'Registro', async () => {
@@ -677,6 +701,8 @@
       else if (k === 'news') newsView();
       else if (k === 'gifts') giftsView();
       else if (k === 'log') logView();
+      else if (k === 'stats') statsView(+a || 7);
+      else if (k === 'clans') clansView();
       else if (k === 'settings') settingsView();
       else homeView();
     } catch (e) { put(root, fail(e)); }

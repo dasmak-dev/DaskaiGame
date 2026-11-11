@@ -357,6 +357,33 @@ Se carga la última y sólo sobrescribe: paleta (piedra oscura, bronce, oro `--g
 - **Expedición:** al entrar en el mapa, el equipo, la mochila o un combate durante una expedición, `#zone-backdrop` (creado en `screens/expedition.js` con `screen:enter`) pinta detrás de todo la escena de la zona actual, oscurecida; `body.in-exp`.
 - **Combate:** la arena usa la escena de la zona (`components/scenes.js`, ahora con árboles muertos, ruinas, tumbas, cristales o tentáculos según la zona) y los **jefes tienen su propio fondo**: `DK.scenes.bossScene(zona, secreto)` → `boss_<escena>` (menhires bajo luna roja, bosque muerto, naufragio con tormenta, bosque de cristales, forja de lava, santuario con estatua, fauces del abismo, ruinas entre rayos) y `boss_secret` (cripta) para los jefes ocultos.
 
+### Cambios de la v5.45.0 — duelos, clanes, nube, resumen del combate, avisos, estadísticas y versión nueva
+
+Necesita el SQL `daskai-v5.45.sql` (además de los anteriores). Todo lo nuevo en línea usa el mismo «ID + secreto» de la partida (`state.online`) y funciones `security definer`; nadie escribe en las tablas directamente.
+
+- **Duelos** (`systems/community.js` → `DK.duels`, vista `V.community('duel')`):
+  - El rival es la copia del equipo público de otro jugador (`online.snapD`). `DK.duels.ghost(x)` crea el daskai con `d.ghost = { st }`; `daskai.computeStats` devuelve esos atributos tal cual.
+  - `battle.start(…, { duel })` → `startDuel`: los rivales entran en cadena (`st.wave`), tu equipo empieza con la vida llena y `DK.duels.finish` lo deja como estaba.
+  - En duelo: sin objetos, sin vínculo y huir = rendirse. `rewards` da monedas sólo en las 5 primeras victorias del día. No emite `battle:end` (emite `duel:end`).
+  - Servidor: `duel_find` (rivales cerca de tu puntuación, equipo recortado), `duel_start` (pase de un solo uso, máx. 30 al día), `duel_report` (Elo ±24 / defensor ±12), `duel_board`.
+- **Clanes** (`DK.clans`, vista `V.community('clan')`): hasta 20, abiertos o con solicitud, líder/oficial/miembro.
+  - Chat del clan: se borra a los 7 días, máx. 12 mensajes/min.
+  - Contrato del clan: la suma de los récords semanales (`scores`, board `weekly`) de los miembros; metas `TIERS` = 5.000 / 15.000 / 30.000. `clan_claim` da cada meta una vez por semana (no el primer día en el clan). Los premios los aplica el juego (`DK.clans.reward`).
+  - `dk_poll` devuelve ahora también `clan` (último mensaje) y `clanReq`; `online.recount` emite `online:clan`.
+  - Botón de espadas en la barra de arriba.
+- **Resumen del combate** (`screens/battle.js`): `track(e)` cuenta, por daskai, el daño hecho y recibido, la vida recuperada, los KO y los críticos, además del golpe más fuerte y el ataque más usado (`params._sum`). `V.battleMvp` y `V.battleSummary` están en `components/communityViews.js`.
+- **Nube** (`systems/cloud.js`): una copia gzip+base64 por partida (`cloud_saves`, máx. ~300 KB).
+  - Subida automática opcional: al terminar una expedición y cada 15 min (el servidor exige 60 s entre subidas).
+  - El código de recuperación es `DK1-` + base64url(id:secreto). Para recuperar: Ajustes o el menú principal → `DK.cloudRestore()` → `DK.store.importState(n, s)`.
+- **Avisos del sistema** (`systems/notify.js`): con el juego en segundo plano se sigue mirando `dk_poll` cada minuto y sale `showNotification`. El `sw.js` gestiona `notificationclick` y manda `dk-open` al juego. Con el juego cerrado no hay avisos (haría falta un servidor de push).
+- **Estadísticas anónimas** (`systems/telemetry.js`): contadores en `localStorage` (`daskai.tq`) enviados con `track_batch` cada 10 min.
+  - Se guardan en `analytics` (día, tipo, clave, n, suma), sin ID de jugador. Se pueden apagar en Ajustes.
+  - En el panel de admin hay dos secciones nuevas: «Estadísticas» y «Clanes».
+  - `expedition.snapshot` emite `expedition:snap` y guarda `corruption`/`nightmare`.
+- **Versión nueva** (`core/app.js`): se busca cada 20 min y al volver al juego.
+  - Si estás a mitad de algo no se recarga: sale `.upd-bar` con «Recargar», y la versión se aplica sola al volver al menú o al campamento.
+- Archivos nuevos: `css/community.css`, `js/systems/{community,cloud,telemetry,notify}.js` y `js/components/communityViews.js` (en `index.html` y `sw.js`).
+
 ### Cambios de la v5.44.0 — «Mesa de guerra»: nueva preparación de expedición
 
 - **Pantalla de zonas rehecha** (`js/screens/zones.js` + `css/war.css`, nuevo, cargado tras `pixel.css` y en la lista del `sw.js`). Debajo del mapa, `warTable(params, refresh)` monta dos columnas:

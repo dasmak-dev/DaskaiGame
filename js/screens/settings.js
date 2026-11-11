@@ -66,6 +66,12 @@
           h('div', { class: 'row gap-s wrap' },
             btn({ icon: 'folder', label: t('settings.manageSaves'), variant: 'tone', onClick: () => { close(); if (DK.store.state) DK.store.save(); DK.router.reset('mainMenu'); } }),
             DK.store.state ? btn({ icon: 'download', label: t('settings.exportCurrent'), variant: 'ghost', onClick: () => { DK.store.save(); DK.store.exportSlot(DK.store.slot); } }) : null)),
+        cloudGroup(group, refresh, close),
+        group('bell', t('notify.group'),
+          DK.notify && DK.notify.supported() ? toggle({ icon: 'bell', label: t('notify.label'), desc: typeof Notification !== 'undefined' && Notification.permission === 'denied' ? t('notify.denied') : t('notify.desc'), value: DK.notify.enabled(),
+            onChange: async (v) => { if (v) { const ok = await DK.notify.enable(); if (!ok) DK.ui.toast(t('notify.denied'), { icon: 'bell', kind: 'bad' }); } else DK.notify.disable(); refresh(); } })
+            : h('p', { class: 'muted small' }, t('notify.unsupported')),
+          toggle({ icon: 'chart', label: t('telemetry.label'), desc: t('telemetry.desc'), value: S.get('telemetry') !== false, onChange: set('telemetry') })),
         group('smartphone', t('settings.app'),
           h('p', { class: 'muted small' }, /^https?:/.test(location.protocol) ? t('settings.appText') : t('settings.appFile')),
           btn({ icon: 'download', label: t('settings.install'), variant: 'primary', disabled: !DK.app.canInstall(), tip: DK.app.canInstall() ? null : t('settings.installUnavailable'), onClick: async () => { await DK.app.install(); refresh(); } })),
@@ -75,6 +81,55 @@
     }
   }
 
+  /** v5.45: copia en la nube y recuperar la partida en otro dispositivo. */
+  function cloudGroup(group, refresh, close) {
+    const C = DK.cloud;
+    if (!C || !DK.online || !DK.online.enabled()) return null;
+    const restoreBtn = btn({ icon: 'download', label: t('cloud.restore'), variant: 'ghost', onClick: () => restoreDialog(close) });
+    if (!DK.store.state) return group('globe', t('cloud.title'), h('p', { class: 'muted small' }, t('cloud.noGame')), h('div', { class: 'row gap-s wrap' }, restoreBtn));
+    const R = C.rec(), info = h('small', { class: 'muted cloud-info' }, R.at ? t('cloud.last', { ago: new Date(R.at).toLocaleString(DK.i18n.lang), kb: Math.max(1, Math.round((R.bytes || 0) / 1024)) }) : t('cloud.never'));
+    const saveB = btn({ icon: 'upload', label: t('cloud.saveNow'), variant: 'tone', onClick: async () => {
+      saveB.disabled = true; const r = await C.upload({ force: true }); saveB.disabled = false;
+      if (r && r.ok) { DK.ui.toast(t('cloud.saved'), { icon: 'upload', kind: 'good' }); refresh(); } else DK.ui.toast(t('cloud.err.' + ((r && r.error) || 'offline')), { icon: 'alert', kind: 'bad' });
+    } });
+    return group('globe', t('cloud.title'),
+      h('p', { class: 'muted small' }, t('cloud.text')),
+      toggle({ icon: 'upload', label: t('cloud.auto'), desc: t('cloud.autoDesc'), value: C.on(), onChange: (v) => { C.setOn(v); setTimeout(refresh, 1500); } }),
+      info,
+      h('div', { class: 'row gap-s wrap' }, saveB, btn({ icon: 'lock', label: t('cloud.code'), variant: 'ghost', onClick: codeDialog }), restoreBtn));
+  }
+  function codeDialog() {
+    const code = DK.cloud.code();
+    DK.ui.modal({ title: t('cloud.code'), icon: 'lock', closeX: true, content: () => h('div', { class: 'cloud-code' },
+      h('p', { class: 'small' }, t('cloud.codeText')),
+      h('code', { class: 'cloud-code-box' }, code),
+      h('p', { class: 'small warn-text' }, DK.icon('alert', 12), ' ', t('cloud.codeWarn')),
+      h('div', { class: 'row gap-s end' }, btn({ icon: 'copy', label: t('cloud.copy'), variant: 'primary', onClick: () => { navigator.clipboard && navigator.clipboard.writeText(code).then(() => DK.ui.toast(t('trade.copied'), { icon: 'copy' }), () => {}); } }))) });
+  }
+  function restoreDialog(closePanel) {
+    const input = h('input', { class: 'input', placeholder: 'DK1-…', autocomplete: 'off', spellcheck: 'false' });
+    const out = h('div', { class: 'cloud-out' });
+    const go = btn({ icon: 'search', label: t('cloud.find'), variant: 'primary', onClick: async () => {
+      go.disabled = true; out.replaceChildren(h('span', { class: 'mb-spin' }));
+      const r = await DK.cloud.restore(input.value); go.disabled = false;
+      if (r.error) { out.replaceChildren(h('p', { class: 'small warn-text' }, t('cloud.err.' + r.error))); return; }
+      const slots = Array.from({ length: DK.store.slots }, (_, i) => i + 1);
+      const pick = (n) => async () => {
+        const meta = DK.store.slotMeta(n);
+        if (meta && meta.name && !(await DK.ui.confirm(t('cloud.overwriteQ', { n }), t('cloud.overwriteText', { name: meta.name }), { danger: true }))) return;
+        if (!DK.store.importState(n, r.state)) { DK.ui.toast(t('cloud.err.format'), { icon: 'alert', kind: 'bad' }); return; }
+        md.close(); if (closePanel) closePanel();
+        DK.ui.toast(t('cloud.restored', { n }), { icon: 'download', kind: 'good' });
+        DK.router.reset('mainMenu');
+      };
+      out.replaceChildren(h('div', { class: 'cloud-found' }, DK.icon('checkCircle', 18), h('div', null, h('b', null, r.label || '?'), h('small', { class: 'muted' }, t('cloud.foundMeta', { date: new Date(r.at).toLocaleString(DK.i18n.lang), h: Math.round((r.playtime || 0) / 360) / 10 })))),
+        h('p', { class: 'small' }, t('cloud.whichSlot')),
+        h('div', { class: 'row gap-s wrap' }, slots.map((n) => { const meta = DK.store.slotMeta(n); return btn({ icon: meta && meta.name ? 'save' : 'plus', label: t('cloud.slot', { n }) + (meta && meta.name ? ' · ' + meta.name : ' · ' + t('cloud.empty')), size: 'sm', variant: meta && meta.name ? 'ghost' : 'tone', onClick: pick(n) }); })));
+    } });
+    const md = DK.ui.modal({ title: t('cloud.restore'), icon: 'download', closeX: true, content: () => h('div', { class: 'cloud-restore' }, h('p', { class: 'small muted' }, t('cloud.restoreText')), h('div', { class: 'row gap-s' }, input, go), out) });
+  }
+
+  DK.cloudRestore = (closePanel) => restoreDialog(closePanel);
   DK.settingsPanel = {
     /** Abre (o cierra, si ya está abierto) el panel de ajustes. */
     open() {

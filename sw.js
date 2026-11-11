@@ -6,7 +6,7 @@
  * sube el número de CACHE para que los jugadores reciban la versión
  * nueva. (Sólo funciona servido por http/https, no con file://).
  * ============================================================= */
-const CACHE = 'daskai-v5.44.0';
+const CACHE = 'daskai-v5.45.0';
 const FILES = [
     './',
     './css/cursor.css',
@@ -25,6 +25,7 @@ const FILES = [
     './css/juice.css',
     './css/pixel.css',
     './css/war.css',
+    './css/community.css',
     // v4.73: «?v=» cambia con cada icono nuevo para que el móvil instalado vea que ha cambiado
     './icons/icon-192.png?v=473',
     './icons/icon-512.png?v=473',
@@ -50,6 +51,7 @@ const FILES = [
     './js/components/gearViews.js',
     './js/components/hoverCard.js',
     './js/components/onlineViews.js',
+    './js/components/communityViews.js',
     './js/components/forgeBench.js',
     './js/components/runeBench.js',
     './js/components/palette.js',
@@ -133,6 +135,10 @@ const FILES = [
     './js/systems/endgame.js',
     './js/systems/trade.js',
     './js/systems/online.js',
+    './js/systems/community.js',
+    './js/systems/cloud.js',
+    './js/systems/telemetry.js',
+    './js/systems/notify.js',
     './js/systems/weekly.js',
     './js/systems/training.js',
     './js/systems/curses.js',
@@ -154,6 +160,17 @@ self.addEventListener('install', (e) => {
 
 self.addEventListener('activate', (e) => {
   e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
+});
+
+// v5.45: al pulsar un aviso del sistema se trae el juego al frente y se le dice qué abrir
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  const open = (e.notification.data && e.notification.data.open) || 'mail';
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+    const c = list[0];
+    if (c) { c.postMessage({ type: 'dk-open', open }); return c.focus && c.focus(); }
+    return self.clients.openWindow ? self.clients.openWindow('./') : null;
+  }));
 });
 
 // Primero la caché; si no está, red (y se guarda para la próxima vez)

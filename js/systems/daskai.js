@@ -489,6 +489,8 @@
 
   /** Cálculo completo de los atributos (sin caché). */
   function computeStats(d, equip) {
+    // v5.45: copia del daskai de otro jugador (duelos): sus atributos tal cual los publicó
+    if (d.ghost && d.ghost.st) return Object.assign({ regen: 0 }, d.ghost.st);
     {
       const pas = api.passiveMods(d, equip);
       const eq = api.equipBonus(d, equip);

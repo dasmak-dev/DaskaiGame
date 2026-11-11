@@ -58,7 +58,7 @@
       return DK.fx.cover({ colors: z.colors, kind: 'battle' }, go);
     },
     render(params) {
-      if (!params.state) params.state = B().start(params.zone, params.leaderUid, { boss: params.boss, elite: params.elite, secret: params.secret, final: params.final, abyssRound: params.abyssRound, wave: params.wave });
+      if (!params.state) params.state = B().start(params.zone, params.leaderUid, { boss: params.boss, elite: params.elite, secret: params.secret, final: params.final, abyssRound: params.abyssRound, wave: params.wave, duel: params.duel });
       return buildBattle(params);
     },
     onLeave(params) { if (params._ctl) params._ctl.stop(); },
@@ -71,6 +71,22 @@
     let busy = false, skipping = false, auto = params.auto != null ? !!params.auto : !!DK.settings.get('autoBattle'), stopped = false;
     let logFilter = 'all';
     params._ctl = { stop: () => { stopped = true; } };
+    // v5.45: resumen del combate (quién hizo más daño, quién curó, golpe más fuerte…). Vive en params para no perderse al redibujar
+    const SUM = params._sum = params._sum || { a: {}, e: {}, curA: st.allyUid, curE: st.enemy.uid, big: null, strong: 0, crits: 0, moves: {} };
+    const sumRow = (side, uid) => { const g = SUM[side]; return (g[uid] = g[uid] || { uid, dmg: 0, taken: 0, heal: 0, kos: 0, crits: 0, moves: 0, fell: false }); };
+    function track(e) {
+      if (e.anim === 'switch') { const a = B().ally(st); if (a) SUM.curA = a.uid; }
+      else if (e.anim === 'enemyIn' && e.uid) SUM.curE = e.uid;
+      if (e.anim === 'attack') { const r = sumRow(e.side === 'ally' ? 'a' : 'e', e.side === 'ally' ? SUM.curA : SUM.curE); r.moves++; if (e.side === 'ally' && e.move) SUM.moves[e.move] = (SUM.moves[e.move] || 0) + 1; }
+      else if (e.anim === 'hit' && e.amount > 0) {
+        const toEnemy = e.side === 'enemy', dealer = sumRow(toEnemy ? 'a' : 'e', toEnemy ? SUM.curA : SUM.curE), target = sumRow(toEnemy ? 'e' : 'a', toEnemy ? SUM.curE : SUM.curA);
+        dealer.dmg += e.amount; target.taken += e.amount;
+        if (e.crit) { dealer.crits++; if (toEnemy) SUM.crits++; }
+        if (toEnemy && e.eff === 'strong') SUM.strong++;
+        if (toEnemy && !e.dot && (!SUM.big || e.amount > SUM.big.n)) SUM.big = { n: e.amount, uid: SUM.curA, move: pendingAttack && pendingAttack.move, crit: !!e.crit };
+      } else if ((e.anim === 'heal' || e.anim === 'regen') && !e.mana && e.amount > 0) sumRow(e.side === 'ally' ? 'a' : 'e', e.side === 'ally' ? SUM.curA : SUM.curE).heal += e.amount;
+      else if (e.anim === 'faint') { if (e.side === 'enemy') { sumRow('a', SUM.curA).kos++; sumRow('e', SUM.curE).fell = true; } else sumRow('a', SUM.curA).fell = true; }
+    }
 
     /* ---------- Tiempos (respetan la velocidad elegida) ---------- */
     const speed = () => DK.settings.get('battleSpeed') || 1;
@@ -127,7 +143,7 @@
       enemyHud.replaceChildren(
         h('div', { class: 'hud-title' }, h('b', null, st.boss ? (st.bossInfo || zone.boss).title : DK.daskai.name(e)), V.level(e.level)),
         h('div', { class: 'hud-tags' }, st.boss ? h('span', { class: 'badge leader' }, DK.icon('crown', 13), t('battle.boss')) : null,
-          st.wave ? h('span', { class: 'badge wave-badge', tip: t('battle.wave.tip.' + st.wave.kind, { n: st.wave.total }) }, DK.icon(st.wave.kind === 'chain' ? 'swords' : 'swap', 12), t('battle.wave.badge.' + st.wave.kind, { i: Math.min(st.wave.total, st.wave.beaten + 1), n: st.wave.total })) : null, V.housesBadge(e, { known: st.known }), V.roleBadge(e), V.shinyTag(e), ui.eStatus, ui.ePhase),
+          st.wave ? h('span', { class: 'badge wave-badge', tip: st.duel ? t('duel.badgeTip', { name: st.duel.name }) : t('battle.wave.tip.' + st.wave.kind, { n: st.wave.total }) }, DK.icon(st.wave.kind === 'chain' ? 'swords' : 'swap', 12), t(st.duel ? 'duel.badge' : 'battle.wave.badge.' + st.wave.kind, { i: Math.min(st.wave.total, st.wave.beaten + 1), n: st.wave.total })) : null, V.housesBadge(e, { known: st.known }), V.roleBadge(e), V.shinyTag(e), ui.eStatus, ui.ePhase),
         ui.eHp, ui.eMp, ui.eBreak, ui.intent);
       updateBreak();
       ui.eSprite = V.dSprite(e, { size: st.boss ? 210 : 180, cls: 'idle grounded alive' + (st.boss && !st.turn && !params._entered ? ' boss-enter' : '') });
@@ -303,6 +319,7 @@
     async function play(events) {
       for (const e of events) {
         if (stopped) return;
+        try { track(e); } catch (er) { /* (el resumen nunca debe parar el combate) */ }
         switch (e.anim) {
           case 'attack':
             anim(spriteOf(e.side), 'atk-' + e.side, 420);
@@ -571,7 +588,7 @@
         h('div', { class: 'deck-moves' }, moves),
         h('div', { class: 'deck-side' },
           side('shield', t('battle.guard'), 'D', t('battle.guardDesc', { n: Math.round((1 - DK.config.guardMult) * 100) }), () => act({ type: 'guard' }), false),
-          side('bag', t('battle.bag'), 'B', t('battle.bagDesc'), showBag, false),
+          side('bag', t('battle.bag'), 'B', st.duel ? t('duel.noItems') : t('battle.bagDesc'), showBag, !!st.duel),
           side('swap', t('battle.switch'), 'C', others.length ? t('battle.switchDesc') : t('battle.switchNone'), showSwitch, !others.length),
           side('flee', t('battle.flee'), 'F', st.expedition && DK.curses.effect('noFlee') ? t('curse.noFleeMsg') : fleeDesc, doFlee, flee <= 0)),
         auto ? h('div', { class: 'deck-auto' }, DK.icon('bolt', 16), h('span', null, t('battle.autoDeck')),
@@ -749,6 +766,7 @@
 
     /** Recompensas, subida de nivel, evolución y botín. */
     async function victory() {
+      if (st.duel) { const r0 = B().rewards(st); DK.audio.sfx('win'); DK.fx.confetti(fx, 40); B().finish(st); return end('won', r0); }
       const a = B().ally(st);
       const r = B().rewards(st);
       DK.audio.sfx('win');
@@ -836,6 +854,7 @@
 
     /** Panel final del combate. */
     function end(outcome, r) {
+      if (st.duel) return duelEnd(outcome, r);
       const choice = DK.expedition.choiceInfo(); // tras un jefe de expedición: continuar o terminar
       busy = true;
       renderBench(false);
@@ -856,6 +875,7 @@
       // v5.25: desde el botín se puede ver el registro del combate (panel lateral) o plegar la ventana para ver la arena
       const fold = (on) => banner.classList.toggle('folded', on);
       const bannerTools = h('div', { class: 'banner-tools' },
+        btn({ icon: 'chart', label: t('bsum.btn'), size: 'sm', variant: 'ghost', onClick: () => V.battleSummary(st, SUM) }),
         btn({ icon: 'list', label: t('battle.endLog'), size: 'sm', variant: 'ghost', hotkey: 'L', onClick: () => expandLog() }),
         btn({ icon: 'eye', label: t('battle.endPeek'), size: 'sm', variant: 'ghost', onClick: () => fold(true) }));
       const unfold = h('button', { class: 'banner-unfold', type: 'button', onClick: () => fold(false) }, DK.icon('gift', 16), t('battle.endShow'));
@@ -875,6 +895,7 @@
           h('div', { class: 'chips' }, st.saved.map((x) => h('span', { class: 'chip pos' }, DK.icon('sparkles', 13), `${x.name} · ${t('battle.savedBy.' + x.how)}`)))) : null,
         st.dead && st.dead.length ? h('div', { class: 'exp-summary' }, h('b', null, DK.icon('skull', 14), ' ', t('battle.fallenTitle')),
           h('div', { class: 'chips' }, st.dead.map((x) => h('span', { class: 'chip neg' }, DK.icon('skull', 13), `${x.name} · ${t('common.lvl')} ${x.level}`)))) : null,
+        V.battleMvp(st, SUM),
         lostLoot && lostLoot.recruits && lostLoot.recruits.length ? h('div', { class: 'exp-summary' }, h('b', null, t('exp.recruitsLeft')),
           h('div', { class: 'chips' }, lostLoot.recruits.map((x) => h('span', { class: 'chip neg' }, DK.icon('paw', 13), x.name)))) : null,
         bannerTools));
@@ -952,6 +973,32 @@
       actionsEl.replaceChildren(h('div', { class: 'end-exp free' }, left, h('div', { class: 'ee-btns' }, exitBtn, healBtn, nextBtn)));
       drawToolbar();
       bindKeys(keys);
+    }
+
+    /** v5.45: final de un duelo: resultado, puntos (los da el servidor) y otro duelo o salir. */
+    function duelEnd(outcome, r) {
+      busy = true; auto = false; params.auto = false; renderBench(false);
+      const won = outcome === 'won', D2 = st.duel;
+      if (!won) DK.audio.sfx('lose');
+      const pts = h('div', { class: 'duel-pts' }, h('span', { class: 'mb-spin' }), h('small', { class: 'muted' }, t('duel.sending')));
+      const put = (n, ...k) => n.replaceChildren(...k.filter(Boolean));
+      const showPts = (res) => {
+        if (!res || res.error) { put(pts, DK.icon('alert', 14), h('small', { class: 'muted' }, t(res && res.error === 'token' ? 'duel.tokenOld' : 'duel.offline'))); return; }
+        put(pts, DK.icon('trophy', 16), h('b', { class: res.delta >= 0 ? 'pos' : 'neg' }, (res.delta >= 0 ? '+' : '') + res.delta), h('span', null, t('duel.rating', { n: res.rating })));
+      };
+      (D2.result || Promise.resolve(null)).then(showPts, () => showPts(null));
+      banner.replaceChildren(h('div', { class: 'banner-card duel-end ' + (won ? 'won' : 'lost') }, DK.icon(won ? 'trophy' : 'flag', 34),
+        h('h2', null, won ? t('duel.won') : t('duel.lost')), h('p', null, t(won ? 'duel.wonText' : 'duel.lostText', { name: D2.name })),
+        pts, r && r.coins ? h('div', { class: 'rw-main' }, h('span', { class: 'chip pos' }, DK.icon('coin', 14), '+' + r.coins)) : r && r.capped ? h('small', { class: 'muted' }, t('duel.capped')) : null,
+        V.battleMvp(st, SUM),
+        h('div', { class: 'banner-tools' }, btn({ icon: 'chart', label: t('bsum.btn'), size: 'sm', variant: 'ghost', onClick: () => V.battleSummary(st, SUM) }),
+          btn({ icon: 'list', label: t('battle.endLog'), size: 'sm', variant: 'ghost', onClick: () => expandLog() }))));
+      banner.classList.add('show');
+      const again = () => { DK.router.reset('hub'); setTimeout(() => V.community && V.community('duel'), 60); };
+      const exitBtn = btn({ icon: 'home', label: t('battle.exit'), variant: 'ghost', hotkey: '2', onClick: () => DK.router.reset('hub') });
+      const againBtn = btn({ icon: 'swords', label: t('duel.again'), variant: 'primary', hotkey: '1', onClick: again });
+      actionsEl.replaceChildren(h('div', { class: 'end-exp free duel-foot' }, h('div', { class: 'ee-loot' }, h('span', { class: 'ee-lbl' }, t('duel.vs', { name: D2.name }))), h('div', { class: 'ee-btns' }, exitBtn, againBtn)));
+      drawToolbar(); bindKeys({ 1: again, Enter: again, 2: () => exitBtn.click() });
     }
 
     /* ---------- Inicio ---------- */

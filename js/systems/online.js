@@ -283,8 +283,11 @@
       const P = this.last || {}, me = this.me() || {};
       const dm = Object.entries(P.dm || {}).filter(([tid, id]) => id > ((me.dmSeen || {})[tid] || 0)).length;
       const sup = (P.support || 0) > (me.supportSeen || 0) ? 1 : 0;
+      // v5.45: chat del clan con mensajes nuevos y solicitudes para entrar (si mandas en el clan)
+      const clan = (P.clan || 0) > (me.clanSeen || 0) ? 1 : 0, clanReq = P.clanReq | 0;
       const n = (this._inboxN | 0) + (this._newsN | 0) + dm + sup;
       this.unreadDm = dm; this.unreadSupport = sup;
+      if (clan + clanReq !== (this.unreadClan | 0)) { this.unreadClan = clan + clanReq; DK.emit('online:clan', { n: this.unreadClan }); }
       if (n !== this.unread) { this.unread = n; DK.emit('online:inbox', { n }); }
       return n;
     },

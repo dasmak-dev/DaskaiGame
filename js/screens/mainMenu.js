@@ -17,6 +17,13 @@
     label: () => t('main.settings'), desc: () => t('main.settingsDesc'),
     action: () => DK.settingsPanel.open(),
   });
+  // v5.45: seguir en este dispositivo una partida guardada en la nube (con el código de recuperación)
+  DK.menus.add('main', {
+    id: 'cloud', icon: 'download', order: 35, variant: 'tone',
+    visible: () => !!(DK.online && DK.online.enabled() && DK.cloudRestore),
+    label: () => t('cloud.restoreShort'), desc: () => t('cloud.restoreDesc'),
+    action: () => DK.cloudRestore(),
+  });
   DK.menus.add('main', {
     id: 'help', icon: 'help', order: 40, variant: 'tone',
     label: () => t('top.help'), desc: () => t('main.helpDesc'),

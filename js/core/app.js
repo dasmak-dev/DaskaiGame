@@ -81,14 +81,34 @@
       // (antes había que recargar dos veces para ver los cambios y parecía que no se habían aplicado)
       if ('serviceWorker' in navigator && /^https?:/.test(location.protocol)) {
         const hadSW = !!navigator.serviceWorker.controller;
-        let reloading = false;
+        let reloading = false, pending = false;
+        const reloadNow = () => { if (reloading) return; reloading = true; if (DK.store.state) DK.store.flush && DK.store.flush(); location.reload(); };
+        // v5.45: si estás a mitad de algo (combate, expedición, una ventana abierta) no se recarga de golpe:
+        // sale un aviso «Hay una versión nueva» con el botón Recargar (y se aplica sola al volver al menú)
+        const busyNow = () => { const c = DK.router.current && DK.router.current(); return !!(document.querySelector('.modal-backdrop, .modal') || (c && !['mainMenu', 'hub', 'goodbye'].includes(c.id)) || (DK.expedition && DK.store.state && DK.expedition.active())); };
+        const updateBar = () => {
+          const { h, btn } = DK.ui;
+          if (document.querySelector('.upd-bar')) return;
+          const bar = h('div', { class: 'upd-bar', role: 'status' }, DK.icon('sparkles', 16), h('span', null, DK.t('update.ready')),
+            btn({ icon: 'refresh', label: DK.t('update.reload'), size: 'sm', variant: 'primary', onClick: reloadNow }),
+            h('button', { class: 'upd-x', type: 'button', 'aria-label': DK.t('common.close'), onClick: () => bar.remove() }, DK.icon('x', 14)));
+          document.body.append(bar);
+        };
+        this.showUpdate = updateBar; // (para pruebas)
         navigator.serviceWorker.addEventListener('controllerchange', () => {
           if (!hadSW || reloading) return;
-          reloading = true;
-          if (DK.store.state) DK.store.flush && DK.store.flush();
-          location.reload();
+          if (!busyNow()) return reloadNow();
+          pending = true; updateBar();
         });
-        navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((r) => r.update && r.update()).catch(() => {});
+        DK.on('screen:enter', ({ id }) => { if (pending && (id === 'mainMenu' || id === 'hub') && !busyNow()) reloadNow(); });
+        navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((r) => {
+          if (r.update) r.update();
+          // v5.45: con el juego abierto mucho rato también se busca la versión nueva (cada 20 min y al volver a él)
+          let last = Date.now();
+          const check = () => { if (Date.now() - last < 5 * 60000) return; last = Date.now(); r.update().catch(() => {}); };
+          setInterval(() => { if (!document.hidden) { last = 0; check(); } }, 20 * 60000);
+          document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
+        }).catch(() => {});
       }
 
       DK.router.reset('mainMenu');
@@ -289,7 +309,16 @@
         if (this._offMail) this._offMail();
         this._offMail = DK.on('online:inbox', updM); updM();
       }
-      actionsEl.replaceChildren(...[mail, bell, menu].filter(Boolean));
+      // v5.45: Comunidad (duelos y clan)
+      let comm = null;
+      if (mail && DK.views.community) {
+        comm = btn({ icon: 'swords', label: DK.t('cm.title'), variant: 'ghost', cls: 'topbar-bell topbar-comm hud-icon', tip: DK.t('cm.tip'), onClick: () => DK.views.community(DK.online.unreadClan ? 'clan' : 'duel') });
+        const cdot = h('span', { class: 'nav-dot bell-dot hidden' }); comm.append(cdot);
+        const updC = () => { const n = DK.online.unreadClan | 0; cdot.textContent = n > 9 ? '9+' : n; cdot.classList.toggle('hidden', !n); };
+        if (this._offComm) this._offComm();
+        this._offComm = DK.on('online:clan', updC); updC();
+      }
+      actionsEl.replaceChildren(...[comm, mail, bell, menu].filter(Boolean));
     },
 
     /** Alterna tema claro/oscuro. */

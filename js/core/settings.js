@@ -28,6 +28,8 @@
     pixelArt: true,         // daskai en pixel art (false = dibujo suave)
     dock: 'big',            // v5.24: barra inferior: 'big' (iconos grandes) · 'mix' (iconos y texto) · 'classic'
     autoBattle: false,      // los combates empiezan en modo automático
+    telemetry: true,        // v5.45: enviar estadísticas anónimas (sólo contadores) para equilibrar el juego
+    sysNotify: false,       // v5.45: avisos del sistema (mensajes, amigos, clan) con el juego en segundo plano
     autoPause: true,        // el automático se pausa si tu daskai baja del 30% de vida
     autoHeal: true,         // el automático usa un objeto curativo cuando tu daskai está en zona crítica
     skipAnims: false,

@@ -238,6 +238,12 @@
       return true;
     },
 
+    /** v5.45: guarda una partida (ya leída, p. ej. de la nube) en la ranura n. */
+    importState(n, state) {
+      if (!state || !Array.isArray(state.party) || !state.player) return false;
+      if (this.slot === n) { clearTimeout(this._timer); this._timer = null; this._dirty = false; this.state = null; this.slot = null; }
+      return ls.set(SLOT_KEY(n), JSON.stringify(state));
+    },
     /**
      * Importa un archivo .json en la ranura n.
      * @returns {Promise<boolean>}

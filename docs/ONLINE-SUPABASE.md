@@ -1575,3 +1575,539 @@ end $$;
 revoke all on function public.admin_dms(text) from public, anon;
 grant execute on function public.admin_dms(text) to authenticated;
 ```
+
+## 10. Duelos, clanes, guardado en la nube y estadísticas anónimas (v5.45)
+
+- **Duelos**: `duel_ratings` (puntuación Elo, victorias, derrotas, defensas y límite diario de 30) y `duel_tokens` (un pase de un solo uso por duelo, válido 45 min).
+- **Clanes**: `clans`, `clan_members` (máx. 20), `clan_requests`, `clan_chat` (se borra a los 7 días) y `clan_claims` (premios del contrato del clan, una vez por semana y meta).
+- **Nube**: `cloud_saves`, una fila por partida. Guarda la partida comprimida (máx. ~300 KB) y el hash del secreto. El servidor sólo acepta una subida por minuto. `cloud_fails` frena los intentos con códigos falsos.
+- **Estadísticas**: `analytics` (día, tipo, clave, veces, suma). Sólo contadores, sin ID de jugador.
+- `dk_poll` también avisa del chat del clan y de solicitudes al clan.
+- Panel de admin: `admin_analytics`, `admin_clans` y `admin_clan_delete`.
+
+Uso aproximado de la base de datos con 1.000 jugadores activos al día:
+
+- Copias en la nube: unos 3–80 KB cada una (≈ 80 MB en total).
+- Duelos: unos 10 KB por búsqueda de rivales.
+- Estadísticas: unos pocos cientos de filas al día.
+
+```sql
+-- =====================================================================
+-- Daskai v5.45: duelos contra equipos de otros jugadores, clanes, guardado en la nube y
+-- estadísticas anónimas para equilibrar el juego.
+-- Se ejecuta UNA vez en Supabase → SQL Editor (se puede repetir sin problema: no borra datos).
+-- Necesita lo de las versiones anteriores (v5.39 … v5.43).
+-- =====================================================================
+create extension if not exists pgcrypto with schema extensions;
+
+-- =====================================================================
+-- 1) DUELOS: luchas contra una copia del equipo público de otro jugador
+-- =====================================================================
+create table if not exists public.duel_ratings (
+  player_id  uuid primary key references public.players(player_id) on delete cascade,
+  rating     int  not null default 1000,
+  wins       int  not null default 0,
+  losses     int  not null default 0,
+  def_wins   int  not null default 0,   -- veces que tu equipo ganó defendiendo
+  def_losses int  not null default 0,
+  day        date not null default current_date,
+  day_n      int  not null default 0,   -- duelos empezados hoy (límite diario)
+  updated_at timestamptz not null default now()
+);
+create index if not exists duel_ratings_idx on public.duel_ratings (rating desc);
+alter table public.duel_ratings enable row level security;
+revoke all on public.duel_ratings from anon, authenticated;
+
+create table if not exists public.duel_tokens (
+  token      uuid primary key default gen_random_uuid(),
+  player_id  uuid not null references public.players(player_id) on delete cascade,
+  opp_id     uuid not null references public.players(player_id) on delete cascade,
+  created_at timestamptz not null default now(),
+  used       boolean not null default false
+);
+create index if not exists duel_tokens_player_idx on public.duel_tokens (player_id, created_at desc);
+alter table public.duel_tokens enable row level security;
+revoke all on public.duel_tokens from anon, authenticated;
+
+-- Tu ficha de duelos (la crea si no existe)
+create or replace function public._dk_duel_row(p_player uuid) returns public.duel_ratings
+language plpgsql security definer set search_path = public as $$
+declare r public.duel_ratings;
+begin
+  insert into public.duel_ratings (player_id) values (p_player) on conflict (player_id) do nothing;
+  select * into r from public.duel_ratings where player_id = p_player;
+  if r.day <> current_date then update public.duel_ratings set day = current_date, day_n = 0 where player_id = p_player returning * into r; end if;
+  return r;
+end $$;
+revoke all on function public._dk_duel_row(uuid) from public, anon, authenticated;
+
+-- Rivales: perfiles públicos con equipo, cerca de tu puntuación (y alguno al azar)
+create or replace function public.duel_find(p_id uuid, p_secret text) returns jsonb
+language plpgsql security definer set search_path = public, extensions as $$
+declare me public.players; r public.duel_ratings;
+begin
+  me := public._dk_me(p_id, p_secret);
+  r := public._dk_duel_row(me.player_id);
+  return jsonb_build_object('me', jsonb_build_object('rating', r.rating, 'wins', r.wins, 'losses', r.losses, 'def_wins', r.def_wins, 'def_losses', r.def_losses, 'today', r.day_n, 'limit', 30),
+    'rivals', coalesce((select jsonb_agg(x) from (
+      -- (sólo lo necesario para dibujar el equipo: el equipo completo se descarga al empezar el duelo)
+      select p.trainer_id as tid, p.name, p.title, p.avatar,
+        (select jsonb_agg(jsonb_strip_nulls(jsonb_build_object('s', e->'s', 'l', e->'l', 'sh', e->'sh', 'lk', e->'lk', 'f', e->'f', 'fs', e->'fs', 'h2', e->'h2', 'n', e->'n'))) from jsonb_array_elements(p.team) e) as team,
+        coalesce(d.rating, 1000) as rating, coalesce(d.def_wins, 0) as def_wins, coalesce(d.def_losses, 0) as def_losses
+      from public.players p left join public.duel_ratings d on d.player_id = p.player_id
+      where p.player_id <> me.player_id and jsonb_typeof(p.team) = 'array' and jsonb_array_length(p.team) > 0
+        and p.updated_at > now() - interval '60 days'
+        and not exists (select 1 from public.bans b where b.trainer_id = p.trainer_id)
+      order by abs(coalesce(d.rating, 1000) - r.rating) + (random() * 120) limit 6) x), '[]'::jsonb));
+end $$;
+
+-- Empieza un duelo: da el equipo del rival y un pase de un solo uso (máximo 30 al día)
+create or replace function public.duel_start(p_id uuid, p_secret text, p_tid text) returns jsonb
+language plpgsql security definer set search_path = public, extensions as $$
+declare me public.players; r public.duel_ratings; o public.players; tok uuid; od public.duel_ratings;
+begin
+  me := public._dk_me(p_id, p_secret);
+  r := public._dk_duel_row(me.player_id);
+  if r.day_n >= 30 then return jsonb_build_object('error', 'limit'); end if;
+  select * into o from public.players where trainer_id = upper(p_tid);
+  if not found or o.player_id = me.player_id or exists (select 1 from public.bans b where b.trainer_id = o.trainer_id)
+     or jsonb_typeof(o.team) <> 'array' or jsonb_array_length(o.team) = 0 then return jsonb_build_object('error', 'norival'); end if;
+  od := public._dk_duel_row(o.player_id);
+  update public.duel_ratings set day_n = day_n + 1 where player_id = me.player_id;
+  delete from public.duel_tokens where created_at < now() - interval '2 days';
+  insert into public.duel_tokens (player_id, opp_id) values (me.player_id, o.player_id) returning token into tok;
+  return jsonb_build_object('token', tok, 'tid', o.trainer_id, 'name', o.name, 'title', o.title, 'avatar', o.avatar, 'team', o.team, 'rating', od.rating);
+end $$;
+
+-- Resultado: puntuación tipo Elo (tú ±24 como mucho; el rival defensor ±12)
+create or replace function public.duel_report(p_id uuid, p_secret text, p_token uuid, p_won boolean) returns jsonb
+language plpgsql security definer set search_path = public, extensions as $$
+declare me public.players; k public.duel_tokens; a public.duel_ratings; b public.duel_ratings; ea float; d int; dd int;
+begin
+  me := public._dk_me(p_id, p_secret);
+  select * into k from public.duel_tokens where token = p_token and player_id = me.player_id for update;
+  if not found or k.used or k.created_at < now() - interval '45 minutes' then return jsonb_build_object('error', 'token'); end if;
+  update public.duel_tokens set used = true where token = p_token;
+  a := public._dk_duel_row(me.player_id); b := public._dk_duel_row(k.opp_id);
+  ea := 1.0 / (1.0 + power(10.0, (b.rating - a.rating) / 400.0));
+  d := round(24 * ((case when p_won then 1 else 0 end) - ea));
+  if p_won and d < 1 then d := 1; end if;
+  if not p_won and d > -1 then d := -1; end if;
+  dd := round(-d / 2.0);
+  update public.duel_ratings set rating = greatest(0, rating + d), wins = wins + (case when p_won then 1 else 0 end), losses = losses + (case when p_won then 0 else 1 end), updated_at = now() where player_id = a.player_id;
+  update public.duel_ratings set rating = greatest(0, rating + dd), def_wins = def_wins + (case when p_won then 0 else 1 end), def_losses = def_losses + (case when p_won then 1 else 0 end) where player_id = b.player_id;
+  return jsonb_build_object('rating', greatest(0, a.rating + d), 'delta', d);
+end $$;
+
+-- Clasificación de duelos (pública)
+create or replace function public.duel_board(p_limit int default 50) returns jsonb
+language sql stable security definer set search_path = public as $$
+  select coalesce(jsonb_agg(x), '[]'::jsonb) from (
+    select p.trainer_id as tid, p.name, p.avatar, d.rating, d.wins, d.losses
+    from public.duel_ratings d join public.players p on p.player_id = d.player_id
+    where d.wins + d.losses > 0 and not exists (select 1 from public.bans b where b.trainer_id = p.trainer_id)
+    order by d.rating desc, d.wins desc limit least(greatest(coalesce(p_limit, 50), 1), 100)) x
+$$;
+
+-- =====================================================================
+-- 2) CLANES: hasta 20 jugadores, chat propio y contrato semanal compartido
+-- =====================================================================
+create table if not exists public.clans (
+  id         bigint generated always as identity primary key,
+  tag        text not null unique check (tag ~ '^[A-Z0-9]{2,4}$'),
+  name       text not null check (char_length(name) between 3 and 24),
+  descr      text check (char_length(descr) <= 160),
+  icon       text check (char_length(icon) <= 20),
+  color      text check (color ~ '^#[0-9a-fA-F]{6}$'),
+  open       boolean not null default true,
+  created_at timestamptz not null default now()
+);
+alter table public.clans enable row level security;
+revoke all on public.clans from anon, authenticated;
+
+create table if not exists public.clan_members (
+  player_id uuid primary key references public.players(player_id) on delete cascade,
+  clan_id   bigint not null references public.clans(id) on delete cascade,
+  role      text not null default 'member' check (role in ('leader', 'officer', 'member')),
+  joined_at timestamptz not null default now()
+);
+create index if not exists clan_members_clan_idx on public.clan_members (clan_id);
+alter table public.clan_members enable row level security;
+revoke all on public.clan_members from anon, authenticated;
+
+create table if not exists public.clan_requests (
+  clan_id    bigint not null references public.clans(id) on delete cascade,
+  player_id  uuid not null references public.players(player_id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (clan_id, player_id)
+);
+alter table public.clan_requests enable row level security;
+revoke all on public.clan_requests from anon, authenticated;
+
+create table if not exists public.clan_chat (
+  id         bigint generated always as identity primary key,
+  clan_id    bigint not null references public.clans(id) on delete cascade,
+  from_tid   text not null,
+  body       text not null check (char_length(body) between 1 and 300),
+  created_at timestamptz not null default now()
+);
+create index if not exists clan_chat_idx on public.clan_chat (clan_id, id desc);
+alter table public.clan_chat enable row level security;
+revoke all on public.clan_chat from anon, authenticated;
+
+create table if not exists public.clan_claims (
+  player_id uuid not null references public.players(player_id) on delete cascade,
+  week      int not null,
+  tier      int not null check (tier between 1 and 3),
+  created_at timestamptz not null default now(),
+  primary key (player_id, week, tier)
+);
+alter table public.clan_claims enable row level security;
+revoke all on public.clan_claims from anon, authenticated;
+
+-- Metas del contrato del clan (suma de los récords semanales de sus miembros)
+create or replace function public._dk_clan_tiers() returns int[] language sql immutable as $$ select array[5000, 15000, 30000] $$;
+create or replace function public._dk_clan_total(p_clan bigint) returns int
+language sql stable security definer set search_path = public as $$
+  select coalesce(sum(s.value), 0)::int from public.clan_members m join public.scores s on s.player_id = m.player_id
+  where m.clan_id = p_clan and s.board = 'weekly' and s.period = public.dk_week() and not s.flagged
+$$;
+revoke all on function public._dk_clan_total(bigint) from public, anon, authenticated;
+
+-- Buscar clanes (sin registrarse)
+create or replace function public.clan_search(p_q text default '') returns jsonb
+language sql stable security definer set search_path = public as $$
+  select coalesce(jsonb_agg(x), '[]'::jsonb) from (
+    select c.id, c.tag, c.name, c.descr, c.icon, c.color, c.open,
+      (select count(*) from public.clan_members m where m.clan_id = c.id) as members, public._dk_clan_total(c.id) as week
+    from public.clans c
+    where coalesce(p_q, '') = '' or c.name ilike '%' || replace(replace(p_q, '%', ''), '_', '') || '%' or c.tag = upper(p_q)
+    order by week desc, members desc, c.id desc limit 30) x
+$$;
+
+create or replace function public.clan_create(p_id uuid, p_secret text, p_tag text, p_name text, p_descr text, p_icon text, p_color text, p_open boolean) returns text
+language plpgsql security definer set search_path = public, extensions as $$
+declare me public.players; cid bigint;
+begin
+  me := public._dk_me(p_id, p_secret);
+  if exists (select 1 from public.clan_members where player_id = me.player_id) then return 'in_clan'; end if;
+  if upper(coalesce(p_tag, '')) !~ '^[A-Z0-9]{2,4}$' or char_length(trim(coalesce(p_name, ''))) not between 3 and 24 then return 'bad'; end if;
+  if exists (select 1 from public.clans where tag = upper(p_tag)) then return 'tag_taken'; end if;
+  insert into public.clans (tag, name, descr, icon, color, open)
+    values (upper(p_tag), trim(p_name), left(p_descr, 160), left(coalesce(p_icon, 'flag'), 20), case when p_color ~ '^#[0-9a-fA-F]{6}$' then p_color else '#b45309' end, coalesce(p_open, true))
+    returning id into cid;
+  insert into public.clan_members (player_id, clan_id, role) values (me.player_id, cid, 'leader');
+  delete from public.clan_requests where player_id = me.player_id;
+  return 'ok';
+end $$;
+
+create or replace function public.clan_join(p_id uuid, p_secret text, p_clan bigint) returns text
+language plpgsql security definer set search_path = public, extensions as $$
+declare me public.players; c public.clans;
+begin
+  me := public._dk_me(p_id, p_secret);
+  if exists (select 1 from public.clan_members where player_id = me.player_id) then return 'in_clan'; end if;
+  select * into c from public.clans where id = p_clan;
+  if not found then return 'noclan'; end if;
+  if (select count(*) from public.clan_members where clan_id = c.id) >= 20 then return 'full'; end if;
+  if c.open then
+    insert into public.clan_members (player_id, clan_id) values (me.player_id, c.id);
+    delete from public.clan_requests where player_id = me.player_id;
+    insert into public.clan_chat (clan_id, from_tid, body) values (c.id, '@SYS', 'join:' || me.name);
+    return 'joined';
+  end if;
+  if (select count(*) from public.clan_requests where player_id = me.player_id) >= 5 then return 'too_many'; end if;
+  insert into public.clan_requests (clan_id, player_id) values (c.id, me.player_id) on conflict do nothing;
+  return 'requested';
+end $$;
+
+create or replace function public.clan_leave(p_id uuid, p_secret text) returns text
+language plpgsql security definer set search_path = public, extensions as $$
+declare me public.players; m public.clan_members; nxt uuid;
+begin
+  me := public._dk_me(p_id, p_secret);
+  select * into m from public.clan_members where player_id = me.player_id;
+  if not found then delete from public.clan_requests where player_id = me.player_id; return 'ok'; end if;
+  delete from public.clan_members where player_id = me.player_id;
+  if not exists (select 1 from public.clan_members where clan_id = m.clan_id) then delete from public.clans where id = m.clan_id; return 'ok'; end if;
+  insert into public.clan_chat (clan_id, from_tid, body) values (m.clan_id, '@SYS', 'leave:' || me.name);
+  if m.role = 'leader' then
+    select player_id into nxt from public.clan_members where clan_id = m.clan_id order by (role = 'officer') desc, joined_at limit 1;
+    update public.clan_members set role = 'leader' where player_id = nxt;
+  end if;
+  return 'ok';
+end $$;
+
+-- Todo lo de tu clan de una vez (o tus solicitudes pendientes si no tienes clan)
+create or replace function public.clan_info(p_id uuid, p_secret text) returns jsonb
+language plpgsql security definer set search_path = public, extensions as $$
+declare me public.players; m public.clan_members; c public.clans; wk int := public.dk_week();
+begin
+  me := public._dk_me(p_id, p_secret);
+  select * into m from public.clan_members where player_id = me.player_id;
+  if not found then
+    return jsonb_build_object('clan', null, 'pending', coalesce((select jsonb_agg(jsonb_build_object('id', c2.id, 'tag', c2.tag, 'name', c2.name)) from public.clan_requests r join public.clans c2 on c2.id = r.clan_id where r.player_id = me.player_id), '[]'::jsonb));
+  end if;
+  select * into c from public.clans where id = m.clan_id;
+  return jsonb_build_object(
+    'clan', jsonb_build_object('id', c.id, 'tag', c.tag, 'name', c.name, 'descr', c.descr, 'icon', c.icon, 'color', c.color, 'open', c.open, 'created_at', c.created_at),
+    'role', m.role, 'week', wk, 'tiers', to_jsonb(public._dk_clan_tiers()), 'total', public._dk_clan_total(c.id),
+    'claimed', coalesce((select jsonb_agg(tier) from public.clan_claims where player_id = me.player_id and week = wk), '[]'::jsonb),
+    'chat_max', coalesce((select max(id) from public.clan_chat where clan_id = c.id), 0),
+    'members', coalesce((select jsonb_agg(x order by x.score desc, x.name) from (
+        select p.trainer_id as tid, p.name, p.avatar, mm.role, p.updated_at as seen,
+          coalesce((select s.value from public.scores s where s.player_id = mm.player_id and s.board = 'weekly' and s.period = wk and not s.flagged), 0) as score
+        from public.clan_members mm join public.players p on p.player_id = mm.player_id where mm.clan_id = c.id) x), '[]'::jsonb),
+    'requests', case when m.role in ('leader', 'officer') then coalesce((select jsonb_agg(jsonb_build_object('tid', p.trainer_id, 'name', p.name, 'avatar', p.avatar, 'at', r.created_at))
+        from public.clan_requests r join public.players p on p.player_id = r.player_id where r.clan_id = c.id), '[]'::jsonb) else '[]'::jsonb end);
+end $$;
+
+-- Gestión: aceptar/rechazar solicitudes, expulsar, ascender/degradar y ceder el liderazgo
+create or replace function public.clan_manage(p_id uuid, p_secret text, p_action text, p_tid text) returns text
+language plpgsql security definer set search_path = public, extensions as $$
+declare me public.players; m public.clan_members; o public.players; om public.clan_members;
+begin
+  me := public._dk_me(p_id, p_secret);
+  select * into m from public.clan_members where player_id = me.player_id;
+  if not found or m.role = 'member' then return 'denied'; end if;
+  select * into o from public.players where trainer_id = upper(p_tid);
+  if not found then return 'noplayer'; end if;
+  if p_action in ('accept', 'reject') then
+    if not exists (select 1 from public.clan_requests where clan_id = m.clan_id and player_id = o.player_id) then return 'norequest'; end if;
+    delete from public.clan_requests where clan_id = m.clan_id and player_id = o.player_id;
+    if p_action = 'reject' then return 'ok'; end if;
+    if exists (select 1 from public.clan_members where player_id = o.player_id) then return 'in_clan'; end if;
+    if (select count(*) from public.clan_members where clan_id = m.clan_id) >= 20 then return 'full'; end if;
+    insert into public.clan_members (player_id, clan_id) values (o.player_id, m.clan_id);
+    delete from public.clan_requests where player_id = o.player_id;
+    insert into public.clan_chat (clan_id, from_tid, body) values (m.clan_id, '@SYS', 'join:' || o.name);
+    return 'ok';
+  end if;
+  select * into om from public.clan_members where player_id = o.player_id and clan_id = m.clan_id;
+  if not found or o.player_id = me.player_id then return 'nomember'; end if;
+  if p_action = 'kick' then
+    if om.role = 'leader' or (om.role = 'officer' and m.role <> 'leader') then return 'denied'; end if;
+    delete from public.clan_members where player_id = o.player_id;
+    insert into public.clan_chat (clan_id, from_tid, body) values (m.clan_id, '@SYS', 'kick:' || o.name);
+    return 'ok';
+  end if;
+  if m.role <> 'leader' then return 'denied'; end if;
+  if p_action = 'promote' then update public.clan_members set role = 'officer' where player_id = o.player_id; return 'ok'; end if;
+  if p_action = 'demote' then update public.clan_members set role = 'member' where player_id = o.player_id; return 'ok'; end if;
+  if p_action = 'transfer' then
+    update public.clan_members set role = 'leader' where player_id = o.player_id;
+    update public.clan_members set role = 'officer' where player_id = me.player_id;
+    return 'ok';
+  end if;
+  return 'bad';
+end $$;
+
+create or replace function public.clan_edit(p_id uuid, p_secret text, p_name text, p_descr text, p_icon text, p_color text, p_open boolean) returns text
+language plpgsql security definer set search_path = public, extensions as $$
+declare me public.players; m public.clan_members;
+begin
+  me := public._dk_me(p_id, p_secret);
+  select * into m from public.clan_members where player_id = me.player_id;
+  if not found or m.role <> 'leader' then return 'denied'; end if;
+  if char_length(trim(coalesce(p_name, ''))) not between 3 and 24 then return 'bad'; end if;
+  update public.clans set name = trim(p_name), descr = left(p_descr, 160), icon = left(coalesce(p_icon, 'flag'), 20),
+    color = case when p_color ~ '^#[0-9a-fA-F]{6}$' then p_color else color end, open = coalesce(p_open, open) where id = m.clan_id;
+  return 'ok';
+end $$;
+
+create or replace function public.clan_chat_send(p_id uuid, p_secret text, p_text text) returns text
+language plpgsql security definer set search_path = public, extensions as $$
+declare me public.players; m public.clan_members;
+begin
+  me := public._dk_me(p_id, p_secret);
+  select * into m from public.clan_members where player_id = me.player_id;
+  if not found then return 'noclan'; end if;
+  if char_length(trim(coalesce(p_text, ''))) = 0 then return 'bad'; end if;
+  if (select count(*) from public.clan_chat where clan_id = m.clan_id and from_tid = me.trainer_id and created_at > now() - interval '1 minute') >= 12 then return 'slow'; end if;
+  insert into public.clan_chat (clan_id, from_tid, body) values (m.clan_id, me.trainer_id, left(trim(p_text), 300));
+  delete from public.clan_chat where clan_id = m.clan_id and created_at < now() - interval '7 days';
+  return 'ok';
+end $$;
+
+create or replace function public.clan_chat_fetch(p_id uuid, p_secret text, p_after bigint default 0)
+returns table (id bigint, from_tid text, name text, body text, created_at timestamptz)
+language plpgsql security definer set search_path = public, extensions as $$
+declare me public.players; m public.clan_members;
+begin
+  me := public._dk_me(p_id, p_secret);
+  select * into m from public.clan_members where player_id = me.player_id;
+  if not found then return; end if;
+  return query select c.id, c.from_tid, p.name, c.body, c.created_at from public.clan_chat c left join public.players p on p.trainer_id = c.from_tid
+    where c.clan_id = m.clan_id and c.id > coalesce(p_after, 0) order by c.id desc limit 80;
+end $$;
+
+-- Recoger un premio del contrato del clan (una vez por semana y meta)
+create or replace function public.clan_claim(p_id uuid, p_secret text, p_tier int) returns text
+language plpgsql security definer set search_path = public, extensions as $$
+declare me public.players; m public.clan_members; wk int := public.dk_week();
+begin
+  me := public._dk_me(p_id, p_secret);
+  select * into m from public.clan_members where player_id = me.player_id;
+  if not found then return 'noclan'; end if;
+  if p_tier not between 1 and 3 then return 'bad'; end if;
+  if m.joined_at > now() - interval '1 day' then return 'new'; end if;   -- (no vale entrar en un clan sólo para cobrar)
+  if public._dk_clan_total(m.clan_id) < (public._dk_clan_tiers())[p_tier] then return 'notyet'; end if;
+  insert into public.clan_claims (player_id, week, tier) values (me.player_id, wk, p_tier) on conflict do nothing;
+  if not found then return 'already'; end if;
+  return 'ok';
+end $$;
+
+-- =====================================================================
+-- 3) GUARDADO EN LA NUBE: una copia comprimida por jugador (se sobrescribe)
+-- =====================================================================
+create table if not exists public.cloud_saves (
+  player_id   uuid primary key,
+  secret_hash text not null,
+  data        text not null check (char_length(data) <= 400000),   -- partida comprimida (gzip + base64), máx. ~300 KB
+  bytes       int  not null default 0,
+  version     text check (char_length(version) <= 20),
+  playtime    int  not null default 0,
+  label       text check (char_length(label) <= 40),
+  updated_at  timestamptz not null default now()
+);
+alter table public.cloud_saves enable row level security;
+revoke all on public.cloud_saves from anon, authenticated;
+
+create or replace function public.cloud_save(p_id uuid, p_secret text, p_data text, p_version text, p_playtime int, p_label text) returns jsonb
+language plpgsql security definer set search_path = public, extensions as $$
+declare h text := encode(digest(coalesce(p_secret, ''), 'sha256'), 'hex'); r public.cloud_saves; pl public.players;
+begin
+  if p_id is null or char_length(coalesce(p_secret, '')) < 16 or p_data is null or char_length(p_data) > 400000 then return jsonb_build_object('error', 'bad'); end if;
+  select * into pl from public.players where player_id = p_id;
+  if found and (pl.secret_hash <> h or exists (select 1 from public.bans b where b.trainer_id = pl.trainer_id)) then return jsonb_build_object('error', 'denied'); end if;
+  select * into r from public.cloud_saves where player_id = p_id;
+  if found then
+    if r.secret_hash <> h then return jsonb_build_object('error', 'denied'); end if;
+    if now() - r.updated_at < interval '60 seconds' then return jsonb_build_object('error', 'slow', 'at', r.updated_at); end if;
+    update public.cloud_saves set data = p_data, bytes = char_length(p_data), version = left(p_version, 20), playtime = greatest(0, coalesce(p_playtime, 0)), label = left(p_label, 40), updated_at = now() where player_id = p_id;
+  else
+    insert into public.cloud_saves (player_id, secret_hash, data, bytes, version, playtime, label)
+      values (p_id, h, p_data, char_length(p_data), left(p_version, 20), greatest(0, coalesce(p_playtime, 0)), left(p_label, 40));
+  end if;
+  return jsonb_build_object('ok', true, 'at', now(), 'bytes', char_length(p_data));
+end $$;
+
+create or replace function public.cloud_info(p_id uuid, p_secret text) returns jsonb
+language plpgsql security definer set search_path = public, extensions as $$
+declare r public.cloud_saves;
+begin
+  select * into r from public.cloud_saves where player_id = p_id;
+  if not found then return jsonb_build_object('none', true); end if;
+  if r.secret_hash <> encode(digest(coalesce(p_secret, ''), 'sha256'), 'hex') then return jsonb_build_object('error', 'denied'); end if;
+  return jsonb_build_object('at', r.updated_at, 'bytes', r.bytes, 'version', r.version, 'playtime', r.playtime, 'label', r.label);
+end $$;
+
+-- Descargar la copia (con el código de recuperación). Máx. 20 intentos fallidos por hora en todo el juego
+create table if not exists public.cloud_fails (at timestamptz not null default now());
+alter table public.cloud_fails enable row level security;
+revoke all on public.cloud_fails from anon, authenticated;
+create or replace function public.cloud_load(p_id uuid, p_secret text) returns jsonb
+language plpgsql security definer set search_path = public, extensions as $$
+declare r public.cloud_saves;
+begin
+  delete from public.cloud_fails where at < now() - interval '1 hour';
+  if (select count(*) from public.cloud_fails) > 200 then return jsonb_build_object('error', 'slow'); end if;
+  select * into r from public.cloud_saves where player_id = p_id;
+  if not found or r.secret_hash <> encode(digest(coalesce(p_secret, ''), 'sha256'), 'hex') then
+    insert into public.cloud_fails default values; return jsonb_build_object('error', 'notfound');
+  end if;
+  return jsonb_build_object('data', r.data, 'at', r.updated_at, 'version', r.version, 'playtime', r.playtime, 'label', r.label);
+end $$;
+
+-- =====================================================================
+-- 4) ESTADÍSTICAS ANÓNIMAS: sólo contadores por día (sin ID de jugador)
+-- =====================================================================
+create table if not exists public.analytics (
+  day  date not null default current_date,
+  kind text not null check (char_length(kind) <= 20),
+  key  text not null check (char_length(key) <= 60),
+  n    int  not null default 0,
+  sum  bigint not null default 0,
+  primary key (day, kind, key)
+);
+alter table public.analytics enable row level security;
+revoke all on public.analytics from anon, authenticated;
+
+create or replace function public.track_batch(p_events jsonb) returns text
+language plpgsql security definer set search_path = public as $$
+declare e jsonb; i int := 0;
+begin
+  if jsonb_typeof(p_events) <> 'array' then return 'bad'; end if;
+  for e in select * from jsonb_array_elements(p_events) loop
+    i := i + 1; exit when i > 60;
+    if coalesce(e->>'k', '') !~ '^[a-z_]{1,20}$' or char_length(coalesce(e->>'key', '')) not between 1 and 60 then continue; end if;
+    insert into public.analytics (kind, key, n, sum)
+      values (e->>'k', e->>'key', least(greatest(coalesce((e->>'n')::int, 1), 1), 50), least(greatest(coalesce((e->>'v')::bigint, 0), 0), 1000000))
+      on conflict (day, kind, key) do update set n = analytics.n + excluded.n, sum = analytics.sum + excluded.sum;
+  end loop;
+  return 'ok';
+end $$;
+
+-- Para el panel de admin: totales de los últimos días
+create or replace function public.admin_analytics(p_days int default 7) returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+begin
+  perform public._dk_need_admin();
+  return coalesce((select jsonb_agg(x order by x.kind, x.n desc) from (
+    select kind, key, sum(n)::int as n, sum(sum)::bigint as sum from public.analytics
+    where day > current_date - least(greatest(coalesce(p_days, 7), 1), 90) group by kind, key) x), '[]'::jsonb);
+end $$;
+create or replace function public.admin_clans() returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+begin
+  perform public._dk_need_admin();
+  return coalesce((select jsonb_agg(x order by x.members desc) from (select c.id, c.tag, c.name, c.descr, c.created_at, (select count(*) from public.clan_members m where m.clan_id = c.id) as members, public._dk_clan_total(c.id) as week from public.clans c) x), '[]'::jsonb);
+end $$;
+create or replace function public.admin_clan_delete(p_clan bigint) returns text
+language plpgsql security definer set search_path = public as $$
+begin
+  perform public._dk_need_admin();
+  delete from public.clans where id = p_clan;
+  return 'ok';
+end $$;
+
+-- =====================================================================
+-- 5) Comprobación rápida: ahora también avisa del chat del clan y de solicitudes al clan
+-- =====================================================================
+create or replace function public.dk_poll(p_id uuid, p_secret text) returns jsonb
+language plpgsql security definer set search_path = public, extensions as $$
+declare me public.players; m public.clan_members;
+begin
+  begin me := public._dk_me(p_id, p_secret); exception when others then return jsonb_build_object('error', sqlerrm); end;
+  select * into m from public.clan_members where player_id = me.player_id;
+  return jsonb_build_object(
+    'inbox', (select coalesce(max(id), 0) from public.inbox where to_tid = me.trainer_id),
+    'news', (select coalesce(max(id), 0) from public.news where published and (expires_at is null or expires_at > now())),
+    'support', (select coalesce(max(id), 0) from public.support where trainer_id = me.trainer_id and from_admin),
+    'dm', coalesce((select jsonb_object_agg(f, mx) from (select from_tid as f, max(id) as mx from public.dm
+            where (a_tid = me.trainer_id or b_tid = me.trainer_id) and from_tid <> me.trainer_id and created_at > now() - interval '24 hours' group by from_tid) z), '{}'::jsonb),
+    'clan', case when m.clan_id is null then 0 else (select coalesce(max(id), 0) from public.clan_chat where clan_id = m.clan_id and from_tid <> me.trainer_id) end,
+    'clanReq', case when m.role in ('leader', 'officer') then (select count(*) from public.clan_requests where clan_id = m.clan_id) else 0 end);
+end $$;
+
+-- ---------- Permisos: sólo se puede llamar a las funciones públicas ----------
+do $$
+declare f text;
+begin
+  foreach f in array array[
+    'duel_find(uuid,text)', 'duel_start(uuid,text,text)', 'duel_report(uuid,text,uuid,boolean)', 'duel_board(integer)',
+    'clan_search(text)', 'clan_create(uuid,text,text,text,text,text,text,boolean)', 'clan_join(uuid,text,bigint)', 'clan_leave(uuid,text)',
+    'clan_info(uuid,text)', 'clan_manage(uuid,text,text,text)', 'clan_edit(uuid,text,text,text,text,text,boolean)',
+    'clan_chat_send(uuid,text,text)', 'clan_chat_fetch(uuid,text,bigint)', 'clan_claim(uuid,text,integer)',
+    'cloud_save(uuid,text,text,text,integer,text)', 'cloud_info(uuid,text)', 'cloud_load(uuid,text)', 'track_batch(jsonb)', 'dk_poll(uuid,text)'] loop
+    execute format('revoke all on function public.%s from public', f);
+    execute format('grant execute on function public.%s to anon, authenticated', f);
+  end loop;
+  foreach f in array array['admin_analytics(integer)', 'admin_clans()', 'admin_clan_delete(bigint)'] loop
+    execute format('revoke all on function public.%s from public, anon', f);
+    execute format('grant execute on function public.%s to authenticated', f);
+  end loop;
+end $$;
+revoke all on function public._dk_clan_tiers() from public, anon, authenticated;
+```
+

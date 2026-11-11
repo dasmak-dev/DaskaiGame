@@ -38,6 +38,7 @@
      *                            · {final: true} es el jefe del final del mapa · {elite: true} rival de élite
      */
     start(zoneId, leaderUid, o = {}) {
+      if (o.duel) return this.startDuel(zoneId, leaderUid, o.duel); // v5.45: duelo contra el equipo de otro jugador
       const zone = D.zones[zoneId];
       // En expediciones profundas los rivales tienen más nivel (DK.expedition.levelBonus)
       const plus = DK.expedition.active() ? DK.expedition.levelBonus() : 0;
@@ -99,6 +100,31 @@
       // Pacto «Frenesí»: el rival empieza más rápido
       if (st.expedition && DK.curses.effect('enemySpd')) st.stages.enemy.spd = Math.min(3, DK.curses.effect('enemySpd'));
       // Pasivas «al entrar» (mirada fiera, arranque…): efectos temporales de los dos
+      st.timed = { ally: [], enemy: [] }; st.entryLog = [];
+      this.applyEntry(st, 'ally', null); this.applyEntry(st, 'enemy', null);
+      st.intent = this.enemyChoice(st);
+      return st;
+    },
+
+    /**
+     * v5.45: duelo. El rival es una copia del equipo público de otro jugador (DK.duels.ghost): entran uno tras otro
+     * (como una oleada). No hay botín, ni vínculo, ni objetos; tu equipo vuelve como estaba al terminar.
+     * @param {Object} duel { token, tid, name, team: [snapD…] }
+     */
+    startDuel(zoneId, leaderUid, duel) {
+      const foes = (duel.team || []).map((x) => DK.duels.ghost(x)).filter(Boolean);
+      if (!foes.length) foes.push(DK.daskai.create(Object.keys(D.species)[0], 5, { wild: true }));
+      const saved = DK.party.active().map((d) => ({ uid: d.uid, hp: d.cur.hp, mp: d.cur.mp, status: d.status || null }));
+      // todos empiezan con la vida llena (el duelo no depende de cómo vengas de la expedición)
+      DK.party.active().forEach((d) => DK.daskai.fullHeal(d));
+      DK.emit('battle:start', { zone: zoneId, duel: true });
+      const st = {
+        zoneId, enemy: foes[0], allyUid: leaderUid, known: true, boss: false, elite: false, expedition: false, secret: false, final: false,
+        duel: { token: duel.token, tid: duel.tid, name: duel.name, rating: duel.rating, saved }, bossInfo: null, legend: null,
+        stages: { ally: zeroStages(), enemy: zeroStages() }, turn: 0, outcome: null, needSwitch: false, finished: false, lastMove: null,
+        phases: [], phase: 0, shield: 0, frenzy: false, bossRegen: 0, guarding: false, breakMax: 0, breakVal: 0, broken: 0, brokeAt: 0, breaks: 0,
+        wave: { kind: 'chain', total: foes.length, queue: foes.slice(1), beaten: 0, all: foes, swapped: {}, mult: 1 },
+      };
       st.timed = { ally: [], enemy: [] }; st.entryLog = [];
       this.applyEntry(st, 'ally', null); this.applyEntry(st, 'enemy', null);
       st.intent = this.enemyChoice(st);
@@ -374,7 +400,7 @@
      * Cuánto sabes del rival según los combates contra su especie en esta zona:
      * 0 = nada · 1 = su casa · 2 = también sus ataques · 3+ = también sus atributos.
      */
-    knowledge(st) { return DK.codex.fought(st.zoneId, st.enemy.species); },
+    knowledge(st) { return st.duel ? 99 : DK.codex.fought(st.zoneId, st.enemy.species); },
 
     /* ---------------- Orden de actuación ---------------- */
     /** Prioridad de un ataque (+1 rápido, -1 lento, 0 normal). */
@@ -401,6 +427,7 @@
 
     /** Probabilidad de huida: +5 niveles = 100%, mismo nivel = 50%, más de 5 por debajo = 0%. Jefes: 0%. */
     fleeChance(st) {
+      if (st.duel) return 1; // (en un duelo, huir es rendirse)
       if (st.boss) return 0;
       if (st.expedition && DK.curses.effect('noFlee')) return 0; // pacto «Sin huida»
       const diff = this.ally(st).level - st.enemy.level;
@@ -433,6 +460,7 @@
      * Nunca usa objetos legendarios. Devuelve el id o null.
      */
     autoHealItem(st) {
+      if (st.duel) return null; // sin objetos en los duelos
       const a = this.ally(st), s = DK.daskai.stats(a);
       const missing = s.hp - a.cur.hp;
       if (missing <= 0) return null;
@@ -624,6 +652,7 @@
 
     /** ¿Por qué no se puede vincular? (null si se puede) */
     cannotCapture(st) {
+      if (st.duel) return t('duel.noItems');
       if (!C().captureEnabled) return t('battle.captureOff');
       if (st.boss) return t('battle.bossNoCapture');
       if (C().captureOnlyInExpedition && !st.expedition) return t('battle.captureExpOnly');
@@ -775,7 +804,7 @@
     /** v5.5: entra un rival nuevo (oleada o relevo): sus mejoras/efectos empiezan de cero. */
     enemyIn(st, d, ev, how = 'next') {
       st.enemy = d; st.stages.enemy = zeroStages(); if (st.timed) st.timed.enemy = [];
-      st.known = DK.codex.fought(st.zoneId, d.species) > 0;
+      st.known = st.duel ? true : DK.codex.fought(st.zoneId, d.species) > 0;
       const W = st.wave, n = W ? W.all.indexOf(d) + 1 : 1;
       this.push(st, ev, { text: t('battle.wave.' + how, { name: cap(this.name(st, 'enemy')), n, total: W ? W.total : 1 }), kind: 'warn', anim: 'enemyIn', side: 'enemy', uid: d.uid, cat: 'dmg' });
       this.applyEntry(st, 'enemy', ev);
@@ -802,6 +831,7 @@
      * En una expedición el botín se guarda aparte hasta terminarla.
      */
     rewards(st) {
+      if (st.duel) return DK.duels.rewards(st);
       const ally = this.ally(st), e = st.enemy, sp = D.species[e.species], zone = D.zones[st.zoneId];
       const out = { exp: 0, coins: 0, drops: [], unlocked: null, captured: st.outcome === 'captured', boss: st.boss, toLoot: st.expedition };
       const gF = DK.gear.fxOf(ally); // v4.82: sufijos de experiencia y monedas
@@ -916,6 +946,7 @@
     finish(st) {
       if (st.finished) return;
       st.finished = true;
+      if (st.duel) { DK.duels.finish(st); return; }
       DK.codex.entry(st.zoneId, st.enemy.species).fought++;
       const s = DK.store.state.stats;
       // Muerte permanente (según la dificultad): en una expedición, los daskai que
