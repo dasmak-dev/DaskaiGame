@@ -85,6 +85,19 @@
   def('piedra_templado', 1, { fragmento_forja: 14, obsidiana: 2 });
   def('sello_forja', 1, { fragmento_forja: 10, piedra_runica: 2 });
   def('piedra_exaltacion', 1, { fragmento_forja: 20, lagrima_estelar: 1 });
+  // v5.29: reactivos de RUNAS a partir de materiales (siguen saliendo, además, explorando su zona).
+  // Base: piedra rúnica + materiales que recuerdan a su zona; los más potentes piden lágrima estelar.
+  def('tiza_runica', 1, { piedra_runica: 1, polvo_brillante: 1, hilo: 1 });
+  def('savia_runica', 1, { piedra_runica: 1, hilo: 2, gota: 1 });
+  def('perla_runica', 1, { piedra_runica: 1, coral: 3, gota: 1 });
+  def('cuarzo_eco', 1, { piedra_runica: 2, obsidiana: 1, polvo_brillante: 1 });
+  def('ceniza_runica', 1, { piedra_runica: 2, brasa: 3, esencia_sombria: 1 });
+  def('tinta_sagrada', 1, { piedra_runica: 2, polvo_brillante: 2, nucleo_arcano: 1 });
+  def('tinta_abisal', 1, { piedra_runica: 2, esencia_sombria: 2, nucleo_arcano: 1 });
+  def('escarcha_celeste', 1, { piedra_runica: 3, gota: 3, lagrima_estelar: 1 });
+  def('polvo_vacio', 1, { piedra_runica: 3, esencia_sombria: 3, lagrima_estelar: 1 });
+  def('glifo_ascenso', 1, { piedra_runica: 4, nucleo_arcano: 2, lagrima_estelar: 1 });
+  def('corazon_runico', 1, { piedra_runica: 6, nucleo_arcano: 2, lagrima_estelar: 2 });
 
   // Equipamiento de atributos
   def('garra_afilada', 1, { fragmento_garra: 3, hilo: 1 });

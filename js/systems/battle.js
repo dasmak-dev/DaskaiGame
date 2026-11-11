@@ -41,32 +41,36 @@
       const zone = D.zones[zoneId];
       // En expediciones profundas los rivales tienen más nivel (DK.expedition.levelBonus)
       const plus = DK.expedition.active() ? DK.expedition.levelBonus() : 0;
-      const lv = (n) => Math.min(DK.config.maxLevel, n + plus);
+      // v5.31: en el Averno el nivel no sale de la zona: sube con los pisos y los jefes (DK.averno.level), hasta 120
+      const av = DK.averno && DK.averno.on();
+      const lv = (n, kind = 'wild') => (av ? DK.averno.level(kind) - (kind === 'wild' ? U.rand(0, 2) : 0) : Math.min(DK.config.maxLevel, n + plus));
       let enemy;
       // Datos del jefe: el de la zona o, en las cuevas, el oculto (D.secretBosses)
       const secret = o.secret && D.secretBosses ? D.secretBosses[zoneId] : null;
-      let bossInfo = secret || (o.boss ? zone.boss : null);
+      let bossInfo = secret || (o.boss ? (av ? DK.averno.bossInfo() : zone.boss) : null);
       // v5.18: muy de vez en cuando, en lugar del jefe de la zona aparece un legendario (systems/legends.js)
-      const legend = bossInfo && !secret && DK.legends ? DK.legends.roll(zoneId, o) : null;
+      const legend = bossInfo && !secret && !av && DK.legends ? DK.legends.roll(zoneId, o) : null;
       if (legend) bossInfo = Object.assign({}, zone.boss, { species: legend.species, level: zone.boss.level + DK.config.legends.levelBonus, title: t('legend.title', { name: D.species[legend.species].name }),
         coins: Math.round(zone.boss.coins * DK.config.legends.coinMult), drops: zone.boss.drops.concat([['tonico_vida', 0.5], ['restaurador', 0.5], ['elixir', 0.25]]).filter(([id]) => D.items[id]) });
       if (o.boss && bossInfo) {
         // v5.1: en el Abismo todos los jefes de la serie van al nivel de la zona elegida (y suben jefe a jefe)
         const ex = DK.expedition.active(), abyssLv = !secret && o.abyssRound != null && ex && ex.kind === 'abismo' ? DK.abyss.bossLevel(ex.startZone || ex.zone, o.abyssRound) : 0;
-        enemy = DK.daskai.create(bossInfo.species, lv(Math.max(bossInfo.level, abyssLv)), { boss: true, shiny: false, dual: U.chance(secret ? C().dual.secret : C().dual.boss) });
+        enemy = DK.daskai.create(bossInfo.species, lv(Math.max(bossInfo.level, abyssLv), 'boss'), { boss: true, shiny: false, dual: U.chance(secret ? C().dual.secret : C().dual.boss) });
         if (legend) { enemy.legendary = true; DK.daskai.touch(); DK.daskai.fullHeal(enemy); }
       } else if (o.elite) {
         const pick = U.weighted(zone.enemies);
-        enemy = DK.daskai.create(pick.species, lv(zone.levels[1] + C().eliteLevelBonus), { wild: true, elite: true, dual: U.chance(C().dual.elite) });
+        enemy = DK.daskai.create(pick.species, lv(zone.levels[1] + C().eliteLevelBonus, 'elite'), { wild: true, elite: true, dual: U.chance(C().dual.elite) });
       } else enemy = wildOne();
       function wildOne() {
         const pick = U.weighted(zone.enemies);
         // Variocolor: la probabilidad base + el rastreo de esa especie (DK.tracking) y la corrupción
         const w = DK.daskai.create(pick.species, lv(U.rand(zone.levels[0], zone.levels[1])), { wild: true, dual: U.chance(C().dual.wild), shiny: U.chance(DK.config.shinyChance + (DK.expedition.active() ? DK.expedition.kindDef().wildShiny || 0 : 0) + (DK.endgame ? DK.endgame.shiny(pick.species) : 0)) });
         DK.daskai.fullHeal(w);
+        if (av) DK.averno.adapt(w, 'wild');
         return w;
       }
       DK.daskai.fullHeal(enemy);
+      if (av && (o.boss || o.elite)) DK.averno.adapt(enemy, o.boss ? 'boss' : 'elite'); // v5.31: se adaptan a tu equipo
       const known = DK.codex.fought(zoneId, enemy.species) > 0; // ¿hemos peleado antes contra él?
       DK.codex.seeEnemy(zoneId, enemy.species);
       DK.looks.see(enemy);
@@ -79,7 +83,7 @@
         secret: !!secret, final: o.final != null ? !!o.final : !!o.boss && !secret,
         bossInfo: bossInfo ? { title: bossInfo.title, coins: bossInfo.coins, drops: bossInfo.drops } : null, legend: legend ? legend.species : null,
         stages: { ally: zeroStages(), enemy: zeroStages() }, turn: 0, outcome: null, needSwitch: false, finished: false, lastMove: null,
-        phases: o.boss ? (secret ? secret.phases.map((p) => Object.assign({}, p)) : this.bossPhases(zoneId)) : [], phase: 0, shield: 0, frenzy: false, bossRegen: 0, guarding: false,
+        phases: o.boss ? (secret ? secret.phases.map((p) => Object.assign({}, p)) : this.bossPhases(av ? DK.averno.bossZone() : zoneId)) : [], phase: 0, shield: 0, frenzy: false, bossRegen: 0, guarding: false,
         breakMax: o.boss ? C().breakGauge.boss : o.elite ? C().breakGauge.elite : 0, breakVal: 0, broken: 0, brokeAt: 0, breaks: 0,
       };
       // v5.5: combates especiales. 'chain' = oleada (al caer uno entra el siguiente) · 'swap' = relevo

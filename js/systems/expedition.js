@@ -167,6 +167,7 @@
     }
     // Siempre hay ocasión de reclutar: al menos uno en los pisos 1-2 y otro en los pisos 3-5
     [[1, 2], [3, c.rows - 1]].forEach(([a, b]) => {
+      if (kd.noRecruit) return; // v5.31: el Averno no tiene reclutas
       const pool = rows.slice(a, b + 1).flat();
       if (!pool.length || pool.some((n) => n.type === 'recruit')) return;
       const swap = pool.filter((n) => n.type === 'fight' || n.type === 'event');
@@ -182,7 +183,7 @@
     });
     // Modificadores de las runas mágicas/raras: combates → élites, tesoros y reclutas extra
     if (extra.elitePct) rows.slice(Math.min(c.eliteFrom, c.rows - 1)).flat().forEach((n) => { if (n.type === 'fight' && rnd() < extra.elitePct) n.type = 'elite'; });
-    [['treasure', extra.treasures], ['recruit', extra.recruits], ['shop', extra.shops], ['shrine', extra.shrines]].forEach(([type, k]) => { // v4.89: + mercaderes y santuarios
+    [['treasure', extra.treasures], ['recruit', kd.noRecruit ? 0 : extra.recruits], ['shop', extra.shops], ['shrine', extra.shrines]].forEach(([type, k]) => { // v4.89: + mercaderes y santuarios
       for (let i = 0; i < (k || 0); i++) {
         const pool = rows.slice(1).flat().filter((n) => n.type === 'fight' || n.type === 'event');
         if (pool.length) U.pick(pool, rnd).type = type;
@@ -290,7 +291,7 @@
      * (sin prohibirlo) repetir la zona anterior.
      */
     pickZone(depth = 1, avoid = null, rnd = Math.random, base = null) {
-      const list = DK.world.unlockedZones();
+      const list = DK.world.unlockedZones().filter((z) => !DK.averno.isZone(z.id)); // v5.31: el Averno no sale al azar
       if (!list.length) return Object.keys(D.zones)[0];
       // `base`: zona en la que empezó la expedición (el objetivo avanza desde ella)
       const b0 = Math.max(0, list.findIndex((z) => z.id === base));
@@ -395,6 +396,9 @@
       const n = Object.assign({}, this.nextStart());
       if (zone && DK.world.isUnlocked(zone)) n.zone = zone;
       if (kind && cfg().kinds[kind] && !(this.kinds().find((k) => k.id === kind) || {}).locked) n.kind = kind;
+      // v5.31: el Averno tiene su propio tipo; al salir de él se vuelve a uno al azar
+      if (DK.averno.isZone(n.zone)) n.kind = 'averno';
+      else if (n.kind === 'averno') n.kind = this.pickKind();
       const old = st().nextExpedition;
       if (old && old.zone === n.zone && (old.kind || 'normal') === (n.kind || 'normal')) return old;
       n.seed = `${n.zone}-${Date.now()}`;
@@ -442,7 +446,12 @@
       if (!n.size) { n.size = this.pickSize(); DK.store.save(); } // vistas previas guardadas antes de los tamaños
       if (n.mod === undefined) { n.mod = this.pickMod(); DK.store.save(); }
       // v5.0: con la Corrupción desbloqueada siempre se sale, como mínimo, con el nivel I (ya no hay «sin corrupción»)
-      if (DK.corruption && !n.weekly && DK.corruption.max() > 0 && !(n.corruption > 0)) { n.corruption = 1; DK.store.save(); }
+      if (DK.corruption && !n.weekly && DK.corruption.max() > 0 && !(n.corruption > 0) && !DK.averno.isZone(n.zone)) { n.corruption = 1; DK.store.save(); }
+      // v5.31: el Averno: su tipo y tamaño, sin corrupción ni pesadilla, y sólo runas de bonificación
+      if (DK.averno.isZone(n.zone)) {
+        if (n.kind !== 'averno' || n.size !== 'averno' || n.corruption || n.nightmare) { n.kind = 'averno'; n.size = 'averno'; n.corruption = 0; n.nightmare = null; DK.store.save(); }
+        if (n.runeSlots && n.runeSlots.some((id) => DK.runes.get(id).group !== 'bonus')) { n.runeSlots = n.runeSlots.filter((id) => DK.runes.get(id).group === 'bonus'); DK.store.save(); }
+      } else if (n.kind === 'averno') { n.kind = this.pickKind(); n.size = this.pickSize(Math.random, n.kind); DK.store.save(); }
       return n;
     },
     /** Mapa de la próxima expedición (vista previa en Batalla). */
@@ -512,7 +521,9 @@
         revivesUsed: 0, blessed: null, // salvaciones de la muerte (DK.expedition.trySave)
         quest: this.pickQuest(n.size || 'small'),
         runesUsed,
-        corruption: Math.min(n.corruption || 0, DK.corruption.max()),
+        corruption: n.kind === 'averno' ? 0 : Math.min(n.corruption || 0, DK.corruption.max()),
+        // v5.31: el Averno: pisos superados en toda la bajada y el jefe que espera al final de este mapa
+        avernoFloors: n.kind === 'averno' ? 0 : undefined, avernoBoss: n.kind === 'averno' ? DK.averno.pickBoss(n.seed) : undefined,
         nightmare: n.nightmare && DK.nightmare.available(n.nightmare) && n.nightmare === n.zone ? n.nightmare : null,
       };
       this.logEvent('start', { zone: n.zone, size: n.size, mod: n.mod || null, kind: n.kind || 'normal' });
@@ -573,12 +584,13 @@
       e.zones.push(e.zone);
       this.logEvent('mapCleared', { zone: e.zone });
       // Corrupción: abre el nivel siguiente · Abismo: récord y premio cada N pisos
+      DK.averno.checkUnlock(); // v5.31: ¿se abre el Averno?
       DK.corruption.onBoss();
       if (e.kind === 'abismo') { const ab = DK.abyss.onFloor(e.depth || 1); if (ab) e.log.abyss = (e.log.abyss || []).concat(ab); }
       e.awaitingChoice = true;
       // v5.1: en el Abismo la siguiente ronda es de la misma zona, sin clima
-      const zone = e.kind === 'abismo' ? (e.startZone || e.zone) : this.pickZone(e.depth + 1, e.zone, Math.random, e.startZone);
-      e.next = { zone, seed: `${zone}-${Date.now()}`, size: e.kind === 'abismo' ? 'abyss' : this.pickSize(Math.random, e.kind), mod: e.kind === 'abismo' ? null : this.pickMod() };
+      const zone = e.kind === 'abismo' || e.kind === 'averno' ? (e.startZone || e.zone) : this.pickZone(e.depth + 1, e.zone, Math.random, e.startZone);
+      e.next = { zone, seed: `${zone}-${Date.now()}`, size: e.kind === 'abismo' ? 'abyss' : e.kind === 'averno' ? 'averno' : this.pickSize(Math.random, e.kind), mod: e.kind === 'abismo' ? null : this.pickMod() };
       const s = st().stats;
       s.expeditions++;
       s.bestDepth = Math.max(s.bestDepth || 0, e.depth);
@@ -600,6 +612,7 @@
       const map = generate(n.zone, n.seed, n.size || 'small', n.mod || null, e.kind || 'normal', this.mapExtra(e.corruption, e.runesUsed));
       Object.assign(e, { zone: n.zone, seed: n.seed, size: n.size || 'small', mod: n.mod || null, map, marks: { lines: [], notes: [] }, pos: null, pending: null, cleared: [], step: 1, total: map.rows.length,
         depth: e.depth + 1, awaitingChoice: false, next: null, altarUsed: false, mapStartedAt: Date.now(), quest: this.pickQuest(n.size || 'small') });
+      if (e.kind === 'averno') e.avernoBoss = DK.averno.pickBoss(n.seed);
       clearNodeState(e);
       DK.codex.discoverZone(n.zone);
       this.logEvent('newMap', { zone: n.zone, size: n.size || 'small', mod: n.mod || null });
@@ -735,6 +748,7 @@
       this.ensureFields();
       const ty = nodeOf(e, e.pending).type;
       e.log.nodes[ty] = (e.log.nodes[ty] || 0) + 1;
+      if (e.kind === 'averno') e.avernoFloors = (e.avernoFloors || 0) + 1; // v5.31: cada piso, más duro
       e.pos = e.pending; e.cleared.push(e.pending); e.pending = null;
       e.step = nodeOf(e, e.pos).row + 2;
       clearNodeState(e);
@@ -927,7 +941,8 @@
 
     /** Elige un suceso al azar según su peso y el piso. */
     pickEvent(node) {
-      const list = D.events.filter((ev) => (ev.minRow || 0) <= node.row);
+      const noRec = this.kindDef().noRecruit; // v5.31: en el Averno no salen sucesos que den daskai
+      const list = D.events.filter((ev) => (ev.minRow || 0) <= node.row && !(noRec && ev.recruits));
       const total = list.reduce((a, ev) => a + (ev.weight || 1), 0);
       let r = Math.random() * total;
       for (const ev of list) { if ((r -= ev.weight || 1) < 0) return ev.id; }
@@ -1043,7 +1058,7 @@
 
     /** Une un daskai a la expedición como temporal (desde un nodo o tras vincularlo en combate). */
     addRecruit(d) {
-      const e = this.active(); if (!e) return;
+      const e = this.active(); if (!e || this.kindDef().noRecruit) return; // v5.31: en el Averno no hay daskai nuevos
       e.recruits = e.recruits || [];
       d.temp = true;
       delete d.wild;
@@ -1150,6 +1165,7 @@
     /** Terminar y cobrar (sólo tras derrotar a un jefe). */
     complete() {
       const e = this.active(); if (!e) return null;
+      if (e.kind === 'averno') return null; // v5.31: del Averno sólo se sale al caer (DK.expedition.avernoEnd)
       if (!e.awaitingChoice) this.bossCleared(); // por si se llama directamente
       const r = this.claim(true);
       DK.emit('expedition:end', { depth: r && st().lastExpedition.depth });
@@ -1163,7 +1179,7 @@
     retreat() { const e = this.active(); return e && e.awaitingChoice ? this.complete() : this.canCampfireExit() ? this.campfireExit() : null; },
 
     /** ¿Se puede volver a casa ahora? (en una hoguera; no en Pesadilla) */
-    canCampfireExit() { const n = this.pendingNode(); return !!(n && n.type === 'rest' && DK.rules.canRetreat()); },
+    canCampfireExit() { const n = this.pendingNode(); return !!(n && n.type === 'rest' && DK.rules.canRetreat() && !this.kindDef().noExit); },
     /** Lo que te llevarías al volver desde la hoguera (para mostrarlo antes de decidir). */
     campfirePreview() {
       const e = this.active(); if (!e) return null;
@@ -1264,6 +1280,7 @@
       const e = this.active(); if (!e) return null;
       this.ensureFields();
       this.logEvent('lost', { boss: !!o.boss });
+      if (e.kind === 'averno') return this.avernoEnd();
       if (o.boss) return this.failAtBoss();
       const lost = Object.assign({ recruits: this.settleRecruits(false) }, e.loot);
       const recruits = e.log.kept.map((x) => Object.assign({}, x, { kept: true })).concat(lost.recruits.map((x) => Object.assign({}, x, { kept: false })));
@@ -1275,6 +1292,17 @@
       DK.store.save();
       lost.packBack = packBack;
       return lost;
+    },
+
+    /** v5.31: caer en el Averno es la única salida: te llevas TODO el botín (con la bonificación por jefes) y su récord. */
+    avernoEnd() {
+      const e = this.active(); if (!e) return null;
+      const rec = DK.averno.record(e);
+      const r = this.claim(true);
+      if (st().lastExpedition) st().lastExpedition.averno = rec; // (el resultado es «completed»: te llevas todo)
+      DK.emit('expedition:end', { depth: st().lastExpedition && st().lastExpedition.depth, averno: true });
+      DK.store.save();
+      return Object.assign({ averno: rec, recruits: [] }, r || {});
     },
 
     /** Caer contra el jefe: se salva una parte y queda una recompensa para la próxima. */

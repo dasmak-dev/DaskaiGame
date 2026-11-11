@@ -29,6 +29,7 @@
     e.corruption ? h('span', { class: 'chip neg cor-chip', tip: t('corruption.levelN', { n: e.corruption }) }, DK.icon('skull', 13), t('corruption.short', { n: ['I', 'II', 'III', 'IV', 'V'][e.corruption - 1] })) : null,
     e.nightmare && e.zone === e.nightmare ? h('span', { class: 'chip neg' }, DK.icon('demon', 13), t('nightmare.title')) : null,
     e.weekly ? h('span', { class: 'chip pos', tip: t('weekly.scoring') }, DK.icon('trophy', 13), t('weekly.title')) : null,
+    e.kind === 'averno' ? h('span', { class: 'chip neg averno-chip', tip: t('averno.chipTip', { best: DK.averno.rec().best.floors || 0 }) }, DK.icon('flame', 13), t('averno.chip', { n: e.avernoFloors || 0, lv: DK.averno.level() })) : null,
     e.kind === 'abismo' ? h('span', { class: 'chip abyss-chip', tip: t('abyss.best', { n: DK.abyss.best() }) }, DK.icon('moon', 13), t('abyss.floor', { n: e.depth || 1 })) : null,
   ];
   /** Etiqueta del modificador de un mapa (niebla, tormenta…) o null. */
@@ -514,11 +515,12 @@
     const c = E().choiceInfo();
     const nz = D.zones[c.next.zone], ab = E().active() && E().active().kind === 'abismo';
     const goOn = () => { E().continueRun(); DK.audio.sfx('select'); refresh(); };
-    const stop = () => { const s = E().complete(); DK.ui.toast(t('exp.cashed', { coins: s.coins }), { icon: 'coin', kind: 'good' }); DK.router.reset('expSummary'); };
-    DK.keys.on('1', goOn); DK.keys.on('2', stop);
+    const stop = () => { const s = E().complete(); if (!s) return; DK.ui.toast(t('exp.cashed', { coins: s.coins }), { icon: 'coin', kind: 'good' }); DK.router.reset('expSummary'); };
+    const avc = DK.averno.on(); // v5.31: en el Averno no se cobra
+    DK.keys.on('1', goOn); if (!avc) DK.keys.on('2', stop);
     return h('div', { class: 'card stack exp-choice' },
       h('div', { class: 'exp-node-head t-boss' }, h('span', { class: 'exp-node-big t-boss' }, DK.icon('crown', 28)),
-        h('div', null, h('h3', null, t('exp.mapCleared', { n: c.depth })), h('p', { class: 'muted small' }, t('exp.choiceText')))),
+        h('div', null, h('h3', null, t('exp.mapCleared', { n: c.depth })), h('p', { class: 'muted small' }, DK.averno.on() ? t('averno.choiceText') : t('exp.choiceText')))),
       V.questResult(c.quest),
       h('div', { class: 'exp-choice-grid' },
         h('div', { class: 'exp-choice-card go', style: { '--z1': nz.colors[0], '--z2': nz.colors[1] } },
@@ -526,13 +528,13 @@
           h('h3', null, DK.icon(nz.icon, 20), ' ', nz.name),
           h('div', { class: 'chips' }, V.sizeChip(c.next.size, { big: true }), V.modChip(c.next.mod, { big: true }),
             // v5.1: en el Abismo, el nivel de los jefes de la siguiente ronda
-            h('span', { class: 'chip' }, ab ? `${t('abyss.series')} · ${t('common.lvl')} ${DK.abyss.bossLevel(c.next.zone, 0) + c.nextBonus}-${DK.abyss.bossLevel(c.next.zone) + c.nextBonus}` : `${t('common.lvl')} ${nz.levels[0] + c.nextBonus}-${nz.levels[1] + c.nextBonus}`),
-            c.nextBonus ? h('span', { class: 'chip neg' }, DK.icon('skull', 12), t('exp.levelPlus', { n: c.nextBonus })) : null,
+            avc ? h('span', { class: 'chip neg' }, DK.icon('flame', 12), `${t('common.lvl')} ${DK.averno.level()}`) : h('span', { class: 'chip' }, ab ? `${t('abyss.series')} · ${t('common.lvl')} ${DK.abyss.bossLevel(c.next.zone, 0) + c.nextBonus}-${DK.abyss.bossLevel(c.next.zone) + c.nextBonus}` : `${t('common.lvl')} ${nz.levels[0] + c.nextBonus}-${nz.levels[1] + c.nextBonus}`),
+            c.nextBonus && !avc ? h('span', { class: 'chip neg' }, DK.icon('skull', 12), t('exp.levelPlus', { n: c.nextBonus })) : null,
             h('span', { class: 'chip pos' }, DK.icon('amulet', 12), t('exp.newRelic')),
             h('span', { class: 'chip pos', tip: t('brief.rewardTip') }, DK.icon('emblem', 12), t('brief.rewardValue', { n: E().bossEmblems(c.next.size) }))),
-          h('p', { class: 'small muted' }, t('exp.continueRisk')),
+          h('p', { class: 'small muted' }, avc ? t('averno.continueRisk') : t('exp.continueRisk')),
           btn({ icon: 'next', label: t('exp.continue'), variant: 'primary', hotkey: '1', disabled: !DK.party.aliveActive().length, onClick: goOn })),
-        h('div', { class: 'exp-choice-card stop' },
+        avc ? null : h('div', { class: 'exp-choice-card stop' },
           h('span', { class: 'muted small' }, t('exp.cashOut')),
           h('h3', null, V.coins(c.coins)),
           h('div', { class: 'chips' }, h('span', { class: 'chip pos' }, `x${c.mult.toFixed(2)}`), h('span', { class: 'chip' }, DK.icon('gift', 12), t('exp.itemsN', { n: c.items }))),
@@ -715,7 +717,7 @@
         ? h('div', { class: 'camp-exit' },
           btn({ icon: 'home', label: t('exp.campExit'), desc: t('exp.campExitDesc', { pct: pv.pct, coins: pv.coins }), variant: 'ghost', showDesc: true, hotkey: '3', onClick: goHome }),
           pv.recruits.length ? h('p', { class: 'small good-text' }, DK.icon('paw', 12), ' ', t('exp.campExitKeeps', { names: pv.recruits.join(', ') })) : null)
-        : h('p', { class: 'muted small' }, DK.icon('lock', 12), ' ', t('exp.noRetreat'));
+        : h('p', { class: 'muted small' }, DK.icon('lock', 12), ' ', DK.averno.on() ? t('averno.noRetreat') : t('exp.noRetreat'));
       // v4.70: rediseño. A la izquierda tu equipo UNA vez, uno debajo de otro: vida actual, lo que curaría
       // descansar (franja clara) y nivel. Pulsar una fila elige a quién entrenar. A la derecha, las dos acciones.
       const restPct = Math.min(1, DK.config.expedition.restHeal + DK.camp.value('hoguera')) * (DK.corruption && DK.corruption.has('restHalf') ? D.endgame.corruption.restMult : 1);
@@ -1165,7 +1167,9 @@
       E().quest() ? h('button', { class: 'hud-quest' + (params.hud === 'quest' ? ' on' : ''), type: 'button', 'data-hud': 'quest', 'aria-expanded': String(params.hud === 'quest'), onClick: () => toggle('quest') }, V.questChip()) : null,
       h('span', { class: 'grow' }),
       // Ya no hay retirada en cualquier momento: se vuelve a casa desde las hogueras
-      h('span', { class: 'hud-lock muted small', tip: DK.rules.canRetreat() ? t('exp.exitRuleTip') : t('exp.noRetreat') }, DK.icon(DK.rules.canRetreat() ? 'campfire' : 'lock', 14), h('span', { class: 'hud-label' }, DK.rules.canRetreat() ? t('exp.exitRule') : '')));
+      DK.averno.on() // v5.31: del Averno sólo se sale al caer
+        ? h('span', { class: 'hud-lock muted small', tip: t('averno.noRetreat') }, DK.icon('flame', 14), h('span', { class: 'hud-label' }, t('averno.exitRule')))
+        : h('span', { class: 'hud-lock muted small', tip: DK.rules.canRetreat() ? t('exp.exitRuleTip') : t('exp.noRetreat') }, DK.icon(DK.rules.canRetreat() ? 'campfire' : 'lock', 14), h('span', { class: 'hud-label' }, DK.rules.canRetreat() ? t('exp.exitRule') : '')));
     const content = params.hud ? hudDetail(params.hud, redraw) : null;
     const LABEL = { loot: t('exp.loot'), pack: t('nav.pack'), relics: t('relics.title'), saves: t('exp.revivesTitle'), recruits: t('exp.recruits'), curses: t('curse.active'), emblems: t('emblem.title'), quest: t('quest.title') };
     const pop = content ? h('div', { class: 'exp-hud-pop', role: 'dialog', 'aria-label': LABEL[params.hud] || '' },

@@ -159,6 +159,9 @@
           DK.util.countTo(num, old, v, 650);
           const d = v - old;
           el.append(h('span', { class: 'hud-delta ' + (d > 0 ? 'up' : 'down') }, (d > 0 ? '+' : '−') + Math.abs(d).toLocaleString(DK.i18n.lang)));
+          // v5.30: al terminar se quita el «+N» (y el saltito): si no, al volver a pintar el HUD con la misma píldora
+          // la animación se repetía y salía otra vez el «+100» viejo (p. ej. al pulsar un objeto en la forja)
+          setTimeout(() => { el.querySelectorAll('.hud-delta').forEach((x) => x.remove()); el.classList.remove('bump'); }, 1800);
         }
         els[cls] = el;
         return el;

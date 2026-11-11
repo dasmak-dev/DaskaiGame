@@ -1,0 +1,186 @@
+/* =============================================================
+ * components/onlineViews.js — v5.33: ventanas del intercambio y de la tabla global.
+ *
+ *   V.tradeDialog()        → intercambio de daskai con otro jugador (sala con código; systems/trade.js)
+ *   V.tradeCard(d)         → ficha compacta de un daskai (el tuyo o el que te ofrecen)
+ *   V.pickOwnDaskai(o)     → elige uno de tus daskai, por grupos (equipo y cajas) → Promise<uid|null>
+ *   V.leaderboard()        → tabla global del Averno (systems/online.js)
+ *   V.publishAsk(onDone)   → tarjeta «¿publicar tu récord?» (resumen del Averno)
+ * ============================================================= */
+(function () {
+  const { h, btn, toast } = DK.ui;
+  const D = DK.data, V = DK.views;
+  const { t } = DK;
+
+  /** Ficha compacta: dibujo, nombre, especie, nivel, casas, naturaleza, pasiva y atributos. */
+  V.tradeCard = (d, { cls = '' } = {}) => {
+    if (!d) return null;
+    const s = DK.daskai.stats(d, [null, null]), sp = D.species[d.species]; // (sin su equipo: el equipo no viaja)
+    const stat = (k) => h('span', { class: 'tc-stat' }, h('small', null, DK.tr('stats', D.stats[k], 'short') || k), h('b', null, s[k]));
+    return h('div', { class: 'trade-card ' + cls, style: { '--c': D.houseColor ? D.houseColor(sp.house) : '#888' } },
+      h('div', { class: 'tc-head' },
+        h('span', { class: 'tc-spr' }, V.dSprite(d, { size: 72 })),
+        h('div', { class: 'tc-main' },
+          h('b', { class: 'tc-name' }, DK.daskai.name(d), d.shiny ? h('span', { class: 'tc-shiny', tip: t('trade.shiny') }, ' ★') : null),
+          h('small', { class: 'muted' }, `${sp.name} · ${t('common.lvl')} ${d.level}` + (d.stars ? ` · ${'✦'.repeat(d.stars)}` : '')),
+          h('span', { class: 'tc-tags' }, V.housesBadge(d), V.roleBadge ? V.roleBadge(d) : null))),
+      h('div', { class: 'tc-rows' },
+        h('span', null, h('small', null, t('trade.nature')), h('b', null, D.natures[d.nature] ? DK.tr('natures', D.natures[d.nature]) : '—')),
+        h('span', null, h('small', null, t('trade.passive')), h('b', null, D.passives[d.passive] ? DK.tr('passives', D.passives[d.passive]) : '—'))),
+      h('div', { class: 'tc-stats' }, ['hp', 'mp', 'atk', 'matk', 'def', 'mdef', 'spd'].map(stat)),
+      h('div', { class: 'tc-moves' }, (d.moves || []).map((m) => (D.moves[m] ? h('span', { class: 'chip sm' }, DK.tr('moves', D.moves[m])) : null))));
+  };
+
+  /** Elegir uno de tus daskai, por grupos como en las cajas. filter(d) → null (vale) o la clave del motivo. */
+  V.pickOwnDaskai = ({ title = t('trade.pickTitle'), filter = () => null } = {}) => {
+    const groups = [{ id: 'team', label: t('party.title'), icon: 'users', list: DK.party.active() }];
+    if (DK.boxes) DK.boxes.list().forEach((bx, i) => groups.push({ id: 'box' + i, label: DK.boxes.name(i), icon: 'cube', list: bx.slots.filter(Boolean).map((u) => DK.party.get(u)).filter(Boolean) }));
+    const inGroups = new Set(groups.flatMap((g) => g.list.map((d) => d.uid)));
+    const rest = DK.party.all().filter((d) => !inGroups.has(d.uid));
+    if (rest.length) groups.push({ id: 'rest', label: t('trade.others'), icon: 'paw', list: rest });
+    const shown = groups.filter((g) => g.list.length);
+    let cur = shown[0];
+    return DK.ui.modal({
+      title, icon: 'paw', cls: 'pick-daskai', closeX: true,
+      content: (close) => {
+        const holder = h('div', { class: 'stack-s' });
+        const draw = () => holder.replaceChildren(
+          h('div', { class: 'pe-chips pe-groups' }, shown.map((g) => h('button', { class: 'pe-chip' + (g === cur ? ' on' : ''), type: 'button', onClick: () => { cur = g; draw(); } }, DK.icon(g.icon, 14), g.label, h('small', { class: 'muted' }, String(g.list.length))))),
+          h('div', { class: 'pd-grid' }, (cur ? cur.list : []).map((d) => {
+            const why = filter(d);
+            return h('button', { class: 'pd-opt' + (why ? ' off' : ''), type: 'button', disabled: !!why, tip: why ? t(why) : DK.daskai.name(d), onClick: () => close(d.uid) },
+              V.dSprite(d, { size: 52 }), h('b', null, DK.daskai.name(d)), h('small', { class: 'muted' }, `${t('common.lvl')} ${d.level}`), why ? h('small', { class: 'pd-why' }, DK.icon('lock', 10), ' ', t(why)) : null);
+          })));
+        draw();
+        return holder;
+      },
+    }).promise;
+  };
+
+  /* ---------------- Intercambio ---------------- */
+  V.tradeDialog = () => {
+    const T = DK.trade;
+    if (!T.available()) { toast(t('trade.why.expedition'), { icon: 'lock', kind: 'bad' }); return null; }
+    let off = null, input = null;
+    const m = DK.ui.modal({
+      title: t('trade.title'), icon: 'swap', cls: 'trade-modal', closeX: true, dismissable: true,
+      content: () => {
+        const holder = h('div', { class: 'trade-body' });
+        const draw = () => holder.replaceChildren(view());
+        off = DK.on('trade:changed', () => draw());
+        draw();
+        return holder;
+      },
+    });
+    m.promise.then(() => { if (off) off(); if (DK.trade.session) DK.trade.close(true); }); // al cerrar la ventana se cierra la sala
+
+    function view() {
+      const s = T.session;
+      if (!s) {
+        input = h('input', { class: 'trade-code-in', type: 'text', maxlength: 7, placeholder: 'ABC123', autocomplete: 'off', spellcheck: 'false', 'aria-label': t('trade.codeLabel') });
+        const join = () => { if (!T.join(input.value)) { DK.audio.sfx('error'); input.classList.add('bad'); } };
+        input.addEventListener('keydown', (e) => { if (e.key === 'Enter') join(); });
+        return h('div', { class: 'stack' },
+          h('p', { class: 'muted small' }, t('trade.intro')),
+          h('div', { class: 'trade-start' },
+            h('div', { class: 'trade-opt' }, DK.icon('plus', 22), h('b', null, t('trade.hostTitle')), h('small', { class: 'muted' }, t('trade.hostText')),
+              btn({ icon: 'globe', label: t('trade.host'), variant: 'primary', onClick: () => { DK.audio.sfx('select'); T.host(); } })),
+            h('div', { class: 'trade-opt' }, DK.icon('users', 22), h('b', null, t('trade.joinTitle')), h('small', { class: 'muted' }, t('trade.joinText')),
+              h('div', { class: 'row gap-s' }, input, btn({ icon: 'next', label: t('trade.join'), variant: 'tone', onClick: join })))),
+          h('p', { class: 'muted small trade-note' }, DK.icon('info', 12), ' ', t('trade.note')));
+      }
+      // Error o sala cerrada
+      if (s.status === 'error' || s.status === 'closed') {
+        return h('div', { class: 'stack trade-msg' }, DK.icon(s.status === 'closed' ? 'exit' : 'alert', 30),
+          h('b', null, s.status === 'closed' ? t('trade.closed') : t('trade.err.' + (s.error || 'conn'))),
+          btn({ icon: 'refresh', label: t('trade.again'), variant: 'tone', onClick: () => { T.close(); } }));
+      }
+      // Hecho
+      if (s.status === 'done') {
+        const got = DK.party.get(s.done.got);
+        return h('div', { class: 'stack trade-done' }, h('b', { class: 'good-text' }, DK.icon('checkCircle', 18), ' ', t('trade.doneTitle')),
+          h('p', { class: 'muted small' }, t('trade.doneText', { gave: s.done.gave, got: got ? DK.daskai.name(got) : '?', name: s.them.name })),
+          got ? V.tradeCard(got, { cls: 'got' }) : null,
+          h('div', { class: 'row gap-s' }, btn({ icon: 'users', label: t('trade.toTeam'), variant: 'primary', onClick: () => { m.close(true); DK.router.reset('team'); } }),
+            btn({ icon: 'swap', label: t('trade.another'), variant: 'ghost', onClick: () => T.close() })));
+      }
+      // Sala: código y estado
+      const code = h('div', { class: 'trade-code' },
+        h('small', { class: 'muted' }, t(s.role === 'host' ? 'trade.yourCode' : s.status === 'open' ? 'trade.room' : 'trade.joining')),
+        h('b', { class: 'tc-code' }, s.code.slice(0, 3) + ' ' + s.code.slice(3)),
+        s.role === 'host' ? btn({ icon: 'copy', label: t('trade.copy'), size: 'sm', variant: 'ghost', iconOnly: true, onClick: () => { navigator.clipboard && navigator.clipboard.writeText(s.code).then(() => toast(t('trade.copied'), { icon: 'copy' }), () => {}); } }) : null,
+        h('span', { class: 'chip ' + (s.status === 'open' ? 'pos' : '') }, DK.icon(s.status === 'open' ? 'checkCircle' : 'clock', 12), t('trade.st.' + s.status, { name: s.them.name || '?' })));
+      if (s.status !== 'open') return h('div', { class: 'stack' }, code, h('p', { class: 'muted small' }, t(s.role === 'host' ? 'trade.waitHelp' : 'trade.connHelp')));
+      const mine = s.me.uid ? DK.party.get(s.me.uid) : null;
+      const pick = async () => { const uid = await V.pickOwnDaskai({ filter: (d) => T.canOffer(d) }); if (uid) { T.offer(uid); DK.audio.sfx('select'); } };
+      const fp = T.fingerprint(), iLock = !!fp && s.me.locked === fp, theyLock = !!fp && s.them.locked === fp;
+      const mySide = h('div', { class: 'trade-side me' + (iLock ? ' locked' : '') },
+        h('span', { class: 'ts-lbl' }, DK.icon('arrowUp', 13), t('trade.youGive')),
+        mine ? V.tradeCard(mine) : h('button', { class: 'trade-empty', type: 'button', onClick: pick }, DK.icon('plus', 22), t('trade.pick')),
+        mine && !iLock ? btn({ icon: 'swap', label: t('trade.change'), size: 'sm', variant: 'ghost', onClick: pick }) : null,
+        iLock ? h('span', { class: 'chip pos' }, DK.icon('check', 12), t('trade.youAccepted')) : null);
+      const theirSide = h('div', { class: 'trade-side them' + (theyLock ? ' locked' : '') },
+        h('span', { class: 'ts-lbl' }, DK.icon('arrowDown', 13), t('trade.youGet', { name: s.them.name || '?' })),
+        s.them.d ? V.tradeCard(s.them.d) : h('div', { class: 'trade-empty wait' }, DK.icon('clock', 20), s.them.bad ? t('trade.badOffer') : t('trade.waitOffer', { name: s.them.name || '?' })),
+        theyLock ? h('span', { class: 'chip pos' }, DK.icon('check', 12), t('trade.theyAccepted', { name: s.them.name || '?' })) : null);
+      const can = !!fp;
+      return h('div', { class: 'stack' }, code,
+        s.them.ver && s.them.ver !== DK.version ? h('p', { class: 'small warn-text' }, DK.icon('alert', 12), ' ', t('trade.verWarn', { a: DK.version, b: s.them.ver })) : null,
+        h('div', { class: 'trade-sides' }, mySide, h('span', { class: 'trade-arrow', 'aria-hidden': 'true' }, DK.icon('swap', 22)), theirSide),
+        h('div', { class: 'row gap-s wrap trade-actions' },
+          iLock ? btn({ icon: 'undo', label: t('trade.undo'), variant: 'ghost', onClick: () => T.unlock() })
+            : btn({ icon: 'check', label: t('trade.accept'), variant: 'primary', disabled: !can, onClick: () => { T.lock(); DK.audio.sfx('select'); } }),
+          h('small', { class: 'muted' }, can ? t('trade.acceptHelp') : t('trade.needBoth'))));
+    }
+    return m;
+  };
+
+  /* ---------------- Tabla global ---------------- */
+  const teamIcons = (team) => h('span', { class: 'lb-team' }, (Array.isArray(team) ? team : []).slice(0, 6).map((x) => (x && D.species[x.s] ? h('span', { tip: `${D.species[x.s].name} · ${t('common.lvl')} ${x.l | 0}` }, V.sprite(x.s, { size: 36, shiny: !!x.sh })) : null)));
+  V.leaderboard = (season) => {
+    const O = DK.online, cur = O.season(), sea = season || cur;
+    return DK.ui.modal({
+      title: t('online.boardTitle'), icon: 'trophy', cls: 'lb-modal', closeX: true, size: 'wide',
+      content: (close) => {
+        const holder = h('div', { class: 'lb-body' }, h('p', { class: 'muted' }, DK.icon('clock', 13), ' ', t('online.loading')));
+        if (!O.enabled()) { holder.replaceChildren(h('p', { class: 'muted' }, DK.icon('info', 13), ' ', t('online.off'))); return holder; }
+        const me = O.me();
+        const pub = h('div', { class: 'lb-pub row gap-s wrap' }, h('small', { class: 'muted' }, me.publish ? t('online.pubOn') : t('online.pubOff')),
+          btn({ label: me.publish ? t('online.pubStop') : t('online.pubStart'), size: 'sm', variant: 'ghost', onClick: async () => { await O.setPublish(!me.publish); close(); V.leaderboard(sea); } }));
+        // v5.34: una tabla por temporada (la actual se vacía al empezar la siguiente; la anterior se puede consultar)
+        const head = h('div', { class: 'lb-season row gap-s wrap' },
+          h('span', { class: 'chip' }, DK.icon('flag', 12), t('online.season', { n: sea })),
+          sea === cur ? h('small', { class: 'muted' }, t('online.resetIn', { n: O.daysLeft() })) : h('small', { class: 'muted' }, t('online.pastSeason')),
+          h('span', { class: 'grow' }),
+          cur > 1 ? h('div', { class: 'egx-seg' },
+            h('button', { class: sea === cur ? 'on' : '', type: 'button', onClick: () => { if (sea !== cur) { close(); V.leaderboard(cur); } } }, t('online.thisSeason')),
+            h('button', { class: sea !== cur ? 'on' : '', type: 'button', onClick: () => { if (sea === cur) { close(); V.leaderboard(cur - 1); } } }, t('online.lastSeason'))) : null);
+        O.board(50, sea).then((rows) => {
+          if (!rows.length) { holder.replaceChildren(head, h('p', { class: 'muted' }, t(sea === cur ? 'online.empty' : 'online.emptyPast')), pub); return; }
+          holder.replaceChildren(head, h('p', { class: 'muted small' }, t('online.boardHelp')),
+            h('div', { class: 'lb-table', role: 'table' },
+              h('div', { class: 'lb-row head', role: 'row' }, ['#', t('online.player'), t('online.floors'), t('online.bosses'), t('online.foeLv'), t('online.team')].map((x) => h('span', { role: 'columnheader' }, x))),
+              rows.map((r, i) => h('div', { class: 'lb-row' + (r.player_id === me.id ? ' me' : '') + (i < 3 ? ' top' + (i + 1) : ''), role: 'row' },
+                h('span', { class: 'lb-rank' }, i < 3 ? DK.icon('crown', 14) : null, String(i + 1)),
+                h('b', { class: 'lb-name' }, String(r.name || '?').slice(0, 20)),
+                h('span', { class: 'lb-floors' }, String(r.floors)), h('span', null, String(r.maps)), h('span', null, `${t('common.lvl')} ${r.level}`),
+                teamIcons(r.team)))), pub);
+        }).catch(() => holder.replaceChildren(h('p', { class: 'warn-text' }, DK.icon('alert', 13), ' ', t('online.error'))));
+        return holder;
+      },
+      actions: [{ label: t('common.close'), icon: 'x', variant: 'ghost', value: false }],
+    });
+  };
+  /** Tarjeta para decidir si publicar (sale una vez, tras el primer récord del Averno). */
+  V.publishAsk = (onDone) => {
+    const O = DK.online; if (!O.shouldAsk()) return null;
+    const me = O.me(), name = (DK.store.state.player && DK.store.state.player.name) || '?';
+    const card = h('div', { class: 'card lb-ask' },
+      h('b', null, DK.icon('globe', 15), ' ', t('online.askTitle')),
+      h('p', { class: 'muted small' }, t('online.askText', { name, n: me.pending.p_floors })),
+      h('div', { class: 'row gap-s wrap' },
+        btn({ icon: 'upload', label: t('online.askYes'), variant: 'primary', onClick: async () => { card.remove(); const r = await O.setPublish(true); toast(r === 'error' ? t('online.error') : t('online.sent'), { icon: r === 'error' ? 'alert' : 'trophy', kind: r === 'error' ? 'bad' : 'good' }); if (onDone) onDone(); } }),
+        btn({ label: t('online.askNo'), variant: 'ghost', onClick: () => { card.remove(); O.setPublish(false); if (onDone) onDone(); } })));
+    return card;
+  };
+})();

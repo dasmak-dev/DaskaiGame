@@ -48,9 +48,10 @@
       const z = D.zones[p.zone];
       if (p.state) return go();   // volver a un combate ya empezado
       if (p.boss) {
-        const info = p.secret && D.secretBosses ? D.secretBosses[p.zone] : z.boss;
+        const avb = !p.secret && DK.averno && DK.averno.on(); // v5.31: el jefe del Averno es uno de los de las zonas
+        const info = p.secret && D.secretBosses ? D.secretBosses[p.zone] : avb ? DK.averno.bossInfo() : z.boss;
         const sp = D.species[info.species];
-        const ex = DK.expedition.active(), lvl = !p.secret && p.abyssRound != null && ex && ex.kind === 'abismo' ? Math.max(info.level, DK.abyss.bossLevel(ex.startZone || ex.zone, p.abyssRound)) : info.level; // v5.1b: nivel real en el Abismo
+        const ex = DK.expedition.active(), lvl = avb ? info.level - DK.expedition.levelBonus() : !p.secret && p.abyssRound != null && ex && ex.kind === 'abismo' ? Math.max(info.level, DK.abyss.bossLevel(ex.startZone || ex.zone, p.abyssRound)) : info.level; // v5.1b: nivel real en el Abismo
         return DK.fx.cover({ title: info.title, subtitle: t(p.secret ? 'battle.curtainSecret' : 'battle.curtainBoss', { name: sp.name, n: lvl + (ex ? DK.expedition.levelBonus() : 0) }), icon: p.secret ? 'cave' : 'crown', colors: ['#f59e0b', '#7f1d1d'], kind: 'boss' }, go);
       }
       if (p.elite) return DK.fx.cover({ title: t('battle.curtainEliteTitle'), subtitle: z.name, icon: 'skull', colors: ['#f43f5e', '#4c0519'], kind: 'elite' }, go);
@@ -849,7 +850,7 @@
         won: ['trophy', st.boss ? t('battle.bossWin') : t('battle.win'), t('battle.winText')],
         captured: ['orb', t('battle.capturedTitle'), t('battle.capturedText', { name: DK.daskai.name(st.enemy) })],
         fled: ['flee', t('battle.fledTitle'), t('battle.fledText')],
-        lost: ['skull', t('battle.lostTitle'), lostLoot && lostLoot.boss ? t('battle.lostBoss', { n: Math.round(DK.config.expedition.bossDeathLoss * 100), pack: DK.rules.keepPack() ? t('pack.keepText') : t('pack.loseText') }) : lostLoot ? t('battle.lostExp', { pack: DK.rules.keepPack() ? t('pack.keepText') : t('pack.loseText') }) : t('battle.lostText')],
+        lost: ['skull', t('battle.lostTitle'), lostLoot && lostLoot.averno ? t('averno.lostText', { floors: lostLoot.averno.floors, maps: lostLoot.averno.maps }) : lostLoot && lostLoot.boss ? t('battle.lostBoss', { n: Math.round(DK.config.expedition.bossDeathLoss * 100), pack: DK.rules.keepPack() ? t('pack.keepText') : t('pack.loseText') }) : lostLoot ? t('battle.lostExp', { pack: DK.rules.keepPack() ? t('pack.keepText') : t('pack.loseText') }) : t('battle.lostText')],
       };
       const [ic, title, sub] = titles[outcome];
       // v5.25: desde el botín se puede ver el registro del combate (panel lateral) o plegar la ventana para ver la arena
@@ -892,14 +893,15 @@
         // Continuar a un mapa nuevo (más difícil) o terminar y cobrar con bonificación
         const nz = D.zones[choice.next.zone];
         const goOn = () => { DK.expedition.continueRun(); DK.audio.sfx('select'); DK.router.reset('expedition'); };
-        const stop = () => { const s2 = DK.expedition.complete(); DK.ui.toast(t('exp.cashed', { coins: s2.coins }), { icon: 'coin', kind: 'good' }); DK.router.reset('expSummary'); };
+        const stop = () => { const s2 = DK.expedition.complete(); if (!s2) return; DK.ui.toast(t('exp.cashed', { coins: s2.coins }), { icon: 'coin', kind: 'good' }); DK.router.reset('expSummary'); };
+        const avc = DK.averno.on(); // v5.31: en el Averno no se cobra: se sigue bajando
         const heal2 = btn({ icon: 'flask', label: t('heal.button'), size: 'lg', desc: t('battle.healDesc'), variant: 'ghost', hotkey: '3', onClick: async () => { if (await V.healDialog(DK.party.active())) { buildAlly(); end(outcome, r); } } });
         actionsEl.replaceChildren(h('div', { class: 'end-panel' },
           h('div', { class: 'end-main' },
             btn({ icon: 'next', label: t('exp.continue'), size: 'lg', variant: 'primary', hotkey: '1', disabled: !DK.party.aliveActive().length,
-              desc: t('exp.continueDesc', { zone: nz.name, n: choice.depth + 1, lv: choice.nextBonus }) + ' · ' + t('size.label', { name: t('size.' + (choice.next.size || 'small') + '.name'), n: DK.expedition.sizeFloors(choice.next.size) }), onClick: goOn })),
+              desc: (avc ? t('averno.nextDesc', { lv: DK.averno.level(), n: choice.depth + 1 }) : t('exp.continueDesc', { zone: nz.name, n: choice.depth + 1, lv: choice.nextBonus })) + ' · ' + t('size.label', { name: t('size.' + (choice.next.size || 'small') + '.name'), n: DK.expedition.sizeFloors(choice.next.size) }), onClick: goOn })),
           h('div', { class: 'end-side' },
-            btn({ icon: 'coin', label: t('exp.cashOut'), size: 'lg', variant: 'tone', hotkey: '2', desc: t('exp.cashOutDesc', { coins: choice.coins, n: Math.round((choice.mult - 1) * 100) }), onClick: stop }),
+            avc ? h('p', { class: 'muted small' }, DK.icon('flame', 12), ' ', t('averno.noCash')) : btn({ icon: 'coin', label: t('exp.cashOut'), size: 'lg', variant: 'tone', hotkey: '2', desc: t('exp.cashOutDesc', { coins: choice.coins, n: Math.round((choice.mult - 1) * 100) }), onClick: stop }),
             heal2)));
         drawToolbar(); bindKeys({ 1: goOn, Enter: goOn, 2: stop, 3: () => heal2.click() }); return;
       }

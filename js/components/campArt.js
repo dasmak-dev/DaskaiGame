@@ -4,7 +4,7 @@
  * Sustituye los dibujos sencillos de los lugares del campamento por
  * versiones con sombreado (luz por la izquierda), contorno oscuro,
  * texturas y VARIOS FOTOGRAMAS para animarlos:
- *   tent    (Inventario) arcón/alijo oscuro con la mochila de expedición apoyada al lado: al pasar el ratón la tapa se levanta (3, v4.96 · v5.23)
+ *   tent    (Inventario) arcón/alijo de madera muy oscura (v5.36): al pasar el ratón la tapa se levanta (3)
  *   fire    hoguera: una sola llama grande que ondula y se mece, troncos, brasas y chispas (8, v4.95)
  *   anvil   yunque sobre tocón con lingote al rojo y chispas (3)
  *   dummy   (Exploraciones) mapa de pergamino en un atril: camino que se dibuja hasta la X (8)
@@ -90,6 +90,70 @@
     return c;
   }
 
+  /**
+   * v5.35: mochila de cuero repleta (estilo de la referencia: abultada, cuero cálido con mucho volumen, correas con
+   * hebillas de acero, bolsillo delantero y cosas asomando: un pergamino enrollado con lazo azul, una carta con lacre
+   * rojo y una pluma oscura). Apoyada en el costado derecho del arcón. (x0, yb) = esquina izquierda y suelo; 20 de ancho.
+   */
+  function satchel(c, x0, yb) {
+    const LT = { hl: '#d8a064', hi: '#bb7a40', l: '#9c6131', m: '#824c25', md: '#6a3b1c', d: '#512c14', dd: '#391d0c', k: '#241108' };
+    const ST = { hi: '#eef2f6', l: '#b3bbc5', m: '#757e8a', d: '#40464f' };
+    const PA = { hi: '#fbf0cc', l: '#efd9a0', m: '#d9bb75', d: '#a9873f' };       // pergamino
+    const RB = { hi: '#7b84e0', l: '#4b52b8', d: '#2b2f73' };                         // lazo azul
+    const FE = { hi: '#8d6e58', l: '#5e4536', m: '#43302a', d: '#2a1d18' };            // pluma
+    const W = 21, H = 22, T = -(H - 1);                                               // y: T (arriba) … 0 (suelo)
+    const S = (x, y, col) => c.set(x0 + x, yb + y, col);
+    const R = (x, y, w, hh, col) => { for (let j = 0; j < hh; j++) for (let i = 0; i < w; i++) S(x + i, y + j, col); };
+    // silueta abultada: más estrecha en la boca, ancha en medio y redondeada abajo
+    const inset = (y) => { const k = (y - T) / (H - 1); return k < 0.06 ? 3 : k < 0.12 ? 2 : k < 0.2 ? 1 : k > 0.97 ? 3 : k > 0.9 ? 1 : 0; };
+    c.rect(x0, yb + 1, W + 1, 1, 'rgba(0,0,0,.5)').rect(x0 + 2, yb + 2, W - 3, 1, 'rgba(0,0,0,.25)');
+    /* lo que asoma por la boca (el cuerpo tapa luego su parte de abajo) */
+    // pluma oscura inclinada hacia fuera: cañón claro y barbas a los lados
+    for (let i = 0; i <= 12; i++) {
+      const x = 15 + Math.round(i * 0.25), y = T + 2 - i;
+      S(x, y, '#d6c39b');
+      if (i >= 2) { S(x - 1, y, i % 3 ? FE.l : FE.hi); S(x + 1, y, FE.m); if (i >= 4 && i <= 11) { S(x - 2, y + 1, i % 2 ? FE.m : FE.l); S(x + 2, y + 1, FE.d); } }
+    }
+    // carta doblada con lacre rojo
+    for (let y = T - 6; y <= T + 2; y++) for (let x = 3; x <= 8; x++) { if (y === T - 6 && (x === 3 || x === 8)) continue; S(x, y, x === 3 ? PA.hi : x === 8 ? PA.d : y === T - 6 ? PA.hi : PA.l); }
+    for (let x = 4; x <= 7; x++) S(x, T - 4, PA.m);
+    R(4, T - 2, 3, 2, '#b3261e'); S(4, T - 2, '#e2554a'); S(6, T - 1, '#7a1410');
+    // pergamino enrollado con lazo azul
+    for (let y = T - 9; y <= T + 2; y++) for (let x = 9; x <= 13; x++) S(x, y, x === 9 ? PA.hi : x === 13 ? PA.d : x === 12 ? PA.m : PA.l);
+    R(10, T - 10, 3, 1, PA.hi); S(11, T - 9, PA.d);
+    R(9, T - 4, 5, 1, RB.l); S(9, T - 4, RB.hi); S(13, T - 4, RB.d);
+    S(8, T - 5, RB.l); S(8, T - 3, RB.d); S(14, T - 5, RB.hi); S(14, T - 3, RB.l); S(15, T - 2, RB.d);
+    /* cuerpo: luz arriba a la izquierda, sombra a la derecha y en la base */
+    for (let y = T; y <= 0; y++) for (let x = inset(y); x <= W - 1 - inset(y); x++) {
+      const k = (x - inset(y)) / Math.max(1, W - 1 - 2 * inset(y)), low = y >= -1;
+      const col = x === inset(y) ? LT.hi : k < 0.14 ? LT.l : k < 0.5 ? LT.m : k < 0.72 ? LT.md : k < 0.88 ? LT.d : LT.dd;
+      S(x, y, low ? (k < 0.25 ? LT.md : LT.dd) : col);
+    }
+    // boca: borde enrollado con luz y el hueco oscuro detrás de las cosas
+    R(3, T, W - 6, 1, LT.k); R(2, T + 1, W - 4, 1, LT.hl); S(W - 3, T + 1, LT.l); R(2, T + 2, W - 4, 1, LT.d);
+    // solapa delantera (más clara) de borde recto, con costura y sombra debajo
+    const FB = -9;
+    for (let x = 3; x <= 17; x++) for (let y = T + 3; y <= FB; y++) S(x, y, y === FB ? LT.dd : y === T + 3 ? LT.hl : x <= 5 ? LT.hi : x >= 15 ? LT.md : LT.l);
+    for (let x = 5; x <= 15; x += 2) S(x, FB - 2, LT.m);
+    R(3, FB + 1, 15, 1, LT.k);
+    // dos correas largas (de la boca al bolsillo) con su hebilla de acero en medio
+    for (const sx of [6, 13]) {
+      for (let y = T + 2; y <= -5; y++) { S(sx, y, LT.md); S(sx + 1, y, y <= FB ? LT.d : LT.dd); }
+      const by = FB + 2;
+      R(sx - 1, by, 4, 3, ST.m); S(sx - 1, by, ST.hi); S(sx, by, ST.hi); S(sx + 1, by, ST.l); S(sx + 2, by + 2, ST.d); S(sx - 1, by + 2, ST.l);
+      R(sx, by + 1, 2, 1, LT.md);                                  // la correa por dentro del aro
+    }
+    // bolsillo de abajo con tapa y botón
+    for (let y = -4; y <= -2; y++) for (let x = 5; x <= 15; x++) S(x, y, y === -4 ? LT.hl : x === 15 || y === -2 ? LT.dd : x === 5 ? LT.hi : LT.l);
+    S(10, -3, ST.l); S(11, -3, ST.d); for (let y = -4; y <= -2; y++) S(16, y, LT.k);
+    // bolsillos laterales
+    R(0, T + 6, 2, 8, LT.l); S(0, T + 6, LT.hi); S(1, T + 6, LT.hl); R(0, -3, 2, 1, LT.d);
+    R(W - 2, T + 6, 2, 8, LT.d); S(W - 1, T + 7, LT.dd); R(W - 2, -3, 2, 1, LT.k);
+    // brillos del cuero
+    S(2, T + 4, LT.hl); S(1, T + 8, LT.hi); S(4, T + 9, LT.hl);
+    return c;
+  }
+
   const ART = {
     /* ---------- Arcón / alijo (v4.96: Inventario) ---------- */
     // El típico alijo de los ARPG: arcón alargado y robusto de tablones gruesos con tapa abombada,
@@ -99,11 +163,12 @@
     // v5.23: más oscuro (madera tostada y hierro ennegrecido) y con la MOCHILA de expedición apoyada en su
     // costado derecho (manta enrollada, solapa con hebilla, bolsillo y correa). Lienzo 76 px (antes 50): base
     // 45.6 para conservar el mismo tamaño de píxel en pantalla.
-    tent: { base: 45.6, frames: 3, draw(f) {
-      const c = canvas(76, 32);
-      const WD = { hi: '#9a6436', l: '#7d4d28', m: '#613a1d', d: '#432611', dd: '#28150a' };
-      const IR = { hi: '#9aa1aa', l: '#6b737d', m: '#474d56', d: '#2a2e35', dd: '#17191e' };
-      const GD = { hi: '#fff3b0', l: '#e8bd45', m: '#b8862a', d: '#6e4a0e' };
+    tent: { base: 30, frames: 3, draw(f) {
+      const c = canvas(50, 32);
+      // v5.36: madera mucho más oscura (casi ébano tostado), hierro ennegrecido y oro algo apagado
+      const WD = { hi: '#634028', l: '#4d301c', m: '#3b2414', d: '#28170c', dd: '#160c05' };
+      const IR = { hi: '#7c838d', l: '#4f555e', m: '#353a42', d: '#1f2329', dd: '#0f1114' };
+      const GD = { hi: '#f3dc8e', l: '#cfa23a', m: '#9a7024', d: '#583b0b' };
       const lift = [0, 2, 4][f];
       const X0 = 3, X1 = 46, Y0 = 15, Y1 = 28;   // caja
       c.rect(2, 30, 46, 2, 'rgba(0,0,0,.45)');
@@ -112,7 +177,7 @@
       /* caja: tablones horizontales gruesos con vetas */
       for (let y = Y0; y <= Y1; y++) for (let x = X0; x <= X1; x++) {
         const row = Math.floor((y - Y0) / 4.5);
-        c.set(x, y, x === X0 ? WD.l : x === X1 ? WD.dd : row % 2 ? WD.m : '#6c4120');
+        c.set(x, y, x === X0 ? WD.l : x === X1 ? WD.dd : row % 2 ? WD.m : '#43291a');
       }
       [Y0 + 4, Y0 + 9].forEach((y) => c.rect(X0, y, X1 - X0 + 1, 1, WD.dd));
       [[9, 17], [30, 21], [16, 26], [37, 17], [41, 25]].forEach(([x, y]) => c.rect(x, y, 4, 1, WD.d));
@@ -131,7 +196,7 @@
       for (let y = LY1 - LH; y <= LY1; y++) {
         const k = (LY1 - y) / LH, inset = Math.round(Math.pow(k, 2.2) * 5);
         for (let x = X0 - 1 + inset; x <= X1 + 1 - inset; x++) {
-          const col = y === LY1 ? WD.dd : y === LY1 - 1 ? WD.d : k > 0.8 ? WD.hi : x <= X0 + inset ? WD.l : x >= X1 - inset ? WD.d : k > 0.5 ? WD.l : '#73461f';
+          const col = y === LY1 ? WD.dd : y === LY1 - 1 ? WD.d : k > 0.8 ? WD.hi : x <= X0 + inset ? WD.l : x >= X1 - inset ? WD.d : k > 0.5 ? WD.l : '#45291a';
           c.set(x, y, col);
         }
       }
@@ -164,7 +229,7 @@
       [[21, Y0 + 1], [28, Y0 + 1], [21, Y0 + 6], [28, Y0 + 6]].forEach(([x, y]) => c.set(x, y, GD.hi));
       // destello en la cerradura al abrir
       if (f === 2) c.set(26, Y0 - 1 - lift - LH + 3, '#fffbe6').set(22, Y0 + 1, '#fffbe6');
-      backpack(c, 52, 7);
+      // v5.36: sin mochila (a petición: no se leía como mochila); satchel() y backpack() se conservan por si acaso
       return outline(c);
     } },
 

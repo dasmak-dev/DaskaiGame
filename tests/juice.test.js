@@ -455,7 +455,7 @@ module.exports = {
         return { missing: need.filter((n) => A[n] === undefined), tentW: tent.frames[0].w, tentBase: tent.base, frames: tent.frames.length };
       });
       check(!r.missing.length, 'faltan iconos: ' + r.missing);
-      check(r.tentW === 76 && Math.abs(r.tentBase - 45.6) < 0.01 && r.frames === 3, 'arcón con mochila: ' + JSON.stringify(r));
+      check(r.tentW === 50 && Math.abs(r.tentBase - 30) < 0.01 && r.frames === 3, 'arcón sin mochila (v5.36): ' + JSON.stringify(r));
     }),
   }, {
     name: 'v5.24: iconos pequeños de trazo, barra inferior con iconos grandes (y su ajuste) y mochila del arcón',
@@ -476,7 +476,7 @@ module.exports = {
       });
       check(r.small, 'los iconos pequeños deberían ser los de trazo');
       check(r.big && r.hidden && r.classic, 'barra inferior: ' + JSON.stringify(r));
-      check(r.tentW === 76, 'arcón con mochila: ' + r.tentW);
+      check(r.tentW === 50, 'arcón sin mochila (v5.36): ' + r.tentW);
     }),
   }, {
     name: 'v5.25: fondos por capas en pixel art (suaves), icono de equipo, terreno con detalle y botín con registro',
@@ -537,8 +537,59 @@ module.exports = {
         return out;
       });
       check(r.art && r.oldDeco === 0, 'mapa ilustrado: ' + JSON.stringify(r));
-      check(r.rows === 3 && r.best === 1 && r.chips >= 3 && r.modalH < 640, 'ventana de talentos compacta: ' + JSON.stringify(r));
+      check(r.rows === 3 && r.best === 1 && r.chips >= 3 && r.modalH < 680, 'ventana de talentos compacta: ' + JSON.stringify(r));
       check(r.groups.length >= 2, 'fotos de perfil por grupos: ' + JSON.stringify(r.groups));
+    }),
+  }, {
+    name: 'v5.28: peligro en las exploraciones (más nivel, más riesgo, más botín; se desbloquea volviendo bien)',
+    views: ['desktop'],
+    run: (browser, view) => play(browser, view, async (p) => {
+      const r = await p.evaluate(() => {
+        const X = DK.training, out = {};
+        Object.keys(DK.data.zones).forEach((z) => (DK.world.progress(z).unlocked = true));
+        const ds = [0, 1, 2].map(() => { const d = DK.daskai.create('chispon', 100); d.nature = 'hosca'; return d; }); // sin «Firme» ni «Valiente»: riesgo estable
+        out.risks = [0, 2, 4, 6].map((n) => Math.round(X.risk(ds, 'cumbre', 'long', n) * 100));
+        out.max0 = X.dangerMax(); out.set = X.setDanger(4);
+        const l0 = X.zoneLoot('cumbre', 'long', [], 0), l6 = X.zoneLoot('cumbre', 'long', [], 6);
+        out.loot = [l0.rolls, l6.rolls, l0.coins[1], l6.coins[1]];
+        // volver bien con el peligro 0 abre el 1
+        DK.store.state.team = DK.store.state.team.concat(ds.map((d) => (DK.party.add(d), d.uid)));
+        DK.store.state.bosses = Object.assign({}, DK.store.state.bosses, { pradera: { defeated: 1 } }); DK.wallet.add(5000, { silent: true }); DK.bag.add('racion_viaje', 5);
+        out.why = X.cannot([ds[0].uid], 'pradera', 'short');
+        const g = X.send([ds[0].uid], 'pradera', 'short'); out.sent = !!g && g.danger === 0;
+        if (g) { g.start -= 999 * 60000; const rep = X.collect(g.id, () => 0.99); out.up = rep.dangerUp; }
+        out.max1 = X.dangerMax();
+        return out;
+      });
+      check(r.risks[0] <= r.risks[1] && r.risks[1] < r.risks[2] && r.risks[2] < r.risks[3] && r.risks[3] >= 65, 'el riesgo debería subir con el peligro: ' + r.risks);
+      check(r.max0 === 0 && r.set === 0, 'el peligro empieza bloqueado: ' + JSON.stringify(r));
+      check(r.loot[1] > r.loot[0] && r.loot[3] > r.loot[2], 'más botín con más peligro: ' + r.loot);
+      check(r.sent && r.up === 1 && r.max1 === 1, 'volver bien debería desbloquear el siguiente: ' + JSON.stringify(r));
+    }),
+  }, {
+    name: 'v5.29: talentos al unirse, fusión de equipo, más afijos, recetas de reactivos y ficha flotante',
+    views: ['desktop'],
+    run: (browser, view) => play(browser, view, async (p) => {
+      const r = await p.evaluate(() => {
+        const out = {}, D = DK.data;
+        const E = DK.config.talentEvery, d = DK.daskai.create('chispon', E * 2 + 1); DK.party.add(d);
+        out.talents = Object.keys(d.talents || {}).length; out.pending = DK.daskai.talentsPending(d).length;
+        d.level = E * 3; out.after = DK.daskai.talentsPending(d).length; // los que gane contigo, a elegir
+        const bases = Object.keys(D.gear.typeOf).filter((b) => D.items[b]);
+        const rare = DK.gear.create(bases[0], { rarity: 'raro', ilvl: 80 }), leg = DK.gear.create(bases[1], { rarity: 'legendario', ilvl: 80 });
+        out.rareSlots = DK.gear.slots(rare).total; out.legSlots = DK.gear.slots(leg).total; out.legMin = leg.affixes.length;
+        for (let i = 0; i < 3; i++) DK.gear.home().push(DK.gear.create(bases[i], { rarity: 'magico', ilvl: 40 + i * 10 }));
+        const before = DK.gear.home().filter((x) => x.rarity === 'magico').length;
+        const lvls = DK.gear.fusable('magico').slice(0, 3).map((x) => x.ilvl), f = DK.gear.fuse('magico');
+        out.fuse = f.ok && f.p.rarity === 'raro' && f.p.ilvl === Math.round(lvls.reduce((a, b) => a + b, 0) / 3) && DK.gear.home().filter((x) => x.rarity === 'magico').length === before - 3;
+        out.recipes = ['tiza_runica', 'corazon_runico', 'glifo_ascenso', 'piedra_transmutacion'].every((id) => !!DK.crafting.recipeFor(id));
+        out.hover = typeof DK.ui.hoverCard === 'function' && typeof DK.views.makeDialog === 'function';
+        return out;
+      });
+      check(r.talents === 2 && r.pending === 0 && r.after === 1, 'talentos al unirse: ' + JSON.stringify(r));
+      check(r.rareSlots === 5 && r.legSlots === 6 && r.legMin >= 4, 'más afijos en raros y legendarios: ' + JSON.stringify(r));
+      check(r.fuse, 'fusión: 3 mágicos → 1 raro con el nivel medio');
+      check(r.recipes && r.hover, 'recetas de reactivos y ficha flotante');
     }),
 }],
 };

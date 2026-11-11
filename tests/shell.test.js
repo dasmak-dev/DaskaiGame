@@ -102,5 +102,62 @@ module.exports = {
       check(r.fight === 'meadow:fight', 'un combate normal debería usar la variante de combate de su zona: ' + r.fight);
       check(r.low === 'danger', 'con poca vida debería sonar el latido: ' + r.low);
     }),
-  }],
+    }, {
+    name: 'v5.33: intercambio de daskai entre dos partidas (sala con código, ofertas, aceptar y cambio a la vez) y paquete saneado',
+    run: async (browser, view) => {
+      const { newGame } = require('./helpers');
+      const A = await newGame(browser, view, { name: 'Ana', slot: 7 }), B = await newGame(browser, view, { name: 'Beto', slot: 8 });
+      const pages = [A, B];
+      for (const [i, p] of pages.entries()) {
+        await p.exposeFunction('__relaySend', (m) => { pages[1 - i].evaluate((m) => window.__relayRecv && window.__relayRecv(m), m).catch(() => {}); });
+        await p.evaluate(() => DK.trade.useTransport((h) => {
+          window.__relayRecv = (m) => { if (m === '__open') return h.open(); if (m === '__close') return h.closed(); h.message(m); };
+          return { async host(c) { h.ready(c); }, async join(c) { h.ready(c); window.__relaySend('__open'); setTimeout(() => h.open(), 50); }, send(m) { window.__relaySend(m); }, close() { window.__relaySend('__close'); } };
+        }));
+      }
+      await A.evaluate(() => { const d = DK.party.all()[0]; d.level = 33; d.nickname = 'Chispi'; const g = DK.gear.gain('escama_dura', { rarity: 'raro', ilvl: 30 }); DK.gear.equip(d, 0, g.uid); DK.views.tradeDialog(); DK.trade.host(); });
+      await sleep(200);
+      const code = await A.evaluate(() => DK.trade.session.code);
+      await B.evaluate((c) => { DK.views.tradeDialog(); DK.trade.join(c); }, code); await sleep(400);
+      await A.evaluate(() => DK.trade.offer(DK.party.all()[0].uid)); await B.evaluate(() => DK.trade.offer(DK.party.all()[0].uid)); await sleep(300);
+      const half = await A.evaluate(() => { DK.trade.lock(); return DK.trade.session.status; });
+      await sleep(200);
+      const notYet = await B.evaluate(() => DK.party.all()[0].level);
+      await B.evaluate(() => DK.trade.lock()); await sleep(500);
+      const a = await A.evaluate(() => ({ st: DK.trade.session.status, lv: DK.party.all().map((d) => d.level), gear: DK.gear.home().length, team: DK.store.state.team.length }));
+      const b = await B.evaluate(() => ({ st: DK.trade.session.status, d: DK.party.all().map((d) => [d.level, d.nickname, (d.equip || []).filter(Boolean).length]) }));
+      // un paquete manipulado se sanea (nivel, genes, movimientos y nombre)
+      const bad = await B.evaluate(() => { const d = DK.trade.importD({ species: Object.keys(DK.data.species)[0], level: 9999, genes: { atk: 50 }, moves: ['nope', '<b>'], nickname: '<script>x</script>'.repeat(5), growth: { atk: 1e9 } });
+        return { lv: d.level, gene: d.genes.atk, moves: d.moves.length > 0 && d.moves.every((m) => DK.data.moves[m]), nick: d.nickname, atk: d.growth.atk, none: DK.trade.importD({ species: 'nope' }) }; });
+      await A.context().close(); await B.context().close();
+      check(code.length === 6 && half === 'open' && notYet === 5, 'la sala tiene código y nada cambia hasta que aceptan los dos');
+      check(a.st === 'done' && b.st === 'done', 'el intercambio debería terminar en las dos partidas: ' + JSON.stringify([a, b]));
+      check(a.lv.join() === '5' && b.d[0][0] === 33 && b.d[0][1] === 'Chispi', 'cada uno debería tener el daskai del otro: ' + JSON.stringify([a, b]));
+      check(a.gear === 1 && b.d[0][2] === 0 && a.team === 1, 'el equipo de la pieza se queda en casa y el nuevo entra en el equipo');
+      check(bad.lv === 100 && bad.gene <= 0.1 && bad.moves && !/[<>]/.test(bad.nick) && bad.nick.length <= 24 && bad.atk < 1e9 && bad.none === null, 'un paquete manipulado debería sanearse: ' + JSON.stringify(bad));
+    },
+  }, {
+    name: 'v5.33: tabla global (sin configurar no envía nada; configurada pregunta antes de publicar y envía el récord)',
+    run: (browser, view) => play(browser, view, async (p) => {
+      const r = await p.evaluate(async () => {
+        const real = DK.config.online; DK.config.online = { supabaseUrl: '', supabaseKey: '' }; // (las pruebas no tocan la tabla de verdad)
+        const off = { enabled: DK.online.enabled(), sent: await DK.online.submitAverno({ floors: 10, maps: 1, level: 93 }) };
+        DK.config.online = { supabaseUrl: 'https://x.supabase.co', supabaseKey: 'anon' };
+        const calls = []; DK.online.fetch = async (url, o) => { calls.push([url, o.body ? JSON.parse(o.body) : null]); return { ok: true, json: async () => (url.includes('rpc') ? 'new' : [{ player_id: 'a', name: 'X', floors: 50, maps: 5, level: 105, team: [] }]) }; };
+        const pend = await DK.online.submitAverno({ floors: 40, maps: 4, level: 102 }), ask = DK.online.shouldAsk(), callsBefore = calls.length;
+        const sent = await DK.online.setPublish(true), body = calls[0] && calls[0][1];
+        const rows = await DK.online.board(10);
+        const boardUrl = calls[calls.length - 1][0], season = DK.online.season();
+        // un récord pendiente de otra temporada ya no se pregunta ni se envía
+        const me = DK.online.me(); me.publish = null; me.pending = { season: season - 1, p_floors: 5, p_maps: 0, p_level: 90, p_team: [] };
+        const oldAsk = DK.online.shouldAsk(), n0 = calls.length; await DK.online.setPublish(true); const oldSent = calls.length - n0;
+        DK.config.online = real; DK.online.fetch = null;
+        return { off, pend, ask, callsBefore, sent, floors: body && body.p_floors, secret: body && body.p_secret.length, rows: rows.length, seasonQ: boardUrl.includes('season=eq.' + season), noSeasonInBody: !('season' in body), oldAsk, oldSent };
+      });
+      check(!r.off.enabled && r.off.sent === null, 'sin configurar no debería enviar nada');
+      check(r.pend === 'pending' && r.ask && r.callsBefore === 0, 'antes de decidir, el récord queda pendiente y se pregunta');
+      check(r.seasonQ && r.noSeasonInBody && !r.oldAsk && r.oldSent === 0, 'la tabla es de la temporada actual y lo pendiente de otra temporada no se envía: ' + JSON.stringify(r));
+      check(r.sent === 'new' && r.floors === 40 && r.secret >= 32 && r.rows === 1, 'al aceptar publicar se envía el récord pendiente con su secreto: ' + JSON.stringify(r));
+    }),
+}],
 };

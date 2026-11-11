@@ -198,7 +198,7 @@
     },
     /** Árbol muerto (ramas desnudas). */
     deadTree(shade = 0) {
-      const c = canvas(16, 24), W = ['#2a1d17', '#1f1612', '#17100d'][shade];
+      const c = canvas(16, 24), W = ['#2a1d17', '#1f1612', '#0b0708'][shade];
       c.rect(7, 8, 2, 16, W).rect(6, 21, 4, 3, W);
       [[6, 12, -1], [9, 10, 1], [6, 6, -1], [9, 5, 1], [8, 2, 0]].forEach(([x, y, d]) => { for (let i = 0; i < 5; i++) c.set(x + d * i, y - Math.floor(i / 2), W); });
       c.rect(2, 7, 1, 3, W).rect(13, 4, 1, 3, W).rect(1, 10, 2, 1, W);
@@ -206,9 +206,9 @@
     },
     /** Lápida o cruz de piedra. */
     grave(kind = 0) {
-      const c = canvas(10, 12), ST = ['#4b4350', '#3f3844', '#57505c'][kind % 3];
-      if (kind % 2) c.rect(4, 0, 2, 12, ST).rect(1, 3, 8, 2, ST).rect(4, 0, 1, 12, '#6b6270');
-      else c.rect(1, 3, 8, 9, ST).rect(2, 1, 6, 2, ST).rect(3, 0, 4, 1, ST).rect(1, 3, 1, 9, '#6b6270').rect(3, 6, 4, 1, '#2a2430');
+      const c = canvas(10, 12), ST = ['#221c22', '#1b161b', '#282127'][kind % 3]; // v5.30: más oscuras
+      if (kind % 2) c.rect(4, 0, 2, 12, ST).rect(1, 3, 8, 2, ST).rect(4, 0, 1, 12, '#332a31');
+      else c.rect(1, 3, 8, 9, ST).rect(2, 1, 6, 2, ST).rect(3, 0, 4, 1, ST).rect(1, 3, 1, 9, '#332a31').rect(3, 6, 4, 1, '#0e0b0e');
       return c;
     },
     /** Antorcha en un poste. */
@@ -265,89 +265,195 @@
   }
 
   /*
-   * Paletas oscuras para cada momento del día (ciclo según la hora real):
-   * día = cielo ceniciento con un sol pálido; amanecer/atardecer = brasas en el
-   * horizonte; noche = cielo negro, estrellas y luna de sangre.
+   * v5.30: paletas mucho más oscuras y tétricas (ciclo según la hora real). Sin brillos de contorno:
+   * día = cielo de ceniza y un SOL NEGRO con corona pálida · amanecer / atardecer = un sol rojo que se hunde
+   * en un horizonte de brasas · noche = negro casi total, luna de sangre y el resplandor del infierno abajo.
+   *   sky: [arriba, medio, horizonte] · hell: resplandor del horizonte · far/mid/hill: siluetas · ground: [arriba, abajo]
    */
   const GRIM = {
-    day: { sky: ['#3a3540', '#5b4c50', '#8a6a58'], mtn: '#342a30', ruin: '#231a1e', hill: '#2a2024', ground: ['#3a2c26', '#30241f', '#261c18'], cloud: '#4a4048', cloudOp: 0.55, stars: 0, body: 'sun', bx: 300, by: 26, disc: ['#e8dcb4', '#f5ecd0', '#d8c79a'], halo: '#f5e6b8', haloOp: 0.35, fire: 0.3, path: ['#40343a', '#4e4146'] },
-    dawn: { sky: ['#1b1428', '#4c2238', '#b0502e'], mtn: '#24141c', ruin: '#160b10', hill: '#1d1015', ground: ['#2c1d1b', '#221716', '#1a1110'], cloud: '#2e1620', cloudOp: 0.7, stars: 14, body: 'sun', bx: 56, by: 44, disc: ['#f97316', '#fdba74', '#ea580c'], halo: '#fb923c', haloOp: 0.5, fire: 0.42, path: ['#2e2329', '#3a2d32'] },
-    dusk: { sky: ['#120916', '#3b0f24', '#8f2c14'], mtn: '#1e0c12', ruin: '#12070b', hill: '#170a0e', ground: ['#271816', '#1e1312', '#170e0d'], cloud: '#220c14', cloudOp: 0.75, stars: 24, body: 'sun', bx: 182, by: 48, disc: ['#dc2626', '#f87171', '#b91c1c'], halo: '#ef4444', haloOp: 0.5, fire: 0.5, path: ['#2a2026', '#362a2e'] },
-    night: { sky: ['#050308', '#14070c', '#3d0c10'], mtn: '#1c0d12', ruin: '#0f070a', hill: '#140a0d', ground: ['#231716', '#1b1211', '#140d0c'], cloud: '#1a0a0e', cloudOp: 0.75, stars: 46, body: 'moon', bx: 298, by: 16, disc: ['#dc2626', '#ef4444', '#b91c1c'], halo: '#ef4444', haloOp: 0.45, fire: 0.6, path: ['#2a2026', '#362a2e'] },
+    day: { sky: ['#0c0a0b', '#1b1416', '#3a221c'], hell: '#7a2e1c', hellOp: 0.35, far: '#22171a', mid: '#120c0e', hill: '#0c0809', ruin: '#0a0607', ground: ['#1e1513', '#0d0909'], cloud: '#2a2023', cloudOp: 0.5, stars: 0, body: 'blacksun', bx: 296, by: 20, disc: ['#0a0607', '#d6c7b0', '#6b5a4a'], halo: '#cbb89a', haloOp: 0.22, fire: 0.24, path: ['#1d1718', '#241c1d'], crack: '#c2410c' },
+    dawn: { sky: ['#050307', '#170910', '#4a1410'], hell: '#9a3412', hellOp: 0.45, far: '#1a0b0e', mid: '#0d0608', hill: '#090405', ruin: '#070304', ground: ['#1b1110', '#0a0606'], cloud: '#1f0c12', cloudOp: 0.6, stars: 12, body: 'sun', bx: 60, by: 50, disc: ['#991b1b', '#dc2626', '#7f1d1d'], halo: '#dc2626', haloOp: 0.35, fire: 0.36, path: ['#1a1314', '#211819'], crack: '#ea580c' },
+    dusk: { sky: ['#040104', '#160408', '#5c0e0a'], hell: '#b91c1c', hellOp: 0.5, far: '#1a080b', mid: '#0c0406', hill: '#080304', ruin: '#060203', ground: ['#1a0f0e', '#090505'], cloud: '#1c080d', cloudOp: 0.65, stars: 20, body: 'sun', bx: 184, by: 54, disc: ['#7f1d1d', '#b91c1c', '#450a0a'], halo: '#ef4444', haloOp: 0.4, fire: 0.42, path: ['#191213', '#201718'], crack: '#f97316' },
+    night: { sky: ['#010001', '#080205', '#2a0507'], hell: '#7f1d1d', hellOp: 0.5, far: '#130609', mid: '#080305', hill: '#050203', ruin: '#040102', ground: ['#160c0c', '#060303'], cloud: '#12050a', cloudOp: 0.7, stars: 40, body: 'moon', bx: 296, by: 14, disc: ['#7f1d1d', '#b91c1c', '#450a0a'], halo: '#dc2626', haloOp: 0.32, fire: 0.5, path: ['#161011', '#1c1415'], crack: '#ef4444' },
   };
 
   /** Posición del sol / la luna en pantallas estrechas (arriba a la izquierda, sobre el tablón). */
   const NARROW_BODY = { day: { bx: 146, by: 22 }, dawn: { bx: 138, by: 38 }, dusk: { bx: 142, by: 30 }, night: { bx: 146, by: 20 } };
 
-  /** Fondo oscuro: cielo según la hora, sol pálido o luna roja, ruinas, montañas, tierra yerma, tumbas y el camino al portal. */
+  /* ---------- v5.29: fondo del campamento por capas (pixel art dibujado en un lienzo) ---------- */
+  const BAY = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((v) => (v + .5) / 16);
+  const bay = (x, y) => BAY[(y & 3) * 4 + (x & 3)];
+  const hex = (c) => { c = c.replace('#', ''); const n = parseInt(c, 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
+  const mixc = (a, b, k) => [0, 1, 2].map((i) => Math.round(a[i] + (b[i] - a[i]) * k));
+  /** Lienzo RGBA de W×H con utilidades mínimas (se repite en horizontal si `wrap`). */
+  function layer(W, H, wrap = false) {
+    const d = new Uint8ClampedArray(W * H * 4);
+    const L = {
+      d, W, H,
+      set(x, y, c, a = 255) { x = Math.round(x); y = Math.round(y); if (y < 0 || y >= H) return; if (wrap) x = ((x % W) + W) % W; else if (x < 0 || x >= W) return; const i = (y * W + x) * 4; d[i] = c[0]; d[i + 1] = c[1]; d[i + 2] = c[2]; d[i + 3] = a; },
+      a(x, y) { if (y < 0 || y >= H) return 0; if (wrap) x = ((x % W) + W) % W; else if (x < 0 || x >= W) return 0; return d[(y * W + x) * 4 + 3]; },
+      col(x, y0, y1, c, a) { for (let y = Math.max(0, Math.round(y0)); y <= Math.min(H - 1, Math.round(y1)); y++) L.set(x, y, c, a); },
+      disc(cx, cy, r, c, a, ry = r) { for (let y = -Math.ceil(ry); y <= Math.ceil(ry); y++) for (let x = -Math.ceil(r); x <= Math.ceil(r); x++) if ((x / r) ** 2 + (y / ry) ** 2 <= 1) L.set(cx + x, cy + y, c, a); },
+      tri(cx, yb, w, hh, c) { for (let k = 0; k < hh; k++) { const half = Math.round(w / 2 * (1 - k / hh)); for (let dx = -half; dx <= half; dx++) L.set(cx + dx, yb - k, c); } },
+      /** píxeles con hueco encima → color de luz */
+      rim(c, rows = 1) { const m = []; for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (L.a(x, y) === 255) for (let k = 1; k <= rows; k++) if (!L.a(x, y - k)) { m.push([x, y, k]); break; } m.forEach(([x, y, k]) => L.set(x, y, k === 1 ? c : mixc(c, L.px(x, y), .5))); },
+      px(x, y) { const i = (y * W + x) * 4; return [d[i], d[i + 1], d[i + 2]]; },
+      /** tramado hacia `c` en las filas y0..y1 (niebla que sube del suelo) */
+      haze(c, y0, y1, max) { for (let y = Math.max(0, y0); y < Math.min(H, y1); y++) { const k = (y - y0) / (y1 - y0) * max; for (let x = 0; x < W; x++) if (L.a(x, y) === 255 && bay(x, y) < k) { const i = (y * W + x) * 4; d[i] = c[0]; d[i + 1] = c[1]; d[i + 2] = c[2]; } } },
+      /** v5.30: funde hacia `c` de forma continua (sin trama) en las filas y0..y1 */
+      fade(c, y0, y1, max) { for (let y = Math.max(0, y0); y < Math.min(H, y1); y++) { const k = Math.max(0, (y - y0) / (y1 - y0)) * max; for (let x = 0; x < W; x++) if (L.a(x, y)) { const i = (y * W + x) * 4; d[i] += (c[0] - d[i]) * k; d[i + 1] += (c[1] - d[i + 1]) * k; d[i + 2] += (c[2] - d[i + 2]) * k; } } },
+      url() { const cv = document.createElement('canvas'); cv.width = W; cv.height = H; cv.getContext('2d').putImageData(new ImageData(d, W, H), 0, 0); return cv.toDataURL('image/png'); },
+    };
+    return L;
+  }
+  /** Perfil de montaña que encaja por los lados (ondas de frecuencia entera + ruido suave). */
+  function prof(rnd, W, base, amp, sharp, jag) {
+    const ws = Array.from({ length: 4 }, (_, i) => ({ k: 1 + i + Math.floor(rnd() * (i + 2)), a: amp / (i + 1.1), p: rnd() * 6.283 }));
+    const nz = Array.from({ length: Math.ceil(W / 3) + 1 }, () => rnd());
+    return (x) => { let y = 0; for (const w of ws) { const s0 = Math.sin(2 * Math.PI * w.k * x / W + w.p); y += w.a * (sharp ? 1 - 2 * Math.abs(s0) : s0); }
+      const c = (((x % W) + W) % W) / 3, i = Math.floor(c), f = c - i; return Math.round(base - y + ((nz[i] * (1 - f) + nz[(i + 1) % nz.length] * f) - .5) * jag); };
+  }
+  const campLayerCache = new Map();
+  /** Lienzo 2D liso (para el cielo, el humo y los resplandores: degradados sin escalones). */
+  function smooth(W, H) { const cv = document.createElement('canvas'); cv.width = W; cv.height = H; return { cv, g: cv.getContext('2d'), url: () => cv.toDataURL('image/png') }; }
+  /** Grano muy fino (±n) sobre un lienzo liso: rompe los escalones de los degradados oscuros. */
+  function grain(S, n, rnd) { const im = S.g.getImageData(0, 0, S.cv.width, S.cv.height), d = im.data; for (let i = 0; i < d.length; i += 4) { const v = (rnd() - .5) * n; d[i] += v; d[i + 1] += v; d[i + 2] += v; } S.g.putImageData(im, 0, 0); }
+  /**
+   * v5.30: las capas del fondo para un momento del día: [{ id, url, smooth }] (cacheadas). Cielo, humo y resplandor
+   * son lisos (sin bandas ni tramas); las siluetas son pixel art casi negro y sin luces de contorno.
+   */
+  function campLayers(tod) {
+    if (campLayerCache.has(tod)) return campLayerCache.get(tod);
+    const W = 400, H = 180, HZ = 82, P = GRIM[tod] || GRIM.night, rnd = DK.util.seeded('camp-layers5');
+    const skyH = P.sky.map(hex), hell = hex(P.hell), far = hex(P.far), midC = hex(P.mid), hill = hex(P.hill), ruin = hex(P.ruin), gT = hex(P.ground[0]), gB = hex(P.ground[1]);
+    const black = [0, 0, 0], crack = hex(P.crack);
+    // 1) cielo: degradado liso + resplandor rojo en el horizonte + grano fino
+    const sky = smooth(W, H), g = sky.g, lg = g.createLinearGradient(0, 0, 0, HZ + 8);
+    lg.addColorStop(0, P.sky[0]); lg.addColorStop(.55, P.sky[1]); lg.addColorStop(1, P.sky[2]);
+    g.fillStyle = lg; g.fillRect(0, 0, W, H);
+    const rg = g.createRadialGradient(200, HZ + 10, 4, 200, HZ + 10, 230); rg.addColorStop(0, `rgba(${hell},${P.hellOp})`); rg.addColorStop(.45, `rgba(${hell},${P.hellOp * .35})`); rg.addColorStop(1, `rgba(${hell},0)`);
+    g.save(); g.scale(1, .32); g.translate(0, (HZ + 10) * (1 / .32 - 1)); g.fillStyle = rg; g.fillRect(0, 0, W, H / .32); g.restore();
+    grain(sky, 3, rnd);
+    // 2) humo / nubes de ceniza: manchas difusas (círculos con degradado), sin bordes; se repite en horizontal
+    const clouds = smooth(W, H), cg = clouds.g, cc = hex(P.cloud);
+    for (let n = 0; n < 26; n++) { const x = rnd() * W, y = 6 + rnd() * 52, r = 14 + rnd() * 30, a = P.cloudOp * (.25 + rnd() * .35);
+      [x, x - W, x + W].forEach((xx) => { const q = cg.createRadialGradient(xx, y, 0, xx, y, r); q.addColorStop(0, `rgba(${cc},${a})`); q.addColorStop(1, `rgba(${cc},0)`); cg.fillStyle = q; cg.save(); cg.translate(xx, y); cg.scale(2.2, .55); cg.translate(-xx, -y); cg.beginPath(); cg.arc(xx, y, r, 0, 7); cg.fill(); cg.restore(); }); }
+    // 3) lejos: agujas y riscos dentados que se recortan contra el resplandor; abajo se funden con él (sin trama)
+    const farL = layer(W, H), f1 = prof(rnd, W, HZ - 20, 14, true, 8);
+    for (let x = 0; x < W; x++) farL.col(x, f1(x), HZ + 4, far);
+    // agujas de espinas y una ciudadela con cuernos en la lejanía
+    [[30, 34, 3], [58, 24, 2], [236, 36, 3], [252, 26, 2], [372, 24, 2], [340, 30, 2]].forEach(([x, hh, w]) => farL.tri(x, HZ - 4, w * 2 + 1, hh, far));
+    for (let i = 0; i < 26; i++) farL.col(186 + i, HZ - 30 - (i % 6 === 0 ? 8 : 0), HZ, far);
+    [190, 198, 206].forEach((x, i) => farL.tri(x, HZ - 30, 5, i === 1 ? 12 : 8, far)); // torres con chapitel
+    farL.fade(hell, HZ - 30, HZ + 4, .45);
+    // 4) medio: crestas negras, bosque de pinos secos y la catedral en ruinas (sus ventanas se encienden en el SVG)
+    const mid = layer(W, H), m1 = prof(rnd, W, HZ - 8, 18, true, 8);
+    for (let x = 0; x < W; x++) mid.col(x, m1(x), HZ + 6, midC);
+    for (let x = 0; x < W; x += 2 + Math.floor(rnd() * 4)) { const hh = 5 + Math.floor(rnd() * 11); mid.tri(x, HZ + 2, Math.max(2, hh * .35), hh, midC); }
+    [[86, 26, 10], [96, 38, 6], [104, 30, 8], [116, 18, 10], [150, 22, 6]].forEach(([x, hh, w]) => { for (let i = 0; i < w; i++) mid.col(x + i, HZ - hh, HZ, ruin); mid.tri(x + w / 2, HZ - hh, w, Math.round(w * 1.4), ruin); });
+    for (let i = 0; i < 72; i++) mid.col(84 + i, HZ - 12 + (i % 9 === 0 ? -3 : 0), HZ, ruin);
+    // cruz rota en lo alto de la torre mayor
+    mid.col(99, HZ - 52, HZ - 38, ruin); for (let k = -2; k <= 2; k++) mid.set(99 + k, HZ - 48, ruin);
+    mid.fade(hell, HZ - 6, HZ + 6, .22);
+    // 5) colinas cercanas, negras
+    const hills = layer(W, H), h1 = prof(rnd, W, HZ - 1, 6, false, 3);
+    for (let x = 0; x < W; x++) hills.col(x, h1(x), HZ + 8, hill);
+    // 6) suelo: degradado continuo (sin franjas), manchas suaves, piedras, huesos y grietas con brasas
+    const gr = layer(W, H), nz = Array.from({ length: 64 }, () => rnd());
+    // ruido suave (interpolado): manchas sin bordes de bloque
+    const vn = (x, y, sx, sy, o) => { const fx = x / sx, fy = y / sy, ix = Math.floor(fx), iy = Math.floor(fy), u = fx - ix, v = fy - iy, at = (a, b) => nz[(a * 7 + b * 13 + o) & 63], sm = (t) => t * t * (3 - 2 * t);
+      const a = at(ix, iy) + (at(ix + 1, iy) - at(ix, iy)) * sm(u), b = at(ix, iy + 1) + (at(ix + 1, iy + 1) - at(ix, iy + 1)) * sm(u); return a + (b - a) * sm(v); };
+    const noise = (x, y) => vn(x, y, 22, 7, 0) * .65 + vn(x, y, 9, 4, 17) * .35;
+    for (let y = HZ; y < H; y++) { const k = Math.pow((y - HZ) / (H - HZ), .8), base = mixc(gT, gB, k); for (let x = 0; x < W; x++) { const v = noise(x, y); gr.set(x, y, mixc(base, v < .5 ? black : [70, 50, 46], Math.abs(v - .5) * (v < .5 ? .7 : .3))); } }
+    const cracks = layer(W, H);
+    for (let i = 0; i < 70; i++) { const x = Math.floor(rnd() * W), y = HZ + 6 + Math.floor(rnd() * (H - HZ - 8)), k = (y - HZ) / (H - HZ), r = rnd();
+      if (r < .4) { const w = 1 + Math.round(k * 3); for (let j = 0; j < w; j++) { gr.set(x + j, y, [38, 30, 32]); gr.set(x + j, y + 1, [10, 7, 8]); } }          // piedras
+      else if (r < .75) { let cx = x, cy = y; const n = 6 + k * 10, hot = rnd() < .45; for (let j = 0; j < n; j++) { gr.set(cx, cy, mixc(gB, black, .6)); if (hot) cracks.set(cx, cy, crack, 70 + Math.round(rnd() * 90)); cx += rnd() < .6 ? 1 : 0; cy += rnd() < .35 ? 1 : 0; } } // grietas con brasas
+      else if (r < .88) { gr.set(x, y, [120, 112, 100]); gr.set(x + 1, y, [120, 112, 100]); gr.set(x + 2, y + 1, [86, 80, 72]); }                                   // huesos
+      else { gr.set(x, y, [52, 40, 30]); gr.set(x, y - 1, [40, 30, 22]); }                                                                                    // hierba muerta
+    }
+    // camino de losas oscuras hacia el portal (juntas suaves, sin brillos)
+    for (let y = HZ + 2; y < H; y++) {
+      const tt = (y - HZ) / (H - HZ), cx = 264 - tt * 64 + Math.round(Math.sin(tt * 5) * 6), hw = Math.round(3 + tt * 22), row = Math.floor((y - HZ) / (3 + tt * 5));
+      for (let x = cx - hw; x <= cx + hw; x++) {
+        const stone = Math.floor((x - cx + hw + (row % 2) * 4) / (5 + tt * 7)), edgeY = (y - HZ) % Math.max(3, Math.round(3 + tt * 5)) === 0;
+        const c = mixc(hex(stone % 3 ? P.path[0] : P.path[1]), black, .25 * (1 - tt));
+        gr.set(x, y, edgeY || x === cx - hw || x === cx + hw ? mixc(c, black, .4) : c);
+      }
+    }
+    // 7) primer plano: rocas negras y zarzas de espinas en las esquinas de abajo
+    const fg = layer(W, H), fgC = [4, 2, 3];
+    [[0, 30], [400, 34]].forEach(([cx, w]) => { for (let k = 0; k < 4; k++) fg.disc(cx + (cx ? -1 : 1) * (k * 9 + rnd() * 6), H - 2 + rnd() * 3, w * (.5 - k * .08), fgC, 255, 7 + rnd() * 4); });
+    for (let i = 0; i < 16; i++) { const side = i % 2, x0 = side ? W - 4 - rnd() * 56 : 4 + rnd() * 56, y0 = H - 6 - rnd() * 6, len = 10 + rnd() * 16, dir = (side ? -1 : 1) * (.3 + rnd() * .6);
+      let x = x0, y = y0; for (let k = 0; k < len; k++) { fg.set(x, y, fgC); if (k % 4 === 2) fg.set(x + (k % 8 === 2 ? 1 : -1), y - 1, fgC); x += dir * .6; y -= .8; } }
+    const out = [['sky', sky, 1], ['clouds', clouds, 1], ['far', farL, 0], ['mid', mid, 0], ['hills', hills, 0], ['ground', gr, 0], ['cracks', cracks, 0], ['fg', fg, 0]].map(([id, L, sm]) => ({ id, url: L.url(), smooth: !!sm }));
+    campLayerCache.set(tod, out);
+    return out;
+  }
+
+  /** v5.30: fondo oscuro y diabólico por capas: cielo liso con el resplandor del infierno, humo que pasa, agujas
+   *  y una ciudadela lejanas, crestas con pinos secos y la catedral en ruinas, colinas negras, suelo agrietado con
+   *  brasas que laten, camino de losas y zarzas en las esquinas. Sol negro / luna de sangre y ascuas en SVG. */
   function backdrop(tod, narrow = false) {
     const W = 400, H = 180, HZ = 82;
     let P = GRIM[tod] || GRIM.night;
     // v4.45: en el móvil sólo se ve la franja central del fondo (x ≈ 127–273): el sol / la luna se pasan ahí
     if (narrow) P = Object.assign({}, P, NARROW_BODY[tod] || NARROW_BODY.night);
-    const s = svgEl('svg', { viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: 'xMidYMax slice', class: 'camp-bg', 'shape-rendering': 'crispEdges', 'aria-hidden': 'true' });
+    const s = svgEl('svg', { viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: 'xMidYMax slice', class: 'camp-bg layered grim', 'shape-rendering': 'crispEdges', 'aria-hidden': 'true' });
     const defs = svgEl('defs');
-    const lg = svgEl('linearGradient', { id: 'campSky', x1: 0, y1: 0, x2: 0, y2: 1 });
-    P.sky.forEach((c, i) => lg.appendChild(svgEl('stop', { offset: i / 2, 'stop-color': c })));
     const glow = svgEl('radialGradient', { id: 'campGlow', cx: '50%', cy: '82%', r: '46%' });
-    glow.appendChild(svgEl('stop', { offset: 0, 'stop-color': '#f97316', 'stop-opacity': P.fire }));
-    glow.appendChild(svgEl('stop', { offset: 0.45, 'stop-color': '#b91c1c', 'stop-opacity': P.fire / 3 }));
-    glow.appendChild(svgEl('stop', { offset: 1, 'stop-color': '#7f1d1d', 'stop-opacity': 0 }));
+    glow.appendChild(svgEl('stop', { offset: 0, 'stop-color': '#ea580c', 'stop-opacity': P.fire }));
+    glow.appendChild(svgEl('stop', { offset: 0.45, 'stop-color': '#7f1d1d', 'stop-opacity': P.fire / 3 }));
+    glow.appendChild(svgEl('stop', { offset: 1, 'stop-color': '#450a0a', 'stop-opacity': 0 }));
     const moonGlow = svgEl('radialGradient', { id: 'campMoon', cx: '50%', cy: '50%', r: '50%' });
     moonGlow.appendChild(svgEl('stop', { offset: 0, 'stop-color': P.halo, 'stop-opacity': P.haloOp }));
     moonGlow.appendChild(svgEl('stop', { offset: 1, 'stop-color': P.halo, 'stop-opacity': 0 }));
-    defs.append(lg, glow, moonGlow); s.appendChild(defs);
-    s.appendChild(svgEl('rect', { x: 0, y: 0, width: W, height: H, fill: 'url(#campSky)' }));
+    const fogG = svgEl('radialGradient', { id: 'campFog', cx: '50%', cy: '50%', r: '50%' });
+    fogG.appendChild(svgEl('stop', { offset: 0, 'stop-color': P.hell, 'stop-opacity': 0.28 }));
+    fogG.appendChild(svgEl('stop', { offset: 1, 'stop-color': P.hell, 'stop-opacity': 0 }));
+    const vig = svgEl('radialGradient', { id: 'campVig', cx: '50%', cy: '55%', r: '75%' });
+    vig.appendChild(svgEl('stop', { offset: 0.55, 'stop-color': '#000', 'stop-opacity': 0 }));
+    vig.appendChild(svgEl('stop', { offset: 1, 'stop-color': '#000', 'stop-opacity': 0.7 }));
+    defs.append(glow, moonGlow, fogG, vig); s.appendChild(defs);
+    const L = Object.fromEntries(campLayers(tod).map((x) => [x.id, x]));
+    const img = (id, cls = '', x = 0) => svgEl('image', { href: L[id].url, x, y: 0, width: W, height: H, preserveAspectRatio: 'none', class: 'cbl cbl-' + id + (cls ? ' ' + cls : ''), style: L[id].smooth ? 'image-rendering:auto' : 'image-rendering:pixelated' });
+    s.appendChild(img('sky'));
     const rnd = DK.util.seeded('camp-grim');
-    // Estrellas tenues (más cuanto más oscuro)
-    for (let i = 0; i < P.stars; i++) s.appendChild(svgEl('rect', { x: Math.floor(rnd() * W), y: Math.floor(rnd() * (HZ - 30)), width: 1, height: 1, fill: '#fecaca', opacity: 0.25 + rnd() * 0.4, class: rnd() < 0.3 ? 'twinkle' : '' }));
-    // Sol pálido / sol de brasas / luna roja, con halo
-    s.appendChild(svgEl('circle', { cx: P.bx + 14, cy: P.by + 14, r: P.body === 'moon' ? 34 : 40, fill: 'url(#campMoon)', 'shape-rendering': 'auto', class: 'camp-body ' + P.body }));
+    for (let i = 0; i < P.stars; i++) s.appendChild(svgEl('rect', { x: Math.floor(rnd() * W), y: Math.floor(rnd() * (HZ - 34)), width: 1, height: 1, fill: '#fca5a5', opacity: 0.12 + rnd() * 0.28, class: rnd() < 0.3 ? 'twinkle' : '' }));
+    s.appendChild(svgEl('circle', { cx: P.bx + 14, cy: P.by + 14, r: P.body === 'moon' ? 36 : 40, fill: 'url(#campMoon)', 'shape-rendering': 'auto', class: 'camp-body ' + (P.body === 'moon' ? 'moon' : 'sun ' + P.body) }));
     const [c0, c1, c2] = P.disc;
+    // luna de sangre con manchas · sol negro con su corona · sol rojo y apagado
     const disc = P.body === 'moon'
-      ? canvas(29, 29).circle(14, 14, 14, c0).circle(14, 14, 12, c1).circle(10, 9, 3, c2).circle(18, 17, 2, c2).circle(16, 7, 1, '#f87171')
-      : canvas(29, 29).circle(14, 14, 13, c2).circle(14, 14, 11, c0).circle(12, 11, 6, c1);
+      ? canvas(29, 29).circle(14, 14, 14, c2).circle(14, 14, 13, c0).circle(13, 13, 11, c1).circle(9, 9, 3, c0).circle(18, 17, 3, c0).circle(16, 7, 1, c2).circle(8, 18, 2, c2)
+      : P.body === 'blacksun'
+        ? canvas(29, 29).circle(14, 14, 14, c2).circle(14, 14, 13, c1).circle(14, 14, 11, c0)
+        : canvas(29, 29).circle(14, 14, 13, c2).circle(14, 14, 12, c0).circle(13, 13, 9, c1);
     const ds = pixSvg(disc, 1); ds.setAttribute('x', P.bx); ds.setAttribute('y', P.by); s.appendChild(ds);
-    // Nubes oscuras que pasan delante
-    [[250, 26, 1.2], [60, 14, 1], [170, 40, 0.9]].concat(tod === 'day' ? [[330, 8, 1.4], [110, 30, 1.1]] : []).forEach(([x, y, k], n) => {
-      const g = svgEl('g', { class: 'camp-cloud', style: `animation-delay:${-n * 18}s` });
-      [[0, 4, 30, 3], [6, 1, 14, 3], [16, 0, 10, 3], [3, 7, 22, 2]].forEach(([cx, cy, cw, ch]) => g.appendChild(svgEl('rect', { x: x + cx * k, y: y + cy, width: cw * k, height: ch, fill: P.cloud, opacity: P.cloudOp })));
-      s.appendChild(g);
-    });
-    // Montañas afiladas
-    s.appendChild(svgEl('polygon', { points: ridge(W, HZ, [[30, 30, 0.9], [120, 44, 1.1], [215, 28, 0.8], [330, 40, 1.0], [395, 26, 0.9]]), fill: P.mtn }));
-    // Ruinas de una catedral en el horizonte (ventanas encendidas)
-    const ru = P.ruin;
-    [[86, 26, 10], [96, 38, 6], [104, 30, 8], [116, 18, 10], [150, 22, 6]].forEach(([x, hgt, w]) => {
-      s.appendChild(svgEl('rect', { x, y: HZ - hgt, width: w, height: hgt, fill: ru }));
-      s.appendChild(svgEl('polygon', { points: `${x},${HZ - hgt} ${x + w / 2},${HZ - hgt - w * 0.9} ${x + w},${HZ - hgt}`, fill: ru }));
-    });
-    s.appendChild(svgEl('rect', { x: 84, y: HZ - 12, width: 72, height: 12, fill: ru }));
-    [[98, HZ - 30], [106, HZ - 22], [119, HZ - 12], [120, HZ - 26], [140, HZ - 8]].forEach(([x, y]) => s.appendChild(svgEl('rect', { x, y, width: 2, height: 3, fill: '#f97316', opacity: 0.8, class: 'twinkle' })));
-    // Colinas cercanas
-    s.appendChild(svgEl('polygon', { points: ridge(W, HZ, [[0, 16, 0.35], [95, 12, 0.3], [205, 18, 0.4], [300, 14, 0.35], [400, 16, 0.4]]), fill: P.hill }));
-    // Tierra yerma
-    s.appendChild(svgEl('rect', { x: 0, y: HZ, width: W, height: 10, fill: P.ground[0] }));
-    s.appendChild(svgEl('rect', { x: 0, y: HZ + 10, width: W, height: 40, fill: P.ground[1] }));
-    s.appendChild(svgEl('rect', { x: 0, y: HZ + 50, width: W, height: H - HZ - 50, fill: P.ground[2] }));
-    // Árboles muertos y tumbas
-    [[6, 0], [24, 1], [46, 2], [160, 1], [176, 0], [356, 1], [380, 0]].forEach(([x, sh]) => { const p = pixSvg(SPRITES.deadTree(sh), 1); p.setAttribute('x', x); p.setAttribute('y', HZ - 22 + sh * 2); s.appendChild(p); });
+    // humo que pasa (dos copias seguidas para que el bucle no se note)
+    const cg = svgEl('g', { class: 'cbl-drift slow' }); cg.append(img('clouds'), img('clouds', '', W)); s.appendChild(cg);
+    s.appendChild(img('far'));
+    // bruma rojiza difusa entre las capas (manchas suaves que se mueven; sin bordes rectos)
+    const mg = svgEl('g', { class: 'cbl-drift mist', 'shape-rendering': 'auto' });
+    [0, W].forEach((ox) => [[70, 10, 90], [220, 14, 110], [340, 8, 80]].forEach(([x, y, w]) => mg.appendChild(svgEl('ellipse', { cx: ox + x, cy: HZ - 14 + y, rx: w, ry: 9, fill: 'url(#campFog)' }))));
+    s.appendChild(mg);
+    s.appendChild(img('mid'));
+    [[98, HZ - 30], [106, HZ - 22], [119, HZ - 12], [120, HZ - 26], [140, HZ - 8]].forEach(([x, y]) => s.appendChild(svgEl('rect', { x, y, width: 2, height: 3, fill: '#dc2626', opacity: 0.7, class: 'twinkle' })));
+    s.appendChild(img('hills'));
+    [[6, 2], [24, 2], [46, 2], [160, 2], [176, 2], [356, 2], [380, 2]].forEach(([x, sh], i) => { const p = pixSvg(SPRITES.deadTree(sh), 1); p.setAttribute('x', x); p.setAttribute('y', HZ - 18 + (i % 2) * 2); s.appendChild(p); });
+    s.appendChild(img('ground'));
+    s.appendChild(img('cracks', 'cbl-pulse'));
     [[38, HZ + 6, 0], [52, HZ + 12, 1], [70, HZ + 4, 2], [348, HZ + 8, 1], [366, HZ + 14, 0], [226, HZ + 3, 2]].forEach(([x, y, k]) => { const p = pixSvg(SPRITES.grave(k), 1); p.setAttribute('x', x); p.setAttribute('y', y); s.appendChild(p); });
-    // Camino de losas hacia el portal
-    for (let y = HZ + 2; y < H; y += 2) {
-      const tt = (y - HZ) / (H - HZ);
-      const cx = 264 - tt * 64 + Math.round(Math.sin(tt * 5) * 6);
-      const hw = Math.round(3 + tt * 22);
-      s.appendChild(svgEl('rect', { x: cx - hw, y, width: hw * 2, height: 2, fill: y % 8 < 2 ? P.path[0] : P.path[1] }));
-      if (y % 6 === 0) s.appendChild(svgEl('rect', { x: cx - hw + 2 + Math.floor(rnd() * Math.max(1, hw * 2 - 6)), y, width: 3, height: 1, fill: '#4b3d42' }));
-    }
-    // Hierba seca y huesos
-    for (let i = 0; i < 70; i++) {
-      const x = Math.floor(rnd() * W), y = HZ + 6 + Math.floor(rnd() * (H - HZ - 8));
-      s.appendChild(svgEl('rect', { x, y, width: 1, height: 2, fill: '#4a3a24', opacity: 0.8 }));
-      if (i % 11 === 0) s.appendChild(svgEl('rect', { x: x + 1, y: y + 1, width: 3, height: 1, fill: '#d6cfc0', opacity: 0.55 }));
-    }
+    // bruma baja a ras de suelo
+    const lg2 = svgEl('g', { class: 'cbl-drift mist2', 'shape-rendering': 'auto' });
+    [0, W].forEach((ox) => [[80, 120], [290, 140]].forEach(([x, w]) => lg2.appendChild(svgEl('ellipse', { cx: ox + x, cy: HZ + 3, rx: w, ry: 7, fill: 'url(#campFog)', opacity: 0.8 }))));
+    s.appendChild(lg2);
+    // ascuas que suben del horizonte
+    const em = svgEl('g', { class: 'cbl-embers' });
+    for (let i = 0; i < 14; i++) em.appendChild(svgEl('rect', { x: Math.floor(rnd() * W), y: HZ - 4 - Math.floor(rnd() * 10), width: 1, height: 1, fill: i % 3 ? '#f97316' : '#fdba74', style: `--d:${(rnd() * 6).toFixed(2)}s;--t:${(5 + rnd() * 5).toFixed(2)}s` }));
+    s.appendChild(em);
     s.appendChild(svgEl('rect', { x: 0, y: 0, width: W, height: H, fill: 'url(#campGlow)' }));
+    s.appendChild(img('fg'));
+    s.appendChild(svgEl('rect', { x: 0, y: 0, width: W, height: H, fill: 'url(#campVig)', 'shape-rendering': 'auto' }));
     return s;
   }
 

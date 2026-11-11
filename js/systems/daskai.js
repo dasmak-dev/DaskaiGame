@@ -191,7 +191,7 @@
       if (o.elite) d.elite = true;
       if (o.shiny || (o.shiny === undefined && o.wild && !o.boss && U.chance(DK.config.shinyChance))) d.shiny = true;
       for (let l = 2; l <= level; l++) applyGrowth(d);
-      d.level = Math.min(level, DK.config.maxLevel);
+      d.level = Math.min(level, o.wild || o.boss ? (DK.config.maxEnemyLevel || DK.config.maxLevel) : DK.config.maxLevel); // v5.31: los rivales del Averno llegan a 120
       if (d.forms) d.form = Math.min(d.forms - 1, DK.config.forms.levels[d.forms].filter((lv) => lv <= d.level).length);
       d.learned = movesUpTo(speciesId, d.level, d.house2);
       d.moves = d.learned.slice(-DK.config.maxMoves);
@@ -360,6 +360,14 @@
       return { score: score / tot, why: top };
     },
     talentsPending(d) { return api.talentTiers(d).filter((tier) => !(d.talents || {})[tier]); },
+    /** v5.29: elige al azar entre sus opciones los talentos que le falten (para los que se unen con nivel). */
+    autoTalents(d, rnd = Math.random) {
+      if (!d || d.boss) return 0;
+      const pend = api.talentsPending(d);
+      pend.forEach((tier) => { const ops = api.talentOptions(d, tier); if (ops.length) { d.talents = d.talents || {}; d.talents[tier] = ops[Math.floor(rnd() * ops.length)]; } });
+      if (pend.length) { d.talentsAuto = pend.slice(); api.clamp(d); }
+      return pend.length;
+    },
     chooseTalent(d, tier, id) {
       if (!api.talentOptions(d, tier).includes(id) || (d.talents || {})[tier]) return false;
       api.touch();
@@ -472,7 +480,7 @@
   function statKey(d) {
     const st = DK.store.state, e = st && st.expedition;
     const eq = d.equip || [];
-    return rev + '|' + d.level + '|' + d.species + '|' + d.passive + '|' + DK.gear.key(eq[0]) + '|' + DK.gear.key(eq[1]) + '|' + (e ? 'x' + (e.relics || []).length + '|' + (e.corruption || 0) + (e.zone || '') + (e.depth || 1) : '-') + '|' + (st ? st.difficulty : '') + '|' + (d.stars || 0) + (d.variant || '') + '|' + (d.form || 0) + '/' + (d.forms || 0) + (d.wild ? 'w' : '') + (d.boss ? 'b' : '') + (d.elite ? 'e' : '');
+    return rev + '|' + d.level + '|' + d.species + '|' + d.passive + '|' + DK.gear.key(eq[0]) + '|' + DK.gear.key(eq[1]) + '|' + (e ? 'x' + (e.relics || []).length + '|' + (e.corruption || 0) + (e.zone || '') + (e.depth || 1) : '-') + '|' + (st ? st.difficulty : '') + '|' + (d.stars || 0) + (d.variant || '') + '|' + (d.form || 0) + '/' + (d.forms || 0) + (d.wild ? 'w' : '') + (d.boss ? 'b' : '') + (d.elite ? 'e' : '') + (d.avernoMult ? '|av' + d.avernoMult : '');
   }
   api.touch = () => { rev++; };
 
@@ -716,6 +724,9 @@
       // v4.64: quien se une (captura, recluta, suceso...) llega con toda su vida y maná, sin estados
       if (d.cur) { delete d.wild; api.fullHeal(d); }
       if (this.all().length) d.isNew = Date.now(); // v4.57: marca «Nuevo» hasta que abras su ficha
+      // v5.29: quien llega ya con nivel trae elegidos (al azar) los talentos de sus niveles anteriores;
+      // sólo eliges los que gane subiendo contigo
+      api.autoTalents(d);
       this.all().push(d);
       if (DK.looks) DK.looks.see(d);
       if (this.st().team.length < DK.config.maxTeam) this.st().team.push(d.uid);

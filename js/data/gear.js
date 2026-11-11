@@ -25,10 +25,16 @@
   G.rarities = {
     normal: { order: 1, color: '#d4d7e2', attrs: [1, 2], affixes: [1, 1], maxP: 1, maxS: 1, maxTier: 2, basicOnly: true, power: 0.85, salvage: 1, drop: { fight: 70, elite: 30, boss: 0 } },
     magico: { order: 2, color: '#7b9bff', attrs: [2, 4], affixes: [1, 2], maxP: 2, maxS: 2, maxTier: 4, power: 1.1, salvage: 2, drop: { fight: 25, elite: 50, boss: 47 } },
-    raro: { order: 3, color: '#f2c94c', attrs: [4, 5], affixes: [2, 4], maxP: 2, maxS: 2, power: 1.2, salvage: 4, drop: { fight: 5, elite: 20, boss: 50 } },
-    legendario: { order: 4, color: '#ff8a3d', attrs: [4, 5], affixes: [2, 4], maxP: 2, maxS: 2, power: 1.4, salvage: 8, drop: { fight: 0, elite: 0, boss: 3 } },
+    // v5.29: más afijos en raros (3–5, hasta 3 + 3) y legendarios (4–6, 3 + 3) para que haya más con lo que jugar
+    raro: { order: 3, color: '#f2c94c', attrs: [4, 5], affixes: [3, 5], maxP: 3, maxS: 3, power: 1.2, salvage: 4, drop: { fight: 5, elite: 20, boss: 50 } },
+    legendario: { order: 4, color: '#ff8a3d', attrs: [4, 5], affixes: [4, 6], maxP: 3, maxS: 3, power: 1.4, salvage: 8, drop: { fight: 0, elite: 0, boss: 3 } },
   };
   G.rarityOrder = ['normal', 'magico', 'raro', 'legendario'];
+  /**
+   * v5.29: FUSIÓN: N piezas sueltas (sin bloquear ni equipar) de una rareza → 1 pieza al azar de la siguiente,
+   * con el nivel de objeto medio de las que se funden. Se gastan primero las de peor calidad.
+   */
+  G.fuse = { normal: 3, magico: 3, raro: 5 };
   /**
    * v4.85: los normales sólo pueden llevar estos afijos «básicos» (basicOnly) y como mucho tier N2 (maxTier);
    * los mágicos llegan a N4 y con todo el pool; raros y legendarios, a N5. Los normales, además, pesan menos (power 0.85).

@@ -133,7 +133,7 @@
      */
     recommended() {
       const avg = DK.party.avgLevel();
-      const list = this.unlockedZones();
+      const list = this.unlockedZones().filter((z) => !(DK.averno && DK.averno.isZone(z.id))); // v5.31: el Averno nunca es la recomendada
       const inRange = list.filter((z) => avg >= z.levels[0] && avg <= z.levels[1] + 2);
       if (inRange.length) return inRange[inRange.length - 1];
       const below = list.filter((z) => z.levels[0] <= avg);

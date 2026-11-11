@@ -69,6 +69,8 @@
     { id: 'engrave', group: 'endgame', icon: 'gem', when: () => DK.endgame.late(),
       stat: () => `${DK.engrave.list().length}/${DK.engrave.slots()}`, vars: () => ({ n: D.endgame.engrave.cost }) },
     { id: 'finalZone', group: 'endgame', icon: 'map', when: () => DK.world.isUnlocked(D.endgame.finalZone) },
+    { id: 'averno', group: 'endgame', icon: 'flame', when: () => DK.averno.unlocked(), // v5.31
+      stat: () => DK.t('averno.bestLine', { floors: DK.averno.rec().best.floors || 0, maps: DK.averno.rec().best.maps || 0, lv: DK.averno.rec().best.level || D.endgame.averno.level.start }) },
   ];
 
   /** Helpers del wiki: entradas desbloqueadas y textos. */

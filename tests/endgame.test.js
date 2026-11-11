@@ -223,7 +223,60 @@ module.exports = {
       await p.evaluate(() => DK.router.reset('zones')); await sleep(400);
       check(await p.evaluate(() => document.body.textContent.includes(DK.data.zones.vacio.name)), 'la zona final debería verse en el mapa del mundo');
     }),
-  }],
+    }, {
+    name: 'v5.31: el Averno se abre tras la última zona en Pesadilla y Corrupción máxima; sin reclutas, sin salida, rivales hasta 120 que se adaptan',
+    run: (browser, view) => play(browser, view, async (p) => {
+      const r = await p.evaluate(() => {
+        const D = DK.data, E = DK.expedition, out = {};
+        Object.keys(D.zones).filter((z) => !D.zones[z].secretZone).forEach((z) => { DK.world.progress(z).unlocked = true; DK.world.boss(z).defeated = 1; });
+        DK.store.state.corruption = { max: 5 };
+        DK.party.active().forEach((d) => { d.level = 100; DK.daskai.touch(); DK.daskai.fullHeal(d); });
+        const nm = DK.nightmare.available; DK.nightmare.available = () => true;
+        const last = DK.averno.lastZone();
+        // sin pesadilla no se abre
+        E.setStart({ zone: last }); let n = E.nextStart(); n.corruption = 5; n.nightmare = null; E.start({}); E.bossCleared(); out.noNight = DK.averno.unlocked(); E.complete();
+        E.setStart({ zone: last }); n = E.nextStart(); n.corruption = 5; n.nightmare = last; E.start({}); E.bossCleared(); out.open = DK.averno.unlocked(); E.complete();
+        DK.nightmare.available = nm;
+        out.lastIsLast = last === Object.keys(D.zones).filter((z) => !D.zones[z].secretZone).slice(-1)[0];
+        out.pick = Array.from({ length: 200 }, (_, i) => E.pickZone(1 + (i % 12))).includes('averno');
+        out.rec = DK.world.recommended().id;
+        E.setStart({ zone: 'averno' }); n = E.nextStart(); out.n = [n.kind, n.size, n.corruption || 0, !!n.nightmare];
+        let recruits = 0; for (let i = 0; i < 25; i++) { n.seed = 'av' + i; recruits += E.preview().map.rows.flat().filter((x) => x.type === 'recruit').length; }
+        out.recruits = recruits;
+        out.night = DK.nightmare.available('averno') || DK.abyss.available('averno');
+        E.start({}); const e = E.active();
+        const lead = DK.party.active()[0].uid;
+        const w = DK.battle.start('averno', lead, {}).enemy;
+        out.wild = w.level; out.adapt = DK.averno.power(w) >= DK.averno.ratio('wild') * DK.averno.power(DK.party.active()[0]) * 0.99;
+        e.avernoFloors = 200; e.zones = Array(20).fill('x');
+        const b = DK.battle.start('averno', lead, { boss: true, final: true }).enemy;
+        out.boss = [b.level, b.avernoMult > 1, DK.averno.power(b) >= 1.3 * DK.averno.power(DK.party.active()[0])];
+        out.exit = E.canCampfireExit(); out.complete = E.complete();
+        const d0 = DK.party.all().length; DK.expedition.addRecruit(DK.daskai.create('lumino', 5, { wild: true })); out.added = DK.party.all().length - d0;
+        e.loot.coins = 1000; const before = DK.wallet.get();
+        const f = E.fail({ boss: true });
+        out.end = [!!(f && f.averno), DK.wallet.get() > before, !E.active(), !!DK.store.state.lastExpedition.averno, DK.averno.rec().best.floors];
+        return out;
+      });
+      check(!r.noNight && r.open && r.lastIsLast, 'el Averno se abre sólo con pesadilla y corrupción máxima en la última zona: ' + JSON.stringify(r));
+      check(!r.pick && r.rec !== 'averno', 'el Averno no debería salir al azar ni como recomendado');
+      check(r.n.join() === 'averno,averno,0,false', 'la expedición del Averno: su tipo y tamaño, sin corrupción ni pesadilla: ' + r.n);
+      check(r.recruits === 0 && r.added === 0, 'en el Averno no hay reclutas ni daskai nuevos');
+      check(!r.night, 'en el Averno no hay pesadilla ni abismo');
+      check(r.wild >= 88 && r.wild <= 92 && r.adapt, 'los rivales empiezan en el nivel 90 y se adaptan al equipo: ' + r.wild);
+      check(r.boss[0] === 120 && r.boss[1] && r.boss[2], 'en lo hondo, jefes de nivel 120 y más fuertes que tu equipo: ' + r.boss);
+      check(!r.exit && r.complete === null, 'del Averno no se sale por las hogueras ni cobrando');
+      check(r.end.every(Boolean), 'al caer termina la bajada, te llevas el botín y queda el récord: ' + r.end);
+    }),
+  }, {
+    name: 'v5.31: todos los objetos de forja (piedras y reactivos de runas) tienen su texto corto en los dos idiomas',
+    run: (browser, view) => play(browser, view, async (p) => {
+      const miss = await p.evaluate(() => { const out = [];
+        ['es', 'en'].forEach((l) => Object.values(DK.data.items).filter((it) => it.category === 'forja' && it.id !== 'fragmento_forja').forEach((it) => { if (DK.i18n.lookup(l, 'gear.stoneShort.' + it.id) == null) out.push(l + ':' + it.id); }));
+        return out; });
+      check(!miss.length, 'faltan textos: ' + miss.join(', '));
+    }),
+}],
 };
 
 function p0(browser, view) {

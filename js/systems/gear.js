@@ -544,6 +544,27 @@
       return { ok: true, n: list.length, f };
     },
     /** Fragmentos (y a veces una piedra) que da desguazar una pieza. */
+    /* ---------- Fusión (v5.29) ---------- */
+    /** Piezas de esa rareza que se pueden fundir (sueltas, sin bloquear), de peor a mejor calidad. */
+    fusable(rarity) { return this.home().filter((p) => p.rarity === rarity && !p.lk).sort((a, b) => this.quality(a).score - this.quality(b).score || a.ilvl - b.ilvl); },
+    fuseCost(rarity) { return (G().fuse || {})[rarity] || 0; },
+    nextRarity(rarity) { const o = G().rarityOrder; return o[o.indexOf(rarity) + 1] || null; },
+    /** Funde las `fuseCost` peores de esa rareza en una pieza nueva de la siguiente (base al azar entre las fundidas o cualquiera). */
+    fuse(rarity, rnd = Math.random) {
+      const n = this.fuseCost(rarity), to = this.nextRarity(rarity), list = this.fusable(rarity).slice(0, n);
+      if (!n || !to || list.length < n) return { ok: false, msg: t('gear.fuse.notEnough', { n, rarity: t('gear.rarity.' + rarity) }) };
+      const ilvl = Math.round(list.reduce((a, p) => a + p.ilvl, 0) / n);
+      const bases = rnd() < 0.5 ? list.map((p) => p.base) : Object.keys(G().typeOf).filter((b) => D.items[b]);
+      const base = bases[Math.floor(rnd() * bases.length)];
+      const ids = new Set(list.map((p) => p.uid)), s = st();
+      s.gear = this.home().filter((p) => !ids.has(p.uid));
+      const p = this.create(base, { rarity: to, ilvl, rnd, jitter: false });
+      s.gear.push(p);
+      if (DK.codex) DK.codex.markItem(p.base);
+      DK.emit('gear:gained', { p }); DK.emit('gear:fused', { from: rarity, to, p });
+      DK.store.save();
+      return { ok: true, p, used: list };
+    },
     salvageValue(p) { return { fragmento_forja: RAR()[p.rarity].salvage + Math.floor((p.ilvl || 1) / 25) }; },
     /** Desguaza una pieza sin equipar (en casa). */
     salvage(uid) {

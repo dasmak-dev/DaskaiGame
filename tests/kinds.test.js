@@ -92,7 +92,7 @@ module.exports = {
     run: (browser, view) => play(browser, view, async (p) => {
       const r = await p.evaluate(() => ['day', 'dawn', 'dusk', 'night'].map((tod) => {
         const s = DK.views.campBackdrop(tod);
-        return { tod, sky: [...s.querySelectorAll('#campSky stop')].map((x) => x.getAttribute('stop-color')).join(), moon: !!s.querySelector('.camp-body.moon'), sun: !!s.querySelector('.camp-body.sun'), stars: s.querySelectorAll('rect[fill="#fecaca"]').length };
+        return { tod, sky: (s.querySelector('.cbl-sky') || {}).getAttribute ? s.querySelector('.cbl-sky').getAttribute('href').slice(-60) : [...s.querySelectorAll('#campSky stop')].map((x) => x.getAttribute('stop-color')).join(), moon: !!s.querySelector('.camp-body.moon'), sun: !!s.querySelector('.camp-body.sun'), stars: s.querySelectorAll('rect[fill="#fca5a5"]').length };
       }));
       const by = Object.fromEntries(r.map((x) => [x.tod, x]));
       check(new Set(r.map((x) => x.sky)).size === 4, 'cada momento del día debería tener su cielo');
@@ -145,5 +145,26 @@ module.exports = {
       check(r.pct > 0.15 && r.pct < 0.25, 'el papel debería salir ~20% de las veces: ' + r.pct);
       check(r.better, 'tener papel debería mejorar sus atributos');
     }),
-  }],
+    }, {
+    name: 'v5.30: accesorios nuevos ajustados a cada uno, más nombres, la cifra del HUD no se repite y el botón de fabricar es discreto',
+    run: (browser, view) => play(browser, view, async (p) => {
+      const r = await p.evaluate(async () => {
+        const keys = ['hood', 'bonehelm', 'candles', 'laurel', 'eyepatch', 'chain', 'bell', 'sash', 'lantern', 'flower'];
+        const sids = Object.keys(DK.data.species).filter((s) => !DK.data.species[s].boss), found = {}, names = new Set();
+        for (let n = 0; n < 30000; n++) { const sid = sids[n % sids.length], seed = ((n * 2654435761) & 0xffffff00 | 0xab) >>> 0, ind = DK.looks.ind(sid, { s: seed });
+          if (n < 3000) names.add(DK.names.make(ind));
+          if (keys.includes(ind.final) && !found[ind.final]) found[ind.final] = DK.looks.svg(sid, { s: seed, fin: true }).length; }
+        // la cifra «+N» de las monedas desaparece y no vuelve al repintar el HUD
+        DK.wallet.add(100); DK.app.renderRes(); const had = !!document.querySelector('.hud-delta');
+        await new Promise((ok) => setTimeout(ok, 2000)); DK.app.renderRes();
+        // botón de fabricar: sin «{n}» y sin texto grande
+        const lbl = DK.t('craft.makeBtn');
+        return { found: Object.keys(found).length, ok: Object.values(found).every((n) => n > 500), names: names.size, had, after: !!document.querySelector('.hud-delta'), lbl };
+      });
+      check(r.found === 10 && r.ok, 'deberían salir y dibujarse los 10 accesorios nuevos: ' + r.found);
+      check(r.names > 1500, 'debería haber muchos nombres distintos: ' + r.names);
+      check(r.had && !r.after, 'el «+N» de las monedas debería salir una vez y no repetirse');
+      check(!/\{n\}/.test(r.lbl), 'el texto del botón de fabricar no debería tener «{n}»');
+    }),
+}],
 };

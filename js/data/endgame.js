@@ -52,5 +52,17 @@
     // Drops extra para el final: fragmento abisal
     abisalDrop: { secret: 0.5, finalZone: 1, corruption: 0.25 },
     finalZone: 'vacio',
+    /* v5.31: EL AVERNO (DK.averno). Se abre al vencer al jefe de la ÚLTIMA zona del mapa del mundo (la que sea, aunque
+     * se añadan más) en Pesadilla y con la Corrupción al máximo. Bajada sin fin: no se vuelve desde las hogueras, sólo
+     * se sale al caer (y entonces te llevas todo el botín); no hay reclutas ni daskai nuevos.
+     *   level   nivel de los rivales = start + pisos × perFloor + jefes × perBoss (+ elite / boss), hasta cap
+     *   adapt   los rivales se adaptan a tu equipo: su poder (atributos) es, como mínimo, ratio × el de tu equipo
+     *           ratio = base + pisos × perFloor + jefes × perBoss (× boss / elite); y además +flat% por piso y jefe */
+    averno: {
+      zone: 'averno',
+      level: { start: 90, cap: 120, perFloor: 0.3, perBoss: 1.5, elite: 2, boss: 4 },
+      adapt: { base: 0.82, perFloor: 0.01, perBoss: 0.07, boss: 1.3, elite: 1.12, flatFloor: 0.006, flatBoss: 0.04 },
+      // (monedas y emblemas extra: config.expedition.kinds.averno)
+    },
   };
 })();

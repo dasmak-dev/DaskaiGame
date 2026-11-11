@@ -42,7 +42,7 @@
     },
     /** Al vencer al jefe de un mapa: si iba con el nivel máximo, se abre el siguiente. */
     onBoss() {
-      const e = exp(); if (!e || !st()) return null;
+      const e = exp(); if (!e || !st() || e.kind === 'averno') return null; // (en el Averno no hay corrupción)
       st().corruption = st().corruption || { max: 0 };
       const lv = e.corruption || 0;
       if (lv === st().corruption.max && lv < this.levels().length && this.visible()) {
@@ -62,7 +62,7 @@
 
   /* ---------------- Versión pesadilla de una zona ---------------- */
   DK.nightmare = {
-    available(zone) { return !!st() && DK.world.isUnlocked(zone) && DK.codex.completion(zone) >= 1; },
+    available(zone) { return !!st() && zone !== G().averno.zone && DK.world.isUnlocked(zone) && DK.codex.completion(zone) >= 1; },
     /** ¿Afecta al mapa actual? (sólo en la zona elegida) */
     on() { const e = exp(); return !!(e && e.nightmare && e.zone === e.nightmare); },
     toggle() {
@@ -82,7 +82,7 @@
   DK.abyss = {
     unlocked() { return !!st() && Object.keys(D.zones).filter((z) => DK.world.boss(z).defeated > 0).length >= G().abyss.bosses; },
     /** ¿Se puede bajar al Abismo de esta zona? (Abismo abierto y su jefe vencido) */
-    available(zoneId) { return this.unlocked() && !!D.zones[zoneId] && !!D.zones[zoneId].boss && DK.world.boss(zoneId).defeated > 0; },
+    available(zoneId) { return this.unlocked() && zoneId !== G().averno.zone && !!D.zones[zoneId] && !!D.zones[zoneId].boss && DK.world.boss(zoneId).defeated > 0; },
     on() { const e = exp(); return !!(e && e.kind === 'abismo'); },
     rec() { const s = st(); s.abyss = s.abyss || { best: 0, rewarded: 0 }; s.abyss.zones = s.abyss.zones || {}; return s.abyss; },
     best(zoneId) { if (!st()) return 0; const r = this.rec(); return zoneId ? ((r.zones[zoneId] || {}).best || 0) : (r.best || 0); },
@@ -149,6 +149,78 @@
     },
   };
 
+  /* ---------------- El Averno (v5.31): bajada sin fin ----------------
+   * state.averno = { best: { floors, maps, level }, runs }
+   * En la expedición: e.kind === 'averno', e.avernoFloors (pisos superados en toda la bajada),
+   * e.zones.length (jefes vencidos) y e.avernoBoss (zona cuyo jefe espera al final del mapa actual). */
+  const AV = () => G().averno;
+  DK.averno = {
+    zoneId() { return AV().zone; },
+    /** Última zona del mapa del mundo (la que sea: si se añaden más, cambia sola). */
+    lastZone() { const o = order(); return o[o.length - 1]; },
+    unlocked() { return !!st() && !!D.zones[this.zoneId()] && DK.world.isUnlocked(this.zoneId()); },
+    on() { const e = exp(); return !!(e && e.kind === 'averno'); },
+    isZone(z) { return z === this.zoneId(); },
+    rec() { const s = st(); s.averno = s.averno || { best: { floors: 0, maps: 0, level: 0 }, runs: 0 }; return s.averno; },
+    floors() { const e = exp(); return e ? e.avernoFloors || 0 : 0; },
+    bosses() { const e = exp(); return e ? (e.zones || []).length : 0; },
+    /** Nivel de los rivales ahora (kind: 'wild' | 'elite' | 'boss'). */
+    level(kind = 'wild', f = this.floors(), b = this.bosses()) {
+      const L = AV().level;
+      const lv = L.start + f * L.perFloor + b * L.perBoss + (kind === 'boss' ? L.boss : kind === 'elite' ? L.elite : 0);
+      return Math.max(1, Math.min(L.cap, Math.round(lv)));
+    },
+    /** Proporción mínima del poder de tu equipo que tendrá un rival (crece con los pisos y los jefes). */
+    ratio(kind = 'wild', f = this.floors(), b = this.bosses()) {
+      const A = AV().adapt;
+      return (A.base + f * A.perFloor + b * A.perBoss) * (kind === 'boss' ? A.boss : kind === 'elite' ? A.elite : 1);
+    },
+    /** +% fijo de atributos por lo que llevas bajado. */
+    flat(f = this.floors(), b = this.bosses()) { const A = AV().adapt; return f * A.flatFloor + b * A.flatBoss; },
+    /** «Poder» de un daskai: suma de sus atributos (la vida cuenta un cuarto). */
+    power(d) { const s = DK.daskai.stats(d); return s.hp / 4 + s.mp / 8 + s.atk + s.matk + s.def + s.mdef + s.spd; },
+    /** Ajusta un rival recién creado: como mínimo ratio × el poder medio de tu equipo (d.avernoMult). */
+    adapt(d, kind = 'wild') {
+      if (!this.on() || !d) return d;
+      const team = DK.party.active(); if (!team.length) return d;
+      const mine = team.reduce((a, x) => a + this.power(x), 0) / team.length;
+      d.avernoMult = 1; DK.daskai.touch();
+      const theirs = this.power(d), base = 1 + this.flat();
+      const need = theirs > 0 ? (this.ratio(kind) * mine) / (theirs * base) : 1;
+      d.avernoMult = Math.round(Math.max(1, need) * base * 1000) / 1000;
+      DK.daskai.touch(); DK.daskai.fullHeal(d);
+      return d;
+    },
+    /** +% de atributos para endgame.enemyStat. */
+    statBonus(d) { return this.on() && d && d.avernoMult ? d.avernoMult - 1 : 0; },
+    /** Jefe que espera al final de un mapa del Averno: uno de los de las zonas, al azar. */
+    pickBoss(seed) {
+      const pool = Object.keys(D.zones).filter((z) => D.zones[z].boss && z !== this.zoneId());
+      return pool[Math.floor(U.seeded(String(seed))() * pool.length)] || this.zoneId();
+    },
+    bossZone() { const e = exp(); return (e && e.avernoBoss && D.zones[e.avernoBoss]) ? e.avernoBoss : this.zoneId(); },
+    bossInfo() { const z = this.bossZone(); return Object.assign({}, D.zones[z].boss, { level: this.level('boss') }); },
+    /** Al vencer al jefe de la última zona: si iba en Pesadilla y con la Corrupción al máximo, se abre el Averno. */
+    checkUnlock() {
+      const e = exp(); if (!e || !st() || this.unlocked() || !D.zones[this.zoneId()]) return false;
+      if (e.zone !== this.lastZone() || !DK.nightmare.on() || (e.corruption || 0) < DK.corruption.levels().length) return false;
+      DK.world.progress(this.zoneId()).unlocked = true;
+      this.rec();
+      DK.emit('zone:unlocked', { zone: this.zoneId() });
+      DK.ui.toast(t('averno.unlocked', { zone: D.zones[this.zoneId()].name }), { icon: 'flame', kind: 'good' });
+      DK.store.save();
+      return true;
+    },
+    /** Récord de la bajada (al terminar). */
+    record(e) {
+      const r = this.rec(), f = e.avernoFloors || 0, m = (e.zones || []).length, lv = this.level('wild', f, m);
+      r.runs = (r.runs || 0) + 1;
+      const best = r.best.floors < f;
+      if (best) r.best = { floors: f, maps: m, level: lv };
+      return { floors: f, maps: m, level: lv, best };
+    },
+  };
+
   /* ---------------- Ascensión y formas alternativas ---------------- */
   DK.ascension = {
     max() { return G().ascension.maxStars; },
@@ -204,7 +276,7 @@
     enemyStat(d) {
       const e = exp(); if (!e) return 0;
       const c = DK.corruption.def(e.corruption || 0);
-      let m = (c ? c.stat : 0) + (DK.nightmare.on() ? G().nightmare.stat : 0) + (e.kind === 'abismo' ? ((e.depth || 1) - 1) * G().abyss.depthStat : 0);
+      let m = (c ? c.stat : 0) + (DK.nightmare.on() ? G().nightmare.stat : 0) + (e.kind === 'abismo' ? ((e.depth || 1) - 1) * G().abyss.depthStat : 0) + DK.averno.statBonus(d);
       return m;
     },
     bossHp(d) { const e = exp(); return e && d.boss && DK.corruption.has('bossHp', e.corruption || 0) ? G().corruption.bossHp : 1; },

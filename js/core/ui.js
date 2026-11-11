@@ -587,7 +587,9 @@
   let lastTouch = 0;
   document.addEventListener('mouseover', (e) => {
     if (Date.now() - lastTouch < 1500) return; // ratón simulado tras un toque
-    const tgt = e.target.closest && e.target.closest('[data-tip]');
+    let tgt = e.target.closest && e.target.closest('[data-tip]');
+    // v5.32: dentro de algo que ya enseña su ficha flotante (DK.ui.hoverCard) no sale además la burbuja de texto
+    if (tgt && e.target.closest('[data-hc]')) tgt = null;
     clearTimeout(tipTimer);
     if (tgt) tipTimer = setTimeout(() => showTip(tgt), 350); else hideTip();
   });

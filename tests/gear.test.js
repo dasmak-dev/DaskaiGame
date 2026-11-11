@@ -123,16 +123,16 @@ module.exports = {
     run: (browser, view) => play(browser, view, async (p) => {
       const r = await p.evaluate(() => {
         const G = DK.gear, give = (o) => DK.bag.addHome(o), out = {};
-        give({ piedra_alquimia: 1, piedra_transmutacion: 1, piedra_aumento: 2, piedra_exaltacion: 3, piedra_anulacion: 1, piedra_templado: 1, sello_forja: 1, piedra_caos: 1, eco_legendario: 1 });
+        give({ piedra_alquimia: 1, piedra_transmutacion: 1, piedra_aumento: 2, piedra_exaltacion: 5, piedra_anulacion: 1, piedra_templado: 1, sello_forja: 1, piedra_caos: 1, eco_legendario: 1 });
         const a = G.gain('garra_afilada', { rarity: 'normal', ilvl: 70 });
         out.alch = G.forge(a.uid, 'piedra_alquimia').ok && a.rarity === 'raro';
         const m = G.gain('escama_dura', { rarity: 'normal', ilvl: 30 });
         G.forge(m.uid, 'piedra_transmutacion');
         while (m.affixes.length > 1) m.affixes.pop();
         out.aug = G.forge(m.uid, 'piedra_aumento').ok && m.affixes.length === 2 && !!G.cannotForge(m, 'piedra_aumento');
-        // Exaltación hasta llenar (4) y luego no deja
-        let n = 0; while (!G.cannotForge(a, 'piedra_exaltacion') && n++ < 5) G.forge(a.uid, 'piedra_exaltacion');
-        out.exaltFull = a.affixes.length === 4 && G.cannotForge(a, 'piedra_exaltacion') === DK.t('gear.why.full') || (a.affixes.length === 4 && !DK.bag.home().piedra_exaltacion);
+        // Exaltación hasta llenar (v5.29: un raro llega a 5) y luego no deja
+        let n = 0; while (!G.cannotForge(a, 'piedra_exaltacion') && n++ < 6) G.forge(a.uid, 'piedra_exaltacion');
+        out.exaltFull = a.affixes.length === 5 && G.cannotForge(a, 'piedra_exaltacion') === DK.t('gear.why.full') || (a.affixes.length === 5 && !DK.bag.home().piedra_exaltacion);
         // Sello en el 0, caos: sigue; templado sube el tier
         const keep = a.affixes[0].id;
         out.needSel = !G.forge(a.uid, 'sello_forja').ok;
@@ -200,7 +200,7 @@ module.exports = {
       await p.waitForSelector('.fb-mesa button.gt-affix', { state: 'attached', timeout: 5000 });
       check(!(await overflowX(p)), 'la forja se sale de la pantalla');
       const r0 = await p.evaluate(() => ({ pips: document.querySelectorAll('.fb-pips i').length, pool: document.querySelectorAll('.fb-pool-row').length, temperOff: [...document.querySelectorAll('.fs-row')].find((b) => /templado/i.test(b.textContent)).disabled }));
-      check(r0.pips === 4 && r0.pool > 0 && r0.temperOff, 'faltan huecos, afijos posibles o el templado debería pedir un afijo: ' + JSON.stringify(r0));
+      check([4, 6].includes(r0.pips) && r0.pool > 0 && r0.temperOff, 'faltan huecos, afijos posibles o el templado debería pedir un afijo: ' + JSON.stringify(r0));
       await p.evaluate(() => document.querySelector('.fb-mesa button.gt-affix:not(.empty)').click()); await sleep(300);
       // v4.79: el afijo elegido abre su barra de acciones (cambiar, templar, sellar)
       const bar = await p.evaluate(() => [...document.querySelectorAll('.fa-bar .fa-act')].map((b) => b.textContent));
@@ -390,5 +390,18 @@ module.exports = {
       await p.evaluate(() => document.querySelector('.ub-kbtn').click()); await sleep(300);
       check(await p.evaluate(() => DK.router.current().params.fkind === 'gear' && !!document.querySelector('.forge-bench:not(.rune-bench)')), 'no vuelve al equipo desde el selector');
     }),
-  }],
+    }, {
+    name: 'v5.32: al pasar el ratón por un objeto (icono o texto) sale su ficha completa, no una línea de texto',
+    run: (browser, view) => play(browser, view, async (p) => {
+      const r = await p.evaluate(() => {
+        const g = DK.gear.gain('escama_dura', { rarity: 'raro', ilvl: 30 }), V = DK.views;
+        const ic = V.gearIcon(g, 30), tile = V.gearTile(g), it = V.itemIcon(DK.data.items.piedra_caos, 30);
+        const card = (el) => { const n = el._tipNode && el._tipNode(); return n ? n.className + '|' + (n.querySelector('.gt-affix') ? 'aff' : '') : ''; };
+        return { ic: card(ic), tile: card(tile), item: card(it) };
+      });
+      check(/gear/.test(r.ic) && /aff/.test(r.ic), 'el icono de una pieza debería enseñar su ficha con afijos: ' + r.ic);
+      check(/gear/.test(r.tile), 'toda la casilla de una pieza (también su texto) debería enseñar la ficha: ' + r.tile);
+      check(/info-card/.test(r.item), 'el icono de un objeto debería enseñar su ficha: ' + r.item);
+    }),
+}],
 };

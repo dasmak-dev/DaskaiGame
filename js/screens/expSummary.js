@@ -182,8 +182,12 @@
         DK.outcomeEmblem(s.outcome, o.cls), // v5.12: emblema elaborado, distinto según el estilo
         h('div', { class: 'grow' },
           h('span', { class: 'muted small' }, t('exp.title', { zone: zone.name })),
-          h('h2', null, t('sum.out.' + s.outcome)),
-          h('p', { class: 'muted' }, t('sum.outText.' + s.outcome, { n: Math.round(((s.mult || DK.config.expeditionBonus) - 1) * 100) })),
+          h('h2', null, s.averno ? t('averno.sumTitle') : t('sum.out.' + s.outcome)),
+          h('p', { class: 'muted' }, s.averno ? t('averno.sumText', { floors: s.averno.floors, maps: s.averno.maps, lv: s.averno.level }) : t('sum.outText.' + s.outcome, { n: Math.round(((s.mult || DK.config.expeditionBonus) - 1) * 100) })),
+          s.averno && s.averno.best ? h('span', { class: 'chip pos' }, DK.icon('trophy', 13), t('averno.newBest')) : null,
+          // v5.33: tabla global del Averno y, la primera vez, si quieres publicar tu récord
+          s.averno ? h('div', { class: 'row gap-s wrap' }, btn({ icon: 'trophy', label: t('online.boardBtn'), size: 'sm', variant: 'tone', onClick: () => V.leaderboard() })) : null,
+          s.averno && latest ? V.publishAsk() : null,
           // v5.11: datos del mapa en una cuadrícula ordenada (antes, píldoras en filas desiguales)
           h('div', { class: 'sum-meta' }, [
             ['compass', t('sum5.mMaps'), String(depth)],

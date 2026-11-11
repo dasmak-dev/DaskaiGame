@@ -43,8 +43,9 @@
   function pieceRow(x, d, on, onClick) {
     const sl = DK.gear.slots(x), k = DK.gear.primaryOf(x.base);
     const dots = (used, max, cls) => [...Array(max).keys()].map((i) => h('i', { class: cls + (i < used ? ' on' : '') }));
-    return h('button', { class: 'fp-row g-' + x.rarity + (on ? ' on' : ''), type: 'button', style: { '--g': GR()[x.rarity].color }, 'aria-pressed': on, onClick,
-      tip: `${DK.gear.name(x)} · ${t('gear.rarity.' + x.rarity)} · ${V.gearLine(x)}` },
+    // v5.29: al dejar el ratón encima sale la ficha completa de la pieza (DK.ui.hoverCard), en vez del tooltip de una línea
+    return DK.ui.hoverCard(h('button', { class: 'fp-row g-' + x.rarity + (on ? ' on' : ''), type: 'button', style: { '--g': GR()[x.rarity].color }, 'aria-pressed': on, onClick,
+      'aria-label': `${DK.gear.name(x)} · ${t('gear.rarity.' + x.rarity)} · ${V.gearLine(x)}` },
       h('span', { class: 'fp-ico' }, V.gearIcon(x, 30)),
       h('span', { class: 'fp-main' },
         h('b', { class: 'fp-name' }, DK.gear.name(x)),
@@ -52,7 +53,30 @@
       x.lk ? h('span', { class: 'fp-lk', tip: t('gear.lockedPiece') }, DK.icon('lock', 12)) : null,
       V.gearQuality(x, { small: true }),
       sl.total ? h('span', { class: 'fp-slots', 'aria-hidden': 'true' }, h('span', null, dots(sl.P[0], sl.P[1], 'p')), h('span', null, dots(sl.S[0], sl.S[1], 's'))) : null,
-      d ? h('span', { class: 'fp-worn' }, V.dSprite(d, { size: 26 })) : h('span', { class: 'fp-worn none' }));
+      d ? h('span', { class: 'fp-worn' }, V.dSprite(d, { size: 26 })) : h('span', { class: 'fp-worn none' })), () => h('div', { class: 'hc-gear' }, V.gearTip(x, { compact: true }), d ? h('small', { class: 'muted hc-worn' }, V.dSprite(d, { size: 20 }), t('gear.bench.worn', { name: DK.daskai.name(d) })) : null));
+  }
+
+  /** v5.29: fusión: N piezas de una rareza → 1 al azar de la siguiente (data/gear.js → fuse). */
+  function fuseDialog(refresh) {
+    const box = h('div', { class: 'stack-s fu-box' });
+    const draw = () => box.replaceChildren(
+      h('p', { class: 'muted small' }, t('gear.fuse.text')),
+      Object.keys(D.gear.fuse).map((r) => {
+        const n = DK.gear.fuseCost(r), to = DK.gear.nextRarity(r), have = DK.gear.fusable(r).length, times = Math.floor(have / n);
+        const go = (k) => { let last = null; for (let i = 0; i < k; i++) { const res = DK.gear.fuse(r); if (!res.ok) break; last = res.p; }
+          if (last) { DK.audio.sfx('levelup'); toast(t(k > 1 ? 'gear.fuse.doneN' : 'gear.fuse.done', { n: k, name: DK.gear.name(last) }), { icon: 'sparkles', kind: 'good' }); }
+          draw(); refresh(); };
+        return h('div', { class: 'fu-row', style: { '--g': GR()[r].color, '--g2': GR()[to].color } },
+          h('span', { class: 'fu-from' }, h('b', null, `${n}×`), h('i', { class: 'gear-dot' }), t('gear.rarity.' + r)),
+          DK.icon('next', 14),
+          h('span', { class: 'fu-to' }, h('b', null, '1×'), h('i', { class: 'gear-dot to' }), t('gear.rarity.' + to)),
+          h('small', { class: 'muted grow fu-have' }, t('gear.fuse.have', { n: have })),
+          btn({ icon: 'sparkles', label: t('gear.fuse.go'), size: 'sm', variant: 'primary', disabled: !times, onClick: () => go(1) }),
+          times > 1 ? btn({ label: t('gear.fuse.all', { n: times }), size: 'sm', variant: 'tone', onClick: () => go(times) }) : null);
+      }),
+      h('p', { class: 'muted small' }, DK.icon('lock', 12), ' ', t('gear.fuse.note')));
+    draw();
+    return DK.ui.modal({ title: t('gear.fuse.title'), icon: 'sparkles', cls: 'fu-modal', content: box, actions: [{ label: t('common.close'), icon: 'x', variant: 'ghost', value: null }] }).promise;
   }
 
   /** v4.84: ventana de desguace en lote (sólo piezas sueltas y sin bloquear). */
@@ -128,6 +152,7 @@
       h('button', { class: 'fp-sortbtn', type: 'button', tip: t('gear.bench.sortBy'), 'aria-label': `${t('gear.bench.sortBy')}: ${t('gear.bench.sort.' + params.fsort)}`,
         onClick: () => { params.fsort = sortNext[params.fsort] || 'rar'; refresh(); } }, DK.icon('swap', 14), h('span', { class: 'fp-sortlbl' }, t('gear.bench.sort.' + params.fsort))),
       // v4.84: desguazar en lote
+      h('button', { class: 'fp-sortbtn fp-fuse', type: 'button', tip: t('gear.fuse.title'), 'aria-label': t('gear.fuse.title'), onClick: () => fuseDialog(refresh) }, DK.icon('sparkles', 14), h('span', { class: 'fp-sortlbl' }, t('gear.fuse.btn'))),
       h('button', { class: 'fp-sortbtn fp-salv', type: 'button', tip: t('gear.batch.title'), 'aria-label': t('gear.batch.title'), onClick: () => salvageDialog(refresh) }, DK.icon('hammer', 14), h('span', { class: 'fp-sortlbl' }, t('gear.batch.short'))));
     const chips = h('div', { class: 'fp-chips' },
       D.gear.rarityOrder.map(rarChip), h('i', { class: 'fp-div', 'aria-hidden': 'true' }), stats.map(statChip),
@@ -290,12 +315,14 @@
     const stoneBtn = (id) => {
       const it = D.items[id], n = DK.bag.home()[id] || 0;
       const needSel = DK.gear.targeted.includes(id) && params.fsel == null;
-      const why = DK.gear.cannotForge(p, id, { affix: params.fsel }) || (needSel && n ? t('gear.bench.needSel') : null);
+      // v5.29: sin piedras pero con su receta a mano → pulsar la fabrica (V.makeDialog)
+      const makeable = !n && DK.crafting.recipeFor(id) && V.canMake(id);
+      const why = makeable ? null : DK.gear.cannotForge(p, id, { affix: params.fsel }) || (needSel && n ? t('gear.bench.needSel') : null);
       // v4.76: fila compacta: gema, nombre y efecto en una línea, cantidad; el motivo, en el tooltip
       return h('button', { class: 'fs-row' + (arm && arm.stone === id ? ' armed' : '') + (why ? ' off' : '') + (n ? '' : ' none') + (['esquirla_jefe', 'corazon_jefe', 'eco_legendario'].includes(id) ? ' boss' : '') + (needSel && n && !DK.gear.cannotForge(p, id) ? ' wants' : ''),
-        type: 'button', disabled: !!why, tip: (why ? why + ' · ' : '') + it.desc, 'aria-label': it.name, 'aria-pressed': !!(arm && arm.stone === id), onClick: () => ask(id) },
+        type: 'button', disabled: !!why, tip: makeable ? t('craft.makeTip') : (why ? why + ' · ' : '') + it.desc, 'aria-label': it.name, 'aria-pressed': !!(arm && arm.stone === id), onClick: () => (makeable ? V.makeDialog(id, refresh) : ask(id)) },
         V.itemIcon(it, 26), h('span', { class: 'fs-main' }, h('b', null, it.name.replace(/^(Piedra|Cristal) (de |del )?/i, '').replace(/^\w/, (c) => c.toUpperCase())), h('small', null, t('gear.stoneShort.' + id))),
-        h('span', { class: 'fs-n' + (n ? '' : ' zero') }, String(n)));
+        makeable ? h('span', { class: 'fs-make', 'aria-label': t('craft.makeBtn') }, DK.icon('anvil', 10)) : h('span', { class: 'fs-n' + (n ? '' : ' zero') }, String(n)));
     };
     const stonesCol = h('div', { class: 'fb-col fb-stones' },
       Object.entries(DK.gear.groups).map(([g, ids]) => h('div', { class: 'fb-group' }, h('span', { class: 'fb-group-h' }, t('gear.bench.g.' + g)), h('div', { class: 'fs-grid' }, ids.map(stoneBtn)))),

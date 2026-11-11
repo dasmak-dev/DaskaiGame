@@ -22,15 +22,24 @@
 
   // Sílabas de inicio de cada casa (acaban en vocal)
   const HOUSE = {
-    luz: ['Lu', 'So', 'Au', 'Cla', 'Fe', 'Bri', 'Ce', 'Ra', 'Seli', 'Albi', 'Iri', 'Dora'],
-    oscuridad: ['No', 'Ve', 'Ny', 'Mo', 'Za', 'Gri', 'Ume', 'Sa', 'Noxi', 'Mala', 'Escu', 'Vela'],
-    fuego: ['Py', 'Bra', 'Fla', 'Ca', 'Ru', 'Vo', 'Che', 'Ti', 'Igna', 'Cha', 'Ascu', 'Pyra'],
-    agua: ['Ma', 'Ne', 'Co', 'Hi', 'Bu', 'Na', 'Ri', 'Oa', 'Mare', 'Ondi', 'Peli', 'Aqua'],
-    tierra: ['Te', 'Ro', 'Gle', 'Mu', 'Ba', 'Tu', 'Gra', 'Bo', 'Gea', 'Rupi', 'Musgo', 'Tro'],
+    // v5.30: el doble de sílabas por casa (más nombres distintos)
+    luz: ['Lu', 'So', 'Au', 'Cla', 'Fe', 'Bri', 'Ce', 'Ra', 'Seli', 'Albi', 'Iri', 'Dora', 'Lumi', 'Ste', 'Ala', 'Aure', 'Bea', 'Che', 'Ele', 'Fula', 'Gla', 'Ilu', 'Ori', 'Zefi'],
+    oscuridad: ['No', 'Ve', 'Ny', 'Mo', 'Za', 'Gri', 'Ume', 'Sa', 'Noxi', 'Mala', 'Escu', 'Vela', 'Mor', 'Lili', 'Tene', 'Abi', 'Cu', 'Dre', 'Grima', 'Haze', 'Ka', 'Luto', 'Ske', 'Vanta'],
+    fuego: ['Py', 'Bra', 'Fla', 'Ca', 'Ru', 'Vo', 'Che', 'Ti', 'Igna', 'Cha', 'Ascu', 'Pyra', 'Ar', 'Bla', 'Cine', 'Ego', 'Fogo', 'Hel', 'Ki', 'Mag', 'Scor', 'Sul', 'Tizo', 'Vulca'],
+    agua: ['Ma', 'Ne', 'Co', 'Hi', 'Bu', 'Na', 'Ri', 'Oa', 'Mare', 'Ondi', 'Peli', 'Aqua', 'Ba', 'Cora', 'Del', 'Espu', 'Gla', 'Lagu', 'Mizu', 'Nau', 'Perla', 'Sire', 'Ti', 'Yaku'],
+    tierra: ['Te', 'Ro', 'Gle', 'Mu', 'Ba', 'Tu', 'Gra', 'Bo', 'Gea', 'Rupi', 'Musgo', 'Tro', 'Ar', 'Bru', 'Ce', 'Fo', 'Gru', 'Hu', 'Li', 'Pe', 'Rai', 'Sau', 'Tal', 'Ver'],
   };
   // v4.62: prefijos que a veces van delante (por un rasgo de carácter) y sufijos que a veces cierran el nombre
-  const PREFIX = { arms: { pincer: 'Kra', long: 'Lan', noodle: 'Fi', mitten: 'Pom', stubby: 'Pi', tentacle: 'Pul', leaf: 'Ho', wingarm: 'Ala', talon: 'Gar', crystal: 'Cris' }, final: { cape: 'Sir', flowercrown: 'Flor', goggles: 'Avi', collar: 'Bru', bandana: 'Ban', crown: 'Rey', halo: 'Sa', tophat: 'Don', wizard: 'Mago', headphones: 'Dj', beanie: 'Go' } };
-  const SUFFIX = { luz: ['el', 'ia', 'ino'], oscuridad: ['ix', 'os', 'ra'], fuego: ['ax', 'or', 'ito'], agua: ['ina', 'eo', 'is'], tierra: ['ok', 'ur', 'ote'] };
+  const PREFIX = { arms: { pincer: 'Kra', long: 'Lan', noodle: 'Fi', mitten: 'Pom', stubby: 'Pi', tentacle: 'Pul', leaf: 'Ho', wingarm: 'Ala', talon: 'Gar', crystal: 'Cris' }, final: { cape: 'Sir', flowercrown: 'Flor', goggles: 'Avi', collar: 'Bru', bandana: 'Ban', crown: 'Rey', halo: 'Sa', tophat: 'Don', wizard: 'Mago', headphones: 'Dj', beanie: 'Go', hood: 'Fray', bonehelm: 'Osa', candles: 'Cirio', lantern: 'Fa', eyepatch: 'Tuer', laurel: 'Lau', pirate: 'Bar', chain: 'Gol', sash: 'Ca' } };
+  const SUFFIX = { luz: ['el', 'ia', 'ino', 'iel', 'ara', 'eo'], oscuridad: ['ix', 'os', 'ra', 'oth', 'ael', 'ul'], fuego: ['ax', 'or', 'ito', 'ar', 'eon', 'us'], agua: ['ina', 'eo', 'is', 'ela', 'ún', 'ea'], tierra: ['ok', 'ur', 'ote', 'arn', 'ul', 'ón'] };
+  // v5.30: a veces (pocas) sale un nombre «de leyenda» de su casa en vez del compuesto
+  const WHOLE = {
+    luz: ['Alba', 'Aurelio', 'Candela', 'Celeste', 'Destello', 'Estrella', 'Faro', 'Fulgor', 'Lucero', 'Nimbo', 'Oriel', 'Solano', 'Vela', 'Zafiro', 'Albor', 'Brillo'],
+    oscuridad: ['Abismo', 'Azrael', 'Belcebú', 'Ceniza', 'Cuervo', 'Eclipse', 'Grimorio', 'Lamento', 'Lilith', 'Mortaja', 'Nocturno', 'Penumbra', 'Réquiem', 'Sombra', 'Umbra', 'Vigilia'],
+    fuego: ['Ascua', 'Azufre', 'Brasa', 'Centella', 'Chispa', 'Fénix', 'Fragua', 'Hoguera', 'Ígneo', 'Lava', 'Magma', 'Pira', 'Rescoldo', 'Tizón', 'Volcán', 'Yesca'],
+    agua: ['Abisal', 'Bruma', 'Coral', 'Delta', 'Espuma', 'Galerna', 'Marea', 'Náyade', 'Oleaje', 'Perla', 'Rocío', 'Sirena', 'Tifón', 'Ondina', 'Glaciar', 'Nácar'],
+    tierra: ['Basalto', 'Bosque', 'Cantil', 'Cuarzo', 'Encina', 'Granito', 'Helecho', 'Liquen', 'Menhir', 'Obsidiana', 'Roble', 'Sílex', 'Tótem', 'Musgo', 'Raíz', 'Terrón'],
+  };
   // Sílaba de un rasgo (empiezan por consonante)
   const TRAIT = {
     eyes: { big: 'mi', sharp: 'ri', slit: 'si', sleepy: 'mu', happy: 'pi', glow: 'lu', dot: 'ti', angry: 'gru', star: 'ste', button: 'bo', uneven: 'tu', cyclops: 'mon', three: 'tri', visor: 'vi', spiral: 'gi', heart: 'cor', wink: 'gui', anime: 'ki', halflid: 'pa', sparkle: 'chis', crescent: 'lu', squint: 'gui', bug: 'zum', ringed: 'ri', crosseye: 'cru', teary: 'la', robot: 'tron', lashes: 'pes', diamond: 'dia', shades: 'gu', monocle: 'mon', xeyes: 'ka', blank: 'ni', bags: 'mo', compound: 'zum', ember: 'bra' },
@@ -47,6 +56,7 @@
     wide: ['plas', 'ancho'], tower: ['lon', 'tor'], topheavy: ['gor', 'cabo'], bubble: ['bur', 'pop'], lumpy: ['gru', 'mo'],
     saddle: ['sel', 'mon'], pill: ['pil', 'cap'], spiky: ['pin', 'riz'], acorn: ['bel', 'yo'], potato: ['pa', 'tu'],
     loaf: ['ga', 'pan'], hunch: ['gor', 'jo'], hourglass: ['re', 'lo'], peanut: ['ca', 'nu'], shield: ['es', 'cu'], pyramid: ['pi', 'ra'], hex: ['hex', 'sa'], crag: ['ro', 'ka'], tiltegg: ['lin', 'ka'], comet: ['co', 'me'], camel: ['ca', 'mel'], brute: ['bru', 'tox'],
+    dino: ['rex', 'saur'], scorpion: ['cor', 'pión'], beast: ['bes', 'tar'], shellb: ['con', 'cha'], heart: ['cor', 'zón'], star5: ['tel', 'sta'], mushroom: ['seta', 'fun'], barrel: ['bar', 'ril'], kite: ['co', 'me'],
     gourd: ['ba', 'zo'], gem: ['dax', 'tis'], puff: ['fus', 'mi'], bell: ['lin', 'dan'], bulb: ['bul', 'tre'],
   };
   const RARE = { eyes: ['star', 'button', 'uneven', 'cyclops', 'three', 'visor', 'spiral'], ears: ['unicorn', 'mushroom'], mouth: ['beak', 'sabre', 'bubble', 'stitch'], mark: [], hair: [] };
@@ -95,6 +105,7 @@
     // v4.62: sufijo de la casa (a veces) y prefijo por brazos o adorno (pocas veces). Azar aparte:
     // los nombres que ya salían antes no cambian por esto (y además se guardan en d.gname).
     const R2 = rng((i.seed >>> 0) ^ 0x5f3759df);
+    { const R3 = rng((i.seed >>> 0) ^ 0x7a11ce55); if (R3() < 0.07) return pickOf(WHOLE[i.house] || WHOLE.luz, R3); }
     if (R2() < 0.22 && name.length <= 7 && !/[íó]n$/i.test(name)) { const suf = pickOf(SUFFIX[i.house] || SUFFIX.luz, R2); name = name.replace(/[aeiouyáéíóú]+$/i, '') + suf; }
     const preTable = (i.arms && PREFIX.arms[i.arms]) || (i.final && PREFIX.final[i.final]);
     if (preTable && R2() < 0.18 && name.length <= 6) name = preTable + name.charAt(0).toLowerCase() + name.slice(1);

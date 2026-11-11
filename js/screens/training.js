@@ -33,7 +33,7 @@
 
   /** Informe al volver: diario, botín y experiencia. */
   async function showReport(rep) {
-    const info = X().zoneInfo(rep.zone);
+    const info = X().zoneInfo(rep.zone, rep.danger || 0);
     const items = Object.entries(rep.items);
     const oc = rep.outcome || (rep.hurt ? 'hurt' : 'ok');
     await DK.ui.modal({
@@ -51,7 +51,7 @@
             rep.coins ? h('span', { class: 'ex-it coin' }, DK.icon('coin', 16), h('b', null, num(rep.coins))) : null,
             items.map(([id, n]) => h('span', { class: 'ex-it', tip: D.items[id].name }, V.itemIcon(D.items[id], 26), h('b', null, '×' + n))),
             (rep.runes || []).map((id) => h('span', { class: 'ex-it rune', tip: V.runeTip(id) }, V.runeGem(id, 26), h('small', null, V.runeName(id)))),
-            rep.gear.map((p) => h('span', { class: 'ex-it gear', tip: DK.gear.name(p) }, V.gearIcon(p, 26), h('small', null, DK.gear.name(p)))))),
+            rep.gear.map((p) => h('span', { class: 'ex-it gear', tip: DK.gear.name(p), tipNode: () => V.infoCard('gear', p) }, V.gearIcon(p, 26), h('small', null, DK.gear.name(p)))))),
         h('div', { class: 'ex-exp' }, rep.exp.map((e) => h('div', { class: 'ex-exp-row' }, V.dSprite(e.d, { size: 34 }), h('b', { class: 'grow' }, DK.daskai.name(e.d)),
           h('span', { class: 'good-text' }, t('explore.expGot', { n: num(e.n) })), e.levelInfo && e.levelInfo.levels ? h('span', { class: 'badge good' }, `${t('common.lvl')} ${e.d.level}`) : null)))),
       actions: [{ label: t('common.accept'), icon: 'check', variant: 'primary', value: true }],
@@ -109,7 +109,7 @@
 
   /** Grupo fuera (v4.89): tarjeta compacta con la zona, quiénes, la barra y el tiempo. */
   function groupCard(g, refresh) {
-    const p = X().progress(g), info = X().zoneInfo(g.zone);
+    const p = X().progress(g), info = X().zoneInfo(g.zone, g.danger || 0);
     if (!info) return null;
     const collect = async () => {
       const rep = X().collect(g.id); if (!rep) return;
@@ -123,7 +123,7 @@
     return h('div', { class: 'ex-gc' + (p.done ? ' ready' : ''), style: { '--zc': zoneColor(info.z) } },
       h('div', { class: 'ex-gc-top' },
         h('span', { class: 'ex-gc-ico' }, DK.icon(info.z.icon || 'map', 16)),
-        h('div', { class: 'ex-gc-t' }, h('b', null, info.z.name), h('small', null, t('explore.durs.' + g.dur), ' · ', t('explore.lv', { n: info.lv }))),
+        h('div', { class: 'ex-gc-t' }, h('b', null, info.z.name), h('small', null, t('explore.durs.' + g.dur), ' · ', t('explore.lv', { n: info.lv }), g.danger ? [' · ', h('span', { class: 'ex-dg-tag' }, DK.icon('skull', 10), String(g.danger))] : null)),
         p.done ? null : h('button', { class: 'icon-btn ex-recall', type: 'button', tip: t('explore.recall'), 'aria-label': t('explore.recall'), onClick: recall }, DK.icon('x', 13))),
       h('div', { class: 'ex-gc-who' }, p.ds.map((d) => h('span', { class: 'ex-g-mon', tip: DK.daskai.name(d) }, V.dSprite(d, { size: 44, cls: p.done ? 'idle' : 'walk' })))),
       h('div', { class: 'ex-gc-foot' },
@@ -135,6 +135,7 @@
   function riskBlock(pv) {
     const ri = pv.riskInfo, rk = riskKey(ri.risk);
     const part = (x) => {
+      if (x.k === 'danger') return h('li', { class: 'up' }, t('explore.rk.danger', { n: x.v }));
       if (x.k === 'level') return h('li', { class: x.v > 0 ? 'up' : x.v < 0 ? 'down' : '' }, t(x.v > 0 ? 'explore.rk.under' : x.v < 0 ? 'explore.rk.over' : 'explore.rk.even', { n: Math.abs(x.v) }));
       return h('li', { class: x.v > 1 ? 'up' : 'down' }, t('explore.rk.' + x.k), h('b', null, (x.v > 1 ? '+' : '−') + Math.round(Math.abs(x.v - 1) * 100) + '%'));
     };
@@ -172,8 +173,9 @@
       return h('button', { class: 'ex-zt f-' + fit + (on ? ' on' : ''), type: 'button', role: 'radio', 'aria-checked': on, style: { '--zc': zoneColor(z) },
         tip: `${z.name} · ${t('explore.lv', { n: i.lv })} · ${t('explore.fit.' + fit)}`, onClick: () => { params.z = z.id; refresh(); } },
         h('span', { class: 'ex-zt-ico' }, DK.icon(z.icon || 'map', 18)),
-        h('span', { class: 'ex-zt-txt' }, h('b', null, z.name), h('small', null, h('i', { class: 'ex-zt-fit' }), t('explore.lv', { n: i.lv }))),
-        F && F.reagent && D.items[F.reagent] && runesOn ? h('span', { class: 'ex-zt-own', 'aria-hidden': 'true' }, V.itemIcon(D.items[F.reagent], 18, { tip: false })) : null);
+        h('span', { class: 'ex-zt-txt' }, h('b', null, z.name), h('small', null, h('i', { class: 'ex-zt-fit' }), t('explore.lv', { n: i.lv }), i.danger.lv ? h('em', { class: 'ex-zt-dg' }, ` (+${i.danger.lv})`) : null)),
+        // el icono es el REACTIVO rúnico que sólo se encuentra explorando esa zona (Pantano y Glaciar no tienen)
+        F && F.reagent && D.items[F.reagent] && runesOn ? h('span', { class: 'ex-zt-own', tip: t('explore.ownReagentTip', { item: D.items[F.reagent].name }) }, V.itemIcon(D.items[F.reagent], 18, { tip: false })) : null);
     };
     const info = params.z ? X().zoneInfo(params.z) : null, F = params.z ? X().finds(params.z) : null;
     const L = params.z ? X().zoneLoot(params.z, params.dur, sel) : null;
@@ -182,7 +184,7 @@
     const zoneCard = info ? h('div', { class: 'ex-zd', style: { '--zc': zoneColor(info.z) } },
       h('div', { class: 'ex-zd-head' }, h('span', { class: 'ex-zd-ico' }, DK.icon(info.z.icon || 'map', 22)),
         h('div', { class: 'grow' }, h('b', null, info.z.name),
-          h('small', null, t('explore.lv', { n: info.lv }), hs ? [' · ', h('i', { class: 'ex-zh', style: { background: D.houseColor(info.house) } }), ' ', DK.tr('houses', hs)] : null)),
+          h('small', null, t('explore.lv', { n: info.lv }), info.danger.lv ? h('em', { class: 'ex-zt-dg' }, ` (${info.baseLv} + ${info.danger.lv})`) : null, hs ? [' · ', h('i', { class: 'ex-zh', style: { background: D.houseColor(info.house) } }), ' ', DK.tr('houses', hs)] : null)),
         h('button', { class: 'wb-mats-link ex-seeall', type: 'button', onClick: () => lootList(params.z, params.dur, sel) }, DK.icon('list', 12), t('explore.seeAll'))),
       info.z.desc ? h('p', { class: 'muted small ex-zd-desc' }, info.z.desc) : null,
       F ? h('div', { class: 'ex-zd-own' }, h('span', { class: 'ex-h' }, DK.icon('star', 11), t('explore.ownTitle')),
@@ -196,6 +198,15 @@
     // Duración: discreta (píldoras pequeñas)
     const durPills = h('div', { class: 'ex-dpills', role: 'radiogroup', 'aria-label': t('explore.dur') }, C.durations.map((x) => h('button', { type: 'button', role: 'radio', class: params.dur === x.id ? 'on' : '', 'aria-checked': params.dur === x.id,
       tip: t('explore.durs.' + x.id) + ' · ' + t('explore.rations', { n: x.rations }), onClick: () => { params.dur = x.id; refresh(); } }, durShort(X().minutes(ds, x.id)))));
+
+    // v5.28: peligro (más nivel = más riesgo y más botín); los bloqueados se ven con candado
+    const DGs = X().dangerLevels(), dMax = X().dangerMax(), dCur = X().danger();
+    const dangerPills = h('div', { class: 'ex-dpills ex-danger', role: 'radiogroup', 'aria-label': t('explore.danger') }, DGs.map((x, n) => {
+      const locked = n > dMax;
+      return h('button', { type: 'button', role: 'radio', class: (dCur === n ? 'on' : '') + (locked ? ' locked' : '') + ' dg-' + n, 'aria-checked': dCur === n, disabled: locked,
+        tip: n ? t('explore.dangerTip', { n, lv: x.lv, loot: Math.round((x.loot - 1) * 100), rare: Math.round((x.rare - 1) * 100), coins: Math.round((x.coins - 1) * 100) }) + (locked ? ' · ' + t('explore.dangerLocked', { n: n - 1 }) : '') : t('explore.danger0'),
+        onClick: () => { X().setDanger(n); refresh(); } }, locked ? DK.icon('lock', 11) : n ? [DK.icon('skull', 11), String(n)] : '—');
+    }));
 
     // v4.90: buscador, orden y páginas (con muchos daskai la lista era enorme)
     params.who = params.who || 'all'; params.wsort = params.wsort || 'lv';
@@ -286,6 +297,7 @@
       h('div', { class: 'ex-go' }, why && sel.length ? h('span', { class: 'small bad-text' }, why) : h('span'),
         // v4.98: la duración, junto al botón de mandar
         h('div', { class: 'ex-durrow' }, h('span', { class: 'ex-h' }, DK.icon('clock', 11), t('explore.dur')), durPills),
+        h('div', { class: 'ex-durrow' }, h('span', { class: 'ex-h' }, DK.icon('skull', 11), t('explore.danger')), dangerPills),
         btn({ icon: 'compass', label: t('explore.go', { t: dur(X().minutes(ds, params.dur)) }), variant: 'primary', disabled: !!why, tip: why, onClick: go })));
     return h('div', { class: 'panel ex-planner' },
       h('div', { class: 'ex-ph' }, DK.icon('compass', 18), h('h3', null, t('explore.newTitle')), h('span', { class: 'grow' }), btn({ icon: 'back', label: t('explore.back'), size: 'sm', variant: 'ghost', onClick: close })),

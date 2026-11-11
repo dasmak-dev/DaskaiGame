@@ -6,6 +6,7 @@
   DK.config = {
     // --- Límites ---
     maxLevel: 100,
+    maxEnemyLevel: 120,   // v5.31: tope de nivel de los rivales (sólo se pasa de maxLevel en el Averno)
     maxMoves: 4,          // ataques activos por daskai
     maxEquip: 2,          // objetos equipados por daskai
     maxTeam: 6,           // daskai en el equipo de batalla
@@ -105,6 +106,19 @@
        *   × size según cuántos van (solo 1, 2 o 3) · × firme por cada Firme · × la duración · × (1 − Puesto)
        *   entre min y max. De lo que sale mal, una parte es DESASTRE: disaster + gap × (niveles por debajo), hasta disasterMax */
       risk: { base: 0.3, perLevel: 0.03, min: 0.08, max: 0.92, house: 0.75, weak: 1.15, firme: 0.8, size: [1.3, 1.1, 1], disaster: 0.3, gap: 0.04, disasterMax: 0.7 },
+      /* v5.28: PELIGRO de la exploración (0–6). Suma niveles a la zona (y con ello el riesgo) y multiplica el botín:
+       *   lv: + niveles · loot: × tiradas de materiales · rare: × probabilidad de piedras, equipo, runas, tónicos y alijos
+       *   coins: × monedas · ilvl: el equipo que traen sale con el nivel de la zona + lv (hasta 100)
+       * El peligro n+1 se desbloquea al volver bien (sin agotarse) de una exploración con peligro n. */
+      danger: [
+        { lv: 0, loot: 1, rare: 1, coins: 1 },
+        { lv: 5, loot: 1.25, rare: 1.3, coins: 1.3 },
+        { lv: 10, loot: 1.5, rare: 1.6, coins: 1.6 },
+        { lv: 15, loot: 1.8, rare: 2, coins: 2 },
+        { lv: 20, loot: 2.1, rare: 2.4, coins: 2.5 },
+        { lv: 26, loot: 2.5, rare: 3, coins: 3 },
+        { lv: 32, loot: 3, rare: 3.6, coins: 3.6 },
+      ],
       hurt: 0.5,                // si vuelven agotados, traen la mitad de botín y experiencia
       // v4.89: DESASTRE: pierden todo el botín (monedas, objetos y equipo), traen esta parte de la experiencia y el agotamiento × disasterFatigue
       disasterExp: 0.2, disasterFatigue: 2,
@@ -233,6 +247,8 @@
         short: { rows: 6, weight: 0, caves: 0, shortcuts: [0, 0], rests: 0, emblems: 1, icon: 'flag' },
         // piso del Abismo (DK.abyss): corto y sin atajos
         abyss: { rows: 4, weight: 0, caves: 0, shortcuts: [0, 0], rests: 0, emblems: 1, icon: 'skull' },
+        // v5.31: piso del Averno (DK.averno): mapas cortos, uno tras otro sin fin
+        averno: { rows: 8, weight: 0, caves: 1, shortcuts: [0, 1], rests: 1, emblems: 2, icon: 'flame' },
       },
       /* Tipos de expedición: salen AL AZAR (chance = peso: DK.expedition.kindChances)
        * salvo que gastes una runa de tipo (DK.runes), y duran toda la expedición.
@@ -255,6 +271,8 @@
           chest: { items: 2, rare: 0.8, relic: 0.35, rune: 0.5, coins: 2.5 } },
         // El Abismo (DK.abyss): no sale al azar; se elige en Batalla
         abismo: { icon: 'moon', chance: 0, special: true, sizes: ['abyss'], weights: { elite: 2, fight: 1.4, event: 0.6, recruit: 0.4, treasure: 0.8, shop: 0.8, cave: 0 }, minElites: 1 },
+        // v5.31: el Averno (DK.averno): no sale al azar; es el tipo de su zona. Sin reclutas, sin salir por las hogueras
+        averno: { icon: 'flame', chance: 0, special: true, sizes: ['averno'], weights: { recruit: 0, elite: 1.5, shrine: 1.2, treasure: 1.2 }, minElites: 1, noRecruit: true, noExit: true, coins: 0.5, emblems: 2 },
         desafio: { icon: 'skull', chance: 6, sizes: ['short'], weights: { elite: 4, fight: 0.8, event: 0.3, recruit: 0.2, treasure: 0.5, shop: 0.8 }, minElites: 3, levels: 3, emblems: 1, coins: 0.2, needsBoss: true },
       },
       /* Runas de expedición (DK.runes): caen en cofres, élites y jefes y se guardan
@@ -287,7 +305,7 @@
         rarity: { magic: 0.3, rare: 0.08 },
         // v4.89: como el equipo: mágica 1–2 modificadores (1 prefijo + 1 sufijo como mucho), rara 2–4 (2 + 2)
         // v4.90: LEGENDARIA (sólo mejorando una rara con el corazón rúnico): 3–4 modificadores, valores × 1,3 y +1 emblema por jefe
-        rarities: { m: { mods: [1, 2], maxP: 1, maxS: 1 }, r: { mods: [2, 4], maxP: 2, maxS: 2 }, l: { mods: [3, 4], maxP: 2, maxS: 2, valueMult: 1.3, emblems: 1 } },
+        rarities: { m: { mods: [1, 2], maxP: 1, maxS: 1 }, r: { mods: [2, 4], maxP: 2, maxS: 2 }, l: { mods: [4, 6], maxP: 3, maxS: 3, valueMult: 1.3, emblems: 1 } }, // v5.29: legendaria 4–6 (3 + 3)
         // Modificadores (valor al azar entre min y max × tierScale). PREFIJOS: cambian el MAPA; SUFIJOS: las RECOMPENSAS
         affixes: {
           elitePct: { kind: 'prefix', min: 8, max: 15 },   // % de combates normales del mapa que pasan a ser élites (minijefes)
@@ -368,6 +386,9 @@
     eliteLevelBonus: 2,   // niveles por encima del máximo de la zona
     lossHpPct: 0.25,      // tras perder, tu equipo vuelve con este % de vida
     expShare: 0.3,        // % de experiencia para los demás daskai del equipo (no debilitados)
+    // v5.33: tabla global (Supabase). URL del proyecto y su clave PÚBLICA «anon» (se pueden ver en el navegador: es normal).
+    // Vacío = sin tabla global. Ver docs/ONLINE-SUPABASE.md
+    online: { supabaseUrl: 'https://jignfkkbcbbsmxhaomix.supabase.co', supabaseKey: 'sb_publishable_tCsNhLhj-t08_RgposmbIg_K-AR-L4s' },
     captureEnabled: false,         // vincular en combate (con cristales): desactivado por ahora; los daskai se consiguen en los nodos de reclutas
     captureOnlyInExpedition: true, // los cristales de vínculo sólo funcionan en expediciones
     historySize: 30,      // combates que guarda el historial del perfil

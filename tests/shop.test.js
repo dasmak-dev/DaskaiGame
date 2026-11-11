@@ -62,7 +62,7 @@ module.exports = {
         DK.router.reset('training', { plan: true });
       });
       await sleep(500);
-      const r = await p.evaluate(() => ({ zones: document.querySelectorAll('.ex-zt').length, durs: document.querySelectorAll('.ex-dpills button').length, tiles: document.querySelectorAll('.ex-tile').length, steps: document.querySelectorAll('.tr-step').length, slots: DK.explore.slotCount() }));
+      const r = await p.evaluate(() => ({ zones: document.querySelectorAll('.ex-zt').length, durs: document.querySelectorAll('.ex-dpills:not(.ex-danger) button').length, tiles: document.querySelectorAll('.ex-tile').length, steps: document.querySelectorAll('.tr-step').length, slots: DK.explore.slotCount() }));
       check(r.zones >= 1 && r.durs === 3 && r.tiles >= 3 && r.steps === 4, 'faltan zonas, duraciones, daskai o mejoras: ' + JSON.stringify(r));
       // Elegir dos daskai: sale el resumen con riesgo, coste y experiencia
       await p.evaluate(() => { const ts = [...document.querySelectorAll('.ex-tile:not([disabled])')]; ts[0].click(); });

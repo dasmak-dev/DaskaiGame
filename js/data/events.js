@@ -120,7 +120,7 @@
     },
     {
       // Daskai perdido: se une a ti (como temporal, igual que un recluta)
-      id: 'lost', icon: 'paw', weight: 2,
+      id: 'lost', icon: 'paw', weight: 2, recruits: true,
       choices: [
         { id: 'adopt', icon: 'heart', run: (c) => ({ key: 'adopt', vars: { name: c.recruit() } }) },
         { id: 'leave', icon: 'next', run: () => ({ key: 'leave' }) },

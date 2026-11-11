@@ -1288,5 +1288,122 @@
         }
       ]
     }
+  },
+  "averno": {
+    "name": "El Averno",
+    "levels": [
+      90,
+      120
+    ],
+    "icon": "flame",
+    "colors": [
+      "#991b1b",
+      "#0a0203"
+    ],
+    "scene": "volcano",
+    "secretZone": true,
+    "desc": "Una bajada sin fondo. No hay vuelta atrás: sólo sales cuando caes. Los rivales se adaptan a tu equipo y cada piso es más duro.",
+    "enemies": [
+      [
+        "draconyx",
+        3
+      ],
+      [
+        "titanor",
+        3
+      ],
+      [
+        "vacuo",
+        2
+      ],
+      [
+        "celestor",
+        2
+      ],
+      [
+        "tiranox",
+        2
+      ],
+      [
+        "petrodraco",
+        2
+      ],
+      [
+        "leviatan",
+        2
+      ],
+      [
+        "kraknoir",
+        2
+      ],
+      [
+        "tempestis",
+        2
+      ],
+      [
+        "auroris",
+        2
+      ],
+      [
+        "penumbron",
+        1
+      ],
+      [
+        "glaciaron",
+        1
+      ],
+      [
+        "espectron",
+        1
+      ],
+      [
+        "nocturnis",
+        1
+      ]
+    ],
+    "drops": [
+      [
+        "fragmento_vacio",
+        0.25
+      ],
+      [
+        "fragmento_abisal",
+        0.05
+      ]
+    ],
+    "boss": {
+      "species": "vacuo",
+      "level": 120,
+      "title": "Señor del Averno",
+      "coins": 5000,
+      "drops": [
+        [
+          "fragmento_abisal",
+          1
+        ],
+        [
+          "corazon_vacio",
+          0.5
+        ],
+        [
+          "elixir",
+          1
+        ]
+      ],
+      "phases": [
+        {
+          "at": 0.75,
+          "type": "shield"
+        },
+        {
+          "at": 0.5,
+          "type": "enrage"
+        },
+        {
+          "at": 0.25,
+          "type": "frenzy"
+        }
+      ]
+    }
   }
 }

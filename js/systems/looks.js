@@ -111,6 +111,10 @@
   const MOUTHS5 = { snout: 4, gum: 3, grit: 4, mask: 3, kiss: 3 };
   const FINALS5 = { tophat: 3, wizard: 3, headphones: 3, bowtie: 4, beanie: 4 };
   const FINALS9 = { cap: 4, pirate: 3, propeller: 3, necklace: 4, backpack: 3, glasses: 4 }; // v5.19
+  // v5.30: más accesorios, que se colocan según la forma de cada uno (borde de la cabeza, ojos, cuello y costados)
+  const FINALS10 = { hood: 4, bonehelm: 3, candles: 3, laurel: 4, eyepatch: 4, chain: 4, bell: 4, sash: 3, lantern: 3, flower: 4 };
+  const HEAD10 = new Set(['hood', 'bonehelm', 'candles']); // cubren la cabeza: no con orejas o antenas muy altas
+  const TALL_EARS = ['bunny', 'antlers', 'unicorn', 'feelers', 'antenna', 'crystals', 'trihorn', 'headwings'];
   // v5.15 (semillas NEW9): orejas, brazos y dibujos nuevos
   const EARS9 = { owl: 4, gills: 4, dish: 3, lop: 4, flameears: 3, shellears: 3 };
   const ARMS9 = { scythe: 3, vine: 3, gauntlet: 3, fluff: 3, hook: 3 };
@@ -295,6 +299,9 @@
       const P9 = PAL9[house] || [];
       if (P9.length && R12() < 0.3) { ind.skin = P9[Math.floor(R12() * P9.length)]; if (ind.grad && R12() < 0.5) ind.grad.c = shade(ind.skin, 0.32); else R12(); } else { R12(); R12(); R12(); }
       if (R12() < 0.18) ind.grad = { c: (P9.length ? P9[Math.floor(R12() * P9.length)] : shade(ind.skin, 0.3)), dir: pick({ side: 2, belly: 2, diag: 1 }, R12), at: 0.3 + R12() * 0.2 }; else { R12(); R12(); R12(); }
+      // v5.30: accesorios nuevos (azar aparte: sólo cambia el adorno de algunos)
+      const R13 = rng(seed ^ 0x6d2b79f5);
+      if (R13() < 0.3) { let k = pick(FINALS10, R13); if (HEAD10.has(k) && TALL_EARS.includes(ind.ears)) k = pick({ chain: 3, bell: 3, sash: 2, lantern: 2, eyepatch: 2 }, R13); ind.final = k; }
     }
     { const R2 = rng(seed ^ 0x9e3779b9); ind.baby = R2() < 0.75 ? 0.82 + R2() * 0.14 : 1 + R2() * 0.12; } // 3 de cada 4 nacen pequeños
     ind.rare = rare(ALL.eyes, ind.eyes) || rare(ALL.mouth, ind.mouth) || rare(ALL.ears, ind.ears) || ind.size > 1.18 || ind.size < 0.82 || rare(ALL.body, ind.body);
@@ -966,12 +973,13 @@
     const edges = (y) => { const pts = P.pts; if (!pts) return [cx - W * 0.95, cx + W * 0.95]; let lo = Infinity, hi = -Infinity;
       for (let i = 0; i < pts.length; i++) { const a = pts[i], b = pts[(i + 1) % pts.length]; if ((a[1] - y) * (b[1] - y) <= 0 && a[1] !== b[1]) { const x = a[0] + (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]); lo = Math.min(lo, x); hi = Math.max(hi, x); } }
       return lo === Infinity ? [cx - W * 0.95, cx + W * 0.95] : [lo, hi]; };
-    const scaled = ['crown', 'halo', 'tophat', 'wizard', 'beanie', 'goggles', 'cap', 'pirate', 'propeller'];
+    const scaled = ['crown', 'halo', 'tophat', 'wizard', 'beanie', 'goggles', 'cap', 'pirate', 'propeller', 'candles'];
     if (scaled.includes(ind.final)) { const raw = finalRaw(ind, P, layer, hx, hy, edges); return raw ? sc(raw, hx, ind.final === 'halo' ? hy - 12 : top(hx) + 3) : ''; }
     return finalRaw(ind, P, layer, hx, hy, edges);
   }
   function finalRaw(ind, P, layer, hx, hy, edges) {
     const { cx, cy, W, H, dk, skin, top } = P;
+    if (FINALS10[ind.final] && layer !== 'front') return ''; // v5.30: los nuevos van todos delante
     switch (ind.final) {
       case 'mane': if (layer !== 'back') return ''; return `<path d="${smooth(Array.from({ length: 18 }, (_, i) => { const a = (i / 18) * Math.PI * 2, r = (i % 2 ? 1.0 : 1.22); return [cx - W * 0.25 + Math.cos(a) * W * 0.85 * r, cy - H * 0.2 + Math.sin(a) * H * 0.85 * r]; }))}" fill="${shade(skin, -0.3)}" ${STROKE(dk, 1.8)}/>`;
       case 'crown': if (layer !== 'front') return ''; return `<path d="M ${f(hx - 11)} ${f(hy + 3)} L ${f(hx - 12)} ${f(hy - 9)} L ${f(hx - 5.5)} ${f(hy - 3)} L ${f(hx)} ${f(hy - 13)} L ${f(hx + 5.5)} ${f(hy - 3)} L ${f(hx + 12)} ${f(hy - 9)} L ${f(hx + 11)} ${f(hy + 3)} Z" fill="#facc15" ${STROKE('#713f12', 1.6)}/><circle cx="${f(hx)}" cy="${f(hy - 2)}" r="2.3" fill="#ef4444"/>`;
@@ -1004,6 +1012,50 @@
       case 'necklace': { if (layer !== 'front') return ''; const y = Math.min(Math.max(cy - H * 0.04, P.my + 5), cy + H * 0.12); /* debajo de la boca */ return [-0.7, -0.45, -0.2, 0.05, 0.3, 0.55].map((o, i) => { const x = cx + W * o, yy = y + Math.cos(o * 1.4) * 5; return `<circle cx="${f(x)}" cy="${f(yy)}" r="${i === 3 ? 3 : 1.9}" fill="${i === 3 ? '#38bdf8' : '#f8fafc'}" ${STROKE(dk, 0.8)}/>`; }).join(''); }
       case 'backpack': { if (layer !== 'back') return ''; const y = cy - H * 0.35, x = edges(y + H * 0.3)[1] - W * 0.3, /* asoma por la espalda */ c = '#b45309'; return `<rect x="${f(x)}" y="${f(y)}" width="${f(W * 0.62)}" height="${f(H * 0.85)}" rx="${f(W * 0.15)}" fill="${c}" ${STROKE(dk, 1.5)}/><rect x="${f(x + W * 0.08)}" y="${f(y + H * 0.42)}" width="${f(W * 0.46)}" height="${f(H * 0.28)}" rx="2" fill="${shade(c, -0.2)}" ${STROKE(dk, 1)}/><path d="M ${f(x + W * 0.06)} ${f(y + 4)} h ${f(W * 0.5)}" stroke="#fde68a" stroke-width="1.4"/>`; }
       case 'glasses': { if (layer !== 'front') return ''; const r = P.er * 1.55, e1 = [P.fx - P.er * 1.25, P.ey + 0.5], e2 = [P.fx + P.er * 1.25, P.ey - 0.8]; return [e1, e2].map(([x, y]) => `<circle cx="${f(x)}" cy="${f(y)}" r="${f(r)}" fill="#bae6fd" fill-opacity=".18" stroke="#3f2a1d" stroke-width="1.6"/>`).join('') + `<path d="M ${f(e1[0] + r)} ${f(e1[1] - 0.5)} Q ${f((e1[0] + e2[0]) / 2)} ${f(e1[1] - r * 0.6)} ${f(e2[0] - r)} ${f(e2[1] - 0.5)}" fill="none" stroke="#3f2a1d" stroke-width="1.4"/>`; }
+      // v5.30: accesorios nuevos. Todos se apoyan en la forma real de cada uno: top(x) = borde de la cabeza,
+      // edges(y) = costados del cuerpo a esa altura, P.fx/P.ey/P.er = ojos, P.my = boca.
+      case 'hood': { // capucha que sigue el contorno de la cabeza y cae por los lados
+        const y0 = Math.min(P.ey - P.er * 1.2, top(cx) + H * 0.55), [l, r] = edges(y0), n = 14, c = shade(hue(skin, 200), -0.55), c2 = shade(c, 0.18);
+        const arc = Array.from({ length: n + 1 }, (_, i) => { const x = l - 2 + (r - l + 4) * i / n; return [x, top(x) - 3 - Math.sin(Math.PI * i / n) * 2]; });
+        const d = `M ${f(l - 3)} ${f(y0 + H * 0.28)} ` + arc.map(([x, y]) => `L ${f(x)} ${f(y)}`).join(' ') + ` L ${f(r + 3)} ${f(y0 + H * 0.28)} Q ${f(r - 2)} ${f(y0 + 2)} ${f(r - W * 0.25)} ${f(y0 - 2)} Q ${f((l + r) / 2)} ${f(y0 - H * 0.12)} ${f(l + W * 0.25)} ${f(y0 - 2)} Q ${f(l + 2)} ${f(y0 + 2)} ${f(l - 3)} ${f(y0 + H * 0.28)} Z`;
+        const pk = arc[Math.round(n * 0.55)];
+        return `<path d="${d}" fill="${c}" ${STROKE(dk, 1.5)}/><path d="M ${f(pk[0])} ${f(pk[1])} q ${f(W * 0.35)} ${f(-6)} ${f(W * 0.55)} ${f(2)}" fill="none" stroke="${c}" stroke-width="5" stroke-linecap="round"/><path d="M ${f(l + W * 0.25)} ${f(y0 - 2)} Q ${f((l + r) / 2)} ${f(y0 - H * 0.12)} ${f(r - W * 0.25)} ${f(y0 - 2)}" fill="none" stroke="${c2}" stroke-width="1.2" opacity=".7"/>`; }
+      case 'bonehelm': { // media calavera sobre la cabeza, con las cuencas encima de los ojos
+        const y0 = Math.min(P.ey - P.er * 1.5, top(cx) + H * 0.42), [l, r] = edges(y0), n = 12;
+        const arc = Array.from({ length: n + 1 }, (_, i) => { const x = l + (r - l) * i / n; return [x, top(x) - 2.5]; });
+        const d = `M ${f(l - 1)} ${f(y0)} ` + arc.map(([x, y]) => `L ${f(x)} ${f(y)}`).join(' ') + ` L ${f(r + 1)} ${f(y0)} Q ${f((l + r) / 2)} ${f(y0 + 3)} ${f(l - 1)} ${f(y0)} Z`;
+        const ex = [P.fx - P.er * 1.3, P.fx + P.er * 1.3], yy = y0 - Math.max(3, P.er * 0.9);
+        return `<path d="${d}" fill="#e7e0cf" ${STROKE('#3b3226', 1.5)}/>` + ex.map((x) => `<ellipse cx="${f(x)}" cy="${f(yy)}" rx="${f(Math.max(2.2, P.er * 0.75))}" ry="${f(Math.max(1.8, P.er * 0.55))}" fill="#1c1917"/>`).join('') +
+          `<path d="M ${f(P.fx - 1)} ${f(yy + 2)} l 1 -2.5 l 1 2.5 Z" fill="#1c1917"/><path d="M ${f(l + (r - l) * 0.62)} ${f(top(l + (r - l) * 0.62) - 1)} l 2 4 l -1.5 3 l 2.5 3" fill="none" stroke="#3b3226" stroke-width="1"/>` +
+          `<path d="M ${f(r - 2)} ${f(top(r - 2) + 2)} q 8 -4 6 -13 q -4 5 -9 6" fill="#d6cfbd" ${STROKE('#3b3226', 1.2)}/>`; }
+      case 'candles': { // tres velas negras sobre la cabeza, con su llama
+        const xs = [hx - 7, hx, hx + 7], hs = [8, 12, 7];
+        return xs.map((x, i) => { const y = top(x) + 2, hh = hs[i]; return `<rect x="${f(x - 2)}" y="${f(y - hh)}" width="4" height="${f(hh)}" rx="1" fill="#1f1a24" ${STROKE('#0b0a10', 1)}/><path d="M ${f(x - 2)} ${f(y - hh + 1.5)} q 1 2 0.6 4" stroke="#3b3346" stroke-width="1" fill="none"/><path d="M ${f(x)} ${f(y - hh - 7)} Q ${f(x + 2.4)} ${f(y - hh - 2.5)} ${f(x)} ${f(y - hh - 0.5)} Q ${f(x - 2.4)} ${f(y - hh - 2.5)} ${f(x)} ${f(y - hh - 7)} Z" fill="#fb923c"><animate attributeName="opacity" values="1;.7;1" dur="${1.1 + i * 0.3}s" repeatCount="indefinite"/></path><circle cx="${f(x)}" cy="${f(y - hh - 2.5)}" r="1" fill="#fef3c7"/>`; }).join(''); }
+      case 'laurel': { // corona de laurel siguiendo el contorno
+        const y0 = top(cx) + H * 0.35, [l, r] = edges(Math.min(y0, P.ey - P.er * 1.4)), c = '#65a30d', n = 9;
+        return Array.from({ length: n }, (_, i) => { const u = i / (n - 1), x = l + 2 + (r - l - 4) * u, y = top(x) + 3, a = (u < 0.5 ? -50 : 50) + (u - 0.5) * 40;
+          return `<ellipse cx="${f(x)}" cy="${f(y)}" rx="3.6" ry="1.7" transform="rotate(${f(a)} ${f(x)} ${f(y)})" fill="${i % 2 ? c : shade(c, 0.2)}" ${STROKE(dk, 0.8)}/>`; }).join('') + `<circle cx="${f((l + r) / 2)}" cy="${f(top((l + r) / 2) + 2)}" r="1.6" fill="#facc15"/>`; }
+      case 'eyepatch': { // parche sobre el ojo de atrás, cinta por la cabeza
+        const ex = P.fx + P.er * 1.25, ey = P.ey - 0.8, r = Math.max(3, P.er * 1.25), [l, rr] = edges(ey - r * 1.6);
+        return `<path d="M ${f(l)} ${f(ey - r * 1.9)} Q ${f(ex)} ${f(ey - r * 2.1)} ${f(rr)} ${f(ey - r * 0.4)}" fill="none" stroke="#18181b" stroke-width="1.6"/><path d="M ${f(ex - r)} ${f(ey - r * 0.6)} Q ${f(ex)} ${f(ey - r * 1.2)} ${f(ex + r)} ${f(ey - r * 0.6)} Q ${f(ex + r * 0.9)} ${f(ey + r * 0.9)} ${f(ex)} ${f(ey + r * 0.95)} Q ${f(ex - r * 0.9)} ${f(ey + r * 0.9)} ${f(ex - r)} ${f(ey - r * 0.6)} Z" fill="#18181b" ${STROKE('#000', 1)}/><path d="M ${f(ex - r * 0.5)} ${f(ey - r * 0.5)} q ${f(r * 0.4)} ${f(-r * 0.25)} ${f(r * 0.7)} 0" stroke="#52525b" stroke-width="1" fill="none"/>`; }
+      case 'chain': { // cadena al cuello (bajo la boca) con una calavera colgando
+        const y = Math.min(Math.max(cy - H * 0.04, P.my + 5), cy + H * 0.12), [l, r] = edges(y), n = 9;
+        const pts = Array.from({ length: n }, (_, i) => { const u = i / (n - 1), x = l + 3 + (r - l - 6) * u; return [x, y + Math.sin(Math.PI * u) * 5]; });
+        const m = pts[Math.floor(n * 0.42)];
+        return pts.map(([x, yy], i) => `<ellipse cx="${f(x)}" cy="${f(yy)}" rx="${i % 2 ? 1.2 : 2.1}" ry="${i % 2 ? 2 : 1.2}" fill="none" stroke="#a8a29e" stroke-width="1.2"/>`).join('') +
+          `<g transform="translate(${f(m[0])} ${f(m[1] + 5)})"><path d="M -4 -1 Q -4 -6 0 -6 Q 4 -6 4 -1 Q 4 1.5 2 2 V 4 H -2 V 2 Q -4 1.5 -4 -1 Z" fill="#e7e5e4" ${STROKE(dk, 1)}/><circle cx="-1.6" cy="-1.6" r="1.1" fill="#1c1917"/><circle cx="1.6" cy="-1.6" r="1.1" fill="#1c1917"/></g>`; }
+      case 'bell': { // collar con cascabel
+        const y = Math.min(Math.max(cy - H * 0.04, P.my + 5), cy + H * 0.12), [l, r] = edges(y), c = hue(skin, 160), bx = (l + r) / 2 - W * 0.12;
+        return `<path d="M ${f(l + 1)} ${f(y - 1.5)} Q ${f((l + r) / 2)} ${f(y + 5)} ${f(r - 1)} ${f(y - 1.5)} L ${f(r - 1)} ${f(y + 2)} Q ${f((l + r) / 2)} ${f(y + 9)} ${f(l + 1)} ${f(y + 2)} Z" fill="${c}" ${STROKE(dk, 1.2)}/><circle cx="${f(bx)}" cy="${f(y + 9)}" r="3.6" fill="#facc15" ${STROKE('#713f12', 1.2)}/><path d="M ${f(bx - 2.4)} ${f(y + 9.5)} h 4.8 M ${f(bx)} ${f(y + 10)} v 2.4" stroke="#713f12" stroke-width="1"/><circle cx="${f(bx - 1.2)}" cy="${f(y + 7.8)}" r=".9" fill="#fff"/>`; }
+      case 'sash': { // banda cruzada de hombro a cadera, de costado a costado
+        const y1 = Math.max(P.my + 5, cy - H * 0.05), y2 = Math.min(y1 + H * 0.6, cy + H * 0.8), [l1] = edges(y1), [, r2] = edges(y2), c = hue(skin, 180);
+        return `<path d="M ${f(l1)} ${f(y1 - 3)} L ${f(r2)} ${f(y2 - 3)} L ${f(r2)} ${f(y2 + 3)} L ${f(l1)} ${f(y1 + 3)} Z" fill="${c}" ${STROKE(dk, 1.2)}/><path d="M ${f(l1)} ${f(y1)} L ${f(r2)} ${f(y2)}" stroke="${shade(c, 0.35)}" stroke-width=".9" stroke-dasharray="2 2"/><circle cx="${f((l1 + r2) / 2)}" cy="${f((y1 + y2) / 2)}" r="2.6" fill="#facc15" ${STROKE(dk, 1)}/>`; }
+      case 'lantern': { // farolillo que flota a su lado y se mece
+        const y = cy - H * 0.15, x = edges(cy - H * 0.1)[0] - 7, zz = clamp(W / 21, 0.85, 1.35);
+        return `<g transform="translate(${f(x)} ${f(y)}) scale(${f(zz * 1.1)}) translate(${f(-x)} ${f(-y)})"><g><animateTransform attributeName="transform" type="rotate" values="-6 ${f(x)} ${f(y - 8)};6 ${f(x)} ${f(y - 8)};-6 ${f(x)} ${f(y - 8)}" dur="3s" repeatCount="indefinite"/><path d="M ${f(x)} ${f(y - 11)} v 3" stroke="#57534e" stroke-width="1.2"/><circle cx="${f(x)}" cy="${f(y)}" r="9" fill="#fbbf24" opacity=".22"><animate attributeName="opacity" values=".14;.3;.14" dur="2.2s" repeatCount="indefinite"/></circle><rect x="${f(x - 4)}" y="${f(y - 8)}" width="8" height="2.4" rx="1" fill="#44403c"/><rect x="${f(x - 3.5)}" y="${f(y - 5.6)}" width="7" height="9" rx="2" fill="#fde68a" ${STROKE('#44403c', 1.2)}/><path d="M ${f(x)} ${f(y + 1.5)} q 1.6 -2 0 -4.4 q -1.6 2.4 0 4.4" fill="#f97316"/><rect x="${f(x - 4)}" y="${f(y + 3.4)}" width="8" height="2" rx="1" fill="#44403c"/></g></g>`; }
+      case 'flower': { // flor tras la «oreja» (borde de la cabeza, al lado de atrás)
+        const x = cx + W * 0.42, y = top(x) + 3, pc = hue(skin, 140), zz = clamp(W / 18, 1, 1.7);
+        return `<g transform="translate(${f(x)} ${f(y)}) scale(${f(zz)}) translate(${f(-x)} ${f(-y)})">` + [0, 1, 2, 3, 4].map((j) => { const a = (j / 5) * Math.PI * 2 - 0.3; return `<ellipse cx="${f(x + Math.cos(a) * 3.4)}" cy="${f(y + Math.sin(a) * 3.4)}" rx="3" ry="2.2" transform="rotate(${f(a * 57.3)} ${f(x + Math.cos(a) * 3.4)} ${f(y + Math.sin(a) * 3.4)})" fill="${shade(pc, 0.35)}" ${STROKE(dk, 0.8)}/>`; }).join('') + `<circle cx="${f(x)}" cy="${f(y)}" r="2" fill="#facc15" ${STROKE(dk, 0.7)}/><path d="M ${f(x + 2)} ${f(y + 4)} q 4 2 6 0" fill="#4d7c0f" stroke="${dk}" stroke-width=".8"/></g>`; }
       case 'gemstone': if (layer !== 'front') return ''; return `<path d="M ${f(cx - W * 0.2)} ${f(cy - H * 0.62)} l 5 -6 h 8 l 5 6 l -9 10 Z" fill="#c084fc" ${STROKE('#581c87', 1.5)}/><path d="M ${f(cx - W * 0.2 + 3)} ${f(cy - H * 0.62 - 3)} l 3 -2" stroke="#fff" stroke-width="1.2"/>`;
       default: return '';
     }
@@ -1080,7 +1132,7 @@
   };
   const UPGRADE = { horns: ['bighorns', 'demonhorns'], unihorn: ['unihorn'], antennae: ['antlers', 'thirdEye'], crest: ['flamecrown', 'halo'], gem: ['thirdEye', 'halo'], curls: ['curls', 'bighorns'] };
   const HORNY = new Set(['horns', 'bighorns', 'demonhorns', 'curls', 'unihorn', 'antlers', 'hornCrown']);
-  const HAT = new Set(['crown', 'halo', 'thorns', 'tophat', 'wizard', 'beanie', 'headphones']);
+  const HAT = new Set(['crown', 'halo', 'thorns', 'tophat', 'wizard', 'beanie', 'headphones', 'hood', 'bonehelm', 'candles', 'laurel']);
   function regalia(ind) {
     if (ind._reg) return ind._reg;
     const R = rng(((ind.seed >>> 0) ^ 0x7e9a11c3) >>> 0), B = REG_BIAS[ind.house] || {}, B2 = REG_BIAS[ind.house2] || {};
@@ -1386,7 +1438,7 @@
         // las formas pequeñas sobraba mucho arriba: se veían desplazados hacia abajo). Un poco
         // más de aire abajo que arriba para que «pise» el suelo.
         let side = Math.max(VIEW_SIDE[st], boss ? 150 : 0) + (tier === 4 ? 30 : tier === 3 ? 8 : 0);
-        const extraTop = (ind.ears && ind.ears !== 'none' ? 16 : 6) * s + (tier === 4 ? 46 * s : tier === 3 ? 10 * s : 0) + (o.final ? ({ crown: 8, halo: 8, thorns: 8, tophat: 16, wizard: 18, beanie: 8, headphones: 6 })[ind.final] || 0 : 0) + (ind.hair === 'afro' || ind.hair === 'bun' ? 6 : 0);
+        const extraTop = (ind.ears && ind.ears !== 'none' ? 16 : 6) * s + (tier === 4 ? 46 * s : tier === 3 ? 10 * s : 0) + (o.final ? ({ crown: 8, halo: 8, thorns: 8, tophat: 16, wizard: 18, beanie: 8, headphones: 6, hood: 8, bonehelm: 8, candles: 16, laurel: 4 })[ind.final] || 0 : 0) + (ind.hair === 'afro' || ind.hair === 'bun' ? 6 : 0);
         // v5.15: las alas grandes llegan hasta ~92·s por encima del hombro: la caja crece hasta que quepan
         const wingTop = epic ? cy - H * 0.45 - (tier === 3 ? 58 : 92) * s : Infinity;
         const cTop = Math.min(cy - H - extraTop, wingTop), cBot = groundY + 6, cH = cBot - cTop;
@@ -1579,7 +1631,7 @@
   }
 
   /* ---------- Rasgos: lista, iconos y colección del Códice ---------- */
-  const CATS = { hair: Object.fromEntries(Object.entries(HAIR).filter(([k]) => k !== 'none')), wings: WINGS, body: ALL.body, legs: Object.fromEntries(Object.entries(ALL_LEGS).map(([k, v]) => [k, v[1]])), eyes: ALL.eyes, mouth: ALL.mouth, ears: ALL.ears, mark: ALL.mark, final: Object.assign({}, FINALS, FINALS4, FINALS5, FINALS9), arms: Object.fromEntries(Object.entries(ARMS_ALL).filter(([k]) => k !== 'none')), arch: { dino: 1, scorpion: 1, beast: 1, shell: 1 } };
+  const CATS = { hair: Object.fromEntries(Object.entries(HAIR).filter(([k]) => k !== 'none')), wings: WINGS, body: ALL.body, legs: Object.fromEntries(Object.entries(ALL_LEGS).map(([k, v]) => [k, v[1]])), eyes: ALL.eyes, mouth: ALL.mouth, ears: ALL.ears, mark: ALL.mark, final: Object.assign({}, FINALS, FINALS4, FINALS5, FINALS9, FINALS10), arms: Object.fromEntries(Object.entries(ARMS_ALL).filter(([k]) => k !== 'none')), arch: { dino: 1, scorpion: 1, beast: 1, shell: 1 } };
   const CAT_ICON = { arch: 'paw', arms: 'hand', hair: 'sparkles', wings: 'feather', size: 'maximize', body: 'paw', legs: 'footprints', eyes: 'eye', mouth: 'smile', ears: 'sparkles', mark: 'star', final: 'crown' };
   const sizeKey = (z) => (z < 0.76 ? 'xxs' : z < 0.86 ? 'xs' : z < 0.95 ? 's' : z <= 1.06 ? 'm' : z <= 1.15 ? 'l' : z <= 1.24 ? 'xl' : 'xxl');
   /** Rasgos de un individuo, para pintarlos como iconos. */

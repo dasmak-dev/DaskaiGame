@@ -197,7 +197,7 @@
     canSocket(id) {
       const r = this.get(id); if (!r || !this.enabled() || this.locked(id) || this.free(id) <= 0) return false;
       const n = st() && st().nextExpedition;
-      if (n && n.kind === 'abismo' && r.group !== 'bonus') return false;
+      if (n && (n.kind === 'abismo' || n.kind === 'averno') && r.group !== 'bonus') return false;
       const sl = this.slots();
       return sl.length < this.slotCount() || (r.group !== 'bonus' && sl.some((x) => this.get(x).group === r.group));
     },
@@ -353,7 +353,7 @@
     },
     /** Tipo y tamaño de la próxima expedición según sus runas (o lo que salió al azar). */
     apply(n) {
-      if (n.kind === 'abismo') return n; // el Abismo tiene su tipo y tamaño
+      if (n.kind === 'abismo' || n.kind === 'averno') return n; // el Abismo y el Averno tienen su tipo y tamaño
       const sel = this.selected(), rolled = n.rolled; if (!rolled) return n;
       const kind = sel.kind ? this.get(sel.kind).value : rolled.kind;
       const kd = DK.config.expedition.kinds[kind] || {};

@@ -30,12 +30,12 @@
   function runeRow(id, on, onClick) {
     const p = R().parse(id), n = R().count(id), free = R().free(id), sl = R().slotsOf(id);
     const dots = (used, max, cls) => [...Array(max).keys()].map((i) => h('i', { class: cls + (i < used ? ' on' : '') }));
-    return h('button', { class: 'rb-row ' + V.runeRarity(id) + (on ? ' on' : ''), type: 'button', 'aria-pressed': on, onClick, tip: V.runeTip(id) },
+    return DK.ui.hoverCard(h('button', { class: 'rb-row ' + V.runeRarity(id) + (on ? ' on' : ''), type: 'button', 'aria-pressed': on, onClick, 'aria-label': V.runeTip(id) },
       V.runeGem(id, 32),
       h('span', { class: 'rb-main' }, h('b', null, V.runeName(id)),
         h('small', null, p.affixes.length ? V.runeAffixes(id).join(' · ') : V.runeEffect(id))),
       sl.total ? h('span', { class: 'fp-slots', 'aria-hidden': 'true' }, h('span', null, dots(sl.P[0], sl.P[1], 'p')), h('span', null, dots(sl.S[0], sl.S[1], 's'))) : null,
-      h('span', { class: 'rb-n' + (free < n ? ' sock' : '') }, free < n ? DK.icon('lock', 10) : null, '×' + n));
+      h('span', { class: 'rb-n' + (free < n ? ' sock' : '') }, free < n ? DK.icon('lock', 10) : null, '×' + n)), () => V.runeCard(id)); // v5.29: ficha al dejar el ratón
   }
 
   V.runeBench = (params, refresh) => {
@@ -74,12 +74,14 @@
     const reagentBtn = (item) => {
       const it = D.items[item], n = have(item), op = R().opOf(item), z = zoneOf(item);
       const needSel = R().targetedOps.includes(op) && params.rmod == null;
-      const why = !p ? t('rune.why.none') : R().cannotForge(id, item, { mod: params.rmod }) || (needSel && n ? t('rune.forge.pickMod') : null);
+      // v5.29: sin reactivo pero con su receta a mano → pulsar lo fabrica
+      const makeable = !n && V.canMake(item);
+      const why = makeable ? null : !p ? t('rune.why.none') : R().cannotForge(id, item, { mod: params.rmod }) || (needSel && n ? t('rune.forge.pickMod') : null);
       return h('button', { class: 'fs-row rb-reagent' + (why ? ' off' : '') + (n ? '' : ' none') + (needSel && n && p && !R().cannotForge(id, item) ? ' wants' : ''), type: 'button', disabled: !!why,
-        tip: (why ? why + ' · ' : '') + it.desc, 'aria-label': it.name, onClick: () => forgeIt(item) },
+        tip: makeable ? t('craft.makeTip') : (why ? why + ' · ' : '') + it.desc, 'aria-label': it.name, onClick: () => (makeable ? V.makeDialog(item, refresh) : forgeIt(item)) },
         V.itemIcon(it, 26), h('span', { class: 'fs-main' }, h('b', null, it.name), h('small', null, t('rune.forge.ops.' + op), op === 'tier' && p && R().tierCost(id) ? ' · ' + R().tierCost(id).toLocaleString(DK.i18n.lang) + ' ' + t('rune.forge.coins') : '',
           h('span', { class: 'rb-zone' }, ' · ', z ? z.name : t('rune.forge.src.' + op)))),
-        h('span', { class: 'fs-n' + (n ? '' : ' zero') }, String(n)));
+        makeable ? h('span', { class: 'fs-make', 'aria-label': t('craft.makeBtn') }, DK.icon('anvil', 10)) : h('span', { class: 'fs-n' + (n ? '' : ' zero') }, String(n)));
     };
     const reagentsCol = h('div', { class: 'fb-col fb-stones rb-reagents' },
       Object.entries(GROUPS).map(([g, ops]) => { const its = R().reagents().filter((x) => D.items[x] && ops.includes(R().opOf(x)));

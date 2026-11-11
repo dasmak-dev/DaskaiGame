@@ -960,3 +960,22 @@ h3, .panel-head h3, .modal-head h3, .card > h3, .dk-name, .tile-label, .exp-node
 .camp-scene.grim.tod-day .camp-torch { filter: drop-shadow(0 0 5px rgba(249, 115, 22, .5)); }
 .camp-scene.grim.tod-dawn .camp-spot:not(.s-fire):not(.s-path) .camp-art { filter: brightness(.84) saturate(.85) sepia(.1) drop-shadow(0 4px 0 rgba(0, 0, 0, .45)); }
 .camp-scene.grim.tod-night .camp-spot:not(.s-fire):not(.s-path) .camp-art { filter: brightness(.7) saturate(.8) drop-shadow(0 4px 0 rgba(0, 0, 0, .5)); }
+/* v5.28: peligro de las exploraciones */
+.ex-danger button { display: inline-flex; align-items: center; gap: 3px; }
+.ex-danger button.on { background: color-mix(in srgb, #ef4444 calc(20% + var(--dgk, 0) * 1%), var(--surface-2)); border-color: #ef4444; color: #fecaca; }
+.ex-danger button.dg-0.on { background: var(--primary); border-color: var(--primary); color: var(--on-primary, #fff); }
+.ex-danger button.locked { opacity: .45; }
+.ex-zt-dg { font-style: normal; color: #f87171; font-weight: 700; }
+.ex-dg-tag { display: inline-flex; align-items: center; gap: 2px; color: #f87171; font-weight: 700; }
+/* v5.29: fondo del campamento por capas: nubes y niebla que se desplazan (dos copias seguidas: bucle sin cortes) */
+.camp-bg.layered .cbl-drift { animation: campDrift 160s linear infinite; }
+.camp-bg.layered .cbl-drift.mist { animation-duration: 70s; }
+.camp-bg.layered .cbl-drift.mist2 { animation-duration: 45s; animation-direction: reverse; }
+@keyframes campDrift { from { transform: translateX(0); } to { transform: translateX(-400px); } }
+:root[data-motion="reduced"] .camp-bg.layered .cbl-drift { animation: none; }
+/* v5.30: grietas con brasas que laten y ascuas que suben del horizonte */
+.camp-bg.layered .cbl-pulse { animation: campPulse 3.2s ease-in-out infinite; }
+@keyframes campPulse { 0%, 100% { opacity: .45; } 50% { opacity: 1; } }
+.camp-bg.layered .cbl-embers rect { animation: campEmber var(--t, 7s) linear var(--d, 0s) infinite; opacity: 0; }
+@keyframes campEmber { 0% { transform: translate(0, 0); opacity: 0; } 15% { opacity: .9; } 100% { transform: translate(6px, -60px); opacity: 0; } }
+:root[data-motion="reduced"] .camp-bg.layered .cbl-pulse, :root[data-motion="reduced"] .camp-bg.layered .cbl-embers rect { animation: none; }

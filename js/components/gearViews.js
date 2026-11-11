@@ -33,7 +33,7 @@
   /** Casilla de la cuadrícula. */
   V.gearTile = (p, { selected = false, onClick, compact = false } = {}) => {
     const it = D.items[p.base], d = wearer(p);
-    return h('button', { class: 'gear-tile g-' + p.rarity + (selected ? ' on' : '') + (compact ? ' compact' : ''), type: 'button', style: { '--g': RC(p.rarity) }, onClick, 'aria-pressed': selected },
+    return h('button', { class: 'gear-tile g-' + p.rarity + (selected ? ' on' : '') + (compact ? ' compact' : ''), type: 'button', style: { '--g': RC(p.rarity) }, onClick, 'aria-pressed': selected, tip: DK.gear.name(p), tipNode: () => V.infoCard('gear', p) }, // v5.32: toda la casilla enseña la ficha
       h('span', { class: 'gear-tile-ico' }, V.gearIcon(p, compact ? 24 : 30), h('span', { class: 'gear-ilvl', tip: t('gear.ilvl') }, p.ilvl)),
       h('span', { class: 'gear-tile-main' },
         h('b', { class: 'gear-name' }, DK.gear.name(p)),
@@ -50,7 +50,7 @@
     const hi = (key) => (changed && changed.has(key) ? ' fresh' : '') + (will && will.has(key) ? ' will' : ''); // v4.84: will = lo que va a cambiar
     const sep = () => h('i', { class: 'gt-sep' });
     const head = h('div', { class: 'gt-head' },
-      h('span', { class: 'gt-ico' }, V.gearIcon(p, compact ? 30 : 40)),
+      h('span', { class: 'gt-ico' }, (() => { const gi = V.gearIcon(p, compact ? 30 : 40); gi._tipNode = null; delete gi.dataset.tip; return gi; })()), // (dentro de la ficha, sin otra ficha encima)
       h('div', { class: 'grow' },
         h('b', { class: 'gt-name' }, DK.gear.name(p)),
         h('span', { class: 'gt-base' }, `${DK.gear.typeName(p)} · ${it.name}`),
@@ -129,7 +129,7 @@
           const isOpen = open === d.uid, hasIt = d.equip.some((e) => e && e.uid === p.uid);
           const mini = h('span', { class: 'ep-slots' }, [...Array(DK.config.maxEquip).keys()].map((i) => {
             const e = d.equip[i];
-            return e && typeof e === 'object' ? h('span', { class: 'ep-mini', style: { '--g': D.gear.rarities[e.rarity].color }, tip: DK.gear.name(e) }, V.gearIcon(e, 22)) : h('span', { class: 'ep-mini free', tip: t('gear.slotFree') }, DK.icon('plus', 11));
+            return e && typeof e === 'object' ? h('span', { class: 'ep-mini', style: { '--g': D.gear.rarities[e.rarity].color }, tip: DK.gear.name(e), tipNode: () => V.infoCard('gear', e) }, V.gearIcon(e, 22)) : h('span', { class: 'ep-mini free', tip: t('gear.slotFree') }, DK.icon('plus', 11));
           }));
           const head = h('button', { class: 'ep-row' + (isOpen ? ' on' : ''), type: 'button', onClick: () => { open = isOpen ? null : d.uid; draw(); } },
             V.dSprite(d, { size: 40 }),

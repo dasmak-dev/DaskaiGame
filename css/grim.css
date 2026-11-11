@@ -3015,3 +3015,32 @@ body[data-nav="on"] .wb-side { max-height: calc(100vh - 96px - 96px); }
   .tl-compact .tl-head, .tl-sec-head { flex-wrap: wrap; }
   .tl-compact .tl-head .tl-track, .tl-sec-head .tl-track { flex: 1 1 100% !important; }
 }
+
+/* v5.29: ficha flotante (components/hoverCard.js) */
+.hover-card { position: fixed; left: 0; top: 0; z-index: 9000; pointer-events: none; width: min(380px, calc(100vw - 28px)); padding: 0; border-radius: 14px;
+  background: var(--surface); border: 1px solid var(--border); box-shadow: 0 18px 40px -12px rgba(0, 0, 0, .75), 0 0 0 1px rgba(255, 255, 255, .04);
+  opacity: 0; transition: opacity .12s ease; }
+.hover-card.in { opacity: 1; }
+.hover-card > * { margin: 0; }
+.hover-card .hc-gear { display: flex; flex-direction: column; gap: 6px; padding: 2px; }
+.hover-card .hc-gear .gear-tip { border: 0; box-shadow: none; }
+.hover-card .hc-worn { display: flex; align-items: center; gap: 6px; padding: 0 12px 10px; }
+.hover-card .hc-rune { padding: 12px; display: flex; flex-direction: column; gap: 8px; border: 0; }
+.hover-card .hc-mods { display: flex; flex-direction: column; gap: 4px; }
+.hover-card .hc-eff { margin: 0; }
+/* fabricar desde la forja */
+/* v5.30: discreto — un yunque pequeño con borde fino en lugar de la cifra (antes era una píldora amarilla grande) */
+.fs-make { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 5px; color: #d6b25e; background: rgba(234,179,8,.08); border: 1px solid rgba(234,179,8,.35); opacity: .85; }
+button:hover > .fs-make { opacity: 1; border-color: rgba(234,179,8,.7); }
+.mk-head { display: flex; align-items: center; gap: 10px; }
+.mk-head > div { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.mk-ings { display: flex; flex-direction: column; gap: 4px; }
+.mk-ing { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border); }
+.mk-ing.ok b { color: #4ade80; } .mk-ing.miss b { color: #f87171; }
+/* fusión */
+.fu-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 10px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--border); }
+.fu-row .fu-from, .fu-row .fu-to { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; }
+.fu-row .fu-from { color: var(--g); } .fu-row .fu-to { color: var(--g2); }
+.fu-row .gear-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--g); display: inline-block; }
+.fu-row .gear-dot.to { background: var(--g2); box-shadow: 0 0 8px var(--g2); }
+.fp-fuse { color: #eab308; }

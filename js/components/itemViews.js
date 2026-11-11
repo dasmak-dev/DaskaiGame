@@ -49,6 +49,7 @@
     const span = document.createElement('span');
     span.className = 'item-icon ii stone-gem r-' + it.rarity + ' c-forja';
     span.dataset.tip = V.itemTipText(it); // v4.78: al pasar el ratón, qué hace
+    span._tipNode = () => V.infoCard('item', it.id); // v5.32: la ficha completa, no sólo el texto
     span.style.setProperty('--c', c);
     span.innerHTML = `<svg viewBox="-2 -2 52 52" aria-hidden="true"><defs><radialGradient id="${id}" cx="40%" cy="35%" r="72%"><stop offset="0" stop-color="${c}" stop-opacity=".55"/><stop offset=".55" stop-color="#1a1220" stop-opacity=".96"/><stop offset="1" stop-color="#07050a"/></radialGradient>`
       + `<filter id="${id}f" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`
@@ -68,6 +69,8 @@
     el.classList.add('gear-ico', 'g-' + p.rarity);
     // v5.14.1: también para las fotos del resumen (sin atributos ni semillas del nombre: equipo perdido o vendido)
     el.dataset.tip = p.attrs ? `${DK.gear.name(p)} · ${V.gearLine(p)}` : (p.name || '');
+    // v5.32: al pasar el ratón sale la ficha de la pieza con sus atributos y afijos (no la línea de texto)
+    el._tipNode = p.attrs ? () => V.infoCard('gear', p) : null;
     el.style.width = el.style.height = size + 'px'; // tamaño fijo (no el de la caja .item-icon)
     return el;
   };
@@ -91,7 +94,7 @@
     spr.style.backgroundSize = `${A.cols * 100}% ${A.rows * 100}%`;
     spr.style.backgroundPosition = `${A.cols > 1 ? (col / (A.cols - 1)) * 100 : 0}% ${A.rows > 1 ? (row / (A.rows - 1)) * 100 : 0}%`;
     span.append(spr);
-    if (it.name && o.tip !== false) span.dataset.tip = V.itemTipText(it);
+    if (it.name && o.tip !== false) { span.dataset.tip = V.itemTipText(it); span._tipNode = () => V.infoCard('item', it.id); }
     return span;
   }
 
@@ -118,7 +121,7 @@
       + ringShape + fillShape
       + glyphOf(it, light)
       + `<ellipse cx="17" cy="12" rx="8" ry="3.6" fill="#fff" opacity=".2"/></svg>`;
-    if (it.name && o.tip !== false) span.dataset.tip = V.itemTipText(it); // v4.78: al pasar el ratón, qué hace
+    if (it.name && o.tip !== false) { span.dataset.tip = V.itemTipText(it); span._tipNode = () => V.infoCard('item', it.id); } // v4.78 / v5.32: la ficha del objeto
     return span;
   };
 

@@ -136,6 +136,8 @@
       const party = h('section', { class: 'party-panel' },
         h('div', { class: 'party-head' }, h('span', { class: 'party-title' }, DK.icon('users', 20), t('party.title')), h('span', { class: 'party-count' }, `${active.length}/${DK.config.maxTeam}`),
           h('span', { class: 'grow' }),
+          // v5.33: intercambiar un daskai con otro jugador (fuera de las expediciones)
+          inExp ? null : btn({ icon: 'swap', label: t('trade.title'), iconOnly: true, size: 'sm', variant: 'ghost', onClick: () => { const m = V.tradeDialog(); if (m) m.promise.then(() => refresh()); } }),
           btn({ icon: 'flask', label: t('heal.button'), iconOnly: true, size: 'sm', variant: 'ghost', onClick: async () => { if (await V.healDialog(active)) refresh(); } })),
         h('div', { class: 'party-list' }, partySlots),
         h('p', { class: 'party-hint muted small' }, DK.icon('grip', 13), ' ', t(inExp ? 'box.dragHintExp' : 'box.dragHint')));

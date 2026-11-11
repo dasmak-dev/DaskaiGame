@@ -357,6 +357,177 @@ Se carga la última y sólo sobrescribe: paleta (piedra oscura, bronce, oro `--g
 - **Expedición:** al entrar en el mapa, el equipo, la mochila o un combate durante una expedición, `#zone-backdrop` (creado en `screens/expedition.js` con `screen:enter`) pinta detrás de todo la escena de la zona actual, oscurecida; `body.in-exp`.
 - **Combate:** la arena usa la escena de la zona (`components/scenes.js`, ahora con árboles muertos, ruinas, tumbas, cristales o tentáculos según la zona) y los **jefes tienen su propio fondo**: `DK.scenes.bossScene(zona, secreto)` → `boss_<escena>` (menhires bajo luna roja, bosque muerto, naufragio con tormenta, bosque de cristales, forja de lava, santuario con estatua, fauces del abismo, ruinas entre rayos) y `boss_secret` (cripta) para los jefes ocultos.
 
+### Cambios de la v5.36 — arcón más oscuro, sin mochila
+
+- Se quita de nuevo la mochila (no se leía como tal): `tent` vuelve a 50×32 y `base` 30. La madera del arcón pasa a
+  tonos casi de ébano (`WD`), el hierro más ennegrecido (`IR`) y el oro algo apagado (`GD`).
+
+### Cambios de la v5.35 — vuelve la mochila junto al arcón
+
+- `campArt.js → satchel(c, x0, yb)`: mochila de cuero repleta (pergamino con lazo azul, carta con lacre y pluma
+  asomando; correas con hebillas de acero; bolsillos) apoyada en el costado derecho del arcón (`tent`). El lienzo
+  pasa a 70×38 (el arcón baja 6 filas para dejar sitio a lo que asoma) y `base` a 42 (30 × 70/50: el mismo tamaño de
+  píxel). `backpack()` (la de la v5.25) sigue sin usarse.
+- Supabase: comprobado que la migración de temporadas está aplicada (`averno_season()` = 1, la vista filtra por
+  temporada y la función sigue rechazando valores imposibles).
+
+### Cambios de la v5.34 — la tabla global se reinicia con cada temporada
+
+- La tabla del Averno es **por temporada** (la de la Senda: `data/endgame.js → seasons`). En Supabase la clave es
+  `(player_id, season)` y la temporada la pone el servidor (`averno_season()`, hora de Madrid, misma fecha de inicio
+  y duración que el juego: si se cambian en `seasons`, hay que cambiarlas también en el SQL). El secreto de cada
+  jugador vale para todas las temporadas. SQL de migración: `docs/ONLINE-SUPABASE.md`, apartado 3.
+- Cliente: `DK.online.season()` / `daysLeft()`; `board(limit, season)` filtra por temporada (si la base de datos
+  aún no tiene la columna, cae a la tabla sin temporadas). Lo pendiente de publicar guarda su temporada y se
+  descarta si ha cambiado. La ventana muestra «Temporada N · se reinicia en X días» y deja ver la anterior.
+
+### Cambios de la v5.33 — intercambio entre jugadores y tabla global del Averno
+
+- **Intercambio** (`systems/trade.js` → `DK.trade`, ventana `V.tradeDialog` en `components/onlineViews.js`, botón
+  ⇄ en «Mi equipo»): sin servidor propio. Dos navegadores se conectan por WebRTC con **PeerJS**, que se carga al
+  abrir el intercambio desde cdnjs (con jsDelivr y unpkg de reserva) y usa el servidor público gratuito de PeerJS
+  sólo para encontrarse (id `daskai-trade-<código>`, código de 6 caracteres sin O/0/I/1).
+  - Protocolo `hello / offer / lock / unlock / commit / bye`. Aceptar (`lock`) lleva la huella de las dos ofertas
+    (`fingerprint`, la del anfitrión primero); cambiar una oferta quita las aceptaciones. Cuando los dos han
+    aceptado lo mismo se envía `commit` y, con el `commit` del otro, cada partida hace `execute()`: el tuyo sale
+    (su equipo vuelve al inventario con `gear.unequip`) y el suyo entra con uid nuevo en el mismo hueco del equipo.
+  - El daskai viaja como **lista blanca** de campos (`exportD`) y se reconstruye con `importD`, que valida cada
+    campo contra los datos (especie, naturaleza, pasiva, papel, movimientos, talentos…) y acota los números
+    (nivel ≤ maxLevel, genes ±config.genes, crecimiento ≤ nivel × 12, nombres ≤ 24 sin `<>`).
+  - No se puede ofrecer durante una expedición ni reclutas temporales, bloqueados o de exploración (`canOffer`).
+  - `DK.trade.useTransport(fn)` cambia el transporte (las pruebas unen dos partidas con un relé de Playwright).
+- **Tabla global** (`systems/online.js` → `DK.online`, `V.leaderboard`): Supabase, configurado en
+  `config.online = { supabaseUrl, supabaseKey }` (clave pública anon; vacío = desactivada). El SQL (tabla, vista
+  `averno_board` y función `submit_averno` con secreto por jugador) está en `docs/ONLINE-SUPABASE.md`.
+  - Cada partida tiene `state.online = { id, secret, publish, pending }`. Al terminar una bajada del Averno
+    (`expedition:end` con `averno`) se envía el récord; si aún no ha decidido publicar, queda pendiente y el
+    resumen pregunta (`V.publishAsk`). Botón «Tabla global» en la fila del Averno y en su resumen.
+  - `DK.online.fetch` permite un fetch falso en las pruebas.
+
+### Cambios de la v5.32 — fichas de objeto al pasar el ratón
+
+- Al pasar el ratón por un objeto ya no sale la línea de texto («Nombre · +8 DEF.M · … · 3 afijos»), sino su
+  **ficha completa** (la misma que la ficha flotante): `V.gearIcon` lleva `_tipNode → V.infoCard('gear', p)`
+  (atributos, afijos con su tier, calidad) y los iconos de objetos `_tipNode → V.infoCard('item', id)`. La casilla
+  `V.gearTile` entera (también su texto) enseña la ficha. El `data-tip` de texto se queda para la accesibilidad y el
+  móvil (pulsación larga enseña igualmente la ficha rica).
+- Dentro de un elemento con ficha flotante propia (`DK.ui.hoverCard`, marcado con `data-hc`) `core/ui.js` no muestra
+  además la burbuja de texto de lo de dentro. El icono dentro de la propia ficha (`gt-ico`) no lleva otra ficha.
+
+### Cambios de la v5.31 — El Averno (bajada sin fin) y textos de los reactivos
+
+- **Textos que faltaban**: los 11 reactivos de la forja de runas (categoría `forja`) no tenían `gear.stoneShort.<id>`
+  y se veía la clave («gear.stoneShort.polvo_vacio»). Añadidos en `es.js` y `en.js`, con una prueba que exige el texto
+  de todo objeto de forja en los dos idiomas. Recordatorio: **todo texto de interfaz va en `js/lang/<idioma>.js`**;
+  `node tools/check.js` compara claves pero no ve las dinámicas (`t('x.' + id)`), así que cada familia dinámica
+  nueva debe llevar su prueba.
+- **El Averno** (`DK.averno` en `systems/endgame.js`, datos en `data/endgame.js → averno`, zona `averno` en
+  `data/zones.json` con `secretZone`):
+  - Se abre (`checkUnlock`, llamado en `bossCleared`) al vencer al jefe de la **última zona del mapa del mundo**
+    (`lastZone()` = la última no secreta, así que sigue valiendo si se añaden zonas) con la Pesadilla activa y la
+    Corrupción al nivel máximo (`DK.corruption.levels().length`).
+  - Tipo de expedición propio `kinds.averno` (`special`, `noRecruit`, `noExit`, +50 % monedas, +2 emblemas por jefe)
+    y tamaño `sizes.averno` (8 pisos + hoguera + jefe). `nextStart`/`setStart` lo fuerzan al elegir la zona (sin
+    corrupción, sin pesadilla y sólo runas de bonificación). `pickZone` y `world.recommended` nunca lo eligen.
+  - **Sin fin**: tras cada jefe sólo se puede continuar (`complete()` devuelve null; la pantalla no ofrece cobrar) y
+    las hogueras curan pero no dejan volver (`canCampfireExit`). La única salida es caer: `fail()` → `avernoEnd()`
+    entrega TODO el botín con la bonificación por jefes (`claim(true)`) y guarda el récord en `state.averno.best`
+    (`lastExpedition.averno` para el resumen).
+  - **Sin daskai nuevos**: no hay nodos de recluta (ni las garantías ni las runas los añaden), no sale el suceso
+    `lost` (marcado `recruits: true`), `addRecruit` no hace nada y no aparecen legendarios.
+  - **Dificultad**: el nivel de los rivales no sale de la zona: `level = 90 + pisos × 0,3 + jefes × 1,5` (+2 élite,
+    +4 jefe) hasta 120 (`config.maxEnemyLevel`; `daskai.create` deja pasar de 100 sólo a rivales). Además se
+    **adaptan a tu equipo** (`adapt`, al crear cada rival): su «poder» (suma de atributos, vida/4) es como mínimo
+    `ratio × el poder medio de tu equipo`, con `ratio = 0,82 + pisos × 0,01 + jefes × 0,07` (× 1,3 jefes, × 1,12
+    élites), y encima un +% fijo por piso y jefe. Se guarda en `d.avernoMult` y lo aplica `endgame.enemyStat`.
+    `e.avernoFloors` cuenta los pisos de toda la bajada (`completeNode`).
+  - El jefe de cada mapa es el de una zona al azar (`pickBoss(seed)` → `e.avernoBoss`), con sus fases.
+  - UI: fila propia en «Reglas de la aventura» (o una pista de cómo abrirlo en la última zona), etiqueta
+    «Averno · piso N · Nv. X» en el mapa, «Sin salida» en el HUD, panel tras el jefe sin «cobrar», texto de caída y
+    resumen «Fin de la bajada» con récord; entrada en la Guía (`wiki.e.averno`).
+
+### Cambios de la v5.30 — fondo diabólico, accesorios y nombres nuevos, arreglos de la forja
+
+- **Fondo del campamento** (`components/camp.js`, `GRIM`, `campLayers`, `backdrop`): rehecho mucho más oscuro y
+  tétrico. El cielo y el humo ya no son bandas tramadas: se pintan en un lienzo liso (`smooth()`, degradados de
+  canvas + `grain()` muy fino) y se muestran sin pixelar (`L[id].smooth`). Las siluetas siguen siendo pixel art pero
+  casi negras y **sin luces de contorno** (`rim()` ya no se usa); se funden con el horizonte con `layer.fade()`
+  (mezcla continua, sin trama de Bayer). Elementos: resplandor rojo del infierno en el horizonte, agujas y una
+  ciudadela lejanas, catedral en ruinas con cruz rota, pinos secos, suelo con ruido suave interpolado y una capa
+  `cracks` de grietas con brasas que laten (`.cbl-pulse`), ascuas que suben (`.cbl-embers`), bruma en manchas
+  elípticas (`#campFog`, ya no rectángulos) y viñeta. De día hay un **sol negro** (`body: 'blacksun'`, el círculo
+  lleva las clases `sun blacksun`), al amanecer/atardecer un sol rojo apagado y de noche la luna de sangre.
+- **Accesorios** (`systems/looks.js`, `FINALS10`): capucha, yelmo de hueso, velas negras, corona de laurel, parche,
+  cadena con calavera, cascabel, banda, farolillo y flor en la oreja. Se sortean con un azar aparte (`R13`) en las
+  semillas NEW9 (sólo cambia el adorno de algunos), van todos en la capa delantera y se colocan con la forma real de
+  cada daskai: `top(x)` (borde de la cabeza), `edges(y)` (costados a esa altura), `P.fx/P.ey/P.er` (ojos) y `P.my`
+  (boca). Los que cubren la cabeza (`HEAD10`) no salen con orejas o antenas altas (`TALL_EARS`).
+- **Nombres** (`systems/names.js`): el doble de sílabas por casa, más sufijos, finales para las siluetas (dinosaurio,
+  escorpión, bestia…) y, con un 7 % (azar aparte), un nombre «de leyenda» de su casa (`WHOLE`). Los nombres ya
+  guardados (`d.gname`) no cambian.
+- **«+100» en las monedas al pulsar en la forja** (`core/app.js renderRes`): la píldora se reutiliza al repintar y
+  conservaba el `.hud-delta` del último cambio; al volver a meterla en el DOM la animación se repetía. Ahora el «+N»
+  (y la clase `bump`) se quitan a los 1,8 s.
+- **«Construir x{n}»**: las claves de la v5.29 `craft.make` / `craft.makeChain` chocaban con otras del mismo objeto
+  (en un literal gana la última). Se llaman ahora `craft.makeBtn` y `craft.makeChainNote`.
+- **Botón de fabricar piedras / reactivos** (`.fs-make`): un yunque pequeño con borde fino en lugar de la píldora
+  amarilla.
+
+### Cambios de la v5.29 — campamento por capas, talentos al unirse, fusión, más afijos, fabricar piedras y reactivos, y ficha flotante
+
+- **Campamento (`components/camp.js` → `campLayers`, `backdrop`).** El fondo son 7 capas en pixel art pintadas en lienzos de 400×180 y cacheadas por momento del día:
+  - cielo en bandas tramadas;
+  - nubes con luz arriba y sombra abajo (se desplazan);
+  - cordillera lejana con nieve tenue, luz en la cresta y bruma;
+  - montañas medias con bosque de pinos y las ruinas;
+  - colinas con luz de contorno;
+  - suelo con manchas, hierba seca, piedras, grietas, huesos y un camino de losas con juntas;
+  - primer plano oscuro en las esquinas.
+
+  Entre las capas van dos nieblas que se mueven (`.cbl-drift`, en bucle con dos copias seguidas). El sol o la luna, las estrellas, las ventanas de las ruinas, los árboles secos y las tumbas siguen en SVG, animados. Se quitó la mochila junto al arcón (`campArt.js`: el lienzo del arcón vuelve a 50×32, base 30; `backpack()` se conserva).
+- **Talentos al unirse (`DK.daskai.autoTalents`, llamado en `DK.party.add`).** Quien llega ya con nivel (reclutas, capturas, legendarios…) trae elegidos al azar, entre sus opciones, los talentos de sus niveles anteriores (`d.talentsAuto` guarda cuáles). Sólo eliges los que gane subiendo contigo.
+- **Más afijos (`data/gear.js` → `rarities`).**
+
+  | Rareza | Afijos | Tope de prefijos + sufijos |
+  | --- | --- | --- |
+  | Raros | 3–5 (antes 2–4) | 3 + 3 |
+  | Legendarios | 4–6 | 3 + 3 |
+  | Runas legendarias (`config.expedition.runes.rarities.l`) | 4–6 | 3 + 3 |
+- **Fusión de equipo (`DK.gear.fuse(rarity)`; `data/gear.js` → `fuse`).** 3 normales → 1 mágica · 3 mágicas → 1 rara · 5 raras → 1 legendaria.
+  - La pieza nueva sale de una base al azar (la mitad de las veces, de una de las fundidas) y con su nivel de objeto medio.
+  - Se gastan primero las de peor calidad. Nunca se usan las bloqueadas ni las equipadas.
+  - En la Forja, botón «Fusionar» junto a «Desguazar» (`fuseDialog`).
+- **Fabricar piedras y reactivos.**
+  - **Reactivos de runas:** recetas nuevas a partir de piedra rúnica y materiales (`data/recipes.js`): tiza, savia, perla, cuarzo, ceniza, tintas, escarcha, polvo del vacío, glifo de ascenso y corazón rúnico. Siguen saliendo también explorando.
+  - **Piedras del equipo:** ya tenían receta.
+  - **Desde la Forja y el banco de runas:** si no tienes una piedra o un reactivo pero puedes fabricarlo, su fila muestra «Fabricar» y al pulsarla se abre `V.makeDialog`. Esa ventana muestra los ingredientes (los que tienes y los que hacen falta) y permite ×1, ×5 o todo, en cadena si hace falta.
+- **Ficha flotante (`components/hoverCard.js`, nuevo).** `DK.ui.hoverCard(el, render)`: al dejar el ratón unos 0,6 s encima, aparece junto al puntero una ficha que lo sigue. En la Forja, la pieza completa (`V.gearTip` compacto y quién la lleva); en el banco de runas, `V.runeCard(id)`. Sólo con ratón.
+- **Pruebas.**
+  - `juice.test.js` «v5.29», más los cambios de las del arcón.
+  - `gear.test.js`: la exaltación llena un raro hasta 5.
+  - `kinds.test.js`: el cielo del campamento es una capa pintada.
+
+### Cambios de la v5.28 — peligro en las exploraciones
+
+- **Peligro 0–6 (`config.explore.danger`; `systems/training.js`).** Cada nivel de peligro sube la zona:
+  | Peligro | 1 | 2 | 3 | 4 | 5 | 6 |
+  | --- | --- | --- | --- | --- | --- | --- |
+  | Niveles de zona | +5 | +10 | +15 | +20 | +26 | +32 |
+  | Materiales y reactivos | ×1,25 | ×1,5 | ×1,8 | ×2,1 | ×2,5 | ×3 |
+  | Hallazgos raros | ×1,3 | ×1,6 | ×2 | ×2,4 | ×3 | ×3,6 |
+  | Monedas | ×1,3 | ×1,6 | ×2 | ×2,5 | ×3 | ×3,6 |
+
+  Más nivel de zona significa más riesgo, más probabilidad de desastre y un coste algo mayor. Los hallazgos raros son piedras, equipo, runas, glifos, corazones, tónicos y alijos. El equipo que se trae sale con el nivel de la zona más el peligro, hasta 100.
+  - Ejemplo: tres daskai de nivel 100 en la Cumbre, 8 h. El riesgo pasa del 8 % (mínimo) al 12, 51 y hasta el 92 % según el peligro.
+  - **Desbloqueo:** el peligro n+1 se abre al volver bien (sin agotarse) de una exploración con el peligro n, que es el más alto que tengas (`st().dangerMax`; aviso `explore.log.dangerUp`).
+- **API.** `zoneInfo(zone, danger)` devuelve `lv` (con el peligro sumado), `baseLv` y `danger`. `riskInfo`, `risk`, `zoneLoot`, `cost` y `expFor` aceptan `danger` (si no se pasa, se usa el elegido, `danger()`). También hay `dangerLevels()`, `dangerMax()`, `setDanger(n)` y `dangerOf(n)`. Cada grupo guarda su `g.danger` y `collect` lo usa; el informe lleva `danger` y `dangerUp`.
+- **Pantalla.**
+  - Hay una fila «Peligro» con píldoras: — · 💀1 · 💀2…, y candado en las bloqueadas.
+  - Los niveles de zona salen con «(+N)» en rojo, y la ficha muestra «Nv. 93 (83 + 10)».
+  - El desglose del riesgo incluye el peligro, y los grupos fuera llevan su calavera.
+  - El icono junto a cada zona es su reactivo rúnico exclusivo. Ahora tiene una ayuda que lo explica. Pantano y Glaciar no tienen reactivo propio.
+- **Pruebas.** `juice.test.js` «v5.28». `shop.test.js` ya no cuenta las píldoras de peligro como duraciones.
+
 ### Cambios de la v5.27 — mapa del mundo ilustrado, talentos compactos, fotos por cajas, zarpa de oso y mochila con volumen
 
 - **Mapa del mundo (`components/worldArt.js`, nuevo; `screens/zones.js` → `worldMap`).** El terreno ya no son teselas repetidas con adornos sueltos: es una sola ilustración en pixel art generada en el navegador. Se dibuja a la mitad de resolución y se muestra sin suavizar (`.wm2-art`).

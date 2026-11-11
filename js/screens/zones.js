@@ -214,7 +214,7 @@
         h('span', { class: 'bt-label' }, t('kind.rolled'), sel.kind ? h('span', { class: 'bt-rune-tag' }, DK.icon('rune', 11), t('kind.byRune')) : null),
         h('b', { tip: t('kind.' + cur.id + '.desc') }, t('kind.' + cur.id + '.name')),
         h('span', { class: 'chips' }, V.kindEffects(cur))),
-      sel.kind ? null : h('div', { class: 'bt-kind-odds', tip: t('kind.chancesHint'), 'aria-label': t('kind.chances') },
+      sel.kind || cur.special ? null : h('div', { class: 'bt-kind-odds', tip: t('kind.chancesHint'), 'aria-label': t('kind.chances') },
         E.kinds().map((k) => h('span', { class: 'bt-odd k-' + k.id + (k.id === cur.id ? ' on' : '') + (k.locked ? ' locked' : ''), tip: k.locked ? t('kind.locked') : `${t('kind.' + k.id + '.name')} · ${Math.round((chances[k.id] || 0) * 100)}%` },
           DK.icon(k.locked ? 'lock' : k.icon, 13), h('small', null, k.locked ? '—' : Math.round((chances[k.id] || 0) * 100) + '%')))));
 
@@ -393,6 +393,22 @@
       h('div', { class: 'egx-main' }, h('b', null, title), desc ? h('small', null, desc) : null),
       h('div', { class: 'egx-ctl' }, control),
       extra ? h('div', { class: 'egx-extra' }, extra) : null);
+    // v5.31: El Averno: su propia fila (sin abismo, corrupción ni pesadilla)
+    const AVR = DK.averno;
+    if (AVR.isZone(n.zone)) {
+      const r = AVR.rec(), A = G.averno;
+      rows.push(row('averno', 'flame', t('averno.title'), t('averno.help'), h('div', { class: 'row gap-s wrap' }, h('span', { class: 'chip neg' }, DK.icon('flame', 12), `${t('common.lvl')} ${A.level.start}–${A.level.cap}`),
+        btn({ icon: 'trophy', label: t('online.boardBtn'), size: 'sm', variant: 'ghost', onClick: () => V.leaderboard() })), true, [
+        h('div', { class: 'egx-list bad' }, h('span', { class: 'egx-k' }, DK.icon('alert', 12), t('endgameBox.harder')),
+          h('span', null, t('averno.rule1')), h('span', null, t('averno.rule2')), h('span', null, t('averno.rule3')), h('span', null, t('averno.rule4'))),
+        r.best && r.best.floors ? h('div', { class: 'egx-list good' }, h('span', { class: 'egx-k' }, DK.icon('trophy', 12), t('averno.bestTitle')),
+          h('span', null, t('averno.bestLine', { floors: r.best.floors, maps: r.best.maps, lv: r.best.level }))) : null]));
+      return h('section', { class: 'egx hot', 'aria-label': t('endgameBox.title') }, rows);
+    }
+    // Pista para abrirlo: en la última zona, cuando ya se ve la Corrupción
+    if (!AVR.unlocked() && C.visible() && n.zone === AVR.lastZone() && D.zones[AVR.zoneId()]) {
+      rows.push(row('averno', 'lock', t('averno.lockedTitle'), t('averno.lockedHint', { zone: D.zones[n.zone].name, n: ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'][C.levels().length - 1] || C.levels().length }), null, false));
+    }
     // El Abismo (v5.1): boss rush de la zona elegida; enseña la serie de jefes con su nivel
     if (DK.abyss.unlocked()) {
       const can = DK.abyss.available(n.zone);
