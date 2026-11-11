@@ -1512,3 +1512,66 @@ grant execute on function public.dm_fetch(uuid, text, text, bigint) to anon;
 grant execute on function public.dm_threads(uuid, text) to anon;
 grant execute on function public.dk_poll(uuid, text) to anon;
 ```
+
+
+## 9. Panel: amigos con más datos y conversaciones de cada jugador (v5.43)
+
+- `admin_player` devuelve los amigos con nombre, título, favorito, última vez, tiempo jugado, estado (amigos / solicitud enviada / recibida), desde cuándo y si está baneado; y cuántas conversaciones tiene (`dms`).
+- `admin_dms(p_tid)`: las conversaciones del jugador con otros jugadores (sólo las de las últimas 24 h, que es lo que se guarda). Cada lectura queda en `admin_log` (`read_dms`). En el juego, el chat avisa de que el equipo puede revisar los mensajes para moderar.
+
+```sql
+-- =====================================================================
+-- Daskai v5.43: el panel ve los amigos con más datos y las conversaciones de cada jugador.
+-- Requiere la v5.42 (chat entre amigos). Se puede repetir sin problema.
+-- =====================================================================
+
+-- Ficha del jugador: amigos con nombre, título, favorito, última vez, tiempo y estado; y cuántas conversaciones tiene
+create or replace function public.admin_player(p_tid text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare p public.players;
+begin
+  perform public._dk_need_admin();
+  select * into p from public.players where trainer_id = upper(p_tid);
+  if not found then return null; end if;
+  return jsonb_build_object(
+    'profile', jsonb_build_object('trainer_id', p.trainer_id, 'name', p.name, 'title', p.title, 'avatar', p.avatar, 'fav', p.fav, 'team', p.team,
+      'records', p.records, 'playtime', p.playtime, 'updated_at', p.updated_at, 'created_at', p.created_at, 'version', p.version,
+      'name_locked', p.name_locked, 'private', p.private, 'player_id', p.player_id),
+    'ban', (select row_to_json(b) from public.bans b where b.trainer_id = p.trainer_id),
+    'scores', (select coalesce(jsonb_agg(jsonb_build_object('board', s.board, 'period', s.period, 'value', s.value, 'flagged', s.flagged, 'updated_at', s.updated_at, 'build', s.build) order by s.updated_at desc), '[]') from public.scores s where s.player_id = p.player_id),
+    'averno', (select coalesce(jsonb_agg(jsonb_build_object('season', a.season, 'floors', a.floors, 'maps', a.maps, 'level', a.level, 'flagged', a.flagged, 'updated_at', a.updated_at, 'team', a.team, 'relics', a.relics) order by a.season desc), '[]') from public.averno_scores a where a.player_id = p.player_id),
+    'reports', (select coalesce(jsonb_agg(row_to_json(r) order by r.id desc), '[]') from public.reports r where r.target_tid = p.trainer_id),
+    'reportsBy', (select count(*) from public.reports r where r.reporter = p.trainer_id),
+    'friends', (select coalesce(jsonb_agg(jsonb_build_object('tid', x.tid, 'status', case when x.m and x.t then 'friend' when x.m then 'sent' else 'incoming' end,
+        'mutual', x.m and x.t, 'since', x.at, 'name', o.name, 'title', o.title, 'fav', o.fav, 'updated_at', o.updated_at, 'playtime', o.playtime,
+        'banned', exists (select 1 from public.bans b2 where b2.trainer_id = x.tid)) order by (x.m and x.t) desc, x.at), '[]')
+      from (select coalesce(a.tid, b.tid) as tid, a.tid is not null as m, b.tid is not null as t, coalesce(a.at, b.at) as at
+            from (select f.friend_tid as tid, f.created_at as at from public.friends f where f.player_id = p.player_id) a
+            full join (select q.trainer_id as tid, f.created_at as at from public.friends f join public.players q on q.player_id = f.player_id where f.friend_tid = p.trainer_id) b on b.tid = a.tid) x
+      left join public.players o on o.trainer_id = x.tid),
+    'support', (select coalesce(jsonb_agg(row_to_json(s) order by s.id), '[]') from (select * from public.support s where s.trainer_id = p.trainer_id order by s.id desc limit 100) s),
+    'dms', (select count(distinct case when d.a_tid = p.trainer_id then d.b_tid else d.a_tid end) from public.dm d
+            where (d.a_tid = p.trainer_id or d.b_tid = p.trainer_id) and d.created_at > now() - interval '24 hours'),
+    'inbox', (select count(*) from public.inbox i where i.to_tid = p.trainer_id)
+  );
+end $$;
+
+-- Conversaciones de un jugador con otros jugadores (sólo las de las últimas 24 h: después se borran)
+create or replace function public.admin_dms(p_tid text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare t text := upper(p_tid);
+begin
+  perform public._dk_need_admin();
+  perform public._dk_log('read_dms', t, null);
+  return coalesce((select jsonb_agg(jsonb_build_object('with', c.w, 'name', o.name, 'last_at', c.last_at, 'count', c.n,
+      'messages', (select jsonb_agg(jsonb_build_object('id', d.id, 'from_tid', d.from_tid, 'body', d.body, 'created_at', d.created_at) order by d.id)
+                   from public.dm d where d.a_tid = least(t, c.w) and d.b_tid = greatest(t, c.w) and d.created_at > now() - interval '24 hours'))
+      order by c.last_at desc)
+    from (select case when d.a_tid = t then d.b_tid else d.a_tid end as w, max(d.created_at) as last_at, count(*) as n
+          from public.dm d where (d.a_tid = t or d.b_tid = t) and d.created_at > now() - interval '24 hours' group by 1) c
+    left join public.players o on o.trainer_id = c.w), '[]');
+end $$;
+
+revoke all on function public.admin_dms(text) from public, anon;
+grant execute on function public.admin_dms(text) to authenticated;
+```

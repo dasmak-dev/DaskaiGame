@@ -187,25 +187,62 @@
     reports: (open) => rpc('admin_reports', { p_open: open }), closeReport: (id, tid) => rpc('admin_report_close', { p_report: id || null, p_tid: tid || null }),
     news: () => rpc('admin_news_list'), newsSave: (n) => rpc('admin_news_save', n.p_img ? n : (({ p_img, ...x }) => x)(n)), // (sin imagen funciona también con la base de datos de la v5.40) newsDelete: (id) => rpc('admin_news_delete', { p_news: id }),
     send: (tid, text, gift, img) => rpc('admin_send', Object.assign({ p_tid: tid, p_text: text, p_gift: gift || null }, img ? { p_img: img } : {})),
-    threads: () => rpc('admin_threads'), thread: (tid) => rpc('admin_thread', { p_tid: tid }), log: () => rpc('admin_log_list', { p_limit: 300 }),
+    threads: () => rpc('admin_threads'), thread: (tid) => rpc('admin_thread', { p_tid: tid }), dms: (tid) => rpc('admin_dms', { p_tid: tid }), log: () => rpc('admin_log_list', { p_limit: 300 }),
   };
 
   /* ---------------- Estructura ---------------- */
   const NAV = [['home', 'Resumen', 'chart'], ['players', 'Jugadores', 'users'], ['support', 'Soporte', 'mail'], ['reports', 'Denuncias', 'alert'],
     ['flagged', 'Sospechosos', 'flag'], ['boards', 'Clasificaciones', 'trophy'], ['news', 'Noticias', 'megaphone'], ['gifts', 'Regalos', 'gift'], ['log', 'Registro', 'list'], ['settings', 'Ajustes', 'settings']];
   let badges = {};
-  function shell(active, title, ...content) {
-    const nav = el('nav', { class: 'an' }, el('div', { class: 'an-logo' }, icon('shield', 18), el('b', null, 'Daskai'), el('small', null, 'admin')),
+  /*
+   * v5.42.1: el marco (menú, cabecera y cuerpo) se crea UNA vez; al cambiar de sección o pulsar un botón sólo se
+   * cambia el contenido. Mientras llegan los datos se deja lo que había (atenuado) y sale una barrita arriba:
+   * nada desaparece ni parpadea.
+   */
+  const UI = {};
+  function frame() {
+    if (UI.root && root.contains(UI.root)) return UI;
+    UI.nav = el('nav', { class: 'an' });
+    UI.title = el('h1');
+    UI.bar = el('div', { class: 'ac-bar' });
+    UI.body = el('div', { class: 'ac-b' });
+    UI.root = el('div', { class: 'aw' }, UI.nav, el('main', { class: 'ac' }, el('header', { class: 'ac-h' }, UI.title, el('span', { class: 'grow' }), btn('Actualizar', () => route(), 'ghost asm', 'refresh'), UI.bar), UI.body));
+    put(root, UI.root);
+    UI.active = null;
+    return UI;
+  }
+  function drawNav(active) {
+    frame();
+    put(UI.nav, el('div', { class: 'an-logo' }, icon('shield', 18), el('b', null, 'Daskai'), el('small', null, 'admin')),
       NAV.map(([k, label, ic]) => el('a', { class: 'an-i' + (k === active ? ' on' : ''), href: '#' + k }, icon(ic, 15), el('span', null, label), badges[k] ? el('i', { class: 'an-badge' }, badges[k]) : null)),
       el('div', { class: 'an-foot' }, el('small', null, session && session.email ? session.email : ''), btn('Salir', logout, 'ghost asm', 'exit')));
-    put(root, el('div', { class: 'aw' }, nav, el('main', { class: 'ac' }, el('header', { class: 'ac-h' }, el('h1', null, title), el('span', { class: 'grow' }), btn('Actualizar', () => route(), 'ghost asm', 'refresh')), el('div', { class: 'ac-b' }, content))));
+    UI.active = active;
   }
+  /** Pinta una sección ya hecha (sin esperas). */
+  function shell(active, title, ...content) {
+    frame(); drawNav(active); UI.title.textContent = title;
+    put(UI.body, content); UI.view = active + ':' + title;
+  }
+  let busyN = 0;
+  const busy = (on) => { busyN = Math.max(0, busyN + (on ? 1 : -1)); frame(); UI.bar.classList.toggle('on', busyN > 0); };
+  /** Trabajo en segundo plano con la barrita (lo de la pantalla se queda). */
+  async function working(fn) { busy(true); try { return await fn(); } finally { busy(false); } }
   const loading = () => el('p', { class: 'muted' }, 'Cargando…');
   const fail = (e) => el('p', { class: 'aerr' }, '⚠ ', e && e.message ? e.message : String(e));
+  let secSeq = 0;
+  /** Sección con datos: se queda lo anterior hasta que llega lo nuevo (si es otra sección y tarda, «Cargando…» a los 400 ms). */
   async function section(active, title, fn) {
-    const body = el('div', { class: 'ac-sec' }, loading());
-    shell(active, title, body);
-    try { const r = await fn(); body.replaceChildren(...[].concat(r).filter(Boolean)); } catch (e) { put(body, fail(e)); }
+    const seq = ++secSeq, key = active + ':' + title;
+    frame(); drawNav(active); UI.title.textContent = title;
+    const other = UI.view !== key;
+    const slow = other ? setTimeout(() => { if (seq === secSeq) put(UI.body, loading()); }, 400) : null;
+    busy(true);
+    let out;
+    try { out = [].concat(await fn()); } catch (e) { out = [fail(e)]; }
+    clearTimeout(slow); busy(false);
+    if (seq !== secSeq) return; // (ya se ha ido a otra sección)
+    put(UI.body, el('div', { class: 'ac-sec' }, out)); UI.view = key;
+    drawNav(active);
   }
   const card = (title, ...kids) => el('section', { class: 'acard' }, title ? el('h3', null, title) : null, kids);
   const table = (heads, rows) => el('div', { class: 'atw' }, el('table', { class: 'at-t' }, el('thead', null, el('tr', null, heads.map((x) => el('th', null, x)))), el('tbody', null, rows)));
@@ -267,10 +304,10 @@
     const list = el('div', null, loading());
     const pager = el('div', { class: 'arow-c' });
     const load = async () => {
-      put(list, loading());
+      list.classList.add('loading');
       try {
         const rows = await API.players(q.value.trim(), sel.value, 50, page * 50);
-        put(list, rows.length ? table(['', 'Jugador', 'ID', 'Última vez', 'Jugado', 'Averno', 'Prof.', 'Daskai', 'Estado'], rows.map((p) => {
+        list.classList.remove('loading'); put(list, rows.length ? table(['', 'Jugador', 'ID', 'Última vez', 'Jugado', 'Averno', 'Prof.', 'Daskai', 'Estado'], rows.map((p) => {
           const fav = p.fav && p.fav.s;
           return el('tr', { class: 'click', onClick: () => go('player/' + p.trainer_id) }, el('td', null, fav ? sprite(fav, p.fav.sh, 32) : null),
             el('td', null, el('b', null, p.name), p.title ? el('div', { class: 'muted small' }, p.title) : null), el('td', { class: 'mono' }, p.trainer_id),
@@ -278,7 +315,7 @@
             el('td', null, p.banned ? pill('baneado', 'bad') : null, p.reports ? pill(p.reports + ' denuncias', 'warn') : null, p.flagged ? pill(p.flagged + ' sospechosos', 'warn') : null, p.unread ? pill(p.unread + ' sin leer', 'info') : null, p.name_locked ? pill('nombre fijo') : null));
         })) : el('p', { class: 'muted' }, 'Nadie coincide.'));
         put(pager, page > 0 ? btn('← Anteriores', () => { page--; load(); }, 'ghost asm') : null, el('span', { class: 'muted small' }, `Página ${page + 1}`), rows.length === 50 ? btn('Siguientes →', () => { page++; load(); }, 'ghost asm') : null);
-      } catch (e) { put(list, fail(e)); }
+      } catch (e) { list.classList.remove('loading'); put(list, fail(e)); }
     };
     let tm = null;
     q.addEventListener('input', () => { clearTimeout(tm); tm = setTimeout(() => { page = 0; load(); }, 300); });
@@ -288,14 +325,21 @@
   }
 
   /* ---------------- Ficha de un jugador ---------------- */
-  async function playerView(tid, tab = 'team') {
-    shell('players', 'Jugador #' + tid, loading());
-    let d;
-    try { d = await API.player(tid); } catch (e) { shell('players', 'Jugador #' + tid, fail(e)); return; }
-    if (!d) { shell('players', 'Jugador #' + tid, el('p', { class: 'muted' }, 'No existe ningún perfil con ese ID.'), btn('← Volver', () => history.back(), 'ghost')); return; }
+  const PC = {}; // (fichas ya descargadas: cambiar de pestaña no vuelve a pedir nada)
+  async function playerView(tid, tab = 'team', fresh = true) {
+    let d = PC[tid];
+    if (fresh || !d) {
+      const seq = ++secSeq; frame(); drawNav('players');
+      const slow = UI.view !== 'player:' + tid ? setTimeout(() => { if (seq === secSeq) { UI.title.textContent = 'Jugador #' + tid; put(UI.body, loading()); } }, 400) : null;
+      try { d = await working(() => API.player(tid)); } catch (e) { clearTimeout(slow); if (seq === secSeq) shell('players', 'Jugador #' + tid, fail(e)); return; }
+      clearTimeout(slow);
+      if (seq !== secSeq) return;
+      if (!d) { shell('players', 'Jugador #' + tid, el('p', { class: 'muted' }, 'No existe ningún perfil con ese ID.'), btn('← Volver', () => history.back(), 'ghost')); return; }
+      PC[tid] = d;
+    }
     const p = d.profile, pv = p.private || {}, rec = p.records || {};
-    const reload = (tb = tab) => playerView(tid, tb);
-    const act = async (fn, ok) => { try { const r = await fn(); if (r && r !== 'ok' && typeof r === 'string') toast('Respuesta: ' + r, true); else toast(ok); reload(); } catch (e) { toast(e.message, true); } };
+    const reload = (tb = tab, f = false) => playerView(tid, tb, f);
+    const act = async (fn, ok) => { try { const r = await working(fn); if (r && r !== 'ok' && typeof r === 'string') toast('Respuesta: ' + r, true); else toast(ok); reload(tab, true); } catch (e) { toast(e.message, true); } };
     const head = el('div', { class: 'aph' },
       el('div', { class: 'aph-av' }, p.fav && p.fav.s ? sprite(p.fav.s, p.fav.sh, 72) : icon('user', 40)),
       el('div', { class: 'aph-who' }, el('h2', null, p.name, p.name_locked ? pill('nombre fijo') : null, d.ban ? pill('BANEADO', 'bad') : null),
@@ -303,7 +347,7 @@
         el('div', { class: 'muted small' }, `#${p.trainer_id} · versión ${p.version || '?'} · alta ${fmtD(p.created_at)} · última vez ${ago(p.updated_at)} · ${hrs(p.playtime)} jugadas`),
         d.ban ? el('div', { class: 'aerr' }, 'Motivo del baneo: ' + (d.ban.reason || '—') + ' · ' + fmtD(d.ban.created_at)) : null),
       el('div', { class: 'aph-act' },
-        btn('Mensaje / regalo', () => composeTo(p.trainer_id, p.name).then((ok) => ok && reload('chat')), 'primary', 'mail'),
+        btn('Mensaje / regalo', () => composeTo(p.trainer_id, p.name).then((ok) => ok && reload('chat', true)), 'primary', 'mail'),
         d.ban ? btn('Quitar baneo', () => act(() => API.unban(p.trainer_id), 'Baneo quitado'), '', 'check')
           : btn('Banear', async () => { const r = await ask('Banear a ' + p.name, 'Motivo', 'trampas', { ok: 'Banear', danger: true, help: 'Desaparece de todas las tablas y no puede enviar nada. Se puede deshacer.' }); if (r !== null) act(() => API.ban(p.trainer_id, r), 'Baneado'); }, 'danger', 'lock'),
         btn('Renombrar', async () => { const r = await ask('Cambiar el nombre', 'Nombre nuevo (se queda fijo: el juego no lo puede cambiar)', p.name); if (r) act(() => API.rename(p.trainer_id, r, true), 'Nombre cambiado'); }, 'ghost', 'edit'),
@@ -311,38 +355,78 @@
         btn('Borrar jugador', async () => { const r = await ask('Borrar jugador', `Escribe ${p.trainer_id} para borrar su perfil, récords, amigos, buzón y chat. (Para que no vuelva, banéalo.)`, '', { ok: 'Borrar', danger: true }); if (r && r.trim().toUpperCase() === p.trainer_id) { try { await API.deletePlayer(p.trainer_id); toast('Jugador borrado'); go('players'); } catch (e) { toast(e.message, true); } } }, 'ghost danger-t', 'trash')));
     const recs = el('div', { class: 'astats asm' }, [['Averno', rec.averno], ['Más profunda', rec.depth], ['Abismo', rec.abyss], ['Semanal', rec.weekly], ['Variocolores', rec.shinies], ['Combates', rec.battles],
       ['Daskai', rec.daskai], ['Intercambios', rec.trades], ['Logros', rec.achievements], ['Nivel máx.', rec.maxLv], ['Monedas', pv.coins], ['Emblemas', pv.emblems]].map(([l, v]) => statBox(l, v)));
-    const TABS = [['team', 'Equipo'], ['box', `Daskai (${(pv.box || []).length})`], ['bag', 'Bolsa'], ['scores', `Récords (${d.scores.length + d.averno.length})`], ['friends', `Amigos (${d.friends.length})`], ['reports', `Denuncias (${d.reports.length})`], ['chat', `Chat (${d.support.length})`]];
-    const tabs = el('div', { class: 'atabs' }, TABS.map(([k, l]) => el('button', { class: 'atab' + (k === tab ? ' on' : ''), type: 'button', onClick: () => reload(k) }, l)));
-    let body;
-    if (tab === 'team') body = el('div', null, p.fav ? card('Favorito', buildView({ team: [p.fav] })) : null, card('Equipo actual', buildView({ team: p.team || [] })));
-    else if (tab === 'box') {
-      const box = (pv.box || []).map(([s, l, sh, n, st]) => ({ s, l, sh, n, st }));
-      const f = el('input', { class: 'ai', type: 'search', placeholder: 'Filtrar por especie o mote…' });
-      const sort = el('select', { class: 'ai' }, [['l', 'Nivel'], ['s', 'Especie'], ['sh', 'Variocolores primero']].map(([k, l]) => el('option', { value: k }, l)));
-      const grid = el('div', { class: 'abox' });
-      const draw = () => { const q = f.value.trim().toLowerCase(); const l = box.filter((x) => !q || spName(x.s).toLowerCase().includes(q) || (x.n || '').toLowerCase().includes(q));
-        l.sort((a, b) => (sort.value === 's' ? spName(a.s).localeCompare(spName(b.s)) : sort.value === 'sh' ? b.sh - a.sh || b.l - a.l : b.l - a.l));
-        grid.replaceChildren(...l.slice(0, 600).map((x) => el('div', { class: 'abx' + (x.sh ? ' sh' : ''), title: `${spName(x.s)} Nv. ${x.l}` }, sprite(x.s, x.sh, 48), el('b', null, x.n || spName(x.s)), el('small', null, `Nv. ${x.l}${x.st ? ' · ' + '✦'.repeat(Math.min(5, x.st)) : ''}${x.sh ? ' · ★' : ''}`)))); };
-      f.addEventListener('input', draw); sort.addEventListener('change', draw); draw();
-      body = box.length ? el('div', null, el('div', { class: 'atools' }, f, sort, el('small', { class: 'muted' }, `${box.length} daskai · ${box.filter((x) => x.sh).length} variocolores`)), grid)
-        : el('p', { class: 'muted' }, 'Este jugador aún no ha enviado sus cajas (llegan con la v5.40 del juego).');
-    } else if (tab === 'bag') {
-      const bag = Object.entries(pv.bag || {}).sort((a, b) => b[1] - a[1]);
-      body = el('div', null, el('p', null, `Monedas: ${fmtN(pv.coins)} · Emblemas: ${fmtN(pv.emblems)} · Ranura ${pv.slot || '?'} · Idioma ${pv.lang || '?'}`),
-        bag.length ? el('div', { class: 'abag' }, bag.map(([id, n]) => el('div', { class: 'abg' }, itemIcon(id, 20), el('span', null, itemName(id)), el('b', null, '×' + fmtN(n))))) : el('p', { class: 'muted' }, 'Sin datos de la bolsa.'));
-    } else if (tab === 'scores') {
-      const rows = d.averno.map((a) => ({ board: 'averno', period: a.season, value: a.floors, flagged: a.flagged, at: a.updated_at, build: { team: a.team, relics: a.relics } }))
-        .concat(d.scores.map((s) => ({ board: s.board, period: s.period, value: s.value, flagged: s.flagged, at: s.updated_at, build: s.build })));
-      body = rows.length ? table(['Tabla', 'Periodo', 'Valor', 'Fecha', 'Estado', ''], rows.map((r) => el('tr', null, el('td', null, BOARD[r.board] || r.board), el('td', null, r.period), el('td', null, el('b', null, fmtN(r.value))), el('td', null, fmtD(r.at)),
-        el('td', null, r.flagged ? pill('sospechoso', 'warn') : pill('visible', 'ok')),
-        el('td', { class: 'nowrap' }, btn('Equipo', () => modal('Equipo del récord', buildView(r.build)), 'ghost asm'),
-          r.flagged ? btn('Dar por bueno', () => act(() => API.score(p.player_id, r.board, r.period, 'ok'), 'Visible'), 'ghost asm') : btn('Ocultar', () => act(() => API.score(p.player_id, r.board, r.period, 'flag'), 'Oculto'), 'ghost asm'),
-          btn('Borrar', async () => { if (await confirmBox('Borrar récord', 'Se borra este récord.')) act(() => API.score(p.player_id, r.board, r.period, 'delete'), 'Borrado'); }, 'ghost asm danger-t'))))) : el('p', { class: 'muted' }, 'Sin récords publicados.');
-    } else if (tab === 'friends') body = d.friends.length ? el('div', { class: 'achips' }, d.friends.map((f) => el('a', { class: 'ap ' + (f.mutual ? 'ok' : ''), href: '#player/' + f.tid }, '#' + f.tid + (f.mutual ? '' : ' (solicitud)')))) : el('p', { class: 'muted' }, 'Sin amigos.');
-    else if (tab === 'reports') body = el('div', null, d.reports.length ? table(['Fecha', 'Denuncia', 'Motivo', 'Estado'], d.reports.map((r) => el('tr', null, el('td', null, fmtD(r.created_at)), el('td', null, el('a', { href: '#player/' + r.reporter }, '#' + r.reporter)), el('td', null, REASON[r.reason] || r.reason), el('td', null, r.closed ? pill('cerrada') : pill('abierta', 'warn')))))
-      : el('p', { class: 'muted' }, 'Nadie le ha denunciado.'), d.reports.some((r) => !r.closed) ? btn('Cerrar todas sus denuncias', () => act(() => API.closeReport(null, p.trainer_id), 'Cerradas'), 'ghost') : null, el('p', { class: 'muted small' }, `Ha denunciado a otros ${d.reportsBy} veces.`));
-    else body = chatBox(p.trainer_id, p.name, d.support, () => reload('chat'));
-    shell('players', p.name, head, recs, tabs, el('div', { class: 'atab-b' }, body));
+    const TABS = [['team', 'Equipo'], ['box', `Daskai (${(pv.box || []).length})`], ['bag', 'Bolsa'], ['scores', `Récords (${d.scores.length + d.averno.length})`], ['friends', `Amigos (${d.friends.filter((f) => f.mutual).length})`], ['reports', `Denuncias (${d.reports.length})`], ['chat', 'Mensajes' + (d.support.length || d.dms ? ` (${(d.support.length ? 1 : 0) + (d.dms | 0)})` : '')]];
+    const tabBody = el('div', { class: 'atab-b' });
+    const tabs = el('div', { class: 'atabs' }, TABS.map(([k, l]) => el('button', { class: 'atab' + (k === tab ? ' on' : ''), type: 'button', 'data-k': k,
+      onClick: () => { if (k === tab) return; tab = k; tabs.querySelectorAll('.atab').forEach((b) => b.classList.toggle('on', b.dataset.k === k)); put(tabBody, bodyFor(k)); } }, l)));
+    // (cambiar de pestaña sólo cambia esta parte: sin volver a pedir datos ni redibujar la ficha)
+    function bodyFor(tab) {
+      let body;
+      if (tab === 'team') body = el('div', null, p.fav ? card('Favorito', buildView({ team: [p.fav] })) : null, card('Equipo actual', buildView({ team: p.team || [] })));
+      else if (tab === 'box') {
+        const box = (pv.box || []).map(([s, l, sh, n, st]) => ({ s, l, sh, n, st }));
+        const f = el('input', { class: 'ai', type: 'search', placeholder: 'Filtrar por especie o mote…' });
+        const sort = el('select', { class: 'ai' }, [['l', 'Nivel'], ['s', 'Especie'], ['sh', 'Variocolores primero']].map(([k, l]) => el('option', { value: k }, l)));
+        const grid = el('div', { class: 'abox' });
+        const draw = () => { const q = f.value.trim().toLowerCase(); const l = box.filter((x) => !q || spName(x.s).toLowerCase().includes(q) || (x.n || '').toLowerCase().includes(q));
+          l.sort((a, b) => (sort.value === 's' ? spName(a.s).localeCompare(spName(b.s)) : sort.value === 'sh' ? b.sh - a.sh || b.l - a.l : b.l - a.l));
+          grid.replaceChildren(...l.slice(0, 600).map((x) => el('div', { class: 'abx' + (x.sh ? ' sh' : ''), title: `${spName(x.s)} Nv. ${x.l}` }, sprite(x.s, x.sh, 48), el('b', null, x.n || spName(x.s)), el('small', null, `Nv. ${x.l}${x.st ? ' · ' + '✦'.repeat(Math.min(5, x.st)) : ''}${x.sh ? ' · ★' : ''}`)))); };
+        f.addEventListener('input', draw); sort.addEventListener('change', draw); draw();
+        body = box.length ? el('div', null, el('div', { class: 'atools' }, f, sort, el('small', { class: 'muted' }, `${box.length} daskai · ${box.filter((x) => x.sh).length} variocolores`)), grid)
+          : el('p', { class: 'muted' }, 'Este jugador aún no ha enviado sus cajas (llegan con la v5.40 del juego).');
+      } else if (tab === 'bag') {
+        const bag = Object.entries(pv.bag || {}).sort((a, b) => b[1] - a[1]);
+        body = el('div', null, el('p', null, `Monedas: ${fmtN(pv.coins)} · Emblemas: ${fmtN(pv.emblems)} · Ranura ${pv.slot || '?'} · Idioma ${pv.lang || '?'}`),
+          bag.length ? el('div', { class: 'abag' }, bag.map(([id, n]) => el('div', { class: 'abg' }, itemIcon(id, 20), el('span', null, itemName(id)), el('b', null, '×' + fmtN(n))))) : el('p', { class: 'muted' }, 'Sin datos de la bolsa.'));
+      } else if (tab === 'scores') {
+        const rows = d.averno.map((a) => ({ board: 'averno', period: a.season, value: a.floors, flagged: a.flagged, at: a.updated_at, build: { team: a.team, relics: a.relics } }))
+          .concat(d.scores.map((s) => ({ board: s.board, period: s.period, value: s.value, flagged: s.flagged, at: s.updated_at, build: s.build })));
+        body = rows.length ? table(['Tabla', 'Periodo', 'Valor', 'Fecha', 'Estado', ''], rows.map((r) => el('tr', null, el('td', null, BOARD[r.board] || r.board), el('td', null, r.period), el('td', null, el('b', null, fmtN(r.value))), el('td', null, fmtD(r.at)),
+          el('td', null, r.flagged ? pill('sospechoso', 'warn') : pill('visible', 'ok')),
+          el('td', { class: 'nowrap' }, btn('Equipo', () => modal('Equipo del récord', buildView(r.build)), 'ghost asm'),
+            r.flagged ? btn('Dar por bueno', () => act(() => API.score(p.player_id, r.board, r.period, 'ok'), 'Visible'), 'ghost asm') : btn('Ocultar', () => act(() => API.score(p.player_id, r.board, r.period, 'flag'), 'Oculto'), 'ghost asm'),
+            btn('Borrar', async () => { if (await confirmBox('Borrar récord', 'Se borra este récord.')) act(() => API.score(p.player_id, r.board, r.period, 'delete'), 'Borrado'); }, 'ghost asm danger-t'))))) : el('p', { class: 'muted' }, 'Sin récords publicados.');
+      } else if (tab === 'friends') {
+        // v5.43: cada amigo en una fila compacta: dibujo, nombre, ID, título, última vez, tiempo jugado y estado
+        const ST = { friend: ['amigos', 'ok'], sent: ['solicitud enviada', 'info'], incoming: ['le ha pedido amistad', 'warn'] };
+        const row = (f) => { const st = f.status || (f.mutual ? 'friend' : 'sent');
+          return el('a', { class: 'afr', href: '#player/' + f.tid },
+            el('span', { class: 'afr-av' }, f.fav && f.fav.s ? sprite(f.fav.s, f.fav.sh, 36) : icon('user', 18)),
+            el('span', { class: 'afr-who' }, el('b', null, f.name || '¿?', ' ', el('small', { class: 'muted mono' }, '#' + f.tid)), el('small', { class: 'muted ellip' }, [f.title, f.updated_at ? 'visto ' + ago(f.updated_at) : null, f.playtime != null ? hrs(f.playtime) : null].filter(Boolean).join(' · '))),
+            el('span', { class: 'afr-st' }, pill((ST[st] || ST.friend)[0], (ST[st] || ST.friend)[1]), f.banned ? pill('baneado', 'bad') : null, f.since ? el('small', { class: 'muted' }, 'desde ' + fmtD(f.since).split(',')[0]) : null)); };
+        const groups = [['friend', 'Amigos'], ['incoming', 'Solicitudes recibidas'], ['sent', 'Solicitudes enviadas']].map(([k, l]) => { const g = d.friends.filter((f) => (f.status || (f.mutual ? 'friend' : 'sent')) === k); return g.length ? [el('small', { class: 'agrp' }, `${l} (${g.length})`), el('div', { class: 'afrs' }, g.map(row))] : null; });
+        body = d.friends.length ? el('div', { class: 'astack' }, groups) : el('p', { class: 'muted' }, 'Sin amigos ni solicitudes.');
+      }
+      else if (tab === 'reports') body = el('div', null, d.reports.length ? table(['Fecha', 'Denuncia', 'Motivo', 'Estado'], d.reports.map((r) => el('tr', null, el('td', null, fmtD(r.created_at)), el('td', null, el('a', { href: '#player/' + r.reporter }, '#' + r.reporter)), el('td', null, REASON[r.reason] || r.reason), el('td', null, r.closed ? pill('cerrada') : pill('abierta', 'warn')))))
+        : el('p', { class: 'muted' }, 'Nadie le ha denunciado.'), d.reports.some((r) => !r.closed) ? btn('Cerrar todas sus denuncias', () => act(() => API.closeReport(null, p.trainer_id), 'Cerradas'), 'ghost') : null, el('p', { class: 'muted small' }, `Ha denunciado a otros ${d.reportsBy} veces.`));
+      else {
+        // v5.43: conversaciones del jugador: con el equipo (puedes contestar) y con otros jugadores (sólo lectura; duran 24 h)
+        const right = el('div', { class: 'adm-conv' });
+        const list = el('div', { class: 'athreads' });
+        let dms = null;
+        const pick = (k) => {
+          list.querySelectorAll('.athr').forEach((a) => a.classList.toggle('on', a.dataset.k === k));
+          if (k === 'team') { put(right, el('div', { class: 'arow-c' }, el('h3', null, 'Con el equipo')), chatBox(p.trainer_id, p.name, d.support, () => reload('chat', true))); return; }
+          const c = (dms || []).find((x) => x.with === k); if (!c) return;
+          const bub = (m) => el('div', { class: 'abub ' + (m.from_tid === p.trainer_id ? 'them' : 'other') }, el('p', null, m.body), el('small', null, (m.from_tid === p.trainer_id ? p.name : (c.name || c.with)) + ' · ' + fmtD(m.created_at)));
+          const log = el('div', { class: 'achat' }, (c.messages || []).map(bub));
+          put(right, el('div', { class: 'arow-c' }, el('h3', null, `${p.name} ↔ ${c.name || '#' + c.with}`), el('a', { href: '#player/' + c.with }, 'Ver ficha →'), el('span', { class: 'grow' }), el('small', { class: 'muted' }, 'Sólo lectura · se borran a las 24 h')), log);
+          setTimeout(() => { log.scrollTop = log.scrollHeight; }, 0);
+        };
+        const drawList = () => put(list,
+          el('small', { class: 'agrp' }, 'Con el equipo'),
+          el('a', { class: 'athr', href: 'javascript:void 0', 'data-k': 'team', onClick: (e) => { e.preventDefault(); pick('team'); } }, el('b', null, 'Equipo Daskai'), el('small', { class: 'muted' }, d.support.length ? `${d.support.length} mensajes` : 'Sin mensajes')),
+          el('small', { class: 'agrp' }, 'Con otros jugadores (24 h)'),
+          dms === null ? el('p', { class: 'muted small' }, 'Cargando…') : dms.length ? dms.map((c) => el('a', { class: 'athr', href: 'javascript:void 0', 'data-k': c.with, onClick: (e) => { e.preventDefault(); pick(c.with); } },
+            el('b', null, c.name || '#' + c.with), el('small', { class: 'muted' }, `#${c.with} · ${c.count} mensajes · ${ago(c.last_at)}`))) : el('p', { class: 'muted small' }, 'Ninguna en las últimas 24 h.'));
+        drawList(); pick('team');
+        API.dms(p.trainer_id).then((x) => { dms = x || []; drawList(); list.querySelector('.athr[data-k="team"]').classList.add('on'); }).catch((e) => { dms = []; drawList(); toast('Conversaciones: ' + e.message, true); });
+        body = el('div', { class: 'asplit' }, list, right);
+      }
+      return body;
+    }
+    put(tabBody, bodyFor(tab));
+    shell('players', p.name, head, recs, tabs, tabBody); UI.view = 'player:' + tid;
   }
   const BOARD = { averno: 'Averno', depth: 'Más profunda', weekly: 'Semanal', abyss: 'Abismo', shiny: 'Variocolores' };
   const REASON = { cheat: 'Trampas', name: 'Nombre ofensivo', msg: 'Mensajes molestos', other: 'Otro' };
@@ -430,15 +514,36 @@
   }
 
   /* ---------------- Soporte ---------------- */
-  const supportView = (sel) => section('support', 'Soporte', async () => {
-    const threads = await API.threads();
-    badges.support = threads.reduce((a, t) => a + (t.unread | 0), 0) || 0;
-    const side = el('div', { class: 'athreads' }, threads.length ? threads.map((t) => el('a', { class: 'athr' + (t.trainer_id === sel ? ' on' : ''), href: '#support/' + t.trainer_id }, el('b', null, t.name || t.trainer_id, t.unread ? pill(t.unread, 'warn') : null), el('small', { class: 'muted' }, '#' + t.trainer_id + ' · ' + ago(t.last_at)), el('div', { class: 'muted small ellip' }, t.last))) : el('p', { class: 'muted' }, 'Sin conversaciones.'),
-      btn('Nueva conversación', async () => { const id = await ask('Escribir a un jugador', 'ID de entrenador'); if (id) go('support/' + id.trim().toUpperCase()); }, 'ghost asm', 'plus'));
-    let main = el('p', { class: 'muted' }, 'Elige una conversación.');
-    if (sel) { const th = await API.thread(sel), t = threads.find((x) => x.trainer_id === sel); main = el('div', null, el('div', { class: 'arow-c' }, el('h3', null, (t && t.name) || sel), el('a', { href: '#player/' + sel }, 'Ver ficha →')), chatBox(sel, (t && t.name) || sel, th, () => supportView(sel))); }
-    return el('div', { class: 'asplit' }, side, el('div', null, main));
-  });
+  /** Soporte: lista a la izquierda; elegir otra conversación sólo cambia la parte derecha (sin recargar la sección). */
+  const SUP = {};
+  async function supportView(sel) {
+    if (UI.view === 'support:Soporte' && SUP.side && UI.body.contains(SUP.side)) { drawNav('support'); return SUP.select(sel); }
+    await section('support', 'Soporte', async () => {
+      const threads = await API.threads();
+      badges.support = threads.reduce((a, t) => a + (t.unread | 0), 0) || 0;
+      SUP.threads = threads;
+      SUP.main = el('div');
+      SUP.side = el('div', { class: 'athreads' }, threads.length ? threads.map((t) => el('a', { class: 'athr', href: '#support/' + t.trainer_id, 'data-tid': t.trainer_id }, el('b', null, t.name || t.trainer_id, t.unread ? pill(t.unread, 'warn') : null), el('small', { class: 'muted' }, '#' + t.trainer_id + ' · ' + ago(t.last_at)), el('div', { class: 'muted small ellip' }, t.last))) : el('p', { class: 'muted' }, 'Sin conversaciones.'),
+        btn('Nueva conversación', async () => { const id = await ask('Escribir a un jugador', 'ID de entrenador'); if (id) go('support/' + id.trim().toUpperCase()); }, 'ghost asm', 'plus'));
+      SUP.select = async (tid) => {
+        SUP.side.querySelectorAll('.athr').forEach((a) => a.classList.toggle('on', a.dataset.tid === tid));
+        if (!tid) { put(SUP.main, el('p', { class: 'muted' }, 'Elige una conversación.')); return; }
+        const seq = SUP.seq = (SUP.seq | 0) + 1, t = SUP.threads.find((x) => x.trainer_id === tid);
+        const show = (th) => put(SUP.main, el('div', { class: 'arow-c' }, el('h3', null, (t && t.name) || tid), el('a', { href: '#player/' + tid }, 'Ver ficha →')), chatBox(tid, (t && t.name) || tid, th, () => SUP.select(tid)));
+        SUP.cache = SUP.cache || {};
+        if (SUP.cache[tid]) show(SUP.cache[tid]); // (lo ya visto sale al momento; luego se completa)
+        let th; try { th = await working(() => API.thread(tid)); } catch (e) { if (seq === SUP.seq) put(SUP.main, fail(e)); return; }
+        if (seq !== SUP.seq) return; // (ya has elegido otra)
+        const a = SUP.side.querySelector(`.athr[data-tid="${tid}"] .ap`);
+        if (a) { a.remove(); badges.support = Math.max(0, (badges.support | 0) - ((t && t.unread) | 0)); if (t) t.unread = 0; drawNav('support'); }
+        const same = SUP.cache[tid] && JSON.stringify(SUP.cache[tid].map((m) => m.id)) === JSON.stringify(th.map((m) => m.id));
+        SUP.cache[tid] = th;
+        if (!same) show(th);
+      };
+      return el('div', { class: 'asplit' }, SUP.side, SUP.main);
+    });
+    if (SUP.select) SUP.select(sel);
+  }
 
   /* ---------------- Denuncias ---------------- */
   const reportsView = (all) => section('reports', 'Denuncias', async () => {
@@ -471,16 +576,16 @@
     const only = el('input', { type: 'checkbox' });
     const list = el('div', null, loading());
     const load = async () => {
-      put(list, loading());
+      list.classList.add('loading');
       try {
         const rows = await API.scores(sel.value, per.value | 0, only.checked);
-        put(list, rows.length ? table(['#', 'Jugador', 'Valor', 'Periodo', 'Tiempo jugado', 'Fecha', 'Estado', ''], rows.map((r, i) => el('tr', null, el('td', null, i + 1),
+        list.classList.remove('loading'); put(list, rows.length ? table(['#', 'Jugador', 'Valor', 'Periodo', 'Tiempo jugado', 'Fecha', 'Estado', ''], rows.map((r, i) => el('tr', null, el('td', null, i + 1),
           el('td', null, r.trainer_id ? el('a', { href: '#player/' + r.trainer_id }, r.name) : r.name), el('td', null, el('b', null, fmtN(r.value))), el('td', null, r.period), el('td', null, hrs(r.playtime)), el('td', null, fmtD(r.updated_at)),
           el('td', null, r.banned ? pill('baneado', 'bad') : null, r.flagged ? pill('oculto', 'warn') : null),
           el('td', { class: 'nowrap' }, btn('Equipo', () => modal('Equipo de ' + r.name, buildView(r.build)), 'ghost asm'),
             btn(r.flagged ? 'Mostrar' : 'Ocultar', async () => { await API.score(r.player_id, sel.value, r.period, r.flagged ? 'ok' : 'flag'); load(); }, 'ghost asm'),
             btn('Borrar', async () => { if (await confirmBox('Borrar récord', `Borrar el récord de ${r.name}.`)) { await API.score(r.player_id, sel.value, r.period, 'delete'); load(); } }, 'ghost asm danger-t'))))) : el('p', { class: 'muted' }, 'Sin récords en ese periodo.'));
-      } catch (e) { put(list, fail(e)); }
+      } catch (e) { list.classList.remove('loading'); put(list, fail(e)); }
     };
     [sel, per, only].forEach((x) => x.addEventListener('change', load));
     shell('boards', 'Clasificaciones', el('div', { class: 'atools' }, sel, el('label', { class: 'af inl' }, el('span', null, 'Temporada / semana'), per), el('label', { class: 'achk' }, only, ' Sólo ocultos')), list);

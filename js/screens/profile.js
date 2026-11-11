@@ -66,9 +66,13 @@
       h('div', { class: 'ph-id' }, pic,
         h('div', { class: 'profile-id' },
           // Título: desplegable propio (v4.50), en versión «en línea» (sin caja)
-          h('div', { class: 'ph-title' },
-            Object.assign(DK.ui.select({ label: t('profile.title'), value: p.title || '', onChange: (v) => { p.title = v || null; save(); refresh(); },
-              options: DK.avatars.titles().map((x) => ({ value: x.id || '', label: x.label, icon: 'award' })) }), { className: 'dd dd-inline ph-title-select' })),
+          h('div', { class: 'ph-tags' },
+            h('div', { class: 'ph-title' },
+              Object.assign(DK.ui.select({ label: t('profile.title'), value: p.title || '', onChange: (v) => { p.title = v || null; save(); refresh(); },
+                options: DK.avatars.titles().map((x) => ({ value: x.id || '', label: x.label, icon: 'award' })) }), { className: 'dd dd-inline ph-title-select' })),
+            // v5.43: tu ID de entrenador, a la vista (pulsa para copiarlo)
+            h('button', { class: 'ph-tid', type: 'button', tip: t('profile.tidTip'), onClick: () => { navigator.clipboard && navigator.clipboard.writeText(DK.trainer.id()).then(() => DK.ui.toast(t('trade.copied'), { icon: 'copy' }), () => {}); } },
+              h('small', null, 'ID'), h('b', null, '#' + DK.trainer.id()), DK.icon('copy', 12))),
           nameInput,
           p.motto ? h('div', { class: 'ph-motto' }, '«' + p.motto + '»') : null,
           h('div', { class: 'ph-meta' },
@@ -76,13 +80,13 @@
             h('span', null, DK.icon('flag', 12), t('profile.since', { date: new Date(st.created || Date.now()).toLocaleDateString(DK.i18n.lang) })),
             h('span', null, DK.icon('folder', 12), t('profile.slot', { n: DK.store.slot })),
             diff ? h('span', null, DK.icon(diff.icon, 12), t('difficulty.' + st.difficulty + '.name')) : null),
-          h('div', { class: 'ph-actions' },
-            btn({ icon: 'edit', label: params.edit && !sheetMode() ? t('profile.doneEditing') : t('profile.customize'), size: 'sm', variant: params.edit && !sheetMode() ? 'primary' : 'tone', onClick: () => toggleEdit(params, refresh) }),
-            btn({ icon: 'share', label: t('share.button'), size: 'sm', variant: 'tone', onClick: () => DK.shareCard.open() }),
-            // v5.39: clasificaciones globales y amigos (con aviso de buzón)
-            DK.online.enabled() ? btn({ icon: 'trophy', label: t('online.boardsBtn'), size: 'sm', variant: 'tone', onClick: () => DK.views.leaderboard({ board: 'averno' }) }) : null,
-            DK.online.enabled() ? h('span', { class: 'ph-fr' }, btn({ icon: 'users', label: t('online.friendsBtn'), size: 'sm', variant: 'tone', onClick: () => DK.views.mailbox(DK.online.unread ? 'inbox' : 'friends') }),
-              DK.online.unread ? h('span', { class: 'nav-dot' }, String(DK.online.unread)) : null) : null))),
+          // v5.43: acciones en una fila de botones iguales (dos columnas en el móvil)
+          h('div', { class: 'ph-actions' + (DK.online.enabled() ? ' n4' : '') },
+            btn({ icon: 'edit', label: params.edit && !sheetMode() ? t('profile.doneEditing') : t('profile.customize'), size: 'sm', variant: params.edit && !sheetMode() ? 'primary' : 'tone', cls: 'ph-act', onClick: () => toggleEdit(params, refresh) }),
+            btn({ icon: 'share', label: t('profile.shareShort'), size: 'sm', variant: 'tone', cls: 'ph-act', onClick: () => DK.shareCard.open() }),
+            DK.online.enabled() ? btn({ icon: 'trophy', label: t('online.boardsBtn'), size: 'sm', variant: 'tone', cls: 'ph-act', onClick: () => DK.views.leaderboard({ board: 'averno' }) }) : null,
+            DK.online.enabled() ? (() => { const b = btn({ icon: 'mail', label: t('online.mailTitle'), size: 'sm', variant: 'tone', cls: 'ph-act ph-fr', onClick: () => DK.views.mailbox(DK.online.unread ? 'inbox' : 'friends') });
+              if (DK.online.unread) b.append(h('span', { class: 'nav-dot' }, String(DK.online.unread))); return b; })() : null))),
       h('div', { class: 'ph-stats' },
         h('div', { class: 'ph-stat ring' }, ring, h('span', null, t('profile.winRate'))),
         head('swords', num(s.battles), t('pstats.battles')),

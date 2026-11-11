@@ -200,8 +200,8 @@ module.exports = {
         const c1 = await DK.online.claimGift(list[0]), c2 = await DK.online.claimGift(list[0]); const pot1 = DK.bag.count('pocion');
         // 3) la interfaz: pestañas, fila que abre el perfil con el equipo del récord
         DK.views.leaderboard({ board: 'depth' }); await new Promise((res) => setTimeout(res, 300));
-        const tabs = document.querySelectorAll('.lb-modal .lb-tab').length, lbRows = document.querySelectorAll('.lb-modal button.lb-row').length;
-        document.querySelector('.lb-modal button.lb-row').click(); await new Promise((res) => setTimeout(res, 300));
+        const tabs = document.querySelectorAll('.lb-modal .lbx-tab').length, lbRows = document.querySelectorAll('.lb-modal button.lbx-pod, .lb-modal button.lbx-row').length;
+        document.querySelector('.lb-modal button.lbx-pod').click(); await new Promise((res) => setTimeout(res, 300));
         const pp = { open: !!document.querySelector('.pp-modal'), mons: document.querySelectorAll('.pp-modal .bv-d').length, relic: document.querySelectorAll('.pp-modal .bv-relics .chip').length };
         DK.ui.closeAll(); await new Promise((res) => setTimeout(res, 200));
         DK.views.friendsDialog(); await new Promise((res) => setTimeout(res, 300));

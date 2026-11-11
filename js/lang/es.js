@@ -532,7 +532,8 @@ DK.i18n.register('es', {
     askTitle: '¿Publicar tu récord?', askText: 'Se subirá a la tabla global como «{name}» con {n} pisos y tu equipo (especies y niveles). Puedes cambiarlo cuando quieras.',
     askYes: 'Publicar', askNo: 'No, gracias',
     season: 'Temporada {n}', resetIn: 'La tabla se reinicia en {n} días, con la nueva temporada de la Senda.', pastSeason: 'Temporada terminada.', thisSeason: 'Esta temporada', lastSeason: 'Anterior', emptyPast: 'Nadie publicó récords esa temporada.', sent: '¡Récord publicado en la tabla global!',
-    now: 'ahora', newMsgs: 'Mensajes nuevos', chatEmpty: 'Aún no habéis hablado. ¡Saluda!', chatPlaceholder: 'Escribe a {name}…', chatNote: 'Los mensajes se borran a las 24 h.',
+    now: 'ahora', newMsgs: 'Mensajes nuevos', chatEmpty: 'Aún no habéis hablado. ¡Saluda!', chatPlaceholder: 'Escribe a {name}…', chatNote: 'Los mensajes se borran a las 24 h. El equipo del juego puede revisarlos para moderar.',
+    ended: 'terminada', myPos: 'Tu puesto: #{n}', pubAs: 'Publicas como «{name}»', notPub: 'No publicas tus récords', emptyShort: 'Aún no hay récords. ¡Sé el primero!', fewYet: 'Aún no hay más jugadores.',
     // v5.41: buzón de dos paneles y ficha compacta
     k: { msg: 'Mensaje de {name}', gift: 'Regalo de {name}', agift: 'Regalo del equipo', admin: 'Mensaje del equipo', friend: 'Solicitud de amistad', friendok: 'Solicitud aceptada', trade: 'Invitación a intercambiar' },
     st: { friend: 'Amigos', sent: 'Solicitud enviada', incoming: 'Quiere ser tu amigo' },
@@ -770,6 +771,7 @@ DK.i18n.register('es', {
   ctx: { open: 'Abrir ficha', addFull: 'Añadir (sustituye a otro)' },
 
   profile: {
+    tidTip: 'Tu ID de entrenador: pásalo para que te añadan como amigo (pulsa para copiarlo)', shareShort: 'Compartir',
     progressTitle: 'Avance de la partida', ppSpecies: 'Especies', ppItems: 'Objetos', ppZones: 'Zonas', ppBosses: 'Jefes', ppAch: 'Logros', ppRecipes: 'Recetas',
     xl: '{n} mapas XL', inTeam: '{n} en el equipo', recipesKnown: '{n} recetas conocidas', coinsNowShort: 'Tienes {n}', emblems: 'Emblemas', runes: '{n} runas',
     bestDepth: 'Mayor profundidad', bestDepthSub: 'en una expedición', expCashed: '{n} de {total} cobradas', 

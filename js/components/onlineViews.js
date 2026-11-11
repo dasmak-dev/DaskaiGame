@@ -224,48 +224,82 @@
       tiles ? h('div', { class: 'bv-tiles' }, tiles) : null, detail);
   };
 
-  /** Tabla global con pestañas: Averno · Más profunda · Desafío semanal · Abismo · Variocolores. */
+  /**
+   * Tabla global (v5.43.1: rediseño). Siempre del mismo tamaño; pestañas, temporada/semana con flechas,
+   * podio para los tres primeros y lista; casi sin texto (la explicación va en el icono de información).
+   * Cambiar de tabla o de periodo no cierra la ventana: sólo cambia el contenido (y lo ya visto sale al momento).
+   */
+  const BOARD_IC = { averno: 'flame', depth: 'compass', weekly: 'trophy', abyss: 'moon', shiny: 'sparkles' };
   V.leaderboard = (opts) => {
     const o = typeof opts === 'object' && opts ? opts : { season: opts };
-    const O = DK.online, board = O.BOARDS.includes(o.board) ? o.board : 'averno';
-    const cur = O.periodOf(board), per = o.period || (board === 'averno' && o.season) || cur;
-    return DK.ui.modal({
-      title: t('online.boardsTitle'), icon: 'trophy', cls: 'lb-modal', closeX: true, size: 'wide',
-      content: (close) => {
-        const holder = h('div', { class: 'lb-body' }, h('p', { class: 'muted' }, DK.icon('clock', 13), ' ', t('online.loading')));
-        const go = (b, p) => { close(); V.leaderboard({ board: b, period: p }); };
-        const tabs = h('div', { class: 'lb-tabs' }, O.BOARDS.map((b) => h('button', { class: 'lb-tab' + (b === board ? ' on' : ''), type: 'button', onClick: () => { if (b !== board) go(b); } },
-          DK.icon({ averno: 'flame', depth: 'compass', weekly: 'trophy', abyss: 'moon', shiny: 'sparkles' }[b], 14), h('span', null, t('online.board.' + b)))));
-        if (!O.enabled()) { put(holder, tabs, h('p', { class: 'muted' }, DK.icon('info', 13), ' ', t('online.off'))); return holder; }
-        const me = O.me(), myTid = DK.trainer.id();
-        const isWeek = board === 'weekly';
-        const head = h('div', { class: 'lb-season row gap-s wrap' },
-          h('span', { class: 'chip' }, DK.icon(isWeek ? 'clock' : 'flag', 12), t(isWeek ? 'online.weekN' : 'online.season', { n: per })),
-          per === cur ? h('small', { class: 'muted' }, isWeek ? t('online.weekResets', { n: DK.weekly.daysLeft() }) : t('online.resetIn', { n: O.daysLeft() })) : h('small', { class: 'muted' }, t(isWeek ? 'online.pastWeek' : 'online.pastSeason')),
-          h('span', { class: 'grow' }),
-          cur > 1 ? h('div', { class: 'egx-seg' },
-            h('button', { class: per === cur ? 'on' : '', type: 'button', onClick: () => { if (per !== cur) go(board, cur); } }, t(isWeek ? 'online.thisWeek' : 'online.thisSeason')),
-            h('button', { class: per !== cur ? 'on' : '', type: 'button', onClick: () => { if (per === cur) go(board, cur - 1); } }, t('online.lastSeason'))) : null);
-        const pub = V.publishCard(() => { close(); V.leaderboard({ board, period: per }); });
-        const load = board === 'averno' ? O.board(50, per).then((rows) => rows.map((r) => ({ tid: r.trainer_id, name: r.name, value: r.floors, sub: `${r.maps} ${t('online.bosses').toLowerCase()} · ${t('common.lvl')} ${r.level}`, team: r.team, build: { team: r.team, relics: r.relics || [] }, mine: r.player_id === me.id })))
-          : O.scoreBoard(board, 50, per).then((rows) => rows.map((r) => ({ tid: r.trainer_id, name: r.name, value: r.value, sub: r.title || '', team: r.build && r.build.team, build: r.build, mine: r.trainer_id === myTid })));
-        load.then((rows) => {
-          const help = h('p', { class: 'muted small' }, t('online.help.' + board));
-          if (!rows.length) { put(holder, tabs, head, help, h('p', { class: 'muted' }, t(per === cur ? 'online.empty' : 'online.emptyPast')), pub); return; }
-          put(holder, tabs, head, help,
-            h('div', { class: 'lb-table lb2', role: 'table' },
-              h('div', { class: 'lb-row head', role: 'row' }, ['#', t('online.player'), t('online.value.' + board), t('online.team')].map((x) => h('span', { role: 'columnheader' }, x))),
-              rows.map((r, i) => h('button', { class: 'lb-row' + (r.mine ? ' me' : '') + (i < 3 ? ' top' + (i + 1) : ''), type: 'button', role: 'row', tip: t('online.seeProfile'),
-                onClick: () => V.publicProfile(r.tid, { name: r.name, build: r.build, board, value: r.value }) },
-                h('span', { class: 'lb-rank' }, i < 3 ? DK.icon('crown', 14) : null, String(i + 1)),
-                h('span', { class: 'lb-who' }, h('b', { class: 'lb-name' }, String(r.name || '?').slice(0, 20)), r.sub ? h('small', { class: 'muted' }, r.sub) : null),
-                h('span', { class: 'lb-floors' }, Number(r.value).toLocaleString(DK.i18n.lang)),
-                teamIcons(r.team)))), pub);
-        }).catch(() => put(holder, tabs, head, h('p', { class: 'warn-text' }, DK.icon('alert', 13), ' ', t('online.error'))));
-        return holder;
-      },
-      actions: [{ label: t('common.close'), icon: 'x', variant: 'ghost', value: false }],
-    });
+    const O = DK.online;
+    const S = { board: O.BOARDS.includes(o.board) ? o.board : 'averno', per: null, cache: {} };
+    S.per = o.period || (S.board === 'averno' && o.season) || O.periodOf(S.board);
+    const root = h('div', { class: 'lbx' });
+    const m = DK.ui.modal({ title: t('online.boardsTitle'), icon: 'trophy', cls: 'lb-modal', closeX: true, size: 'wide', content: () => root });
+    const tabs = h('div', { class: 'lbx-tabs', role: 'tablist' });
+    const bar = h('div', { class: 'lbx-bar' });
+    const body = h('div', { class: 'lbx-body' });
+    const foot = h('div', { class: 'lbx-foot' });
+    put(root, tabs, bar, body, foot);
+    if (!O.enabled()) { put(body, h('div', { class: 'lbx-empty' }, DK.icon('info', 30), h('p', { class: 'muted' }, t('online.off')))); return m; }
+    const me = O.me(), myTid = DK.trainer.id();
+
+    const drawTabs = () => put(tabs, O.BOARDS.map((b) => h('button', { class: 'lbx-tab' + (b === S.board ? ' on' : ''), type: 'button', role: 'tab', tip: t('online.board.' + b),
+      onClick: () => { if (b === S.board) return; S.board = b; S.per = O.periodOf(b); refresh(); } }, DK.icon(BOARD_IC[b], 15), h('span', { class: 'lbx-tl' }, t('online.board.' + b)))));
+    const drawBar = (rows) => {
+      const cur = O.periodOf(S.board), isWeek = S.board === 'weekly';
+      const mine = rows ? rows.findIndex((r) => r.mine) : -1;
+      const nav = (d) => { const n = S.per + d; if (n < 1 || n > cur) return; S.per = n; refresh(); };
+      put(bar,
+        h('div', { class: 'lbx-per' },
+          h('button', { class: 'lbx-arrow', type: 'button', disabled: S.per <= 1, 'aria-label': '‹', onClick: () => nav(-1) }, DK.icon('back', 14)),
+          h('b', null, t(isWeek ? 'online.weekN' : 'online.season', { n: S.per })),
+          h('button', { class: 'lbx-arrow', type: 'button', disabled: S.per >= cur, 'aria-label': '›', onClick: () => nav(1) }, DK.icon('next', 14)),
+          S.per === cur ? h('span', { class: 'lbx-tag live', tip: isWeek ? t('online.weekResets', { n: DK.weekly.daysLeft() }) : t('online.resetIn', { n: O.daysLeft() }) }, DK.icon('clock', 11), `${isWeek ? DK.weekly.daysLeft() : O.daysLeft()} d`)
+            : h('span', { class: 'lbx-tag' }, t('online.ended'))),
+        h('span', { class: 'grow' }),
+        mine >= 0 ? h('span', { class: 'lbx-tag me' }, t('online.myPos', { n: mine + 1 })) : null,
+        h('span', { class: 'lbx-info', tip: t('online.help.' + S.board) }, DK.icon('info', 15)));
+    };
+    const drawFoot = () => {
+      if (me.tainted || me.banned) { put(foot, h('small', { class: 'warn-text' }, DK.icon('alert', 12), ' ', t(me.tainted ? 'online.tainted' : 'online.banned'))); return; }
+      put(foot, h('span', { class: 'lbx-dot' + (me.publish ? ' on' : '') }),
+        h('small', { class: 'muted' }, me.publish ? t('online.pubAs', { name: (DK.store.state.player && DK.store.state.player.name) || '?' }) : t('online.notPub')),
+        h('button', { class: 'linkish lbx-link', type: 'button', onClick: async () => { await O.setPublish(!me.publish); S.cache = {}; drawFoot(); refresh(); } }, me.publish ? t('online.pubStop') : t('online.pubStart')));
+    };
+    const lead = (r) => { const x = Array.isArray(r.team) ? r.team.find(okSp) : null; return x ? V.dSprite(pseudoD(x), { size: 44 }) : DK.icon('user', 22); };
+    const open = (r) => { if (r) V.publicProfile(r.tid, { name: r.name, build: r.build, board: S.board, value: r.value }); };
+    const unit = () => t('online.value.' + S.board).toLowerCase();
+    const podium = (rows) => h('div', { class: 'lbx-podium' }, [1, 0, 2].map((i) => { const r = rows[i];
+      return h(r ? 'button' : 'div', { class: `lbx-pod p${i + 1}` + (r ? '' : ' none') + (r && r.mine ? ' me' : ''), type: r ? 'button' : null, onClick: r ? () => open(r) : null },
+        h('span', { class: 'lbx-medal' }, String(i + 1)), h('span', { class: 'lbx-pod-spr' }, r ? lead(r) : null),
+        h('b', { class: 'lbx-pod-name' }, r ? String(r.name || '?').slice(0, 18) : '—'),
+        h('span', { class: 'lbx-pod-val' }, r ? Number(r.value).toLocaleString(DK.i18n.lang) : ''), h('small', null, r ? unit() : '')); }));
+    const row = (r, i) => h('button', { class: 'lbx-row' + (r.mine ? ' me' : ''), type: 'button', onClick: () => open(r) },
+      h('span', { class: 'lbx-rank' }, String(i + 1)), h('span', { class: 'lbx-spr' }, lead(r)),
+      h('span', { class: 'lbx-who' }, h('b', null, String(r.name || '?').slice(0, 20)), r.sub ? h('small', null, r.sub) : null),
+      h('span', { class: 'lbx-team' }, (Array.isArray(r.team) ? r.team : []).filter(okSp).slice(1, 6).map((x) => V.dSprite(pseudoD(x), { size: 26 }))),
+      h('b', { class: 'lbx-val' }, Number(r.value).toLocaleString(DK.i18n.lang)));
+    const show = (rows) => {
+      drawBar(rows);
+      if (!rows) { put(body, podium([]), h('div', { class: 'lbx-list' }, Array.from({ length: 5 }, () => h('div', { class: 'lbx-row skel' })))); return; }
+      put(body, podium(rows), rows.length > 3 ? h('div', { class: 'lbx-list' }, rows.slice(3).map((r, i) => row(r, i + 3)))
+        : h('div', { class: 'lbx-empty' }, DK.icon(rows.length ? 'trophy' : BOARD_IC[S.board], 26), h('p', { class: 'muted' }, rows.length ? t('online.fewYet') : t(S.per === O.periodOf(S.board) ? 'online.emptyShort' : 'online.emptyPast'))));
+    };
+    const fetchRows = (board, per) => (board === 'averno'
+      ? O.board(50, per).then((rows) => rows.map((r) => ({ tid: r.trainer_id, name: r.name, value: r.floors, sub: `${r.maps} ${t('online.bosses').toLowerCase()} · ${t('common.lvl')} ${r.level}`, team: r.team, build: { team: r.team, relics: r.relics || [] }, mine: r.player_id === me.id })))
+      : O.scoreBoard(board, 50, per).then((rows) => rows.map((r) => ({ tid: r.trainer_id, name: r.name, value: r.value, sub: r.title || '', team: r.build && r.build.team, build: r.build, mine: r.trainer_id === myTid }))));
+    let seq = 0;
+    async function refresh() {
+      drawTabs();
+      const key = S.board + ':' + S.per, my = ++seq;
+      show(S.cache[key] || null);
+      try { const rows = await fetchRows(S.board, S.per); S.cache[key] = rows; if (my === seq) show(rows); }
+      catch (e) { if (my === seq && !S.cache[key]) put(body, h('div', { class: 'lbx-empty' }, DK.icon('alert', 26), h('p', { class: 'warn-text' }, t('online.error')))); }
+    }
+    drawFoot(); refresh();
+    return m;
   };
 
   /** Estado del perfil público: activarlo / desactivarlo (y aviso si la partida no puede publicar). */
@@ -399,7 +433,7 @@
     // v5.42: con el buzón abierto se comprueba cada 4 s; lo nuevo aparece sin tener que cerrar y abrir
     const tick = setInterval(() => { if (!document.hidden) O.pollInbox(); }, 4000);
     const offChange = DK.on('online:change', () => { if (S.busy) return;
-      if (S.tab === 'inbox') LOAD.inbox().then(() => draw()).catch(() => {});
+      if (S.tab === 'inbox') LOAD.inbox().then(() => { if (S.listEl && root.contains(S.listEl)) { const n = inboxList(); S.listEl.replaceWith(n); S.listEl = n; refreshHead(); } else draw(); }).catch(() => {});
       else if (S.tab === 'friends' && S.listEl) LOAD.friends().then(() => { const n = friendsList(); S.listEl.replaceWith(n); S.listEl = n; refreshHead(); }).catch(() => {}); else refreshHead(); });
     const stopChat = () => { if (S.timer) { clearInterval(S.timer); S.timer = null; } };
     V.mailbox.open = { m, go: (tb, oo = {}) => { S.tab = tb; if (oo.fsel) S.fsel = oo.fsel; if ((tb === 'inbox' && !S.items) || (tb === 'friends' && !S.friends) || (tb === 'team' && !S.thread)) reload(tb); else draw(); } };
@@ -427,7 +461,21 @@
     const loadThread = async () => { S.thread = await O.supportThread(); };
     const LOAD = { inbox: loadInbox, friends: loadFriends, team: loadThread };
     S.LOAD = LOAD;
-    async function reload(kind = S.tab) { S.busy = true; draw(); try { await LOAD[kind](); S.err = null; } catch (e) { S.err = true; } S.busy = false; draw(); }
+    // v5.43.1: al recargar no se borra lo que hay: sólo si no había nada se enseña «Cargando…»; luego se cambia lo justo
+    const has = (k) => (k === 'inbox' ? S.items : k === 'friends' ? S.friends : S.thread);
+    async function reload(kind = S.tab) {
+      const had = has(kind);
+      S.busy = true; if (!had) draw();
+      try { await LOAD[kind](); S.err = null; } catch (e) { S.err = true; }
+      S.busy = false;
+      if (kind !== S.tab) return;
+      if (had && S.listEl && root.contains(S.listEl) && (kind === 'inbox' || kind === 'friends')) {
+        const n = kind === 'inbox' ? inboxList() : friendsList(); S.listEl.replaceWith(n); S.listEl = n;
+        if (kind === 'inbox') { const cur = S.items.find((x) => x.key === S.sel); if (!cur) { S.sel = null; root.classList.remove('show-detail'); } stopChat(); put(S.detailEl, cur ? detail(cur) : empty('mail', t('online.pickMsg'))); }
+        else { const f = S.friends.find((x) => x.trainer_id === S.fsel); if (!f) { S.fsel = null; root.classList.remove('show-detail'); } stopChat(); put(S.detailEl, f ? (f.status === 'friend' ? friendChat(f) : friendDetail(f)) : empty('users', S.friends.length ? t('online.pickFriend') : t('online.noFriends'))); }
+        refreshHead();
+      } else draw();
+    }
     const run = async (p) => { try { await p; } catch (e) { /* */ } await reload(); };
 
     function draw() {
@@ -454,21 +502,44 @@
     const back = () => h('button', { class: 'mb-back', type: 'button', onClick: () => { if (S.tab === 'inbox') S.sel = null; else S.fsel = null; draw(); } }, DK.icon('back', 14), t('common.back'));
 
     /* ----- Buzón ----- */
-    function inboxView() {
-      if (!S.items) return S.err ? empty('alert', t('online.error')) : loadingEl();
+    function inboxList() {
       const ready = O.ready();
       const list = h('div', { class: 'mb-list' + (S.busy ? ' busy' : '') },
         S.items.length ? S.items.map((x) => { const [ic, tone] = KIND[x.kind] || ['mail', 'msg'];
           return h('button', { class: `mb-item t-${tone}` + (x.key === S.sel ? ' on' : '') + (x.unread && !S.read.has(x.key) ? ' unread' : ''), type: 'button',
-            onClick: () => { if (x.kind === 'chat') { V.mailbox.open.go('friends', { fsel: x.tid }); return; } S.sel = x.key; S.read.add(x.key); draw(); } },
+            'data-k': x.key, onClick: () => { if (x.kind === 'chat') { V.mailbox.open.go('friends', { fsel: x.tid }); return; } pickInbox(x.key); } },
             h('span', { class: 'mb-ic' }, DK.icon(x.pinned ? 'pin' : ic, 15)),
             h('span', { class: 'mb-it' }, h('span', { class: 'mb-it-top' }, h('b', null, x.kind === 'news' ? x.title : x.from), h('small', null, agoTxt(x.at))),
               h('small', { class: 'mb-snip' }, x.kind === 'news' ? (x.text || '').slice(0, 90) : x.text ? x.text.slice(0, 90) : x.title),
               x.gift || x.img ? h('span', { class: 'mb-flags' }, x.gift ? DK.icon('gift', 11) : null, x.img ? DK.icon('image', 11) : null) : null)); })
           : empty('mail', t('online.inboxEmpty')),
         ready ? null : h('div', { class: 'mb-note' }, h('small', { class: 'muted' }, t('online.needPublicInbox')), V.publishCard(() => { S.items = null; reload(); })));
+      return list;
+    }
+    function inboxView() {
+      if (!S.items) return S.err ? empty('alert', t('online.error')) : loadingEl();
+      const list = S.listEl = inboxList();
       const cur = S.items.find((x) => x.key === S.sel);
-      return h('div', { class: 'mb-split' }, list, h('div', { class: 'mb-detail' }, cur ? detail(cur) : empty('mail', t('online.pickMsg'))));
+      S.detailEl = h('div', { class: 'mb-detail' }, cur ? detail(cur) : empty('mail', t('online.pickMsg')));
+      return h('div', { class: 'mb-split' }, list, S.detailEl);
+    }
+    /** v5.43.1: elegir un mensaje sólo cambia la parte derecha (la lista no se vuelve a dibujar: no parpadea). */
+    function pickInbox(key) {
+      S.sel = key; S.read.add(key);
+      if (!S.detailEl || !root.contains(S.detailEl)) { draw(); return; }
+      stopChat(); root.classList.add('show-detail');
+      root.querySelectorAll('.mb-list .mb-item[data-k]').forEach((b) => { const on = b.dataset.k === key; b.classList.toggle('on', on); if (on) b.classList.remove('unread'); });
+      const cur = S.items.find((x) => x.key === key);
+      put(S.detailEl, cur ? detail(cur) : empty('mail', t('online.pickMsg')));
+      refreshHead();
+    }
+    function pickFriend(tid) {
+      S.fsel = tid;
+      if (!S.detailEl || !root.contains(S.detailEl) || S.tab !== 'friends') { draw(); return; }
+      stopChat(); root.classList.add('show-detail');
+      root.querySelectorAll('.mb-list .mb-item[data-tid]').forEach((b) => { const on = b.dataset.tid === tid; b.classList.toggle('on', on); if (on) b.classList.remove('unread'); });
+      const f = S.friends.find((x) => x.trainer_id === tid);
+      put(S.detailEl, f ? (f.status === 'friend' ? friendChat(f) : friendDetail(f)) : empty('users', t('online.pickFriend')));
     }
     function detail(x) {
       const [ic, tone] = KIND[x.kind] || ['mail', 'msg'];
@@ -509,7 +580,7 @@
       inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') add(); });
       const grp = (st, key) => { const l = S.friends.filter((f) => f.status === st); return l.length ? [h('small', { class: 'mb-grp' }, t('online.grp.' + key, { n: l.length })), l.map((f) => { const av = f.avatar || {}, fv = f.fav && okSp(f.fav) ? f.fav : null;
         const unread = st === 'incoming' || (st === 'friend' && O.dmUnread(f.trainer_id) && f.trainer_id !== S.fsel);
-        return h('button', { class: 'mb-item mb-friend' + (f.trainer_id === S.fsel ? ' on' : '') + (unread ? ' unread' : ''), type: 'button', onClick: () => { S.fsel = f.trainer_id; draw(); } },
+        return h('button', { class: 'mb-item mb-friend' + (f.trainer_id === S.fsel ? ' on' : '') + (unread ? ' unread' : ''), type: 'button', 'data-tid': f.trainer_id, onClick: () => pickFriend(f.trainer_id) },
           h('span', { class: 'mb-av' }, V.avatar({ name: f.name, avatar: av.av || null }, { size: 34, avatar: av.av || (fv ? { kind: 'daskai', species: fv.s } : null) })),
           h('span', { class: 'mb-it' }, h('b', null, f.name), h('small', { class: 'mb-snip' }, st === 'friend' && O.dmUnread(f.trainer_id) ? t('online.newMsgs') : '#' + f.trainer_id + (f.title ? ' · ' + f.title : '')))); })] : null; };
       return h('div', { class: 'mb-list' + (S.busy ? ' busy' : '') },
@@ -521,7 +592,8 @@
       if (!S.friends) return S.err ? empty('alert', t('online.error')) : loadingEl();
       S.listEl = friendsList();
       const f = S.friends.find((x) => x.trainer_id === S.fsel);
-      return h('div', { class: 'mb-split' }, S.listEl, h('div', { class: 'mb-detail' }, f ? (f.status === 'friend' ? friendChat(f) : friendDetail(f)) : empty('users', S.friends.length ? t('online.pickFriend') : t('online.noFriends'))));
+      S.detailEl = h('div', { class: 'mb-detail' }, f ? (f.status === 'friend' ? friendChat(f) : friendDetail(f)) : empty('users', S.friends.length ? t('online.pickFriend') : t('online.noFriends')));
+      return h('div', { class: 'mb-split' }, S.listEl, S.detailEl);
     }
     function friendDetail(f) {
       const av = f.avatar || {}, fv = f.fav && okSp(f.fav) ? f.fav : null, r = f.records || {};

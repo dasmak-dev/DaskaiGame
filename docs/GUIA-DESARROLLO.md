@@ -357,6 +357,25 @@ Se carga la última y sólo sobrescribe: paleta (piedra oscura, bronce, oro `--g
 - **Expedición:** al entrar en el mapa, el equipo, la mochila o un combate durante una expedición, `#zone-backdrop` (creado en `screens/expedition.js` con `screen:enter`) pinta detrás de todo la escena de la zona actual, oscurecida; `body.in-exp`.
 - **Combate:** la arena usa la escena de la zona (`components/scenes.js`, ahora con árboles muertos, ruinas, tumbas, cristales o tentáculos según la zona) y los **jefes tienen su propio fondo**: `DK.scenes.bossScene(zona, secreto)` → `boss_<escena>` (menhires bajo luna roja, bosque muerto, naufragio con tormenta, bosque de cristales, forja de lava, santuario con estatua, fauces del abismo, ruinas entre rayos) y `boss_secret` (cripta) para los jefes ocultos.
 
+### Cambios de la v5.43.1 — clasificaciones nuevas, «cápsulas» discretas y sin parpadeos
+- **Panel, Soporte**: ya no se atenúa la pantalla mientras carga (sólo la barrita de arriba). Cambiar de conversación enseña al momento lo ya visto (`SUP.cache`) y sólo redibuja si hay algo nuevo; si eliges otra antes de que llegue, la respuesta vieja se ignora.
+- **Buzón (juego)**: elegir un mensaje o un amigo sólo cambia la parte derecha (`pickInbox` / `pickFriend`); al recargar tras una acción o una novedad se cambian la lista y el detalle, sin redibujar la ventana (`reload` ya no pinta «Cargando…» si había datos).
+- **Clasificaciones** (`V.leaderboard`): misma ventana siempre del mismo tamaño (cuerpo de 420 px; 88 vh en el móvil). Pestañas con icono, temporada/semana con flechas ‹ ›, días que quedan, tu puesto y la explicación en el icono ⓘ. Podio para los tres primeros (dibujo del primer daskai, nombre y valor) y lista compacta; vacía, el podio queda con huecos. Cambiar de tabla o periodo no cierra la ventana y lo ya visto sale al momento (caché por tabla y periodo). Pie: estado de publicación con un punto y un enlace.
+- **«Cápsulas»** (`.chip` / `.chips`): ahora son celdas discretas, rectangulares, del mismo ancho (`.chips` es una cuadrícula `repeat(auto-fill, minmax(150px, 1fr))`), sin bordes llamativos; los colores sólo en el texto (pos/neg/aviso). Se usa `:not(#_)` para ganar a los estilos de cada aspecto sin `!important`.
+
+### Cambios de la v5.43.0 — perfil con tu ID y panel con amigos y conversaciones
+- **Perfil (juego)**: junto al título sale tu ID de entrenador (`.ph-tid`, pulsa para copiarlo). Las acciones (Personalizar, Compartir, Clasificaciones, Buzón) van en una cuadrícula de 2 × 2 con botones iguales (`.ph-actions`), también en el móvil.
+- **Panel → ficha → Amigos**: filas compactas con dibujo del favorito, nombre, ID, título, última vez, tiempo jugado, estado y desde cuándo; agrupadas en Amigos / Solicitudes recibidas / enviadas.
+- **Panel → ficha → Mensajes**: a la izquierda «Con el equipo» (el chat de soporte, se puede contestar) y «Con otros jugadores (24 h)» (`admin_dms`, sólo lectura); a la derecha la conversación elegida.
+- SQL: sección 9 de `docs/ONLINE-SUPABASE.md`.
+
+### Cambios de la v5.42.1 — el panel de admin sin recargas ni parpadeos
+- El marco del panel (menú, cabecera y cuerpo) se crea una sola vez (`frame()`); cada sección sólo cambia el contenido (`shell()` / `section()`). El menú ya no se vuelve a crear al navegar.
+- Mientras llegan los datos se deja lo que había en pantalla y sale una barrita arriba (`busy()` / `working()`); sólo si es otra sección y tarda más de 400 ms aparece «Cargando…».
+- Ficha del jugador: se guarda lo descargado (`PC`); cambiar de pestaña sólo cambia esa parte (`bodyFor`), sin volver a pedir nada. Las acciones (banear, renombrar…) recargan los datos sin vaciar la pantalla.
+- Soporte: elegir otra conversación sólo cambia la parte derecha (`SUP.select`); la lista se queda. Enviar un mensaje lo añade al chat sin redibujarlo.
+- Listas con filtros (Jugadores, Clasificaciones): se atenúan mientras cargan en vez de vaciarse.
+
 ### Cambios de la v5.42.0 — chat entre amigos y avisos casi al momento
 - **Chat**: en el buzón, pestaña Amigos, al elegir a un amigo se abre vuestra conversación (como la del Equipo Daskai): burbujas, Intro para enviar, iconos para regalar, invitar a intercambiar, ver perfil y quitar. Las conversaciones también salen en la pestaña Buzón (al pulsarlas se abre el chat). `V.composeMessage(tid)` ahora abre ese chat. Si el buzón ya está abierto, `V.mailbox(tab, {fsel})` cambia de pestaña en vez de abrir otro (`V.mailbox.open`).
 - **En vivo**: `liveChat()` pide sólo lo nuevo (`dm_fetch` con `p_after`) cada 3 s (5 s el del equipo) y añade burbujas sin redibujar, así no se pierde lo que estás escribiendo. Con el buzón abierto se comprueba cada 4 s (`online:change` refresca la lista o la cabecera); con el juego a la vista, cada 15 s y al volver a la pestaña.
