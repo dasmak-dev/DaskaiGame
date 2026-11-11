@@ -103,3 +103,13 @@ body.bgfx-on #bgfx { opacity: var(--bgfx-op); }
 .camp-scene .s-lectern:is(:hover, :focus-visible) .camp-art::after { opacity: 1; animation: codexRing 4s linear infinite; }
 @keyframes codexRing { from { transform: translateX(-50%) scaleY(.32) rotate(0deg) scale(1); } to { transform: translateX(-50%) scaleY(.32) rotate(360deg) scale(1); } }
 :root[data-motion="reduced"] .camp-scene .s-lectern .camp-art::after { animation: none !important; }
+
+/* ---------- v5.38: móvil sin parpadeos al abrir ventanas y al cambiar de pantalla ----------
+ * En pantallas táctiles: con una ventana abierta (o el botín del combate) lo de detrás se queda quieto, las
+ * pantallas entran sin animación y las ventanas aparecen sólo con un fundido (sin escalar). */
+@media (hover: none) {
+  body.modal-open #app *, body.modal-open .screen *, .battle-screen:has(.battle-banner.show) .arena > :not(.battle-banner) * { animation-play-state: paused !important; }
+  .screen.screen-enter > *, .screen.screen-enter .panel-head > .icon svg { animation: none !important; }
+  .modal { animation: fadeIn .14s ease-out !important; }
+  .camp-anim .ca-strip { will-change: auto; }
+}

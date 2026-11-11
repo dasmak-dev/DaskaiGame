@@ -178,6 +178,7 @@
     const close = (val) => {
       if (closed) return; closed = true;
       openModals.delete(close);
+      if (!document.querySelector('.modal-backdrop:not(.closing)') || openModals.size === 0) document.body.classList.remove('modal-open');
       backdrop.classList.add('closing');
       DK.keys.pop();
       setTimeout(() => backdrop.remove(), 160);
@@ -198,6 +199,7 @@
     if (dismissable) backdrop.addEventListener('mousedown', (e) => { if (e.target === backdrop) close(null); });
     document.body.append(backdrop);
     openModals.add(close);
+    document.body.classList.add('modal-open'); // v5.38: con una ventana abierta, lo de detrás deja de animarse (móvil)
     setTimeout(() => { const f = box.querySelector('input, .modal-actions .btn-primary'); if (f) f.focus(); }, 30);
     return { close, promise, el: box, body };
   }

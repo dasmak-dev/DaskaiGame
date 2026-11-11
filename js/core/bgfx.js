@@ -46,6 +46,11 @@ void main(){
 }`;
 
   let canvas = null, gl = null, prog = null, U = {}, raf = 0, last = 0, t0 = 0, on = false, colors = null;
+  /* v5.38: en pantallas táctiles el fondo es una IMAGEN fija (una foto del remolino pintada una vez), no un lienzo WebGL
+   * vivo detrás de todo: en el móvil, el lienzo se quedaba en negro un instante al cambiar de pantalla o al abrir
+   * ventanas (parpadeo). El lienzo se usa sólo para pintar la foto y no está en la página. */
+  const LITE = !!(window.matchMedia && window.matchMedia('(hover: none), (pointer: coarse)').matches);
+  let shot = null, shotKey = '';
 
   const hex = (s, def) => {
     s = (s || '').trim(); const m = /^#?([0-9a-f]{6})$/i.exec(s);
@@ -60,9 +65,9 @@ void main(){
   function init() {
     if (canvas) return !!gl;
     canvas = document.createElement('canvas');
-    canvas.id = 'bgfx'; canvas.setAttribute('aria-hidden', 'true');
-    document.body.prepend(canvas);
-    try { gl = canvas.getContext('webgl', { antialias: false, alpha: false, depth: false, powerPreference: 'low-power' }); } catch (_) { gl = null; }
+    if (LITE) { shot = document.createElement('div'); shot.id = 'bgfx'; shot.setAttribute('aria-hidden', 'true'); shot.style.backgroundSize = '100% 100%'; document.body.prepend(shot); }
+    else { canvas.id = 'bgfx'; canvas.setAttribute('aria-hidden', 'true'); document.body.prepend(canvas); }
+    try { gl = canvas.getContext('webgl', { antialias: false, alpha: false, depth: false, powerPreference: 'low-power', preserveDrawingBuffer: LITE }); } catch (_) { gl = null; }
     if (!gl) return false;
     const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return s; };
     prog = gl.createProgram();
@@ -75,7 +80,7 @@ void main(){
     const loc = gl.getAttribLocation(prog, 'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
     ['uRes', 'uT', 'uA', 'uB', 'uC'].forEach((n) => { U[n] = gl.getUniformLocation(prog, n); });
     t0 = performance.now() - Math.random() * 60000;
-    window.addEventListener('resize', () => { if (on) { resize(); if (still()) draw(performance.now()); } });
+    window.addEventListener('resize', () => { if (on) { if (LITE) { clearTimeout(init.rz); init.rz = setTimeout(update, 300); return; } resize(); if (still()) draw(performance.now()); } });
     document.addEventListener('visibilitychange', () => (document.hidden ? stop() : update()));
     return true;
   }
@@ -133,6 +138,12 @@ void main(){
     if (!on) { stop(); return; }
     if (!init()) { document.body.classList.remove('bgfx-on'); return; }
     readColors(); resize();
+    if (LITE) { // una foto fija: sólo se vuelve a pintar si cambian los colores o el tamaño
+      stop();
+      const key = JSON.stringify(colors) + canvas.width + 'x' + canvas.height;
+      if (key !== shotKey) { shotKey = key; draw(t0 + 40000); try { shot.style.backgroundImage = `url(${canvas.toDataURL('image/png')})`; } catch (e) { /* */ } }
+      return;
+    }
     if (still()) { stop(); draw(performance.now()); return; }
     if (!raf && !document.hidden) raf = requestAnimationFrame(loop);
   }

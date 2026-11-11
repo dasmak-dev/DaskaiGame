@@ -428,6 +428,7 @@ button[data-tip], .btn[data-tip], .item-card[data-tip], .chip-toggle[data-tip] {
 .badge.ot { font-size: .66rem; opacity: .8; letter-spacing: .04em; }
 .badge.ot.other { opacity: 1; color: #fde68a; background: rgba(245,158,11,.14); }
 @media (max-width: 600px) {
+  .modal.tx, .modal.trade-modal { width: 100% !important; max-width: none !important; } /* (v5.38: como hoja de abajo, de borde a borde: antes quedaba más hueco a la derecha) */
   .tx-steps li small { display: none; } .tx-steps li { justify-content: center; }
   .tx-hero { flex-direction: column; text-align: center; } .tx-hero .chip { margin: 0 auto; }
   .tx-head { grid-template-columns: 1fr; } .tx-head .tx-link { justify-content: center; transform: rotate(90deg); height: 14px; }

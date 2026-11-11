@@ -357,6 +357,18 @@ Se carga la última y sólo sobrescribe: paleta (piedra oscura, bronce, oro `--g
 - **Expedición:** al entrar en el mapa, el equipo, la mochila o un combate durante una expedición, `#zone-backdrop` (creado en `screens/expedition.js` con `screen:enter`) pinta detrás de todo la escena de la zona actual, oscurecida; `body.in-exp`.
 - **Combate:** la arena usa la escena de la zona (`components/scenes.js`, ahora con árboles muertos, ruinas, tumbas, cristales o tentáculos según la zona) y los **jefes tienen su propio fondo**: `DK.scenes.bossScene(zona, secreto)` → `boss_<escena>` (menhires bajo luna roja, bosque muerto, naufragio con tormenta, bosque de cristales, forja de lava, santuario con estatua, fauces del abismo, ruinas entre rayos) y `boss_secret` (cripta) para los jefes ocultos.
 
+### Cambios de la v5.38 — móvil: sin parpadeos al abrir ventanas o cambiar de pantalla
+
+- **Fondo de remolino** (`core/bgfx.js`): en pantallas táctiles (`LITE`) ya no hay un lienzo WebGL vivo detrás de
+  todo (se quedaba en negro un instante al cambiar de pantalla o abrir ventanas). Se pinta UNA foto en un lienzo
+  fuera de la página y se muestra como imagen de fondo de un `div#bgfx`; sólo se repinta si cambian colores o tamaño.
+- **Ventanas** (`ui.modal`): mientras hay una abierta, `body.modal-open`; en táctil lo de detrás deja de animarse,
+  la ventana aparece con un fundido (sin escalar) y las pantallas entran sin animación. Con el botín del combate
+  (`.battle-banner.show`) se pausan las animaciones de la arena.
+- **Ventana de intercambio en el móvil**: ocupaba `100vw - 20px` empezando en el borde izquierdo (más hueco a la
+  derecha); ahora es una hoja de borde a borde como las demás.
+- Supabase: comprobado el relé de intercambios (`trade_send` / `trade_poll` responden y rechazan salas no válidas).
+
 ### Cambios de la v5.37 — intercambio por relé y rediseñado, entrenador original y móvil sin parpadeos
 
 - **Intercambio de móvil a móvil**: la conexión directa (WebRTC/PeerJS) falla a menudo entre redes móviles y,

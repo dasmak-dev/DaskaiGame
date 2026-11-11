@@ -6,7 +6,7 @@
  * sube el número de CACHE para que los jugadores reciban la versión
  * nueva. (Sólo funciona servido por http/https, no con file://).
  * ============================================================= */
-const CACHE = 'daskai-v5.37.0';
+const CACHE = 'daskai-v5.38.0';
 const FILES = [
     './',
     './css/cursor.css',
