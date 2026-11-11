@@ -91,6 +91,7 @@
   }
   function itemIcon(id, size = 18) { try { return G.ok && D().items[id] ? DK.views.itemIcon(D().items[id], size) : el('span'); } catch (e) { return el('span'); } }
 
+  let liveTimer = null;
   /* ---------------- Supabase ---------------- */
   const cfg = () => {
     const o = (window.DK && DK.config && DK.config.online) || {};
@@ -349,11 +350,21 @@
   /* ---------------- Chat y regalos ---------------- */
   function chatBox(tid, name, list, after) {
     const ta = el('textarea', { class: 'ai', rows: 3, maxlength: 500, placeholder: `Escribe a ${name}… (le llega a su buzón)` });
-    const log = el('div', { class: 'achat' }, list.length ? list.map((m) => el('div', { class: 'abub ' + (m.from_admin ? 'me' : 'them') }, m.body ? el('p', null, m.body) : null, imgEl(m.img), el('small', null, (m.from_admin ? 'Tú' : name) + ' · ' + fmtD(m.created_at)))) : el('p', { class: 'muted' }, 'Sin mensajes todavía.'));
+    const bub = (m) => el('div', { class: 'abub ' + (m.from_admin ? 'me' : 'them') }, m.body ? el('p', null, m.body) : null, imgEl(m.img), el('small', null, (m.from_admin ? 'Tú' : name) + ' · ' + fmtD(m.created_at)));
+    const log = el('div', { class: 'achat' }, list.length ? list.map(bub) : el('p', { class: 'muted' }, 'Sin mensajes todavía.'));
+    // v5.42: la conversación se actualiza sola cada 5 s mientras está abierta
+    let lastId = Math.max(0, ...list.map((m) => +m.id || 0));
+    clearInterval(liveTimer);
+    liveTimer = setInterval(async () => {
+      if (document.hidden || !document.body.contains(log)) { if (!document.body.contains(log)) clearInterval(liveTimer); return; }
+      try { const l = await API.thread(tid), nw = l.filter((m) => +m.id > lastId); if (!nw.length) return;
+        if (!lastId) log.replaceChildren(); nw.forEach((m) => log.append(bub(m))); lastId = Math.max(lastId, ...nw.map((m) => +m.id)); log.scrollTop = log.scrollHeight; } catch (e) { /* */ }
+    }, 5000);
     const ip = imagePicker();
     ta.addEventListener('paste', (e) => { const it = [...(e.clipboardData || {}).items || []].find((x) => x.type.startsWith('image/')); if (it) { e.preventDefault(); ip.pick(it.getAsFile()); } });
     setTimeout(() => { log.scrollTop = log.scrollHeight; }, 0);
-    const send = async () => { const txt = ta.value.trim(), img = ip.value(); if (!txt && !img) return; try { await API.send(tid, txt, null, img); toast('Enviado'); after(); } catch (e) { toast(e.message, true); } };
+    const send = async () => { const txt = ta.value.trim(), img = ip.value(); if (!txt && !img) return; try { await API.send(tid, txt, null, img); ta.value = ''; ip.clear();
+      const l = await API.thread(tid), nw = l.filter((m) => +m.id > lastId); if (!lastId) log.replaceChildren(); nw.forEach((m) => log.append(bub(m))); lastId = Math.max(lastId, ...nw.map((m) => +m.id)); log.scrollTop = log.scrollHeight; } catch (e) { toast(e.message, true); } };
     ta.addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) send(); });
     return el('div', { class: 'achatw' }, log, ta, ip, el('div', { class: 'arow-c' }, el('small', { class: 'muted' }, 'Ctrl+Enter para enviar · puedes pegar una imagen'), el('span', { class: 'grow' }), btn('Regalo…', () => composeTo(tid, name).then((ok) => ok && after()), 'ghost', 'gift'), btn('Enviar', send, 'primary', 'next')));
   }

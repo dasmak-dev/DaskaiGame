@@ -640,3 +640,24 @@ button.fr-who { cursor: pointer; }
   .mb-id small { display: none; }
   .mb-tab { padding: 7px 9px; }
 }
+
+/* ---------- v5.42: chat entre amigos ---------- */
+.t-chat .mb-ic { background: rgba(236,72,153,.18); color: #f9a8d4; }
+.mb-dm { flex: 1; display: flex; flex-direction: column; gap: 8px; padding: 12px; min-width: 0; min-height: 0; }
+.mb-dm-h { display: flex; align-items: center; gap: 6px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,.07); flex-wrap: wrap; }
+.mb-dm-who { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.mb-dm-who > span:last-child { display: flex; flex-direction: column; min-width: 0; }
+.mb-dm-who b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mb-dm .mb-chat { flex: 1; max-height: none; min-height: 0; overflow-y: auto; padding: 6px 2px; }
+.mb-dm .mb-chat > .mb-empty { height: 100%; }
+.mb-dm-note { text-align: center; font-size: .7rem; }
+.mb-bubble.them { background: rgba(255,255,255,.07); }
+.mb-team .mb-bubble.them { background: rgba(16,185,129,.14); }
+.mb-bubble { animation: mbIn .18s ease-out; }
+@keyframes mbIn { from { opacity: 0; transform: translateY(4px); } }
+.mb-compose .pm-text { max-height: 120px; }
+@media (max-width: 700px) { .mb-dm { padding: 8px; } .mb-dm-h .mb-back { margin-right: 4px; } }
+.mb-dm-h { flex-wrap: nowrap; }
+.mb-dm-who { flex: 1 1 auto; overflow: hidden; }
+.mb-dm-h .grow { flex: 0 0 0; }
+@media (max-width: 700px) { .mb-dm-h .mb-back { font-size: 0; gap: 0; padding: 6px; } .mb-dm-h .mb-back svg { width: 16px; height: 16px; } }

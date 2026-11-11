@@ -366,14 +366,8 @@
       reasons.map((r) => btn({ label: t('online.reason.' + r), variant: 'ghost', onClick: async () => { const x = await DK.online.report(tid, r); toast(t(x === 'ok' ? 'online.reported' : 'online.error'), { icon: 'check' }); DK.online.mute(tid, r === 'msg'); close(true); } }))) });
   }
   /** Escribir un mensaje (140 caracteres; se borra a las 24 h). */
-  V.composeMessage = (tid, name) => {
-    const ta = h('textarea', { class: 'pm-text', maxlength: 140, rows: 3, placeholder: t('online.msgPlaceholder') });
-    const left = h('small', { class: 'muted' }, '140');
-    ta.addEventListener('input', () => { left.textContent = String(140 - ta.value.length); });
-    return DK.ui.modal({ title: t('online.msgTo', { name }), icon: 'edit', size: 'sm', content: () => h('div', { class: 'stack-s' }, ta, h('div', { class: 'row between' }, h('small', { class: 'muted' }, t('online.msgNote')), left)),
-      actions: [{ label: t('common.cancel'), variant: 'ghost', value: false },
-        { label: t('online.send'), icon: 'next', variant: 'primary', onClick: async (close) => { const txt = ta.value.trim(); if (!txt) return; const r = await DK.online.send(tid, 'msg', { text: txt }); toast(t('online.res.' + (r === 'ok' ? 'msgSent' : r)), { icon: r === 'ok' ? 'check' : 'alert', kind: r === 'ok' ? 'good' : 'bad' }); if (r === 'ok') close(true); } }] }).promise;
-  };
+  /** v5.42: escribir a un amigo = abrir vuestra conversación en el buzón. */
+  V.composeMessage = (tid) => V.mailbox('friends', { fsel: tid });
 
   /* ---------------- Buzón (v5.41: dos paneles, sin cerrar y abrir la ventana) ---------------- */
   /** Lo que trae un regalo del equipo / de una noticia, en fichas. */
@@ -386,30 +380,44 @@
     return out.length ? h('div', { class: 'mb-gifts' }, out) : null;
   };
   const giftToast = (out) => { if (Array.isArray(out) && out.length) toast(t('online.giftGot'), { icon: 'gift', kind: 'good' }); };
-  const agoTxt = (at) => { const m = Math.max(1, Math.round((Date.now() - new Date(at).getTime()) / 60000)); return m < 60 ? t('trade.agoMin', { n: m }) : m < 2880 ? t('trade.agoH', { n: Math.round(m / 60) }) : new Date(at).toLocaleDateString(DK.i18n.lang, { day: 'numeric', month: 'short' }); };
+  const agoTxt = (at) => { const m0 = (Date.now() - new Date(at).getTime()) / 60000; if (m0 < 1) return t('online.now'); const m = Math.max(1, Math.round(m0)); return m < 60 ? t('trade.agoMin', { n: m }) : m < 2880 ? t('trade.agoH', { n: Math.round(m / 60) }) : new Date(at).toLocaleDateString(DK.i18n.lang, { day: 'numeric', month: 'short' }); };
   const fullDate = (at) => new Date(at).toLocaleString(DK.i18n.lang, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   /** Imagen de un mensaje (sólo https). Al pulsarla se abre en grande. */
   V.mailImg = (u, cls = 'mb-img') => (DK.online.imgOk(u) ? h('a', { class: cls, href: u, target: '_blank', rel: 'noopener noreferrer' }, h('img', { src: u, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer', decoding: 'async' })) : null);
   const narrow = () => window.matchMedia('(max-width: 700px)').matches; // (una sola columna en el buzón)
-  const KIND = { news: ['megaphone', 'news'], msg: ['edit', 'msg'], gift: ['gift', 'gift'], agift: ['gift', 'team'], admin: ['shield', 'team'], friend: ['users', 'friend'], friendok: ['check', 'friend'], trade: ['swap', 'trade'] };
+  const KIND = { news: ['megaphone', 'news'], msg: ['edit', 'msg'], gift: ['gift', 'gift'], agift: ['gift', 'team'], admin: ['shield', 'team'], friend: ['users', 'friend'], friendok: ['check', 'friend'], trade: ['swap', 'trade'], chat: ['edit', 'chat'] };
 
   /** Buzón y amigos. tab: inbox · friends · team */
-  V.mailbox = (tab = 'inbox') => {
+  V.mailbox = (tab = 'inbox', o = {}) => {
     const O = DK.online, me = O.enabled() ? O.me() : {};
+    // Si ya está abierto, sólo se cambia de pestaña / conversación
+    if (V.mailbox.open) { V.mailbox.open.go(tab, o); return V.mailbox.open.m; }
     // Todo vive en S: cambiar de pestaña, elegir un mensaje o recoger un regalo sólo vuelve a dibujar el contenido
-    const S = { tab, sel: null, items: null, friends: null, thread: null, claimed: [], read: new Set(), seen: { inbox: me.inboxSeen || 0, news: me.newsSeen || 0 }, busy: false, fsel: null };
+    const S = { tab, sel: null, items: null, friends: null, thread: null, claimed: [], read: new Set(), seen: { inbox: me.inboxSeen || 0, news: me.newsSeen || 0 }, busy: false, fsel: o.fsel || null, timer: null };
     const root = h('div', { class: 'mb' });
     const m = DK.ui.modal({ title: t('online.mailTitle'), icon: 'mail', cls: 'mb-modal', closeX: true, size: 'wide', content: () => root });
+    // v5.42: con el buzón abierto se comprueba cada 4 s; lo nuevo aparece sin tener que cerrar y abrir
+    const tick = setInterval(() => { if (!document.hidden) O.pollInbox(); }, 4000);
+    const offChange = DK.on('online:change', () => { if (S.busy) return;
+      if (S.tab === 'inbox') LOAD.inbox().then(() => draw()).catch(() => {});
+      else if (S.tab === 'friends' && S.listEl) LOAD.friends().then(() => { const n = friendsList(); S.listEl.replaceWith(n); S.listEl = n; refreshHead(); }).catch(() => {}); else refreshHead(); });
+    const stopChat = () => { if (S.timer) { clearInterval(S.timer); S.timer = null; } };
+    V.mailbox.open = { m, go: (tb, oo = {}) => { S.tab = tb; if (oo.fsel) S.fsel = oo.fsel; if ((tb === 'inbox' && !S.items) || (tb === 'friends' && !S.friends) || (tb === 'team' && !S.thread)) reload(tb); else draw(); } };
+    m.promise.then(() => { clearInterval(tick); stopChat(); offChange(); V.mailbox.open = null; });
 
     const loadInbox = async () => {
       const ready = O.ready();
-      const [news, list, claimed] = await Promise.all([O.news(), ready ? O.inbox() : Promise.resolve([]), O.newsClaimed()]);
+      const [news, list, claimed, chats] = await Promise.all([O.news(), ready ? O.inbox() : Promise.resolve([]), O.newsClaimed(), ready ? O.dmThreads() : Promise.resolve([])]);
       O.markSeen(list, news);
       S.claimed = claimed;
+      const myTid = DK.trainer.id();
       const it = news.map((n) => ({ key: 'n' + n.id, kind: 'news', at: n.created_at, pinned: n.pinned, unread: +n.id > S.seen.news, title: n.title, from: t('online.teamName'), text: n.body, img: n.img, gift: n.gift, raw: n }))
         .concat(list.map((x) => { const b = x.body || {}, team = x.from_tid === '@TEAM';
           return { key: 'm' + x.id, kind: x.kind, at: x.created_at, unread: +x.id > S.seen.inbox, team, from: team ? t('online.teamName') : x.from_name, tid: team ? null : x.from_tid,
-            title: t('online.k.' + x.kind, { name: team ? t('online.teamName') : x.from_name }), text: b.text || '', img: b.img, gift: x.kind === 'agift' ? b.gift : x.kind === 'gift' ? { items: { pocion: 1 } } : null, code: b.code, raw: x }; }));
+            title: t('online.k.' + x.kind, { name: team ? t('online.teamName') : x.from_name }), text: b.text || '', img: b.img, gift: x.kind === 'agift' ? b.gift : x.kind === 'gift' ? { items: { pocion: 1 } } : null, code: b.code, raw: x }; }))
+        // v5.42: cada conversación con un amigo es una entrada (al pulsarla se abre el chat)
+        .concat(chats.map((c) => ({ key: 'c' + c.with_tid, kind: 'chat', at: c.last_at, unread: O.dmUnread(c.with_tid), from: c.name || '#' + c.with_tid, tid: c.with_tid,
+          title: c.name || '#' + c.with_tid, text: (c.last_from === myTid ? t('online.you') + ': ' : '') + (c.last_body || ''), raw: c })));
       it.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || new Date(b.at) - new Date(a.at));
       S.items = it;
       if (S.sel && !it.find((x) => x.key === S.sel)) S.sel = null;
@@ -418,19 +426,25 @@
     const loadFriends = async () => { S.friends = await O.friends(); if (S.fsel && !S.friends.find((f) => f.trainer_id === S.fsel)) S.fsel = null; if (!S.fsel && S.friends.length && !narrow()) S.fsel = S.friends[0].trainer_id; };
     const loadThread = async () => { S.thread = await O.supportThread(); };
     const LOAD = { inbox: loadInbox, friends: loadFriends, team: loadThread };
+    S.LOAD = LOAD;
     async function reload(kind = S.tab) { S.busy = true; draw(); try { await LOAD[kind](); S.err = null; } catch (e) { S.err = true; } S.busy = false; draw(); }
     const run = async (p) => { try { await p; } catch (e) { /* */ } await reload(); };
 
     function draw() {
+      stopChat(); S.listEl = null;
       root.classList.toggle('show-detail', !!((S.tab === 'inbox' && S.sel) || (S.tab === 'friends' && S.fsel)));
-      put(root, header(), h('div', { class: 'mb-main' }, O.enabled() ? (S.tab === 'inbox' ? inboxView() : S.tab === 'friends' ? friendsView() : teamView()) : h('p', { class: 'muted' }, t('online.off'))));
+      S.headEl = header();
+      put(root, S.headEl, h('div', { class: 'mb-main' }, O.enabled() ? (S.tab === 'inbox' ? inboxView() : S.tab === 'friends' ? friendsView() : teamView()) : h('p', { class: 'muted' }, t('online.off'))));
     }
+    const refreshHead = () => { if (!S.headEl) return; const n = header(); S.headEl.replaceWith(n); S.headEl = n; };
     function header() {
       const n = S.items ? S.items.filter((x) => x.unread && !S.read.has(x.key)).length : O.unread;
       return h('div', { class: 'mb-top' },
         h('div', { class: 'mb-tabs', role: 'tablist' }, [['inbox', 'mail'], ['friends', 'users'], ['team', 'shield']].map(([k, ic]) => h('button', { class: 'mb-tab' + (k === S.tab ? ' on' : ''), type: 'button', role: 'tab', 'aria-selected': String(k === S.tab),
           onClick: () => { if (k === S.tab) return; S.tab = k; if ((k === 'inbox' && !S.items) || (k === 'friends' && !S.friends) || (k === 'team' && !S.thread)) reload(k); else draw(); } },
-          DK.icon(ic, 15), h('span', null, t('online.tab.' + k)), k === 'inbox' && n ? h('i', { class: 'mb-count' }, String(n)) : k === 'friends' && S.friends && S.friends.some((f) => f.status === 'incoming') ? h('i', { class: 'mb-count' }, String(S.friends.filter((f) => f.status === 'incoming').length)) : null))),
+          DK.icon(ic, 15), h('span', null, t('online.tab.' + k)), k === 'inbox' && n ? h('i', { class: 'mb-count' }, String(n))
+            : k === 'friends' && (O.unreadDm || (S.friends && S.friends.some((f) => f.status === 'incoming'))) ? h('i', { class: 'mb-count' }, String((O.unreadDm | 0) + (S.friends ? S.friends.filter((f) => f.status === 'incoming').length : 0)))
+              : k === 'team' && O.unreadSupport ? h('i', { class: 'mb-count' }, '1') : null))),
         h('button', { class: 'mb-id', type: 'button', tip: t('online.copyId'), onClick: () => { navigator.clipboard && navigator.clipboard.writeText(DK.trainer.id()).then(() => toast(t('trade.copied'), { icon: 'copy' }), () => {}); } },
           h('small', null, t('trade.yourId')), h('b', null, '#' + DK.trainer.id()), DK.icon('copy', 13)));
     }
@@ -445,7 +459,8 @@
       const ready = O.ready();
       const list = h('div', { class: 'mb-list' + (S.busy ? ' busy' : '') },
         S.items.length ? S.items.map((x) => { const [ic, tone] = KIND[x.kind] || ['mail', 'msg'];
-          return h('button', { class: `mb-item t-${tone}` + (x.key === S.sel ? ' on' : '') + (x.unread && !S.read.has(x.key) ? ' unread' : ''), type: 'button', onClick: () => { S.sel = x.key; S.read.add(x.key); draw(); } },
+          return h('button', { class: `mb-item t-${tone}` + (x.key === S.sel ? ' on' : '') + (x.unread && !S.read.has(x.key) ? ' unread' : ''), type: 'button',
+            onClick: () => { if (x.kind === 'chat') { V.mailbox.open.go('friends', { fsel: x.tid }); return; } S.sel = x.key; S.read.add(x.key); draw(); } },
             h('span', { class: 'mb-ic' }, DK.icon(x.pinned ? 'pin' : ic, 15)),
             h('span', { class: 'mb-it' }, h('span', { class: 'mb-it-top' }, h('b', null, x.kind === 'news' ? x.title : x.from), h('small', null, agoTxt(x.at))),
               h('small', { class: 'mb-snip' }, x.kind === 'news' ? (x.text || '').slice(0, 90) : x.text ? x.text.slice(0, 90) : x.title),
@@ -471,7 +486,7 @@
           btn({ icon: 'x', label: t('online.reject'), variant: 'ghost', onClick: () => { S.sel = null; take(() => friendAct('reject', x.tid)); } }));
       } else if (x.kind === 'trade') {
         actions.push(btn({ icon: 'swap', label: t('trade.join'), variant: 'primary', onClick: async () => { await O.take(x.raw.id); m.close(); const d = V.tradeDialog(); if (d) DK.trade.join(x.code); } }), del);
-      } else if (x.kind === 'msg') actions.push(btn({ icon: 'edit', label: t('online.reply'), variant: 'primary', onClick: () => V.composeMessage(x.tid, x.from) }), del);
+      } else if (x.kind === 'msg') actions.push(btn({ icon: 'edit', label: t('online.reply'), variant: 'primary', onClick: () => V.mailbox.open.go('friends', { fsel: x.tid }) }), del);
       else if (x.kind === 'admin') actions.push(btn({ icon: 'edit', label: t('online.reply'), variant: 'primary', onClick: () => { S.tab = 'team'; reload('team'); } }), del);
       else actions.push(del);
       return h('article', { class: 'mb-read t-' + tone },
@@ -486,51 +501,96 @@
         actions.length ? h('div', { class: 'mb-acts' }, actions) : null);
     }
 
-    /* ----- Amigos ----- */
-    function friendsView() {
-      if (!O.ready()) return needProfile();
-      if (!S.friends) return S.err ? empty('alert', t('online.error')) : loadingEl();
+    /* ----- Amigos: lista a la izquierda y vuestra conversación a la derecha ----- */
+    function friendsList() {
       const inp = h('input', { class: 'trade-code-in mb-add-in', type: 'text', maxlength: 7, placeholder: 'ABC123', autocapitalize: 'characters', 'aria-label': t('online.friendId') });
       inp.addEventListener('input', () => { inp.value = DK.trade.cleanCode(inp.value); });
       const add = () => { if (inp.value.length === 6) run(friendAct('add', inp.value)); };
       inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') add(); });
       const grp = (st, key) => { const l = S.friends.filter((f) => f.status === st); return l.length ? [h('small', { class: 'mb-grp' }, t('online.grp.' + key, { n: l.length })), l.map((f) => { const av = f.avatar || {}, fv = f.fav && okSp(f.fav) ? f.fav : null;
-        return h('button', { class: 'mb-item mb-friend' + (f.trainer_id === S.fsel ? ' on' : '') + (st === 'incoming' ? ' unread' : ''), type: 'button', onClick: () => { S.fsel = f.trainer_id; draw(); } },
+        const unread = st === 'incoming' || (st === 'friend' && O.dmUnread(f.trainer_id) && f.trainer_id !== S.fsel);
+        return h('button', { class: 'mb-item mb-friend' + (f.trainer_id === S.fsel ? ' on' : '') + (unread ? ' unread' : ''), type: 'button', onClick: () => { S.fsel = f.trainer_id; draw(); } },
           h('span', { class: 'mb-av' }, V.avatar({ name: f.name, avatar: av.av || null }, { size: 34, avatar: av.av || (fv ? { kind: 'daskai', species: fv.s } : null) })),
-          h('span', { class: 'mb-it' }, h('b', null, f.name), h('small', { class: 'mb-snip' }, '#' + f.trainer_id + (f.title ? ' · ' + f.title : '')))); })] : null; };
-      const list = h('div', { class: 'mb-list' + (S.busy ? ' busy' : '') },
+          h('span', { class: 'mb-it' }, h('b', null, f.name), h('small', { class: 'mb-snip' }, st === 'friend' && O.dmUnread(f.trainer_id) ? t('online.newMsgs') : '#' + f.trainer_id + (f.title ? ' · ' + f.title : '')))); })] : null; };
+      return h('div', { class: 'mb-list' + (S.busy ? ' busy' : '') },
         h('div', { class: 'mb-add' }, inp, btn({ icon: 'plus', label: t('online.addFriend'), size: 'sm', variant: 'tone', onClick: add })),
         S.friends.length ? [grp('incoming', 'incoming'), grp('friend', 'friends'), grp('sent', 'sent')] : h('p', { class: 'muted small mb-pad' }, t('online.friendsHelp')));
+    }
+    function friendsView() {
+      if (!O.ready()) return needProfile();
+      if (!S.friends) return S.err ? empty('alert', t('online.error')) : loadingEl();
+      S.listEl = friendsList();
       const f = S.friends.find((x) => x.trainer_id === S.fsel);
-      return h('div', { class: 'mb-split' }, list, h('div', { class: 'mb-detail' }, f ? friendDetail(f) : empty('users', S.friends.length ? t('online.pickFriend') : t('online.noFriends'))));
+      return h('div', { class: 'mb-split' }, S.listEl, h('div', { class: 'mb-detail' }, f ? (f.status === 'friend' ? friendChat(f) : friendDetail(f)) : empty('users', S.friends.length ? t('online.pickFriend') : t('online.noFriends'))));
     }
     function friendDetail(f) {
       const av = f.avatar || {}, fv = f.fav && okSp(f.fav) ? f.fav : null, r = f.records || {};
-      const acts = f.status === 'friend' ? [btn({ icon: 'gift', label: t('online.sendGift'), size: 'sm', variant: 'tone', onClick: () => giftTo(f.trainer_id) }),
-        btn({ icon: 'edit', label: t('online.sendMsg'), size: 'sm', variant: 'tone', onClick: () => V.composeMessage(f.trainer_id, f.name) }),
-        btn({ icon: 'swap', label: t('online.inviteTrade'), size: 'sm', variant: 'tone', onClick: () => { m.close(); inviteTrade(f.trainer_id); } }),
-        btn({ icon: 'x', label: t('online.removeFriend'), size: 'sm', variant: 'ghost', onClick: () => { S.fsel = null; run(friendAct('remove', f.trainer_id)); } })]
-        : f.status === 'incoming' ? [btn({ icon: 'check', label: t('online.accept'), variant: 'primary', onClick: () => { S.items = null; run(friendAct('add', f.trainer_id)); } }), btn({ icon: 'x', label: t('online.reject'), variant: 'ghost', onClick: () => { S.fsel = null; run(friendAct('reject', f.trainer_id)); } })]
-          : [h('span', { class: 'chip' }, DK.icon('clock', 12), t('online.pendingShort')), btn({ icon: 'x', label: t('online.cancelReq'), size: 'sm', variant: 'ghost', onClick: () => { S.fsel = null; run(friendAct('remove', f.trainer_id)); } })];
+      const acts = f.status === 'incoming' ? [btn({ icon: 'check', label: t('online.accept'), variant: 'primary', onClick: () => { S.items = null; run(friendAct('add', f.trainer_id)); } }), btn({ icon: 'x', label: t('online.reject'), variant: 'ghost', onClick: () => { S.fsel = null; run(friendAct('reject', f.trainer_id)); } })]
+        : [h('span', { class: 'chip' }, DK.icon('clock', 12), t('online.pendingShort')), btn({ icon: 'x', label: t('online.cancelReq'), size: 'sm', variant: 'ghost', onClick: () => { S.fsel = null; run(friendAct('remove', f.trainer_id)); } })];
       return h('article', { class: 'mb-read' }, back(),
         h('header', { class: 'mb-read-h' }, h('span', { class: 'mb-av big' }, V.avatar({ name: f.name, avatar: av.av || null }, { size: 56, avatar: av.av || (fv ? { kind: 'daskai', species: fv.s } : null) })),
           h('div', null, h('h4', null, f.name), h('small', { class: 'muted' }, '#' + f.trainer_id + (f.title ? ' · ' + f.title : '')),
-            h('div', null, h('span', { class: 'chip sm' + (f.status === 'friend' ? ' pos' : '') }, t('online.st.' + f.status))))),
+            h('div', null, h('span', { class: 'chip sm' }, t('online.st.' + f.status))))),
         recordGrid(r), h('div', { class: 'mb-acts' }, acts, btn({ icon: 'user', label: t('online.seeProfileShort'), size: 'sm', variant: 'ghost', onClick: () => V.publicProfile(f.trainer_id) })));
     }
+    /** Un chat que se va completando solo: pide sólo lo nuevo (p_after) cada pocos segundos y añade burbujas sin redibujar. */
+    function liveChat({ log, fetch, bubble, onLast, every }) {
+      let last = 0, first = true;
+      const pull = async () => {
+        let list; try { list = await fetch(last); } catch (e) { return; }
+        if (first) { log.replaceChildren(); first = false; if (!list.length) log.append(log._empty); }
+        if (!list.length) return;
+        if (log._empty && log._empty.parentNode) log._empty.remove();
+        const atEnd = log.scrollHeight - log.scrollTop - log.clientHeight < 60;
+        list.forEach((x) => { if (+x.id > last) { log.append(bubble(x)); last = +x.id; } });
+        if (onLast) onLast(last);
+        if (atEnd || list.length) log.scrollTop = log.scrollHeight;
+      };
+      pull(); stopChat(); S.timer = setInterval(() => { if (!document.hidden) pull(); }, every);
+      return pull;
+    }
+    function friendChat(f) {
+      const av = f.avatar || {}, fv = f.fav && okSp(f.fav) ? f.fav : null, myTid = DK.trainer.id();
+      const log = h('div', { class: 'mb-chat' }, loadingEl());
+      log._empty = empty('edit', t('online.chatEmpty'));
+      const ta = h('textarea', { class: 'pm-text', maxlength: 300, rows: 1, placeholder: t('online.chatPlaceholder', { name: f.name }) });
+      const pull = liveChat({ log, every: 3000, fetch: (after) => O.dmFetch(f.trainer_id, after), onLast: (id) => { O.markDm(f.trainer_id, id); },
+        bubble: (x) => h('div', { class: 'mb-bubble' + (x.from_tid === myTid ? ' me' : ' them') }, h('p', null, x.body), h('small', { class: 'muted' }, agoTxt(x.created_at))) });
+      const send = async () => {
+        const txt = ta.value.trim(); if (!txt) return;
+        ta.value = ''; ta.focus();
+        const r = await O.dmSend(f.trainer_id, txt);
+        if (r !== 'ok') { ta.value = txt; toast(t('online.res.' + r), { icon: 'alert', kind: 'bad' }); return; }
+        pull();
+      };
+      ta.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
+      const ib = (icon, label, fn) => btn({ icon, label, iconOnly: true, size: 'sm', variant: 'ghost', onClick: fn });
+      setTimeout(() => ta.focus(), 50);
+      return h('div', { class: 'mb-dm' },
+        h('header', { class: 'mb-dm-h' }, back(),
+          h('button', { class: 'mb-dm-who linkish', type: 'button', onClick: () => V.publicProfile(f.trainer_id) }, h('span', { class: 'mb-av' }, V.avatar({ name: f.name, avatar: av.av || null }, { size: 36, avatar: av.av || (fv ? { kind: 'daskai', species: fv.s } : null) })),
+            h('span', null, h('b', null, f.name), h('small', { class: 'muted' }, '#' + f.trainer_id + (f.title ? ' · ' + f.title : '')))),
+          h('span', { class: 'grow' }),
+          ib('gift', t('online.sendGift'), () => giftTo(f.trainer_id)), ib('swap', t('online.inviteTrade'), () => { m.close(); inviteTrade(f.trainer_id); }),
+          ib('user', t('online.seeProfileShort'), () => V.publicProfile(f.trainer_id)), ib('x', t('online.removeFriend'), () => { S.fsel = null; run(friendAct('remove', f.trainer_id)); })),
+        log, h('small', { class: 'muted mb-dm-note' }, t('online.chatNote')),
+        h('div', { class: 'mb-compose' }, ta, btn({ icon: 'next', label: t('online.send'), iconOnly: true, variant: 'primary', onClick: send })));
+    }
 
-    /* ----- Equipo Daskai (soporte) ----- */
+    /* ----- Equipo Daskai (soporte): también en vivo ----- */
     function teamView() {
       if (!O.ready()) return needProfile();
       if (!S.thread) return S.err ? empty('alert', t('online.error')) : loadingEl();
-      const ta = h('textarea', { class: 'pm-text', maxlength: 500, rows: 2, placeholder: t('online.teamPlaceholder') });
-      const send = async () => { const txt = ta.value.trim(); if (!txt) return; const r = await O.support(txt); if (r !== 'ok') toast(t('online.res.' + r), { icon: 'alert', kind: 'bad' }); else reload('team'); };
+      const ta = h('textarea', { class: 'pm-text', maxlength: 500, rows: 1, placeholder: t('online.teamPlaceholder') });
+      const log = h('div', { class: 'mb-chat' }, loadingEl());
+      log._empty = empty('shield', t('online.teamEmpty'));
+      const pull = liveChat({ log, every: 5000, fetch: async (after) => (await O.supportThread()).filter((x) => +x.id > after),
+        onLast: () => { O.markSupport(O.last ? O.last.support | 0 : 0); },
+        bubble: (x) => h('div', { class: 'mb-bubble' + (x.from_admin ? ' them' : ' me') },
+          x.from_admin ? h('small', { class: 'mb-who' }, DK.icon('shield', 11), t('online.teamName')) : null,
+          x.body ? h('p', null, x.body) : null, V.mailImg(x.img, 'mb-img sm'), h('small', { class: 'muted' }, agoTxt(x.created_at))) });
+      const send = async () => { const txt = ta.value.trim(); if (!txt) return; ta.value = ''; const r = await O.support(txt); if (r !== 'ok') { ta.value = txt; toast(t('online.res.' + r), { icon: 'alert', kind: 'bad' }); } else pull(); };
       ta.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
-      const log = h('div', { class: 'mb-chat' }, S.thread.length ? S.thread.map((x) => h('div', { class: 'mb-bubble' + (x.from_admin ? ' them' : ' me') },
-        x.from_admin ? h('small', { class: 'mb-who' }, DK.icon('shield', 11), t('online.teamName')) : null,
-        x.body ? h('p', null, x.body) : null, V.mailImg(x.img, 'mb-img sm'), h('small', { class: 'muted' }, agoTxt(x.created_at))))
-        : empty('shield', t('online.teamEmpty')));
-      setTimeout(() => { log.scrollTop = log.scrollHeight; }, 0);
       return h('div', { class: 'mb-team' }, h('p', { class: 'muted small' }, t('online.teamHelp')), log,
         h('div', { class: 'mb-compose' }, ta, btn({ icon: 'next', label: t('online.send'), iconOnly: true, variant: 'primary', onClick: send })));
     }
@@ -542,7 +602,7 @@
 
   // Aviso cuando llega algo nuevo al buzón (se consulta cada pocos minutos)
   let lastUnread = 0;
-  DK.on('online:inbox', (e) => { const n = (e && e.n) | 0; if (n > lastUnread) toast(t('online.newInbox', { n }), { icon: 'mail', onClick: () => V.mailbox('inbox') }); lastUnread = n; });
+  DK.on('online:inbox', (e) => { const n = (e && e.n) | 0; if (n > lastUnread && !V.mailbox.open) toast(t('online.newInbox', { n }), { icon: 'mail', onClick: () => V.mailbox('inbox') }); lastUnread = n; });
 
   /** Tarjeta para decidir si publicar (sale una vez, tras el primer récord). */
   V.publishAsk = (onDone) => {

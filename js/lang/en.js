@@ -531,6 +531,7 @@ DK.i18n.register('en', {
     askTitle: 'Publish your record?', askText: 'It will be uploaded to the global leaderboard as «{name}» with {n} floors and your team (species and levels). You can change this any time.',
     askYes: 'Publish', askNo: 'No, thanks',
     season: 'Season {n}', resetIn: 'The leaderboard resets in {n} days, with the new Path season.', pastSeason: 'Season over.', thisSeason: 'This season', lastSeason: 'Previous', emptyPast: 'Nobody published records that season.', sent: 'Record published on the global leaderboard!',
+    now: 'just now', newMsgs: 'New messages', chatEmpty: 'You haven’t talked yet. Say hi!', chatPlaceholder: 'Write to {name}…', chatNote: 'Messages are deleted after 24 h.',
     // v5.41: two-pane inbox and compact profile
     k: { msg: 'Message from {name}', gift: 'Gift from {name}', agift: 'Gift from the team', admin: 'Message from the team', friend: 'Friend request', friendok: 'Request accepted', trade: 'Trade invite' },
     st: { friend: 'Friends', sent: 'Request sent', incoming: 'Wants to be your friend' },

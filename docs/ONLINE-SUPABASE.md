@@ -1409,3 +1409,106 @@ grant execute on function public.admin_news_save(bigint, text, text, jsonb, bool
 revoke all on function public.admin_send(text, text, jsonb, text) from public, anon;
 grant execute on function public.admin_send(text, text, jsonb, text) to authenticated;
 ```
+
+
+## 8. Chat entre amigos y avisos rápidos (v5.42)
+
+Ejecuta este bloque **una vez** (después de la sección 7). Se puede repetir.
+
+- **dm**: mensajes entre dos amigos (los dos se han aceptado), de hasta 300 caracteres; se borran a las 24 h. `dm_send` (máx. 20 por minuto y 300 por hora), `dm_fetch` (sólo lo nuevo con `p_after`), `dm_threads` (tus conversaciones).
+- **dk_poll**: una comprobación muy pequeña (sólo números: último id del buzón, de las noticias, de la respuesta del equipo y de cada conversación). El juego la hace cada 15 s y cada 4 s con el buzón abierto; sólo descarga algo si ha cambiado.
+
+```sql
+-- =====================================================================
+-- Daskai v5.42: chat entre amigos (conversaciones) y comprobación rápida de novedades.
+-- Requiere la v5.39 y la v5.40. Se puede repetir sin problema.
+-- =====================================================================
+
+-- Mensajes entre dos amigos. (a_tid, b_tid) = la pareja ordenada. Se borran a las 24 h.
+create table if not exists public.dm (
+  id         bigint generated always as identity primary key,
+  a_tid      text not null,
+  b_tid      text not null,
+  from_tid   text not null,
+  body       text not null check (char_length(body) between 1 and 300),
+  created_at timestamptz not null default now()
+);
+create index if not exists dm_pair_idx on public.dm (a_tid, b_tid, id);
+create index if not exists dm_b_idx on public.dm (b_tid, id);
+create index if not exists dm_created_idx on public.dm (created_at);
+alter table public.dm enable row level security;
+revoke all on public.dm from anon, authenticated;
+
+-- ¿Son amigos (los dos se han aceptado)?
+create or replace function public._dk_mutual(p_me uuid, p_me_tid text, p_other text) returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.friends where player_id = p_me and friend_tid = p_other)
+     and exists (select 1 from public.friends f join public.players p on p.player_id = f.player_id where p.trainer_id = p_other and f.friend_tid = p_me_tid)
+     and not exists (select 1 from public.bans b where b.trainer_id = p_other)
+$$;
+
+create or replace function public.dm_send(p_id uuid, p_secret text, p_to text, p_text text) returns text
+language plpgsql security definer set search_path = public, extensions as $$
+declare me public.players; txt text := left(regexp_replace(coalesce(p_text, ''), '[[:cntrl:]]', '', 'g'), 300); t text := upper(coalesce(p_to, ''));
+begin
+  begin me := public._dk_me(p_id, p_secret); exception when others then return sqlerrm; end;
+  if t !~ '^[A-Z0-9]{6}$' or t = me.trainer_id or char_length(trim(txt)) = 0 then return 'bad'; end if;
+  if not public._dk_mutual(p_id, me.trainer_id, t) then return 'notfriends'; end if;
+  if (select count(*) from public.dm where from_tid = me.trainer_id and created_at > now() - interval '1 minute') >= 20
+     or (select count(*) from public.dm where from_tid = me.trainer_id and created_at > now() - interval '1 hour') >= 300 then return 'slow'; end if;
+  delete from public.dm where created_at < now() - interval '24 hours';
+  insert into public.dm (a_tid, b_tid, from_tid, body) values (least(me.trainer_id, t), greatest(me.trainer_id, t), me.trainer_id, txt);
+  return 'ok';
+end $$;
+
+-- Mensajes con un amigo (los de las últimas 24 h; p_after = sólo los más nuevos que ese id)
+create or replace function public.dm_fetch(p_id uuid, p_secret text, p_with text, p_after bigint default 0)
+returns table (id bigint, from_tid text, body text, created_at timestamptz)
+language plpgsql security definer set search_path = public, extensions as $$
+declare me public.players; t text := upper(coalesce(p_with, ''));
+begin
+  me := public._dk_me(p_id, p_secret);
+  return query select d.id, d.from_tid, d.body, d.created_at from public.dm d
+    where d.a_tid = least(me.trainer_id, t) and d.b_tid = greatest(me.trainer_id, t) and d.id > coalesce(p_after, 0)
+      and d.created_at > now() - interval '24 hours'
+    order by d.id desc limit 200;
+end $$;
+
+-- Tus conversaciones abiertas (último mensaje de cada una)
+create or replace function public.dm_threads(p_id uuid, p_secret text)
+returns table (with_tid text, name text, last_id bigint, last_from text, last_body text, last_at timestamptz)
+language plpgsql security definer set search_path = public, extensions as $$
+declare me public.players;
+begin
+  me := public._dk_me(p_id, p_secret);
+  return query select distinct on (w) w, p.name, d.id, d.from_tid, d.body, d.created_at
+    from (select x.*, case when x.a_tid = me.trainer_id then x.b_tid else x.a_tid end as w from public.dm x
+          where (x.a_tid = me.trainer_id or x.b_tid = me.trainer_id) and x.created_at > now() - interval '24 hours') d
+    left join public.players p on p.trainer_id = d.w
+    order by w, d.id desc;
+end $$;
+
+-- Comprobación rápida (cada pocos segundos): sólo números, para saber si hay que descargar algo
+create or replace function public.dk_poll(p_id uuid, p_secret text) returns jsonb
+language plpgsql security definer set search_path = public, extensions as $$
+declare me public.players;
+begin
+  begin me := public._dk_me(p_id, p_secret); exception when others then return jsonb_build_object('error', sqlerrm); end;
+  return jsonb_build_object(
+    'inbox', (select coalesce(max(id), 0) from public.inbox where to_tid = me.trainer_id),
+    'news', (select coalesce(max(id), 0) from public.news where published and (expires_at is null or expires_at > now())),
+    'support', (select coalesce(max(id), 0) from public.support where trainer_id = me.trainer_id and from_admin),
+    'dm', coalesce((select jsonb_object_agg(f, m) from (select from_tid as f, max(id) as m from public.dm
+            where (a_tid = me.trainer_id or b_tid = me.trainer_id) and from_tid <> me.trainer_id and created_at > now() - interval '24 hours' group by from_tid) z), '{}'::jsonb));
+end $$;
+
+revoke all on function public._dk_mutual(uuid, text, text) from public, anon, authenticated;
+revoke all on function public.dm_send(uuid, text, text, text) from public;
+revoke all on function public.dm_fetch(uuid, text, text, bigint) from public;
+revoke all on function public.dm_threads(uuid, text) from public;
+revoke all on function public.dk_poll(uuid, text) from public;
+grant execute on function public.dm_send(uuid, text, text, text) to anon;
+grant execute on function public.dm_fetch(uuid, text, text, bigint) to anon;
+grant execute on function public.dm_threads(uuid, text) to anon;
+grant execute on function public.dk_poll(uuid, text) to anon;
+```

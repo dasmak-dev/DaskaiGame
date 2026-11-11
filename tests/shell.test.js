@@ -277,6 +277,42 @@ module.exports = {
       check(r.c1 === 'claimed' && r.c2 === 'gone' && r.n1 === 1 && r.n2 === 'gone' && r.got.pot === 4 && r.got.eter === 2 && r.got.coins === 500, 'cada regalo se cobra una vez y sólo con objetos que existen: ' + JSON.stringify(r));
     }),
   }, {
+    name: 'v5.42: chat con un amigo en el buzón (se completa solo, sin redibujar) y aviso de mensajes nuevos con dk_poll',
+    run: (browser, view) => play(browser, view, async (p) => {
+      const r = await p.evaluate(async () => {
+        const real = DK.config.online; DK.config.online = { supabaseUrl: 'https://x.supabase.co', supabaseKey: 'anon' };
+        const my = DK.trainer.id(), dm = [{ id: 1, from_tid: 'PEPE01', body: 'Hola', created_at: new Date().toISOString() }];
+        let nid = 1;
+        DK.online.fetch = async (url, o) => {
+          const b = o && o.body ? JSON.parse(o.body) : null, fn = (url.match(/rpc\/(\w+)/) || [])[1]; let out = [];
+          if (fn === 'profile_save') out = 'ok';
+          else if (fn === 'dk_poll') out = { inbox: 0, news: 0, support: 0, dm: { PEPE01: Math.max(...dm.filter((x) => x.from_tid === 'PEPE01').map((x) => x.id)) } };
+          else if (fn === 'friend_list') out = [{ trainer_id: 'PEPE01', name: 'Pepe', status: 'friend', mutual: true }];
+          else if (fn === 'dm_fetch') out = dm.filter((x) => x.id > (b.p_after || 0)).slice().reverse();
+          else if (fn === 'dm_send') { dm.push({ id: ++nid, from_tid: my, body: b.p_text, created_at: new Date().toISOString() }); out = 'ok'; }
+          else if (fn === 'dm_threads') out = [{ with_tid: 'PEPE01', name: 'Pepe', last_id: nid, last_from: 'PEPE01', last_body: 'Hola', last_at: new Date().toISOString() }];
+          return { ok: true, json: async () => out };
+        };
+        const me = DK.online.me(); me.publish = true; me.registered = true; delete me.tainted; me.dmSeen = {}; me.inboxSeen = 0; me.newsSeen = 0;
+        const unread0 = await DK.online.pollInbox();
+        DK.views.composeMessage('PEPE01'); await new Promise((res) => setTimeout(res, 500));
+        const box = document.querySelector('.mb-modal .mb-dm');
+        const first = document.querySelectorAll('.mb-dm .mb-bubble.them').length;
+        const ta = document.querySelector('.mb-dm textarea'); ta.value = '¿Qué tal?'; ta.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+        await new Promise((res) => setTimeout(res, 400));
+        const mine = document.querySelectorAll('.mb-dm .mb-bubble.me').length;
+        dm.push({ id: ++nid, from_tid: 'PEPE01', body: '¡Bien!', created_at: new Date().toISOString() });
+        await new Promise((res) => setTimeout(res, 3600));
+        const after = document.querySelectorAll('.mb-dm .mb-bubble.them').length, same = document.querySelector('.mb-modal .mb-dm') === box;
+        const unread1 = DK.online.unread;
+        DK.ui.closeAll(); DK.config.online = real; DK.online.fetch = null;
+        return { unread0, first, mine, after, same, unread1 };
+      });
+      check(r.unread0 === 1, 'una conversación con mensajes nuevos cuenta como pendiente: ' + JSON.stringify(r));
+      check(r.first === 1 && r.mine === 1 && r.after === 2 && r.same, 'el chat muestra lo que llega y lo que envías sin redibujar la ventana: ' + JSON.stringify(r));
+      check(r.unread1 === 0, 'al leer la conversación ya no hay pendientes: ' + JSON.stringify(r));
+    }),
+  }, {
     name: 'v5.37: intercambio por relé (base de datos): funciona aunque uno tarde en volver, con entrenador original e historial',
     run: async (browser, view) => {
       const { newGame } = require('./helpers');

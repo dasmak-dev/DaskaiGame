@@ -532,6 +532,7 @@ DK.i18n.register('es', {
     askTitle: '¿Publicar tu récord?', askText: 'Se subirá a la tabla global como «{name}» con {n} pisos y tu equipo (especies y niveles). Puedes cambiarlo cuando quieras.',
     askYes: 'Publicar', askNo: 'No, gracias',
     season: 'Temporada {n}', resetIn: 'La tabla se reinicia en {n} días, con la nueva temporada de la Senda.', pastSeason: 'Temporada terminada.', thisSeason: 'Esta temporada', lastSeason: 'Anterior', emptyPast: 'Nadie publicó récords esa temporada.', sent: '¡Récord publicado en la tabla global!',
+    now: 'ahora', newMsgs: 'Mensajes nuevos', chatEmpty: 'Aún no habéis hablado. ¡Saluda!', chatPlaceholder: 'Escribe a {name}…', chatNote: 'Los mensajes se borran a las 24 h.',
     // v5.41: buzón de dos paneles y ficha compacta
     k: { msg: 'Mensaje de {name}', gift: 'Regalo de {name}', agift: 'Regalo del equipo', admin: 'Mensaje del equipo', friend: 'Solicitud de amistad', friendok: 'Solicitud aceptada', trade: 'Invitación a intercambiar' },
     st: { friend: 'Amigos', sent: 'Solicitud enviada', incoming: 'Quiere ser tu amigo' },

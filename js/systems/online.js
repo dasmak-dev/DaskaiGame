@@ -265,24 +265,60 @@
     async supportThread() { const r = await this.rpc('support_fetch', this.auth()); return (Array.isArray(r) ? r : []).reverse(); },
     report(tid, reason) { return this.srpc('report_player', Object.assign(this.auth(), { p_tid: tid, p_reason: reason || '' })); },
     mute(tid, on = true) { const me = this.me(); me.muted = (me.muted || []).filter((x) => x !== tid); if (on) me.muted.push(tid); DK.store.save(); },
-    /** Cuántos mensajes nuevos hay (se consulta cada pocos minutos con el perfil activo). */
-    unread: 0,
-    async pollInbox() {
-      if (!this.enabled() || !st()) return 0;
+    /* ---------- Chat entre amigos (v5.42) ---------- */
+    dmSend(tid, text) { return this.srpc('dm_send', Object.assign(this.auth(), { p_to: tid, p_text: text })); },
+    /** Mensajes con un amigo (más antiguos primero). after = sólo los posteriores a ese id. */
+    async dmFetch(tid, after = 0) { const r = await this.rpc('dm_fetch', Object.assign(this.auth(), { p_with: tid, p_after: after | 0 })); return (Array.isArray(r) ? r : []).reverse(); },
+    async dmThreads() { try { const r = await this.rpc('dm_threads', this.auth()); return Array.isArray(r) ? r : []; } catch (e) { return []; } },
+    dmSeen(tid) { return ((this.me() || {}).dmSeen || {})[tid] || 0; },
+    /** ¿Tiene mensajes sin leer esta conversación? (según la última comprobación) */
+    dmUnread(tid) { const P = this.last || {}; return ((P.dm || {})[tid] || 0) > this.dmSeen(tid); },
+    markDm(tid, id) { const me = this.me(); me.dmSeen = me.dmSeen || {}; if ((id | 0) > (me.dmSeen[tid] || 0)) { me.dmSeen[tid] = id | 0; DK.store.save(); } this.recount(); },
+    markSupport(id) { const me = this.me(); if ((id | 0) > (me.supportSeen || 0)) { me.supportSeen = id | 0; DK.store.save(); } this.recount(); },
+
+    /* ---------- Novedades ---------- */
+    unread: 0, last: null, _inboxN: 0, _newsN: 0,
+    /** Suma lo pendiente: buzón + noticias + conversaciones con mensajes nuevos + respuesta del equipo. */
+    recount() {
+      const P = this.last || {}, me = this.me() || {};
+      const dm = Object.entries(P.dm || {}).filter(([tid, id]) => id > ((me.dmSeen || {})[tid] || 0)).length;
+      const sup = (P.support || 0) > (me.supportSeen || 0) ? 1 : 0;
+      const n = (this._inboxN | 0) + (this._newsN | 0) + dm + sup;
+      this.unreadDm = dm; this.unreadSupport = sup;
+      if (n !== this.unread) { this.unread = n; DK.emit('online:inbox', { n }); }
+      return n;
+    },
+    /**
+     * v5.42: comprobación rápida. Una sola llamada pequeña (dk_poll: sólo números) cada pocos segundos;
+     * sólo si algo ha cambiado se descarga el buzón o las noticias. Emite 'online:change' cuando hay novedades.
+     */
+    async pollInbox(force = false) {
+      if (!this.enabled() || !st() || this._polling) return this.unread;
       const me = this.me();
+      this._polling = true;
       try {
-        const news = await this.news(), nn = news.filter((x) => +x.id > (me.newsSeen || 0)).length;
-        let n = nn, list = [];
-        if (this.ready() && me.registered) { list = await this.inbox(); n += list.filter((m) => +m.id > (me.inboxSeen || 0)).length; }
-        if (n !== this.unread) { this.unread = n; DK.emit('online:inbox', { n, list, news }); }
-        return n;
-      } catch (e) { return 0; }
+        if (!(this.ready() && me.registered)) { const news = await this.news(); this._newsN = news.filter((x) => +x.id > (me.newsSeen || 0)).length; this._inboxN = 0; return this.recount(); }
+        let P = null;
+        try { P = await this.rpc('dk_poll', this.auth()); } catch (e) { P = null; }
+        if (!P || typeof P !== 'object' || Array.isArray(P) || P.error || P.inbox == null) { // (base de datos sin la v5.42: como antes)
+          const [news, list] = await Promise.all([this.news(), this.inbox()]);
+          this._newsN = news.filter((x) => +x.id > (me.newsSeen || 0)).length; this._inboxN = list.filter((m) => +m.id > (me.inboxSeen || 0)).length;
+          return this.recount();
+        }
+        const prev = this.last || {};
+        this.last = P;
+        if (force || P.inbox !== prev.inbox) this._inboxN = P.inbox > (me.inboxSeen || 0) ? (await this.inbox()).filter((m) => +m.id > (me.inboxSeen || 0)).length : 0;
+        if (force || P.news !== prev.news) this._newsN = P.news > (me.newsSeen || 0) ? (await this.news()).filter((x) => +x.id > (me.newsSeen || 0)).length : 0;
+        this.recount();
+        if (JSON.stringify(P) !== JSON.stringify(prev)) DK.emit('online:change', { P, prev });
+        return this.unread;
+      } catch (e) { return this.unread; } finally { this._polling = false; }
     },
     markSeen(list, news) {
       const me = this.me();
       me.inboxSeen = Math.max(me.inboxSeen || 0, ...(list || []).map((m) => +m.id || 0));
       me.newsSeen = Math.max(me.newsSeen || 0, ...(news || []).map((m) => +m.id || 0));
-      this.unread = 0; DK.store.save(); DK.emit('online:inbox', { n: 0, list });
+      this._inboxN = 0; this._newsN = 0; DK.store.save(); this.recount();
     },
   };
 
@@ -299,7 +335,9 @@
     s._sig = sigOf(s);
     setTimeout(() => { DK.online.saveProfile().catch(() => null); DK.online.pollInbox(); }, 2500);
   });
-  setInterval(() => { if (!document.hidden) DK.online.pollInbox(); }, 3 * 60000);
+  // v5.42: cada 15 s con el juego a la vista (y al volver a él); con el buzón abierto, más a menudo (lo pide el buzón)
+  setInterval(() => { if (!document.hidden) DK.online.pollInbox(); }, 15000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) DK.online.pollInbox(); });
   // v5.39: récords de las otras tablas al terminar una expedición
   DK.on('expedition:end', (e) => {
     const s = st(), L = s && s.lastExpedition; if (!L) return;
