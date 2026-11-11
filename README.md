@@ -1,4 +1,4 @@
-# Daskai
+# Daskai Game
 
 Roguelike difícil (muerte permanente) de combates por turnos al estilo de los Pokémon clásicos, con criaturas de cinco casas (Luz, Oscuridad, Agua, Fuego y Tierra). HTML + CSS + JavaScript puro, sin dependencias.
 
