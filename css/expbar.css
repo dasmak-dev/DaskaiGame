@@ -1,0 +1,67 @@
+/* =============================================================
+ * css/expbar.css — v5.46: barra de la expedición concisa y discreta (screens/expedition.js → xsProg, xsMods, xsRelics).
+ * Una línea fina: progreso · reglas del mapa en iconos · reliquias en iconos · contadores (sin rótulos).
+ * ============================================================= */
+.exp-hud.xs-bar { gap: 10px; padding: 4px 6px 4px 12px; min-height: 0; border-radius: 12px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent); backdrop-filter: blur(8px); box-shadow: 0 4px 14px rgba(0,0,0,.28), 0 0 0 3px var(--bg); }
+.xs-bar .hud-cap { display: none; }
+.xs-bar .hud-group { background: none; padding: 0; gap: 0; }
+.xs-bar .hud-btn { min-height: 32px; padding: 2px 8px; gap: 5px; border-radius: 8px; }
+.xs-bar .hud-btn .icon { color: var(--muted); }
+.xs-bar .hud-val b { font-size: .86rem; }
+.xs-bar .hud-btn.bad .icon { color: #f87171; }
+.xs-quest.good .icon { color: #4ade80 !important; } .xs-quest.bad .icon { color: #f87171 !important; }
+
+/* progreso */
+.xs-prog { display: inline-grid; grid-template-columns: auto auto; grid-template-rows: auto 3px; column-gap: 6px; row-gap: 3px; align-items: baseline; flex: none; }
+.xs-prog b { font-size: .92rem; font-variant-numeric: tabular-nums; }
+.xs-prog small { font-size: .7rem; color: var(--muted); }
+.xs-pbar { grid-column: 1 / -1; display: block; height: 3px; border-radius: 2px; background: color-mix(in srgb, var(--text) 12%, transparent); overflow: hidden; min-width: 54px; }
+.xs-pbar > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #b45309, #f59e0b); }
+
+/* reglas del mapa: sólo iconos */
+.xs-mods { display: inline-flex; gap: 2px; align-items: center; padding-left: 10px; border-left: 1px solid color-mix(in srgb, var(--text) 10%, transparent); }
+.xs-ic { display: inline-flex; align-items: center; gap: 3px; height: 28px; padding: 0 6px; border-radius: 7px; color: var(--muted); flex: none; }
+.xs-ic:hover { color: var(--text); background: color-mix(in srgb, var(--text) 6%, transparent); }
+.xs-ic b { font-size: .74rem; font-family: var(--font-title); }
+.xs-ic.bad { color: #f87171; } .xs-ic.good { color: #4ade80; } .xs-ic.mod { color: #93c5fd; } .xs-ic.abyss { color: #c4b5fd; }
+.xs-ic.k-captura { color: #4ade80; } .xs-ic.k-combate { color: #fca5a5; } .xs-ic.k-desafio { color: #fcd34d; } .xs-ic.k-tesoro, .xs-ic.k-bonanza { color: #fcd34d; }
+.xs-rule { margin-left: 2px; }
+
+/* reliquias en iconos */
+.xs-relics { display: inline-flex; align-items: center; gap: 3px; flex-wrap: nowrap; }
+.xs-relics.hud-btn { padding: 2px 6px; gap: 3px; min-height: 32px; }
+.xs-relic { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 7px; background: color-mix(in srgb, var(--rc, #94a3b8) 14%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rc, #94a3b8) 45%, transparent); }
+.xs-relic.r-comun { --rc: #94a3b8; } .xs-relic.r-raro { --rc: #3b82f6; } .xs-relic.r-epico { --rc: #a855f7; } .xs-relic.r-legendario { --rc: #f59e0b; }
+.xs-more { font-size: .72rem; color: var(--muted); padding-left: 2px; }
+
+/* el mapa ya no lleva cabecera: «Dibujar» va pequeño en su esquina */
+.exp-map-card { position: relative; }
+.exp-map-card:not(.ro) { padding-top: 12px; }
+.exp-draw-btn { position: absolute; z-index: 3; top: 20px; right: 20px; display: inline-flex; align-items: center; gap: 5px; height: 30px; padding: 0 10px; border-radius: 9px;
+  border: 1px solid rgba(255,255,255,.14); background: rgba(10,8,6,.55); backdrop-filter: blur(6px); color: #f5ead6; font: inherit; font-size: .78rem; cursor: var(--cur-pointer); opacity: .8; }
+.exp-draw-btn:hover, .exp-draw-btn.on { opacity: 1; }
+.exp-draw-btn.on { border-color: #f59e0b; background: rgba(120,53,15,.75); }
+
+/* barra de las vistas centradas (mercader, suceso…) con lo mismo */
+.exp-focus-bar.xs-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.xs-zone { font-family: var(--font-title); }
+
+:root[data-theme="light"] .exp-hud.xs-bar { background: rgba(255,255,255,.88); }
+:root[data-theme="light"] .exp-draw-btn { background: rgba(255,255,255,.8); color: var(--text); border-color: var(--border); }
+
+@media (max-width: 700px) {
+  .exp-hud.xs-bar { flex-wrap: wrap; row-gap: 4px; padding: 4px 6px; gap: 6px; }
+  .xs-bar > .grow { display: none; }
+  .xs-bar .xs-counts { flex: 1 1 100%; justify-content: space-between; border-top: 1px solid color-mix(in srgb, var(--text) 8%, transparent); padding-top: 2px; }
+  .xs-mods { padding-left: 6px; }
+  .xs-relics.hud-btn { overflow-x: auto; max-width: 100%; }
+  .exp-draw-btn span { display: none; }
+  .exp-draw-btn { top: 16px; right: 16px; padding: 0 8px; }
+}
+.xs-more-m { display: none; }
+@media (max-width: 700px) {
+  .xs-relics .xs-relic:nth-of-type(n+4) { display: none; }
+  .xs-relics .xs-more { display: none; }
+  .xs-relics .xs-more-m { display: inline; }
+}

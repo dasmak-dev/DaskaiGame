@@ -428,14 +428,12 @@
     if (!readonly && !draw.on) keepScroll = null;
     const terrain = { backgroundImage: `url(${DK.pix.terrain(zone.colors, e.zone)})`, '--z1': zone.colors[0], '--z2': zone.colors[1] };
     if (compact) return h('div', { class: 'exp-map-compact' }, h('div', { class: 'exp-scroll terrain', style: terrain }, map), legend());
-    return h('div', { class: 'card exp-map-card' },
-      // v4.67: cabecera sutil. Título y «Dibujar» arriba; debajo, una línea de datos del mapa todos del mismo
-      // tamaño (sin cajas) y las reliquias como iconos (pulsar «ver» las despliega con su nombre).
-      h('div', { class: 'panel-head exp-head2' }, DK.icon(zone.icon, 18), h('h3', null, zone.name),
-        readonly ? null : h('span', { class: 'grow' }),
-        readonly ? null : btn({ icon: 'edit', label: draw.on ? t('draw.stop') : t('draw.start'), size: 'sm', variant: draw.on ? 'primary' : 'ghost', tip: t('draw.tip'), onClick: () => { draw.on = !draw.on; draw.tool = 'pen'; refresh(); } })),
-      h('div', { class: 'exp-meta' }, V.kindChip(e.kind || (e.map && e.map.kind)), V.sizeChip(e.size || (e.map && e.map.size)), V.modChip(e.mod || (e.map && e.map.mod)), V.endgameChips(e), ...progressChips(e)),
-      readonly ? null : relicBar(undefined, { compact: true, refresh }),
+    // v5.46: sin cabecera: el nombre de la zona, el piso, las reglas y las reliquias ya están en la barra de arriba.
+    // Sólo queda «Dibujar», pequeño, en la esquina del mapa.
+    return h('div', { class: 'card exp-map-card' + (readonly ? ' ro' : '') },
+      readonly ? h('div', { class: 'panel-head exp-head2' }, DK.icon(zone.icon, 18), h('h3', null, zone.name)) : null,
+      readonly ? h('div', { class: 'exp-meta' }, V.kindChip(e.kind || (e.map && e.map.kind)), V.sizeChip(e.size || (e.map && e.map.size)), V.modChip(e.mod || (e.map && e.map.mod)), V.endgameChips(e), ...progressChips(e)) : null,
+      readonly ? null : h('button', { class: 'exp-draw-btn' + (draw.on ? ' on' : ''), type: 'button', tip: t('draw.tip'), 'aria-pressed': String(!!draw.on), onClick: () => { draw.on = !draw.on; draw.tool = 'pen'; refresh(); } }, DK.icon('edit', 14), h('span', null, draw.on ? t('draw.stop') : t('draw.start'))),
       editing ? drawBar(refresh) : null,
       h('div', { class: 'exp-scroll terrain', style: terrain }, map),
       legend());
@@ -450,14 +448,14 @@
   function relicBar(list = DK.relics.list(), { compact = false, refresh } = {}) {
     if (!list.length) return null;
     const open = compact && relicsOpen;
-    const chips = list.map((r) => h('span', { class: 'relic-chip r-' + r.rarity + (compact && !open ? ' ico' : ''), tip: `${r.name} — ${relicText(r)}`, 'aria-label': r.name }, DK.icon(r.icon, compact && !open ? 14 : 15), compact && !open ? null : h('span', null, r.name)));
+    const chips = list.map((r) => h('span', { class: 'relic-chip r-' + r.rarity + (compact && !open ? ' ico' : ''), tip: `${r.name} — ${relicText(r)}`, 'aria-label': r.name }, V.relicIcon(r, 16), compact && !open ? null : h('span', null, r.name)));
     if (!compact) return h('div', { class: 'relic-bar' }, chips);
     return h('div', { class: 'relic-bar compact' + (open ? ' open' : '') },
       h('span', { class: 'rb-lbl' }, DK.icon('amulet', 13), h('b', null, list.length), t('exp.relicsShort')),
       chips,
       refresh ? h('button', { type: 'button', class: 'rb-toggle', onClick: () => { relicsOpen = !relicsOpen; DK.audio.sfx('click'); refresh(); } }, DK.icon('chevronDown', 12), open ? t('exp.relicsLess') : t('exp.relicsMore')) : null);
   }
-  const relicText = (r) => t('relics.effect.' + r.effect.type, { n: Math.round((r.effect.pct || 0) * 100), add: r.effect.type === 'crit' || r.effect.type === 'capture' ? Math.round(r.effect.add * 100) : r.effect.add, house: r.effect.house ? DK.tr('houses', D.houses[r.effect.house]) : '', stat: r.effect.stat ? DK.tr('stats', D.stats[r.effect.stat]) : '' });
+  const relicText = (r) => t('relics.effect.' + r.effect.type, { n: r.effect.pct != null ? Math.round(r.effect.pct * 100) : r.effect.n || 0, add: r.effect.type === 'crit' || r.effect.type === 'capture' ? Math.round(r.effect.add * 100) : r.effect.add, house: r.effect.house ? DK.tr('houses', D.houses[r.effect.house]) : '', stat: r.effect.stat ? DK.tr('stats', D.stats[r.effect.stat]) : '' });
   DK.views.relicText = relicText;
   DK.views.relicBar = relicBar;
 
@@ -471,7 +469,7 @@
       h('div', { class: 'exp-node-head t-relic' }, h('span', { class: 'exp-node-big t-relic' }, DK.icon('amulet', 28)),
         h('div', null, h('h3', null, first ? t('relics.startTitle') : t('relics.eliteTitle')), h('p', { class: 'muted small' }, t('relics.text')))),
       h('div', { class: 'relic-grid' }, list.map((r, i) => h('div', { class: 'relic-card r-' + r.rarity },
-        h('span', { class: 'relic-icon' }, DK.icon(r.icon, 30)),
+        h('span', { class: 'relic-icon' }, V.relicIcon(r, 48)),
         h('b', null, r.name), V.rarity(r.rarity),
         h('p', { class: 'small' }, relicText(r)),
         btn({ icon: 'plus', label: t('relics.take'), variant: 'primary', hotkey: String(i + 1), onClick: () => pick(i) })))),
@@ -551,6 +549,33 @@
   const progressChips = (e) => [
     h('span', { class: 'chip', tip: t('exp.depthTip') }, DK.icon('compass', 13), t('exp.depth', { n: e.depth || 1 })),
     h('span', { class: 'chip' }, DK.icon('flag', 13), t('exp.floor', { step: Math.min(e.step, e.total), total: e.total }))];
+
+  /* ---------- v5.46: barra de la expedición, concisa y discreta ----------
+   * Una sola línea: progreso (piso y mapa con una barrita), las reglas del mapa como iconos (tipo, tamaño,
+   * modificador, corrupción, pesadilla…; el detalle en el «tip»), las reliquias como iconos y, a la derecha,
+   * sólo los contadores que importan. El botín en monedas y los emblemas ya se ven arriba, en la barra del juego.
+   */
+  const xsProg = (e) => {
+    const step = Math.min(e.step, e.total), pct = Math.round((Math.max(0, step - 1) / Math.max(1, e.total - 1)) * 100);
+    return h('span', { class: 'xs-prog', tip: `${t('exp.floor', { step, total: e.total })} · ${t('exp.depth', { n: e.depth || 1 })}\n${t('exp.depthTip')}` },
+      h('b', null, `${step}/${e.total}`), h('small', null, t('xs.map', { n: e.depth || 1 })), h('i', { class: 'xs-pbar' }, h('span', { style: { width: pct + '%' } })));
+  };
+  const xsIcon = (ic, tip, cls = '', txt) => h('span', { class: 'xs-ic ' + cls, tip, 'aria-label': tip.split('\n')[0] }, DK.icon(ic, 15), txt ? h('b', null, txt) : null);
+  const xsMods = (e) => {
+    const out = [], kind = e.kind || (e.map && e.map.kind), size = e.size || (e.map && e.map.size), mod = e.mod || (e.map && e.map.mod);
+    if (kind && kind !== 'abismo' && kind !== 'normal') { const k = DK.expedition.kindDef(kind); out.push(xsIcon(k.icon, `${t('kind.' + k.id + '.name')}\n${t('kind.' + k.id + '.desc')}`, 'k-' + k.id)); }
+    if (size && size !== 'abyss') { const sz = DK.config.expedition.sizes[size] || { icon: 'map' }; out.push(xsIcon(sz.icon, `${t('size.label', { name: t('size.' + size + '.name'), n: E().sizeFloors(size) })}\n${t('size.' + size + '.desc', { n: E().sizeFloors(size) })}`)); }
+    if (mod && D.mapMods[mod]) out.push(xsIcon(D.mapMods[mod].icon, `${t('mod.' + mod + '.name')}\n${t('mod.' + mod + '.desc')}`, 'mod'));
+    if (e.corruption) { const c = DK.corruption.def(e.corruption); out.push(xsIcon('skull', `${t('corruption.levelN', { n: e.corruption })}\n${c ? t('corruption.foes', { lv: c.levels, n: Math.round(c.stat * 100), hp: Math.round((c.hp || 0) * 100) }) : ''}`, 'bad', ['I', 'II', 'III', 'IV', 'V'][e.corruption - 1])); }
+    if (e.nightmare && e.zone === e.nightmare) out.push(xsIcon('demon', t('nightmare.title'), 'bad'));
+    if (e.weekly) out.push(xsIcon('trophy', t('weekly.title') + '\n' + t('weekly.scoring'), 'good'));
+    if (e.kind === 'averno') out.push(xsIcon('flame', t('averno.chipTip', { best: DK.averno.rec().best.floors || 0 }), 'bad', `${e.avernoFloors || 0}`));
+    if (e.kind === 'abismo') out.push(xsIcon('moon', t('abyss.best', { n: DK.abyss.best() }), 'abyss', `${e.depth || 1}`));
+    return out.length ? h('span', { class: 'xs-mods' }, out) : null;
+  };
+  // (en el móvil sólo se ven las 3 primeras y «+N»: lo hace el CSS con .xs-more-m)
+  const xsRelics = (list, max = 8) => list.slice(0, max).map((r) => h('span', { class: 'xs-relic r-' + r.rarity, tip: `${r.name}\n${relicText(r)}` }, V.relicIcon(r, 16)))
+    .concat(list.length > max ? [h('small', { class: 'xs-more' }, '+' + (list.length - max))] : [], list.length > 3 ? [h('small', { class: 'xs-more xs-more-m' }, '+' + (list.length - 3))] : []);
 
   /* ---------- Panel del nodo ---------- */
   const cont = (refresh) => btn({ icon: 'next', label: t('exp.continuePath'), variant: 'primary', hotkey: '↵', cls: 'exp-cont', onClick: () => { E().completeNode(); refresh(); } });
@@ -676,7 +701,7 @@
             h('small', { class: 'muted' }, V.useText(it) || it.desc),
             h('span', { class: 'loot-dest ' + (bag ? 'bag' : 'loot'), tip: bag ? t('exp.toBagTip') : t('exp.toLoot') }, DK.icon(bag ? 'bag' : 'gift', 11), bag ? t('exp.destBag') : t('exp.destLoot')));
         }),
-        e.result.relic ? (() => { const r = D.relics[e.result.relic]; return h('div', { class: 'loot-card relic r-' + r.rarity, style: delay() }, h('span', { class: 'loot-icon' }, DK.icon(r.icon, 36)), h('b', null, r.name), V.rarity(r.rarity), h('small', { class: 'muted' }, relicText(r)), h('span', { class: 'loot-dest relic' }, DK.icon('amulet', 11), t('exp.destRelic'))); })() : null,
+        e.result.relic ? (() => { const r = D.relics[e.result.relic]; return h('div', { class: 'loot-card relic r-' + r.rarity, style: delay() }, h('span', { class: 'loot-icon' }, V.relicIcon(r, 48)), h('b', null, r.name), V.rarity(r.rarity), h('small', { class: 'muted' }, relicText(r)), h('span', { class: 'loot-dest relic' }, DK.icon('amulet', 11), t('exp.destRelic'))); })() : null,
         ...(e.result.runes || []).map((id) => { return h('div', { class: 'loot-card rune ' + V.runeRarity(id), style: delay(), tip: t('rune.help'), tipNode: () => V.infoCard('rune', id) }, h('span', { class: 'loot-icon' }, V.runeGem(id, 52)), h('b', null, V.runeName(id)), h('small', { class: 'muted' }, V.runeEffect(id)), ...V.runeAffixes(id).map((x) => h('small', { class: 'rune-aff' }, x)), h('span', { class: 'loot-dest rune' }, DK.icon('rune', 11), t('rune.dest'))); }),
         e.result.recipe ? (() => { const it = D.items[D.recipes.find((r) => r.id === e.result.recipe).result]; return h('div', { class: 'loot-card recipe', style: delay() }, h('span', { class: 'loot-icon' }, DK.icon('scroll', 34)), h('b', null, t('exp.newRecipe', { item: it.name })), h('small', { class: 'muted' }, t('exp.recipeShort')), h('span', { class: 'loot-dest relic' }, DK.icon('anvil', 11), t('nav.craft'))); })() : null,
       ];
@@ -1047,7 +1072,7 @@
         items.length ? h('div', { class: 'chips' }, items.map(([iid, n]) => h('span', { class: 'chip' }, DK.icon(D.items[iid].icon, 13), `${D.items[iid].name} x${n}`))) : h('p', { class: 'muted small' }, t('exp.lootEmpty')),
         h('p', { class: 'muted small' }, t('exp.lootRule', { n: Math.round((E().bonusMult(Math.max(1, e.zones.length)) - 1) * 100) })));
       case 'relics': return DK.relics.list().length
-        ? h('div', { class: 'list' }, DK.relics.list().map((r) => h('div', { class: 'relic-row r-' + r.rarity }, h('span', { class: 'relic-icon sm' }, DK.icon(r.icon, 18)), h('div', { class: 'grow' }, h('b', null, r.name), h('div', { class: 'muted small' }, relicText(r))))))
+        ? h('div', { class: 'list' }, DK.relics.list().map((r) => h('div', { class: 'relic-row r-' + r.rarity }, h('span', { class: 'relic-icon sm' }, V.relicIcon(r, 32)), h('div', { class: 'grow' }, h('b', null, r.name), h('div', { class: 'muted small' }, relicText(r))))))
         : h('p', { class: 'muted small' }, t('exp.noRelics'));
       case 'saves': return h('div', { class: 'stack-s' },
         h('p', { class: 'small' }, t('exp.revivesLeft', { n: E().revivesLeft() }), DK.bag.count('pluma_fenix') ? ' · ' + t('exp.feathers', { n: DK.bag.count('pluma_fenix') }) : ''),
@@ -1155,21 +1180,23 @@
     const item = (id, ic, value, label, cls = '') => h('button', { class: 'hud-btn ' + cls + (params.hud === id ? ' on' : ''), type: 'button', 'data-hud': id, tip: label, 'aria-label': `${label}: ${value}`, 'aria-expanded': String(params.hud === id), onClick: () => toggle(id) },
       DK.icon(ic, 17), h('span', { class: 'hud-val' }, h('b', null, String(value)), h('small', { class: 'hud-cap' }, label)));
     const pack = DK.bag.list().filter(({ item: it }) => it.category !== 'pieza').reduce((a, x) => a + x.qty, 0);
-    const bar = h('div', { class: 'exp-hud' },
-      h('div', { class: 'hud-group' },
-        item('loot', 'gift', e.loot.coins, t('exp.loot'), 'gold'),
+    const relics = DK.relics.list(), q = E().quest();
+    // v5.46: una sola línea discreta (ver xsProg / xsMods / xsRelics)
+    const bar = h('div', { class: 'exp-hud xs-bar' },
+      xsProg(e), xsMods(e),
+      relics.length ? h('button', { class: 'xs-relics hud-btn' + (params.hud === 'relics' ? ' on' : ''), type: 'button', 'data-hud': 'relics', tip: t('relics.title'), 'aria-label': `${t('relics.title')}: ${relics.length}`, 'aria-expanded': String(params.hud === 'relics'), onClick: () => toggle('relics') }, xsRelics(relics)) : null,
+      h('span', { class: 'grow' }),
+      h('div', { class: 'hud-group xs-counts' },
+        item('loot', 'gift', E().lootCount(), t('exp.lootItemsTip', { coins: e.loot.coins })),
         item('pack', 'bag', pack, t('nav.pack')),
-        item('relics', 'amulet', DK.relics.list().length, t('relics.title')),
         DK.rules.permadeath() || E().revivesLeft() ? item('saves', 'sparkles', E().revivesLeft(), t('exp.revivesTitle')) : null,
         E().recruits().length ? item('recruits', 'paw', E().recruits().length, t('exp.recruits')) : null,
         DK.curses.active().length ? item('curses', 'skull', DK.curses.active().length, t('curse.active'), 'bad') : null,
-        item('emblems', 'emblem', DK.camp.emblems(), t('emblem.title'), 'emblem')),
-      E().quest() ? h('button', { class: 'hud-quest' + (params.hud === 'quest' ? ' on' : ''), type: 'button', 'data-hud': 'quest', 'aria-expanded': String(params.hud === 'quest'), onClick: () => toggle('quest') }, V.questChip()) : null,
-      h('span', { class: 'grow' }),
-      // Ya no hay retirada en cualquier momento: se vuelve a casa desde las hogueras
-      DK.averno.on() // v5.31: del Averno sólo se sale al caer
-        ? h('span', { class: 'hud-lock muted small', tip: t('averno.noRetreat') }, DK.icon('flame', 14), h('span', { class: 'hud-label' }, t('averno.exitRule')))
-        : h('span', { class: 'hud-lock muted small', tip: DK.rules.canRetreat() ? t('exp.exitRuleTip') : t('exp.noRetreat') }, DK.icon(DK.rules.canRetreat() ? 'campfire' : 'lock', 14), h('span', { class: 'hud-label' }, DK.rules.canRetreat() ? t('exp.exitRule') : '')));
+        q ? h('button', { class: 'hud-btn xs-quest' + (q.failed ? ' bad' : q.done ? ' good' : '') + (params.hud === 'quest' ? ' on' : ''), type: 'button', 'data-hud': 'quest', tip: t('quest.title') + ': ' + t('quest.' + q.id + '.name'), 'aria-expanded': String(params.hud === 'quest'), onClick: () => toggle('quest') },
+          DK.icon(q.failed ? 'x' : q.done ? 'check' : q.def.icon, 16), q.def.track && !q.failed && !q.done ? h('span', { class: 'hud-val' }, h('b', null, `${q.prog}/${q.target}`)) : null) : null,
+        // Ya no hay retirada en cualquier momento: se vuelve a casa desde las hogueras (v5.31: del Averno sólo se sale al caer)
+        DK.averno.on() ? h('span', { class: 'xs-ic xs-rule', tip: t('averno.noRetreat') }, DK.icon('flame', 15))
+          : h('span', { class: 'xs-ic xs-rule', tip: DK.rules.canRetreat() ? t('exp.exitRuleTip') : t('exp.noRetreat') }, DK.icon(DK.rules.canRetreat() ? 'campfire' : 'lock', 15))));
     const content = params.hud ? hudDetail(params.hud, redraw) : null;
     const LABEL = { loot: t('exp.loot'), pack: t('nav.pack'), relics: t('relics.title'), saves: t('exp.revivesTitle'), recruits: t('exp.recruits'), curses: t('curse.active'), emblems: t('emblem.title'), quest: t('quest.title') };
     const pop = content ? h('div', { class: 'exp-hud-pop', role: 'dialog', 'aria-label': LABEL[params.hud] || '' },
@@ -1267,12 +1294,11 @@
         setTimeout(() => window.scrollTo({ top: 0 }), 0);
         const zone = D.zones[e.zone];
         return h('div', { class: 'screen exp-screen exp-focus' },
-          h('div', { class: 'exp-focus-bar', style: { '--z1': zone.colors[0], '--z2': zone.colors[1] } },
-            DK.icon(zone.icon, 18), h('b', null, zone.name),
-            V.kindChip(e.kind), V.sizeChip(e.size), V.modChip(e.mod), e.awaitingChoice ? null : V.questChip(),
-            ...progressChips(e),
-            h('span', { class: 'chip', tip: t('exp.lootCoinsTip') }, DK.icon('gift', 13), h('span', { 'data-loot-coins': '1' }, t('exp.lootNow', { items: E().lootCount(), coins: e.loot.coins }))),
-            h('span', { class: 'grow' }), relicBar(undefined, { compact: true })),
+          h('div', { class: 'exp-focus-bar xs-bar', style: { '--z1': zone.colors[0], '--z2': zone.colors[1] } },
+            DK.icon(zone.icon, 16), h('b', { class: 'xs-zone' }, zone.name), xsProg(e), xsMods(e),
+            h('span', { class: 'xs-relics' }, xsRelics(DK.relics.list(), 6)),
+            h('span', { class: 'grow' }),
+            h('span', { class: 'xs-ic', tip: t('exp.lootCoinsTip') }, DK.icon('gift', 15), h('b', { 'data-loot-coins': '1' }, String(e.loot.coins)))),
           h('div', { class: 'exp-focus-body' }, focus));
       }
       // Mapa a todo el ancho con la barra de estado encima (o el nodo pendiente al lado)

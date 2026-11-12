@@ -115,8 +115,9 @@
       fresh.forEach((a, i) => {
         const text = DK.t(a.hidden ? 'achievements.unlockedHidden' : 'achievements.unlocked', { name: DK.achievements.name(a), coins: a.reward });
         // v5.4: medalla que cae desde arriba (una tras otra si son varias)
-        if (DK.views && DK.views.achievementDrop) setTimeout(() => DK.views.achievementDrop({ icon: a.icon, title: DK.achievements.name(a), text, coins: a.reward, hidden: a.hidden }), i * 1400);
-        else { DK.audio.sfx('achievement'); DK.ui.toast(text, { icon: a.icon, kind: 'good' }); }
+        // v5.46: sólo una medalla a la vez; si salen varias juntas, las demás van a la campana con un resumen
+        if (i === 0 && DK.views && DK.views.achievementDrop) DK.views.achievementDrop({ icon: a.icon, title: DK.achievements.name(a), text, coins: a.reward, hidden: a.hidden, more: fresh.length - 1 });
+        else DK.ui.toast(text, { icon: a.icon, kind: 'good', quiet: true });
       });
       if (fresh.length) DK.store.save();
       return fresh;
@@ -166,7 +167,7 @@
         s.unlocks[id] = Date.now();
         if (!silent) {
           DK.audio.sfx('achievement');
-          DK.ui.toast(DK.t('unlock.' + id), { icon: u.icon, kind: 'good' });
+          DK.ui.toast(DK.t('unlock.' + id), { icon: u.icon, kind: 'good', important: true });
         }
         DK.emit('unlocked', { id });
         if (DK.app && DK.app.renderNav) DK.app.renderNav();

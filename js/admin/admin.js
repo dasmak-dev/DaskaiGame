@@ -187,13 +187,13 @@
     reports: (open) => rpc('admin_reports', { p_open: open }), closeReport: (id, tid) => rpc('admin_report_close', { p_report: id || null, p_tid: tid || null }),
     news: () => rpc('admin_news_list'), newsSave: (n) => rpc('admin_news_save', n.p_img ? n : (({ p_img, ...x }) => x)(n)), // (sin imagen funciona también con la base de datos de la v5.40) newsDelete: (id) => rpc('admin_news_delete', { p_news: id }),
     send: (tid, text, gift, img) => rpc('admin_send', Object.assign({ p_tid: tid, p_text: text, p_gift: gift || null }, img ? { p_img: img } : {})),
-    analytics: (d) => rpc('admin_analytics', { p_days: d }), clans: () => rpc('admin_clans'), clanDelete: (id) => rpc('admin_clan_delete', { p_clan: id }),
+    analytics: (d) => rpc('admin_analytics', { p_days: d }), weekly: () => rpc('admin_weekly_reports'), weeklyRun: (cur, email) => rpc('admin_weekly_run', { p_current: !!cur, p_email: !!email }), clans: () => rpc('admin_clans'), clanDelete: (id) => rpc('admin_clan_delete', { p_clan: id }),
     threads: () => rpc('admin_threads'), thread: (tid) => rpc('admin_thread', { p_tid: tid }), dms: (tid) => rpc('admin_dms', { p_tid: tid }), log: () => rpc('admin_log_list', { p_limit: 300 }),
   };
 
   /* ---------------- Estructura ---------------- */
   const NAV = [['home', 'Resumen', 'chart'], ['players', 'Jugadores', 'users'], ['support', 'Soporte', 'mail'], ['reports', 'Denuncias', 'alert'],
-    ['flagged', 'Sospechosos', 'flag'], ['boards', 'Clasificaciones', 'trophy'], ['news', 'Noticias', 'megaphone'], ['gifts', 'Regalos', 'gift'], ['stats', 'Estadísticas', 'compass'], ['clans', 'Clanes', 'crown'], ['log', 'Registro', 'list'], ['settings', 'Ajustes', 'settings']];
+    ['flagged', 'Sospechosos', 'flag'], ['boards', 'Clasificaciones', 'trophy'], ['news', 'Noticias', 'megaphone'], ['gifts', 'Regalos', 'gift'], ['weekly', 'Informes', 'scroll'], ['stats', 'Estadísticas', 'compass'], ['clans', 'Clanes', 'crown'], ['log', 'Registro', 'list'], ['settings', 'Ajustes', 'settings']];
   let badges = {};
   /*
    * v5.42.1: el marco (menú, cabecera y cuerpo) se crea UNA vez; al cambiar de sección o pulsar un botón sólo se
@@ -652,6 +652,31 @@
     version: ['Versiones', 'Versión', null], lang: ['Idiomas', 'Idioma', null], teamlv: ['Nivel máximo del equipo', 'Nivel', null] };
   const OUT = { completed: 'completada', retreat: 'retirada', campfire: 'hoguera', lost: 'perdida', lostBoss: 'perdida en el jefe', won: 'ganado', fled: 'huida', normal: 'normal', abismo: 'Abismo', averno: 'Averno', small: 'pequeño', medium: 'mediano', xl: 'XL' };
   const zoneLbl = (key) => key.split(':').map((x, i) => (i === 0 && D().zones && D().zones[x] ? D().zones[x].name : OUT[x] || x.replace(/^f(\d+)$/, 'piso $1').replace(/^d(\d+)$/, 'mapa $1'))).join(' · ');
+  /* v5.47: informes semanales (los crea la base de datos cada lunes; ver docs/ONLINE-SUPABASE.md §11) */
+  const weeklyView = (sel) => section('weekly', 'Informes semanales', async () => {
+    const R = await API.weekly(), list = (R && R.reports) || [];
+    const run = (cur, email) => working(async () => { try { const r = await API.weeklyRun(cur, email); toast(email ? (r.email === 'sent' ? 'Informe generado y enviado' : r.email === 'nokey' ? 'Generado (falta la clave de Resend para enviarlo)' : 'Generado · correo: ' + r.email) : 'Informe generado'); go('weekly/' + r.week); } catch (e) { toast(e.message, true); } });
+    const tools = el('div', { class: 'row gap-s wrap' },
+      btn('Generar la semana pasada', () => run(false, false), 'asm', 'refresh'), btn('Semana en curso (provisional)', () => run(true, false), 'ghost asm', 'clock'),
+      btn('Generar y enviar por correo', () => run(false, true), 'ghost asm', 'mail'));
+    const status = el('p', { class: 'small muted' }, R && R.cron ? '✓ Se genera solo cada lunes a las 7:00 UTC. ' : '⚠ La tarea automática no está activa (falta pg_cron). ',
+      R && R.email ? '✓ Se envía por correo con Resend.' : 'Correo: sin configurar (paso opcional del SQL de la v5.47).');
+    if (!list.length) return [card(null, status, tools), card(null, el('p', { class: 'muted' }, 'Aún no hay informes. Pulsa «Generar la semana pasada» o espera al lunes.'))];
+    const cur = list.find((r) => r.week === sel) || list[0], d = cur.data || {};
+    const weeks = el('div', { class: 'row gap-s wrap' }, list.map((r) => btn(`Semana ${r.week}`, () => go('weekly/' + r.week), r.week === cur.week ? 'asm' : 'ghost asm')));
+    const kv = (rows, head, avg) => rows && rows.length ? table([head, 'n'].concat(avg ? ['pisos'] : []), rows.map((x) => el('tr', null, el('td', null, zoneLbl(x.key)), el('td', null, x.n), avg ? el('td', null, x.avg) : null))) : el('p', { class: 'muted small' }, 'Sin datos.');
+    const P = d.players || {}, Du = d.duels || {}, Cl = d.clans || {}, Cd = d.cloud || {}, Su = d.support || {};
+    return [card(null, status, tools), weeks,
+      card(`Semana ${cur.week} · ${cur.from} → ${cur.to}`,
+        el('div', { class: 'astats' }, [['Jugadores activos', P.active], ['Nuevos', P.new], ['Total', P.total], ['Días-jugador', P.activeDays], ['Duelos', (Du.won | 0) + (Du.lost | 0)], ['Clanes', `${Cl.total | 0} (+${Cl.new | 0})`], ['Copias en la nube', `${Cd.saves | 0} · ${Cd.mb || 0} MB`], ['Base de datos', `${d.dbMb || 0} MB`], ['Soporte', `${Su.messages | 0} msj · ${Su.open | 0} denuncias`]]
+          .map(([k, v]) => el('div', { class: 'astat' }, el('b', null, String(v == null ? '—' : v)), el('small', null, k)))),
+        el('p', { class: 'small muted' }, cur.emailed_at ? `Correo: ${cur.email_note || 'enviado'} · ${fmtD(cur.emailed_at)}` : cur.email_note ? 'Correo: ' + cur.email_note : '')),
+      card('Dónde se cae más (zona · piso)', kv(d.deaths, 'Zona · piso')),
+      card('Expediciones (zona · final)', kv(d.expeditions, 'Zona · final', true)),
+      card('Jefes', kv(d.bosses, 'Zona · resultado')),
+      card('Daskai caídos', kv(d.fallen, 'Zona · nivel')),
+      card('Runas', kv(d.runes, 'Runa · final')), card('Corrupción', kv(d.corruption, 'Nivel · final')), card('Tipos de expedición', kv(d.kinds, 'Tipo · final')), card('Versiones', kv(d.versions, 'Versión'))];
+  });
   const statsView = (days) => section('stats', 'Estadísticas anónimas', async () => {
     const rows = await API.analytics(days);
     const by = {}; (rows || []).forEach((r) => (by[r.kind] = by[r.kind] || []).push(r));
@@ -701,6 +726,7 @@
       else if (k === 'news') newsView();
       else if (k === 'gifts') giftsView();
       else if (k === 'log') logView();
+      else if (k === 'weekly') weeklyView(+a || 0);
       else if (k === 'stats') statsView(+a || 7);
       else if (k === 'clans') clansView();
       else if (k === 'settings') settingsView();

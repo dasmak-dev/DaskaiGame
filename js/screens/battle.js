@@ -797,13 +797,13 @@
       // v4.59: los del banquillo que suben de nivel salen en tarjetitas que se van solas
       V.levelFeed((r.shared || []).filter((x) => x.to > x.from));
       if (r.winHeal) { log(t('relics.winHealLog', { n: Math.round(r.winHeal * 100) }), 'good', 'reward'); const s2 = DK.daskai.stats(a); ui.aHp.update(a.cur.hp, s2.hp); }
-      if (st.elite && st.expedition && DK.expedition.active() && DK.expedition.active().relicChoice) log(t('relics.eliteLog'), 'level', 'reward');
+      for (const rid of [r.relic, r.relic2].filter(Boolean)) { const rr = D.relics[rid]; log(t('relics.dropLog', { name: rr.name, effect: V.relicText(rr) }), 'level', 'reward'); }
       for (const p of r.gear || []) { await wait(200); log(t('battle.lootItem') + ' ' + DK.gear.name(p) + ' (' + t('gear.rarity.' + p.rarity) + ')', 'drop', 'reward'); }
       if (!r.captured && !r.drops.length && !(r.runes || []).length) log(t('battle.noDrop'), 'muted', 'reward');
-      if (r.freeUnlocked) { log(t('battle.freeUnlocked', { zone: zone.name }), 'level', 'reward'); DK.ui.toast(t('battle.freeUnlocked', { zone: zone.name }), { icon: 'swords', kind: 'good' }); }
+      if (r.freeUnlocked) { log(t('battle.freeUnlocked', { zone: zone.name }), 'level', 'reward'); DK.ui.toast(t('battle.freeUnlocked', { zone: zone.name }), { icon: 'swords', kind: 'good', important: true }); }
       if (r.emblems) { log(t('battle.emblemLog', { n: r.emblems }), 'level', 'reward'); DK.ui.toast(t('battle.emblemLog', { n: r.emblems }), { icon: 'emblem', kind: 'good' }); }
-      if (r.secretUnlocked) { log(t('battle.secretUnlocked', { title: st.bossInfo.title, zone: zone.name }), 'level', 'reward'); DK.ui.toast(t('battle.secretUnlocked', { title: st.bossInfo.title, zone: zone.name }), { icon: 'cave', kind: 'good' }); }
-      if (r.unlocked) { log(t('battle.zoneUnlocked', { zone: r.unlocked.name }), 'level', 'reward'); DK.ui.toast(t('battle.zoneUnlocked', { zone: r.unlocked.name }), { icon: 'map', kind: 'good' }); }
+      if (r.secretUnlocked) { log(t('battle.secretUnlocked', { title: st.bossInfo.title, zone: zone.name }), 'level', 'reward'); DK.ui.toast(t('battle.secretUnlocked', { title: st.bossInfo.title, zone: zone.name }), { icon: 'cave', kind: 'good', important: true }); }
+      if (r.unlocked) { log(t('battle.zoneUnlocked', { zone: r.unlocked.name }), 'level', 'reward'); DK.ui.toast(t('battle.zoneUnlocked', { zone: r.unlocked.name }), { icon: 'map', kind: 'good', important: true }); }
       // v5.18: legendario vencido: la 1.ª vez sólo se le vence; desde la 2.ª puede querer unirse (y tú decides)
       if (r.legend) {
         const nm = D.species[r.legend.species].name;
@@ -842,7 +842,7 @@
         ...(r.gear || []).map((p) => h('div', Object.assign({ style: Object.assign(dl(), { '--g': D.gear.rarities[p.rarity].color }), tip: t('gear.rarity.' + p.rarity) }, V.infoProps('gear', p), { class: 'rw-item has-info gear g-' + p.rarity }),
           h('span', { class: 'rw-item-ico' }, V.gearIcon(p, 30)), h('span', { class: 'rw-item-name' }, DK.gear.name(p)), h('small', { class: 'rw-dest' }, t('gear.rarity.' + p.rarity)))),
         ...(r.runes || []).map((id) => h('div', Object.assign({ style: dl(), tip: V.runeTip(id) }, V.infoProps('rune', id), { class: 'rw-item has-info rune ' + V.runeRarity(id) }), h('span', { class: 'rw-item-ico' }, V.runeGem(id, 30)), h('span', { class: 'rw-item-name' }, V.runeName(id)))),
-        r.relicOffer ? h('div', { class: 'rw-item relic', style: dl() }, h('span', { class: 'rw-item-ico' }, DK.icon('amulet', 26)), h('span', { class: 'rw-item-name' }, t('relics.toChoose'))) : null,
+        ...[r.relic, r.relic2].filter(Boolean).map((rid) => h('div', { class: 'rw-item relic r-' + D.relics[rid].rarity, style: dl(), tip: V.relicText(D.relics[rid]) }, h('span', { class: 'rw-item-ico' }, V.relicIcon(D.relics[rid], 32)), h('span', { class: 'rw-item-name' }, D.relics[rid].name), h('small', { class: 'rw-dest' }, DK.icon('amulet', 10), t('relics.special')))),
       ].filter(Boolean);
       // v5.4: botín legendario → haz dorado y sonido propio
       if ((r.gear || []).some((p) => p.rarity === 'legendario') || r.drops.some((id) => D.items[id] && D.items[id].rarity === 'legendario')) setTimeout(() => DK.audio.sfx('legend'), 450);

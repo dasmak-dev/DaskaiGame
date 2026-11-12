@@ -336,8 +336,10 @@
    * - Todos quedan en DK.ui.notices (historial de la sesión, campana de la barra superior).
    */
   // En el móvil: 1 aviso a la vez, más corto, encima de la barra inferior; se quita tocándolo
-  const toastMax = () => (isSheet() ? 1 : 2), toastMs = () => (isSheet() ? 2000 : 2500); // v5.17: un poco más breves
+  const toastMax = () => (isSheet() ? 1 : 2), toastMs = () => (isSheet() ? 2200 : 2800); // v5.17: un poco más breves
   const notices = [];
+  let lastInput = 0; // v5.46: última vez que el jugador pulsó o tecleó (los avisos de respuesta sí se ven)
+  if (typeof document !== 'undefined') ['pointerdown', 'keydown'].forEach((ev) => document.addEventListener(ev, () => { lastInput = Date.now(); }, true));
   let unread = 0, overflow = 0, moreEl = null, moreTimer = null;
   function hostEl() {
     if (!toastHost) { toastHost = h('div', { class: 'toast-host', 'aria-live': 'polite' }); document.body.append(toastHost); }
@@ -367,13 +369,22 @@
    * @param {string} text
    * @param {Object} [o] {icon, kind: ''|'good'|'bad'}
    */
-  function toast(text, { icon = 'info', kind = '', action = null } = {}) {
+  /*
+   * v5.46: sólo salta lo importante. Un aviso aparece si:
+   *  - responde a algo que acabas de hacer (pulsaste o tecleaste hace menos de 1,8 s), o
+   *  - es un error (kind 'bad'), lleva botón (action) o se marca { important: true }.
+   * El resto (logros en cadena, misiones listas, niveles de la Senda, novedades del buzón…) va directo
+   * al historial de la campana sin interrumpir. { quiet: true } lo manda siempre sólo a la campana.
+   */
+  function toast(text, { icon = 'info', kind = '', action = null, important = false, quiet = false } = {}) {
     if (notices[0] && notices[0].text === text) { notices[0].n = (notices[0].n || 1) + 1; notices[0].at = Date.now(); }
     else notices.unshift({ text, icon, kind, at: Date.now() });
     if (notices.length > 60) notices.length = 60;
     unread++;
     DK.emit && DK.emit('notices:changed', { unread });
     if (openDrawers.notices) { refreshNotices(); }
+    const byUser = Date.now() - lastInput < 1800;
+    if (quiet || (!important && !action && !byUser && kind !== 'bad')) return;
     const host = hostEl();
     const live = [...host.querySelectorAll('.toast:not(.out):not(.toast-more)')];
     const same = live.find((el) => el.dataset.text === text);
@@ -393,7 +404,7 @@
     // v4.67: icono en una pastilla de color, texto y una barrita que se vacía con el tiempo que le queda
     const bar = h('i', { class: 'toast-bar', 'aria-hidden': 'true' });
     const el = h('div', { class: 'toast ' + kind + (action ? ' has-action' : ''), dataset: { text }, role: 'status', onClick: dismiss },
-      h('span', { class: 'toast-ic' }, DK.icon(icon, 16)), h('span', { class: 'grow toast-txt' }, text), act, bar);
+      h('span', { class: 'toast-ic' }, DK.icon(icon, 16)), h('span', { class: 'grow toast-txt', title: text }, text), act, bar);
     if (action) el._long = true;
     if (moreEl) host.insertBefore(el, moreEl); else host.append(el);
     schedule(el);

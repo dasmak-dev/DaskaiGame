@@ -220,7 +220,7 @@
       onClick: (e) => { tiles.forEach((b) => b.classList.toggle('on', b === e.currentTarget)); put(detail, monDetail(x)); } },
       h('span', { class: 'bv-tspr' }, V.dSprite(pseudoD(x), { size: 44 })), h('b', null, x.n || D.species[x.s].name, x.sh ? h('span', { class: 'tc-shiny' }, '★') : null), h('small', null, `${t('common.lvl')} ${x.l | 0}`))) : null;
     return h('div', { class: 'bv' },
-      relics.length ? h('div', { class: 'bv-relics' }, relics.map((id) => h('span', { class: 'chip sm r-' + D.relics[id].rarity, tip: V.relicText ? V.relicText(D.relics[id]) : '' }, DK.icon(D.relics[id].icon, 11), DK.tr('relics', D.relics[id])))) : null,
+      relics.length ? h('div', { class: 'bv-relics' }, relics.map((id) => h('span', { class: 'chip sm r-' + D.relics[id].rarity, tip: V.relicText ? V.relicText(D.relics[id]) : '' }, V.relicIcon(D.relics[id], 16), DK.tr('relics', D.relics[id])))) : null,
       tiles ? h('div', { class: 'bv-tiles' }, tiles) : null, detail);
   };
 

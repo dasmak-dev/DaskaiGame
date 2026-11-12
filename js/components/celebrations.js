@@ -101,13 +101,15 @@
    */
   V.achievementDrop = (a) => {
     let host = document.querySelector('.ach-drops');
+    if (host) host.querySelectorAll('.ach-drop').forEach((x) => x.remove()); // v5.46: una a la vez
     if (!host) { host = h('div', { class: 'ach-drops', 'aria-live': 'polite' }); document.body.append(host); }
     DK.audio.sfx('achievement'); DK.vibrate([20, 40, 60]);
     const card = h('div', { class: 'ach-drop' + (a.hidden ? ' hidden-ach' : ''), role: 'status', tip: a.text },
       h('span', { class: 'ach-ribbon' }),
       h('span', { class: 'ach-medal' }, DK.icon(a.icon || 'trophy', 26)),
       h('span', { class: 'ach-body' }, h('small', null, t('achievements.dropTitle')), h('b', null, a.title),
-        a.coins ? h('span', { class: 'ach-coins' }, DK.icon('coin', 12), '+' + a.coins) : null));
+        a.coins ? h('span', { class: 'ach-coins' }, DK.icon('coin', 12), '+' + a.coins) : null,
+        a.more > 0 ? h('span', { class: 'ach-more' }, t('achievements.andMore', { n: a.more })) : null));
     card.addEventListener('click', () => { card.classList.add('out'); setTimeout(() => card.remove(), 400); });
     host.append(card);
     setTimeout(() => { card.classList.add('out'); setTimeout(() => card.remove(), 450); }, 3600);

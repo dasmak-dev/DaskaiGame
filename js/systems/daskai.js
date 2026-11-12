@@ -436,14 +436,14 @@
       // v5.0: los rivales escalan con su nivel (C.enemyScale)
       if ((d.wild || d.boss) && C.enemyScale) m *= C.enemyScale.base + C.enemyScale.perLevel * (d.level || 1);
       // Final del juego: corrupción, pesadilla y abismo hacen más fuertes a los rivales
-      if ((d.wild || d.boss) && DK.endgame) { m *= 1 + DK.endgame.enemyStat(d); if (k === 'hp') m *= DK.endgame.bossHp(d); }
+      if ((d.wild || d.boss) && DK.endgame) { m *= 1 + DK.endgame.enemyStat(d); if (k === 'hp') m *= DK.endgame.bossHp(d) * (1 + DK.endgame.enemyHp()); }
       // Tus daskai: estrellas de ascensión y forma alternativa
       if (!d.wild && !d.boss) {
         if (d.stars && DK.data.endgame) m *= 1 + d.stars * DK.data.endgame.ascension.statPerStar;
         if (d.variant && DK.data.endgame && DK.data.endgame.variants[d.variant]) m *= 1 + DK.data.endgame.variants[d.variant].stat;
       }
       // Reliquias de expedición (sólo tus daskai)
-      if (!d.wild && !d.boss && DK.relics && DK.expedition.active()) m *= 1 + DK.relics.statPct(k) + (k === 'hp' ? DK.camp.value('vigor') : 0);
+      if (!d.wild && !d.boss && DK.relics && DK.expedition.active()) m *= 1 + DK.relics.statPct(k) + (k === 'hp' ? DK.camp.value('vigor') : k === 'spd' ? DK.camp.value('agilidad') : 0);
       return m;
     },
 

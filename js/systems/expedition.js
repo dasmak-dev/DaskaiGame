@@ -412,7 +412,7 @@
     bossEmblems(size, kind) {
       size = size || this.size();
       const late = this.active() ? DK.endgame.emblems() + DK.runes.emblemBonus() : DK.endgame.emblems(st().nextExpedition || {}) + DK.runes.emblemBonus(DK.runes.slots());
-      return cfg().emblemsPerBoss * ((cfg().sizes[size] || {}).emblems || 1) + (this.kindDef(kind).emblems || 0) + late;
+      return cfg().emblemsPerBoss * ((cfg().sizes[size] || {}).emblems || 1) + (this.kindDef(kind).emblems || 0) + late + (this.active() ? DK.relics.sum('emblems') : 0) + DK.camp.value('cazador'); // v5.46: Corona de astas y Cazador de jefes
     },
     /** Tamaño del mapa actual. */
     size() { const e = this.active(); return (e && (e.size || (e.map && e.map.size))) || 'small'; },
@@ -1184,7 +1184,7 @@
     /** Lo que te llevarías al volver desde la hoguera (para mostrarlo antes de decidir). */
     campfirePreview() {
       const e = this.active(); if (!e) return null;
-      const keep = cfg().campfireKeep;
+      const keep = Math.min(0.9, cfg().campfireKeep + DK.camp.value('saqueador')); // v5.46: + Saqueador
       return { pct: Math.round(keep * 100), coins: Math.round(e.loot.coins * keep), items: Math.round(this.lootCount() * keep), recruits: this.recruits().map((d) => DK.daskai.name(d)) };
     },
     /** Reparte unidad a unidad lo que se salva (redondeando al azar). → [salvado, perdido] */
@@ -1201,7 +1201,7 @@
     campfireExit() {
       const e = this.active(); if (!this.canCampfireExit()) return null;
       this.ensureFields();
-      const keep = cfg().campfireKeep;
+      const keep = Math.min(0.9, cfg().campfireKeep + DK.camp.value('saqueador')); // v5.46: + Saqueador
       this.logEvent('campfire', { coins: Math.round(e.loot.coins * keep) });
       const [keptLoot, lostLoot] = this.split(e.loot.items, keep);
       const coins = Math.round(e.loot.coins * keep);
@@ -1375,6 +1375,22 @@
       const out = [];
       while (out.length < n && pool.length) out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
       return out;
+    },
+    /** v5.46: ¿tienes alguna reliquia de ese tipo? (devuelve la primera) */
+    get(type) { return this.list().find((r) => r.effect.type === type) || null; },
+    /**
+     * v5.46: reliquia especial que suelta un mini jefe o un jefe: una al azar de TODAS las que aún no lleves
+     * (no hace falta tenerla desbloqueada). La rareza sale al azar; los jefes y la corrupción la hacen más rara.
+     */
+    drop(kind = 'elite') {
+      const W = kind === 'boss' ? { comun: 0.15, raro: 0.5, epico: 0.35 } : { comun: 0.5, raro: 0.4, epico: 0.1 };
+      const luck = DK.endgame ? DK.endgame.relicLuck() : 0; // pasa probabilidad de común a épica
+      const shift = Math.min(W.comun, luck * 0.6); W.comun -= shift; W.epico += shift * 0.6; W.raro += shift * 0.4;
+      let x = Math.random() * (W.comun + W.raro + W.epico), rar = 'comun';
+      for (const k of ['comun', 'raro', 'epico']) { if (x < W[k]) { rar = k; break; } x -= W[k]; }
+      const order = rar === 'epico' ? ['epico', 'raro', 'comun'] : rar === 'raro' ? ['raro', 'epico', 'comun'] : ['comun', 'raro', 'epico'];
+      for (const r of order) { const got = this.roll([r], 1)[0]; if (got) return got; }
+      return null;
     },
     /** Añade una reliquia a la expedición. */
     give(id) {

@@ -268,7 +268,7 @@
       const relics = (s.relics || []).map((id) => D.relics[id]).filter(Boolean);
       const extras = h('div', { class: 'card stack-s' },
         h('div', { class: 'panel-head' }, DK.icon('amulet', 18), h('h3', null, t('relics.title'))),
-        relics.length ? h('div', { class: 'list' }, relics.map((r) => h('div', { class: 'relic-row r-' + r.rarity }, h('span', { class: 'relic-icon sm' }, DK.icon(r.icon, 18)), h('div', { class: 'grow' }, h('b', null, r.name), h('div', { class: 'muted small' }, V.relicText(r)))))) : h('p', { class: 'muted small' }, t('sum.none')));
+        relics.length ? h('div', { class: 'list' }, relics.map((r) => h('div', { class: 'relic-row r-' + r.rarity }, h('span', { class: 'relic-icon sm' }, V.relicIcon(r, 32)), h('div', { class: 'grow' }, h('b', null, r.name), h('div', { class: 'muted small' }, V.relicText(r)))))) : h('p', { class: 'muted small' }, t('sum.none')));
 
       // v5.9: tu equipo en grande (nivel al salir → al volver) y los rivales a los que te enfrentaste
       const team = teamPanel(s), foes = foesPanel(s), strip = statStrip(s, kept);

@@ -20,14 +20,16 @@
   DK.data.endgame = {
     corruption: {
       zoneIndex: 2, // jefe de la 3ª zona
+      // v5.46: la corrupción se nota de verdad: cada nivel sube MUCHO los atributos (stat) y además la vida (hp)
+      // de todos los rivales; a cambio, premios bastante mejores (emblemas, monedas, variocolor, runas y reliquias raras)
       levels: [
-        { levels: 3, stat: 0.10, rule: null, emblems: 1, coins: 0.15, shiny: 0.01, tier: 0.15 },
-        { levels: 6, stat: 0.20, rule: 'restHalf', emblems: 2, coins: 0.30, shiny: 0.02, tier: 0.25 },
-        { levels: 9, stat: 0.30, rule: 'bossHp', emblems: 3, coins: 0.45, shiny: 0.03, tier: 0.35 },
-        { levels: 12, stat: 0.40, rule: 'shopDouble', emblems: 4, coins: 0.60, shiny: 0.04, tier: 0.45 },
-        { levels: 15, stat: 0.50, rule: 'noShortcuts', emblems: 5, coins: 0.80, shiny: 0.05, tier: 0.60 },
+        { levels: 4, stat: 0.25, hp: 0.20, rule: null, emblems: 1, coins: 0.25, shiny: 0.01, tier: 0.20, relic: 0.10 },
+        { levels: 8, stat: 0.50, hp: 0.45, rule: 'restHalf', emblems: 2, coins: 0.55, shiny: 0.02, tier: 0.30, relic: 0.20 },
+        { levels: 12, stat: 0.80, hp: 0.70, rule: 'bossHp', emblems: 4, coins: 0.90, shiny: 0.03, tier: 0.45, relic: 0.30 },
+        { levels: 16, stat: 1.10, hp: 1.00, rule: 'shopDouble', emblems: 6, coins: 1.30, shiny: 0.05, tier: 0.55, relic: 0.40 },
+        { levels: 20, stat: 1.45, hp: 1.30, rule: 'noShortcuts', emblems: 8, coins: 1.80, shiny: 0.07, tier: 0.70, relic: 0.55 },
       ],
-      bossHp: 1.3, restMult: 0.5, shopMult: 2,
+      bossHp: 1.5, restMult: 0.5, shopMult: 2,
     },
     abyss: {
       // v5.1: el Abismo es un «boss rush» de cada zona: sus jefes y los de las zonas anteriores, seguidos,

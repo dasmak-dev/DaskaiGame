@@ -1,0 +1,257 @@
+{
+ "source": "https://huggingface.co/datasets/Angais/pixel-art-atlas-1.4m",
+ "license": "CC0-1.0",
+ "retrieved": "2026-11-10",
+ "tile": 16,
+ "cols": 8,
+ "icons": {
+  "piedra_afilada": {
+   "i": 0,
+   "file": "train-008.parquet",
+   "row_id": 842789,
+   "subject": "dagger",
+   "caption": "diagonal dagger with a leaf-shaped blade",
+   "sha1": "5333f2f149d7"
+  },
+  "trebol": {
+   "i": 1,
+   "file": "train-012.parquet",
+   "row_id": 1182481,
+   "subject": "four leaf clover",
+   "caption": "fresh four leaf clover with a long stem",
+   "sha1": "afb4c4561040"
+  },
+  "bolsa_vieja": {
+   "i": 2,
+   "file": "train-014.parquet",
+   "row_id": 1324685,
+   "subject": "coin pouch",
+   "caption": "squat burlap coin pouch with a star patch",
+   "sha1": "c3b663ac2398"
+  },
+  "libro_notas": {
+   "i": 3,
+   "file": "train-009.parquet",
+   "row_id": 872015,
+   "subject": "notebook",
+   "caption": "bent brown notebook",
+   "sha1": "b0ab02ab1e58"
+  },
+  "cantimplora": {
+   "i": 4,
+   "file": "train-011.parquet",
+   "row_id": 1088940,
+   "subject": "canteen",
+   "caption": "tall brown canteen with an orange tag",
+   "sha1": "791c9c5779ec"
+  },
+  "corteza": {
+   "i": 5,
+   "file": "train-011.parquet",
+   "row_id": 1124022,
+   "subject": "viking shield",
+   "caption": "top-down tilted wooden viking shield",
+   "sha1": "3c19513a3e7d"
+  },
+  "ascua_eterna": {
+   "i": 6,
+   "file": "train-003.parquet",
+   "row_id": 375668,
+   "subject": "ember",
+   "caption": "cursed ember with a soft glow",
+   "sha1": "62e018c83560"
+  },
+  "caracola": {
+   "i": 7,
+   "file": "train-013.parquet",
+   "row_id": 1308042,
+   "subject": "conch shell",
+   "caption": "upright peach conch shell",
+   "sha1": "7a1400fc6eef"
+  },
+  "raiz_antigua": {
+   "i": 8,
+   "file": "train-002.parquet",
+   "row_id": 280472,
+   "subject": "mandrake root",
+   "caption": "tiny mandrake root with a small leaf",
+   "sha1": "82dceab0e642"
+  },
+  "prisma_solar": {
+   "i": 9,
+   "file": "train-011.parquet",
+   "row_id": 1121583,
+   "subject": "sun amulet",
+   "caption": "side-view oval sun amulet with alternating long and short points",
+   "sha1": "52dde1cf95f1"
+  },
+  "velo_noche": {
+   "i": 10,
+   "file": "train-006.parquet",
+   "row_id": 653505,
+   "subject": "moonstone",
+   "caption": "oval moonstone with a blue sheen in warm colors",
+   "sha1": "b5941556b635"
+  },
+  "pluma_rapida": {
+   "i": 11,
+   "file": "train-008.parquet",
+   "row_id": 831621,
+   "subject": "feather",
+   "caption": "blue feather in high contrast",
+   "sha1": "de686550a736"
+  },
+  "cristal_eco": {
+   "i": 12,
+   "file": "train-008.parquet",
+   "row_id": 764486,
+   "subject": "mana crystal",
+   "caption": "blue mana crystal with a faceted body",
+   "sha1": "1543334f91da"
+  },
+  "anzuelo": {
+   "i": 13,
+   "file": "train-002.parquet",
+   "row_id": 259093,
+   "subject": "fishing hook",
+   "caption": "dripping yellow fishing hook",
+   "sha1": "21106bed16b4"
+  },
+  "musgo_vivo": {
+   "i": 14,
+   "file": "train-012.parquet",
+   "row_id": 1168471,
+   "subject": "marimo moss ball",
+   "caption": "three-quarter-view marimo moss ball with a leaf sprout",
+   "sha1": "c2dc26b35d34"
+  },
+  "colmillo_rey": {
+   "i": 15,
+   "file": "train-009.parquet",
+   "row_id": 916174,
+   "subject": "wolf fang",
+   "caption": "long wolf fang in warm colors",
+   "sha1": "afff8fc8351e"
+  },
+  "mapa_tesoro": {
+   "i": 16,
+   "file": "train-011.parquet",
+   "row_id": 1047758,
+   "subject": "treasure map",
+   "caption": "folded in four paper treasure map",
+   "sha1": "7b4f68caa3e6"
+  },
+  "caliz_vida": {
+   "i": 17,
+   "file": "train-006.parquet",
+   "row_id": 638745,
+   "subject": "chalice",
+   "caption": "front-view narrow brass chalice in flat colors",
+   "sha1": "df48ef40ba44"
+  },
+  "egida": {
+   "i": 18,
+   "file": "train-011.parquet",
+   "row_id": 1117013,
+   "subject": "knight shield",
+   "caption": "small knight shield",
+   "sha1": "6200cf0aad68"
+  },
+  "cuerno_guerra": {
+   "i": 19,
+   "file": "train-011.parquet",
+   "row_id": 1039263,
+   "subject": "war horn",
+   "caption": "side-view small war horn",
+   "sha1": "23d66dd2484f"
+  },
+  "daga_alba": {
+   "i": 20,
+   "file": "train-008.parquet",
+   "row_id": 803886,
+   "subject": "kris dagger",
+   "caption": "top-down wavy crystal kris dagger in flat colors",
+   "sha1": "97f2997ce3de"
+  },
+  "cristal_almas": {
+   "i": 21,
+   "file": "train-010.parquet",
+   "row_id": 1007105,
+   "subject": "soul gem",
+   "caption": "elongated soul gem with carved runes in flat colors",
+   "sha1": "8679c51627b9"
+  },
+  "ojo_cazador": {
+   "i": 22,
+   "file": "train-010.parquet",
+   "row_id": 960531,
+   "subject": "eye amulet",
+   "caption": "tall silver eye amulet with a blue gem in warm colors",
+   "sha1": "1e148d88cc23"
+  },
+  "reloj_arena": {
+   "i": 23,
+   "file": "train-004.parquet",
+   "row_id": 444130,
+   "subject": "hourglass",
+   "caption": "brass hourglass with flat end caps in bright colors",
+   "sha1": "ded962b3b5e2"
+  },
+  "copa_carmesi": {
+   "i": 24,
+   "file": "train-004.parquet",
+   "row_id": 425518,
+   "subject": "goblet of wine",
+   "caption": "frosty goblet of wine with condensation droplets",
+   "sha1": "999dc5dcab64"
+  },
+  "caparazon_espinas": {
+   "i": 25,
+   "file": "train-010.parquet",
+   "row_id": 944359,
+   "subject": "spiked buckler",
+   "caption": "gold spiked buckler with a long center spike",
+   "sha1": "84cf866929a5"
+  },
+  "corazon_ira": {
+   "i": 26,
+   "file": "train-007.parquet",
+   "row_id": 674846,
+   "subject": "dragon heart",
+   "caption": "side-view petrified orange dragon heart",
+   "sha1": "2fe70abda910"
+  },
+  "festin": {
+   "i": 27,
+   "file": "train-007.parquet",
+   "row_id": 699158,
+   "subject": "meat on a bone",
+   "caption": "three-quarter-view drumstick-shaped meat on a bone",
+   "sha1": "658fac635706"
+  },
+  "sello_matarreyes": {
+   "i": 28,
+   "file": "train-011.parquet",
+   "row_id": 1068218,
+   "subject": "wax seal",
+   "caption": "small wax seal",
+   "sha1": "fad41c795258"
+  },
+  "ultimo_aliento": {
+   "i": 29,
+   "file": "train-001.parquet",
+   "row_id": 118283,
+   "subject": "heart locket",
+   "caption": "heart locket",
+   "sha1": "e0a75335ac76"
+  },
+  "corona_espinas": {
+   "i": 30,
+   "file": "train-013.parquet",
+   "row_id": 1263718,
+   "subject": "antler crown",
+   "caption": "top-down tilted antler crown with pointed tines",
+   "sha1": "1f388f13fe68"
+  }
+ }
+}

@@ -28,13 +28,13 @@ module.exports = {
     run: (browser, view) => play(browser, view, async (p) => {
       await p.evaluate(() => { DK.camp.addEmblems(2); DK.views.upgradeMenu(); });
       await sleep(400);
-      check((await p.$$('.shop-tab')).length === 3, 'faltan pestañas');
-      await p.click('.shop-tab >> nth=1'); await sleep(250);
-      check((await p.$$('.unlock-card.r-comun')).length >= 1, 'no salen las reliquias');
-      await p.click('.unlock-card.r-comun .btn >> nth=0'); await sleep(250);
-      check((await p.$$('.unlock-card.owned')).length === 1, 'no se desbloquea desde el menú');
-      await p.click('.shop-tab >> nth=2'); await sleep(250);
-      check((await p.$$('.unlock-card.is-curse')).length >= 1, 'no salen los pactos');
+      check((await p.$$('.um-tab')).length === 3, 'faltan pestañas');
+      await p.click('.um-tab >> nth=1'); await sleep(250);
+      check((await p.$$('.um-tile.r-comun')).length >= 1, 'no salen las reliquias');
+      await p.click('.um-tile.r-comun .um-buy >> nth=0'); await sleep(250);
+      check((await p.$$('.um-tile.owned')).length === 1, 'no se desbloquea desde el menú');
+      await p.click('.um-tab >> nth=2'); await sleep(250);
+      check((await p.$$('.um-tile.is-curse')).length >= 1, 'no salen los pactos');
       check((await overflowX(p)) <= 1, 'el menú se sale por la derecha');
     }),
   }, {

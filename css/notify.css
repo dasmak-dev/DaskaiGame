@@ -1,0 +1,37 @@
+/* =============================================================
+ * css/notify.css — v5.46: avisos (toasts) todos iguales: arriba, centrados, del mismo ancho y alto
+ * (dos líneas como mucho; el texto completo queda en la campana). Va al final para ganar a las reglas antiguas.
+ * ============================================================= */
+:root:root:root:root:root:root:root body .toast-host, :root:root:root:root:root:root:root body[data-nav="on"] .toast-host, :root:root:root:root:root:root:root body[data-screen] .toast-host {
+  left: 50% !important; right: auto !important; translate: none !important; transform: translateX(-50%) !important; bottom: auto !important;
+  top: calc(70px + env(safe-area-inset-top)) !important; width: min(360px, calc(100vw - 24px)) !important; max-width: none !important;
+  align-items: stretch !important; gap: 6px !important; }
+:root:root:root:root:root:root:root body .toast-host > .toast {
+  --tk: #d4a24c; width: 100% !important; max-width: none !important; height: 50px; min-height: 50px; box-sizing: border-box;
+  display: flex; align-items: center; gap: 10px; padding: 0 12px 0 8px !important; border-radius: 14px !important; overflow: hidden; position: relative;
+  font-size: .8rem !important; font-weight: 500; line-height: 1.25; color: #f3e9da;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--tk) 16%, rgba(20, 15, 11, .95)), rgba(20, 15, 11, .95) 55%) !important;
+  border: 1px solid color-mix(in srgb, var(--tk) 30%, rgba(255, 255, 255, .06)) !important;
+  box-shadow: 0 10px 26px -12px rgba(0, 0, 0, .8) !important; opacity: 1 !important; backdrop-filter: blur(8px);
+  animation: dkToastIn .26s cubic-bezier(.2, .9, .3, 1.1) !important; pointer-events: auto; cursor: var(--cur-pointer); }
+:root:root:root:root:root:root:root body .toast-host > .toast.good { --tk: #4ade80; }
+:root:root:root:root:root:root:root body .toast-host > .toast.bad { --tk: #f87171; }
+:root:root:root:root:root:root:root body .toast-host > .toast.warn { --tk: #fbbf24; }
+:root:root:root:root:root:root:root body .toast-host > .toast .toast-ic { width: 30px !important; height: 30px !important; border-radius: 10px !important; flex: none; display: grid; place-items: center;
+  background: color-mix(in srgb, var(--tk) 22%, transparent) !important; color: var(--tk) !important; box-shadow: none !important; }
+:root:root:root:root:root:root:root body .toast-host > .toast .toast-ic svg { width: 16px !important; height: 16px !important; }
+:root:root:root:root:root:root:root body .toast-host > .toast .toast-ic .icon { color: var(--tk) !important; }
+:root:root:root:root:root:root:root body .toast-host > .toast .toast-txt { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-width: 0; }
+:root:root:root:root:root:root:root body .toast-host > .toast .toast-count { flex: none; font-size: .72rem; font-weight: 800; padding: 1px 6px; border-radius: 999px; background: rgba(255,255,255,.1); }
+:root:root:root:root:root:root:root body .toast-host > .toast .toast-action { flex: none; }
+:root:root:root:root:root:root:root body .toast-host > .toast .toast-bar { position: absolute; left: 0; bottom: 0; height: 2px; background: var(--tk); opacity: .55; }
+:root:root:root:root:root:root:root body .toast-host > .toast.out { opacity: 0 !important; transform: translateY(-8px) scale(.98); transition: opacity .3s, transform .3s; }
+:root:root:root:root:root:root:root body .toast-host > .toast.toast-more { --tk: #94a3b8; height: 34px; min-height: 34px; justify-content: center; font-size: .76rem !important; }
+:root:root:root:root:root:root:root[data-theme="light"] body .toast-host > .toast { color: #2a1f16; background: linear-gradient(90deg, color-mix(in srgb, var(--tk) 18%, #fffaf2), #fffaf2 55%) !important; }
+@keyframes dkToastIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }
+@media (max-width: 600px) {
+  :root:root:root:root:root:root:root body .toast-host, :root:root:root:root:root:root:root body[data-nav="on"] .toast-host, :root:root:root:root:root:root:root body[data-screen] .toast-host { top: calc(58px + env(safe-area-inset-top)) !important; }
+}
+/* Logros: una medalla a la vez, centrada (core: components/celebrations.js) */
+.ach-drops { width: min(360px, calc(100vw - 24px)); }
+.ach-more { display: block; font-size: .68rem; opacity: .75; margin-top: 2px; }

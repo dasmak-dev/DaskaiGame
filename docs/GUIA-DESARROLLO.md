@@ -357,6 +357,50 @@ Se carga la última y sólo sobrescribe: paleta (piedra oscura, bronce, oro `--g
 - **Expedición:** al entrar en el mapa, el equipo, la mochila o un combate durante una expedición, `#zone-backdrop` (creado en `screens/expedition.js` con `screen:enter`) pinta detrás de todo la escena de la zona actual, oscurecida; `body.in-exp`.
 - **Combate:** la arena usa la escena de la zona (`components/scenes.js`, ahora con árboles muertos, ruinas, tumbas, cristales o tentáculos según la zona) y los **jefes tienen su propio fondo**: `DK.scenes.bossScene(zona, secreto)` → `boss_<escena>` (menhires bajo luna roja, bosque muerto, naufragio con tormenta, bosque de cristales, forja de lava, santuario con estatua, fauces del abismo, ruinas entre rayos) y `boss_secret` (cripta) para los jefes ocultos.
 
+### Cambios de la v5.47.0 — mejoras permanentes nuevas, ventana de Mejoras y avisos que no saturan
+
+- **Mejoras permanentes nuevas** (`data/upgrades.js` + `camp.up.*`):
+  - Agilidad: +% de velocidad en expediciones (`daskai.mult`).
+  - Puntería: + probabilidad de crítico (`battle.factors`).
+  - Primeros auxilios: el equipo se cura al ganar un combate de expedición; se suma a `winHeal`.
+  - Cazador de jefes: + emblemas por jefe (`expedition.bossEmblems`).
+  - Relicario: probabilidad de una 2.ª reliquia especial de élites y jefes (`out.relic2`).
+  - Saqueador: + % del botín al volver desde una hoguera (`campfireKeep`, máx. 90 %).
+- **Ventana de Mejoras** (`screens/camp.js → V.upgradeMenu`, `css/upgrades.css`): ahora es un modal, no un panel lateral.
+  - Arriba, tus emblemas y lo que puedes comprar. Debajo, las pestañas Mejoras, Reliquias y Pactos con contadores.
+  - Cada mejora ocupa una fila: icono, nombre, «ahora → siguiente» (o «Nivel 1: …»), pips de nivel y botón verde con el precio. La descripción va en el «tip».
+  - Reliquias y pactos van en fichas con borde del color de su rareza, filtro por rareza y la casilla «Sólo por desbloquear». La acción es desbloquear, desbloqueada (✓) o grabar/grabada.
+  - Al comprar no salta un aviso: la ficha brilla (`um-flash`).
+- **Avisos** (`core/ui.js → toast`, `css/notify.css`):
+  - Todos iguales: arriba y centrados, 360 px de ancho, 50 px de alto y dos líneas como mucho. El texto completo queda en la campana.
+  - Sólo saltan si responden a algo que acabas de hacer (clic o tecla hace < 1,8 s), si son errores, si llevan botón o si se marcan `{ important: true }`: desbloqueos, corrupción, zonas nuevas, jefe oculto y zona final.
+  - Lo automático (misiones listas, niveles de la Senda, logros en cadena, buzón…) va sólo a la campana. `{ quiet: true }` lo fuerza.
+  - Los logros salen de uno en uno; si llegan varios a la vez, la medalla dice «+N logros más en la campana».
+- **Informe semanal** (SQL `daskai-v5.47-informes.sql`, `docs/ONLINE-SUPABASE.md` §11): la base de datos genera cada lunes el resumen en `weekly_reports`, limpia lo viejo y, si hay clave de Resend en el Vault, lo envía por correo. El panel de admin tiene una pestaña nueva, «Informes».
+
+### Cambios de la v5.46.0 — corrupción que se nota, reliquias especiales y barra de expedición discreta
+
+- **Corrupción** (`data/endgame.js → corruption.levels`):
+  - Cada nivel sube mucho más a los rivales. Los atributos (`stat`) van de +25 % a +145 % y los niveles de +4 a +20.
+  - Hay una vida extra aparte (`hp`), de +20 % a +130 %, que aplica `DK.endgame.enemyHp()` en `daskai.mult`.
+  - Los jefes con la regla `bossHp` tienen +50 % de vida.
+  - Los premios suben: emblemas 1–8, monedas +25 %…+180 %, variocolor, runas de tier alto y `relic`, que hace más raras las reliquias (`DK.endgame.relicLuck()`).
+- **Reliquias especiales**: los mini jefes y los jefes ya no ofrecen elegir. Sueltan una reliquia al azar de TODAS las que no lleves (`DK.relics.drop('elite'|'boss')` en `battle.rewards`).
+  - Rareza: élite 50/40/10 % (común/rara/épica); jefe 15/50/35 %. La corrupción pasa probabilidad de común a épica.
+  - Sale en el botín como «Reliquia especial» y en el registro del combate.
+- **12 reliquias nuevas** con mecánica propia (`data/relics.js`; efectos en `systems/battle.js`):
+  - Ojo del cazador (`critEvery`): cada 3.º ataque es crítico seguro.
+  - Reloj de arena (`freeEvery`): cada 2.º ataque mágico no gasta maná.
+  - Copa carmesí (`lifesteal`), Rodela de espinas (`thorns`), Corazón de la ira (`lowHpDmg`), Hueso del festín (`killHeal`) y Cristal de almas (`killMana`).
+  - Daga del alba (`firstStrike`), Cuerno de guerra (`startStage`), Sello del matarreyes (`bossDmg`), Relicario del último aliento (`survive`) y Corona de astas (`emblems`).
+  - Los contadores viven en `st.rc`. Cuando una reliquia actúa sale un texto (`relics.proc.*`).
+- **Iconos en color de las reliquias**: hoja `icons/relics-px.png`, generada con `tools/atlas/relics.py` (búsquedas en `relicq.py`, elección en `RP`) desde el dataset de 1,4 M (CC0). Procedencia en `docs/assets/relics-px.json`; posiciones y siluetas en `js/data/gen/relicsPx.js`.
+  - `V.relicIcon(r, size)` pinta el sprite en pixel art o la silueta del color de su rareza en el estilo limpio. Se usan tamaños de 16, 32 o 48 px para que se vean nítidos.
+- **Barra de la expedición** (`css/expbar.css`; `xsProg`, `xsMods` y `xsRelics` en `screens/expedition.js`): una sola línea fina.
+  - Muestra el piso (`1/8` + barrita + mapa), las reglas del mapa como iconos con su detalle en el «tip», las reliquias como iconos (al pulsar, el detalle) y contadores sin rótulos: botín (objetos), mochila, salvaciones, reclutas, pactos y encargo.
+  - Las monedas del botín y los emblemas ya no se repiten: están en la barra superior.
+  - El mapa ya no tiene cabecera; «Dibujar» va pequeño en su esquina. La vista centrada (mercader, suceso…) usa la misma barra.
+
 ### Cambios de la v5.45.0 — duelos, clanes, nube, resumen del combate, avisos, estadísticas y versión nueva
 
 Necesita el SQL `daskai-v5.45.sql` (además de los anteriores). Todo lo nuevo en línea usa el mismo «ID + secreto» de la partida (`state.online`) y funciones `security definer`; nadie escribe en las tablas directamente.

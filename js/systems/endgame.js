@@ -47,7 +47,7 @@
       const lv = e.corruption || 0;
       if (lv === st().corruption.max && lv < this.levels().length && this.visible()) {
         st().corruption.max = lv + 1;
-        DK.ui.toast(t('corruption.unlocked', { n: lv + 1 }), { icon: 'skull', kind: 'good' });
+        DK.ui.toast(t('corruption.unlocked', { n: lv + 1 }), { icon: 'skull', kind: 'good', important: true });
         return lv + 1;
       }
       return null;
@@ -56,7 +56,7 @@
     check() {
       if (!st() || !this.visible()) return;
       st().corruption = st().corruption || { max: 0 };
-      if (!st().corruption.max) { st().corruption.max = 1; DK.ui.toast(t('corruption.revealed'), { icon: 'skull', kind: 'good' }); DK.store.save(); }
+      if (!st().corruption.max) { st().corruption.max = 1; DK.ui.toast(t('corruption.revealed'), { icon: 'skull', kind: 'good', important: true }); DK.store.save(); }
     },
   };
 
@@ -280,6 +280,10 @@
       return m;
     },
     bossHp(d) { const e = exp(); return e && d.boss && DK.corruption.has('bossHp', e.corruption || 0) ? G().corruption.bossHp : 1; },
+    /** v5.46: +% de vida extra de los rivales por la corrupción (aparte de enemyStat). */
+    enemyHp() { const e = exp(); if (!e) return 0; const c = DK.corruption.def(e.corruption || 0); return c && c.hp ? c.hp : 0; },
+    /** v5.46: cuánto mejora la rareza de las reliquias que sueltan élites y jefes (corrupción). */
+    relicLuck() { const c = DK.corruption.def(); return c && c.relic ? c.relic : 0; },
     /** + niveles de los rivales. */
     levels(n) {
       const lv = n ? n.corruption || 0 : DK.corruption.current();
@@ -309,7 +313,7 @@
       if (!secrets.length || !secrets.every((id) => DK.world.secret(id).defeated > 0)) return false;
       DK.world.progress(z).unlocked = true;
       DK.emit('zone:unlocked', { zone: z });
-      DK.ui.toast(t('endgame.finalZone', { zone: D.zones[z].name }), { icon: 'moon', kind: 'good' });
+      DK.ui.toast(t('endgame.finalZone', { zone: D.zones[z].name }), { icon: 'moon', kind: 'good', important: true });
       DK.store.save();
       return true;
     },

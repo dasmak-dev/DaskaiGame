@@ -2111,3 +2111,191 @@ end $$;
 revoke all on function public._dk_clan_tiers() from public, anon, authenticated;
 ```
 
+## 11. Informe semanal automático y limpieza (v5.47)
+
+- Cada lunes a las 7:00 UTC, `pg_cron` ejecuta `dk_weekly_job()`, que hace tres cosas:
+  1. `dk_report_build()` guarda el resumen de la semana anterior en `weekly_reports`: jugadores activos y nuevos, dónde se cae más, expediciones, jefes, runas, corrupción, duelos, clanes, nube, soporte y el tamaño de la base de datos.
+  2. `dk_cleanup()` borra los contadores de más de 120 días, los pases de duelo viejos y los informes de más de dos años.
+  3. `dk_report_email()` envía el informe por correo con Resend (`pg_net` + Vault), si guardaste la clave.
+- Panel de admin → **Informes**: ver cada semana, generarla a mano y enviarla (`admin_weekly_reports`, `admin_weekly_run`).
+- Correo (opcional): crea una cuenta en Resend y guarda dos secretos en el Vault: `resend_api_key` y `report_email`. Las instrucciones están al final del SQL. Sin dominio propio, Resend sólo envía al correo de tu cuenta.
+
+```sql
+-- =====================================================================
+-- Daskai v5.47: informe semanal automático (sin servidor propio) y limpieza de datos viejos.
+-- Ejecútalo UNA vez en Supabase → SQL Editor → Run (se puede repetir sin problema).
+--
+-- Cada lunes a las 8:00 (hora de Madrid) la propia base de datos:
+--   1. calcula el resumen de la semana anterior (dónde se cae más, jefes, runas, jugadores activos…)
+--      y lo guarda en public.weekly_reports (una fila por semana; se ve en el panel de admin → Informes);
+--   2. borra lo que ya no hace falta (contadores diarios de más de 120 días, pases de duelo viejos…);
+--   3. si has guardado la clave de Resend (paso opcional del final), te lo envía por correo.
+-- Usa dos extensiones que trae Supabase: pg_cron (tareas programadas) y pg_net (llamadas web).
+-- =====================================================================
+create extension if not exists pg_cron;
+create extension if not exists pg_net with schema extensions;
+
+create table if not exists public.weekly_reports (
+  week       int primary key,
+  from_day   date not null,
+  to_day     date not null,
+  data       jsonb not null,
+  created_at timestamptz not null default now(),
+  emailed_at timestamptz,
+  email_note text
+);
+alter table public.weekly_reports enable row level security;
+revoke all on public.weekly_reports from anon, authenticated;
+
+-- Resumen de una semana del juego (por defecto, la anterior). Sólo usa contadores anónimos y totales.
+create or replace function public.dk_report_build(p_week int default null) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare w int := coalesce(p_week, public.dk_week() - 1); d0 date := date '2026-01-05' + (w - 1) * 7; d1 date := d0 + 6; out jsonb;
+begin
+  out := jsonb_build_object(
+    'week', w, 'from', d0, 'to', d1,
+    'players', jsonb_build_object(
+      'total', (select count(*) from public.players),
+      'active', (select count(*) from public.players where updated_at::date between d0 and d1),
+      'new', (select count(*) from public.players where created_at::date between d0 and d1),
+      'activeDays', coalesce((select sum(n) from public.analytics where kind = 'active' and day between d0 and d1), 0)),
+    'deaths', coalesce((select jsonb_agg(jsonb_build_object('key', key, 'n', n) order by n desc) from (select key, sum(n)::int n from public.analytics where kind = 'death' and day between d0 and d1 group by key order by 2 desc limit 10) x), '[]'),
+    'fallen', coalesce((select jsonb_agg(jsonb_build_object('key', key, 'n', n) order by n desc) from (select key, sum(n)::int n from public.analytics where kind = 'fallen' and day between d0 and d1 group by key order by 2 desc limit 8) x), '[]'),
+    'expeditions', coalesce((select jsonb_agg(jsonb_build_object('key', key, 'n', n, 'avg', a) order by n desc) from (select key, sum(n)::int n, round(sum(sum)::numeric / greatest(sum(n), 1), 1) a from public.analytics where kind = 'exp' and day between d0 and d1 group by key order by 2 desc limit 15) x), '[]'),
+    'bosses', coalesce((select jsonb_agg(jsonb_build_object('key', key, 'n', n) order by n desc) from (select key, sum(n)::int n from public.analytics where kind = 'boss' and day between d0 and d1 group by key order by 2 desc limit 12) x), '[]'),
+    'runes', coalesce((select jsonb_agg(jsonb_build_object('key', key, 'n', n) order by n desc) from (select key, sum(n)::int n from public.analytics where kind = 'rune' and day between d0 and d1 group by key order by 2 desc limit 10) x), '[]'),
+    'corruption', coalesce((select jsonb_agg(jsonb_build_object('key', key, 'n', n) order by key) from (select key, sum(n)::int n from public.analytics where kind = 'corr' and day between d0 and d1 group by key) x), '[]'),
+    'kinds', coalesce((select jsonb_agg(jsonb_build_object('key', key, 'n', n) order by n desc) from (select key, sum(n)::int n from public.analytics where kind = 'kind' and day between d0 and d1 group by key) x), '[]'),
+    'versions', coalesce((select jsonb_agg(jsonb_build_object('key', key, 'n', n) order by n desc) from (select key, sum(n)::int n from public.analytics where kind = 'version' and day between d0 and d1 group by key order by 2 desc limit 5) x), '[]'),
+    'duels', jsonb_build_object('won', coalesce((select sum(n) from public.analytics where kind = 'duel' and key = 'won' and day between d0 and d1), 0), 'lost', coalesce((select sum(n) from public.analytics where kind = 'duel' and key = 'lost' and day between d0 and d1), 0)),
+    'clans', jsonb_build_object('total', (select count(*) from public.clans), 'new', (select count(*) from public.clans where created_at::date between d0 and d1), 'members', (select count(*) from public.clan_members)),
+    'cloud', jsonb_build_object('saves', (select count(*) from public.cloud_saves), 'mb', round(coalesce((select sum(bytes) from public.cloud_saves), 0) / 1048576.0, 1)),
+    'support', jsonb_build_object('open', (select count(*) from public.reports where not closed), 'messages', (select count(*) from public.support where not from_admin and created_at::date between d0 and d1)),
+    'dbMb', round(pg_database_size(current_database()) / 1048576.0, 1));
+  insert into public.weekly_reports (week, from_day, to_day, data) values (w, d0, d1, out)
+    on conflict (week) do update set data = excluded.data, created_at = now();
+  return out;
+end $$;
+revoke all on function public.dk_report_build(int) from public, anon, authenticated;
+
+-- Limpieza: lo que ya no sirve para nada (nada de esto se ve en el juego)
+create or replace function public.dk_cleanup() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare a int; b int; c int; d int;
+begin
+  delete from public.analytics where day < current_date - 120; get diagnostics a = row_count;
+  delete from public.duel_tokens where created_at < now() - interval '2 days'; get diagnostics b = row_count;
+  delete from public.cloud_fails where at < now() - interval '1 day'; get diagnostics c = row_count;
+  delete from public.weekly_reports where week < public.dk_week() - 104; get diagnostics d = row_count; -- (dos años de informes)
+  return jsonb_build_object('analytics', a, 'duel_tokens', b, 'cloud_fails', c, 'reports', d);
+end $$;
+revoke all on function public.dk_cleanup() from public, anon, authenticated;
+
+-- Texto del correo (HTML sencillo)
+-- «pradera:d2:f7» → «pradera · mapa 2 · piso 7» (y los finales en español)
+create or replace function public.dk_report_key(k text) returns text language sql immutable as $$
+  select replace(replace(replace(replace(replace(replace(regexp_replace(regexp_replace(coalesce(k, ''), ':d(\d+)', ' · mapa \1', 'g'), ':f(\d+)', ' · piso \1', 'g'),
+    ':completed', ' · completada'), ':lostBoss', ' · perdida en el jefe'), ':lost', ' · perdida'), ':retreat', ' · retirada'), ':campfire', ' · hoguera'), ':', ' · ')
+$$;
+create or replace function public.dk_report_html(r jsonb) returns text
+language plpgsql immutable as $$
+declare h text; x jsonb;
+begin
+  h := '<div style="font-family:Arial,sans-serif;max-width:620px;color:#222"><h2 style="color:#b45309">Daskai · semana ' || (r->>'week') || '</h2>'
+    || '<p style="color:#666">' || (r->>'from') || ' → ' || (r->>'to') || '</p>'
+    || '<p><b>Jugadores:</b> ' || (r->'players'->>'active') || ' activos · ' || (r->'players'->>'new') || ' nuevos · ' || (r->'players'->>'total') || ' en total</p>';
+  h := h || '<h3>Dónde se cae más (zona · piso)</h3><table cellpadding="4" style="border-collapse:collapse">';
+  for x in select * from jsonb_array_elements(r->'deaths') loop h := h || '<tr><td>' || public.dk_report_key(x->>'key') || '</td><td align="right"><b>' || (x->>'n') || '</b></td></tr>'; end loop;
+  h := h || '</table><h3>Expediciones (zona · final)</h3><table cellpadding="4" style="border-collapse:collapse"><tr style="color:#888"><td></td><td>n</td><td>pisos</td></tr>';
+  for x in select * from jsonb_array_elements(r->'expeditions') loop h := h || '<tr><td>' || public.dk_report_key(x->>'key') || '</td><td align="right">' || (x->>'n') || '</td><td align="right">' || (x->>'avg') || '</td></tr>'; end loop;
+  h := h || '</table><h3>Jefes</h3><table cellpadding="4" style="border-collapse:collapse">';
+  for x in select * from jsonb_array_elements(r->'bosses') loop h := h || '<tr><td>' || public.dk_report_key(x->>'key') || '</td><td align="right">' || (x->>'n') || '</td></tr>'; end loop;
+  h := h || '</table><h3>Runas más usadas</h3><p>';
+  for x in select * from jsonb_array_elements(r->'runes') loop h := h || public.dk_report_key(x->>'key') || ' (' || (x->>'n') || ') · '; end loop;
+  h := h || '</p><p><b>Duelos:</b> ' || (r->'duels'->>'won') || ' ganados / ' || (r->'duels'->>'lost') || ' perdidos · <b>Clanes:</b> ' || (r->'clans'->>'total') || ' (' || (r->'clans'->>'new') || ' nuevos)'
+    || ' · <b>Nube:</b> ' || (r->'cloud'->>'saves') || ' copias, ' || (r->'cloud'->>'mb') || ' MB · <b>Base de datos:</b> ' || (r->>'dbMb') || ' MB</p>'
+    || '<p><b>Soporte:</b> ' || (r->'support'->>'messages') || ' mensajes · ' || (r->'support'->>'open') || ' denuncias abiertas</p>'
+    || '<p style="color:#999;font-size:12px">Informe automático de la base de datos de Daskai. Todo el detalle, en el panel de admin → Informes.</p></div>';
+  return h;
+end $$;
+
+-- Envío por correo con Resend (sólo si has guardado la clave en el Vault: ver el paso opcional del final)
+create or replace function public.dk_report_email(p_week int default null) returns text
+language plpgsql security definer set search_path = public, extensions as $$
+declare w int := coalesce(p_week, public.dk_week() - 1); r public.weekly_reports; k text; dest text; rid bigint;
+begin
+  select * into r from public.weekly_reports where week = w;
+  if not found then return 'noreport'; end if;
+  begin
+    select decrypted_secret into k from vault.decrypted_secrets where name = 'resend_api_key' limit 1;
+    select decrypted_secret into dest from vault.decrypted_secrets where name = 'report_email' limit 1;
+  exception when others then return 'novault'; end;
+  if k is null or dest is null then update public.weekly_reports set email_note = 'sin clave de Resend' where week = w; return 'nokey'; end if;
+  select net.http_post(
+    url := 'https://api.resend.com/emails',
+    headers := jsonb_build_object('Authorization', 'Bearer ' || k, 'Content-Type', 'application/json'),
+    body := jsonb_build_object('from', 'Daskai <onboarding@resend.dev>', 'to', jsonb_build_array(dest), 'subject', 'Daskai · informe de la semana ' || w, 'html', public.dk_report_html(r.data))
+  ) into rid;
+  update public.weekly_reports set emailed_at = now(), email_note = 'enviado (petición ' || rid || ')' where week = w;
+  return 'sent';
+end $$;
+revoke all on function public.dk_report_email(int) from public, anon, authenticated;
+
+-- Lo que hace la tarea de cada lunes
+create or replace function public.dk_weekly_job() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare r jsonb; c jsonb; m text;
+begin
+  r := public.dk_report_build();
+  c := public.dk_cleanup();
+  m := public.dk_report_email();
+  return jsonb_build_object('week', r->'week', 'cleanup', c, 'email', m);
+end $$;
+revoke all on function public.dk_weekly_job() from public, anon, authenticated;
+
+-- Programar la tarea: lunes a las 7:00 UTC (8:00 en invierno en Madrid, 9:00 en verano)
+do $$
+begin
+  if exists (select 1 from pg_extension where extname = 'pg_cron') then
+    perform cron.unschedule(jobid) from cron.job where jobname = 'daskai-weekly-report';
+    perform cron.schedule('daskai-weekly-report', '0 7 * * 1', 'select public.dk_weekly_job()');
+  end if;
+end $$;
+
+-- ---------- Panel de admin (pestaña Informes) ----------
+create or replace function public.admin_weekly_reports() returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare has_key boolean := false;
+begin
+  perform public._dk_need_admin();
+  begin select exists (select 1 from vault.decrypted_secrets where name = 'resend_api_key') and exists (select 1 from vault.decrypted_secrets where name = 'report_email') into has_key; exception when others then has_key := false; end;
+  return jsonb_build_object('email', has_key,
+    'cron', exists (select 1 from pg_extension where extname = 'pg_cron'),
+    'reports', coalesce((select jsonb_agg(jsonb_build_object('week', week, 'from', from_day, 'to', to_day, 'data', data, 'created_at', created_at, 'emailed_at', emailed_at, 'email_note', email_note) order by week desc) from (select * from public.weekly_reports order by week desc limit 26) x), '[]'));
+end $$;
+create or replace function public.admin_weekly_run(p_current boolean default false, p_email boolean default false) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare w int := public.dk_week() - (case when p_current then 0 else 1 end); r jsonb; m text;
+begin
+  perform public._dk_need_admin();
+  r := public.dk_report_build(w);
+  if p_email then m := public.dk_report_email(w); end if;
+  insert into public.admin_log (admin, action, target, detail) values (auth.uid(), 'report', w::text, jsonb_build_object('email', m));
+  return jsonb_build_object('week', w, 'email', m);
+end $$;
+revoke all on function public.admin_weekly_reports() from public, anon;
+revoke all on function public.admin_weekly_run(boolean, boolean) from public, anon;
+grant execute on function public.admin_weekly_reports() to authenticated;
+grant execute on function public.admin_weekly_run(boolean, boolean) to authenticated;
+
+-- =====================================================================
+-- PASO OPCIONAL: recibir el informe por correo (Resend, gratis hasta 3.000 correos al mes).
+--  1. Crea una cuenta en https://resend.com con TU correo y crea una API key (empieza por «re_»).
+--  2. Quita los dos guiones del principio de estas dos líneas, pon tu clave y tu correo, y ejecútalas:
+-- select vault.create_secret('re_TU_CLAVE_AQUI', 'resend_api_key');
+-- select vault.create_secret('franlopezescandell@gmail.com', 'report_email');
+--  (Sin dominio propio, Resend sólo deja enviar al correo con el que creaste la cuenta: usa ese.)
+--  Para probarlo ya: panel de admin → Informes → «Generar y enviar».
+-- =====================================================================
+```
+

@@ -98,6 +98,28 @@
     return span;
   }
 
+  /**
+   * v5.46: icono de una reliquia. En pixel art, su sprite en color (js/data/gen/relicsPx.js); en el estilo limpio,
+   * su silueta en el color de su rareza. Si no tiene, el icono de trazo de siempre.
+   */
+  const RELIC_C = { comun: '#cbd5e1', raro: '#60a5fa', epico: '#c084fc', legendario: '#fbbf24' };
+  V.relicIcon = (r, size = 20) => {
+    const A = DK.relicsPx, i = A && r ? A.ids[r.id] : undefined;
+    if (i === undefined) return DK.icon(r ? r.icon : 'amulet', size);
+    const span = document.createElement('span');
+    span.className = 'relic-ico r-' + r.rarity;
+    span.style.width = span.style.height = size + 'px';
+    if (DK.settings.get('pixelArt') !== false) {
+      const col = i % A.cols, row = Math.floor(i / A.cols), spr = document.createElement('i');
+      spr.className = 'relic-spr';
+      spr.style.backgroundImage = `url(${A.src})`;
+      spr.style.backgroundSize = `${A.cols * 100}% ${A.rows * 100}%`;
+      spr.style.backgroundPosition = `${A.cols > 1 ? (col / (A.cols - 1)) * 100 : 0}% ${A.rows > 1 ? (row / (A.rows - 1)) * 100 : 0}%`;
+      span.append(spr);
+    } else span.innerHTML = `<svg viewBox="0 0 24 24" width="${size}" height="${size}" aria-hidden="true"><path fill-rule="evenodd" fill="${RELIC_C[r.rarity] || '#e5e7eb'}" d="${A.glyphs[r.id]}"/></svg>`;
+    return span;
+  };
+
   /** v5.22: dibujo dentro del icono limpio = silueta del sprite del objeto (o su icono de trazo si no tiene). */
   function glyphOf(it, color) {
     const g = DK.itemsPx && DK.itemsPx.glyphs && DK.itemsPx.glyphs[it.id];

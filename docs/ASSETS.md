@@ -20,6 +20,14 @@
 - Están aislados en dos hojas (`icons/items-px.png`, `icons/ui-px.png`) y dos archivos generados. Para cambiarlos por arte encargado basta con sustituirlos manteniendo la misma cuadrícula y regenerar las siluetas. Las siluetas del estilo limpio se calculan a partir del sprite, así que también derivan de estos iconos.
 - (Esto es orientación, no asesoramiento legal.)
 
+### Iconos de las reliquias (v5.46)
+
+- `icons/relics-px.png`: 31 iconos en color de 16 × 16 px (8 por fila), uno por reliquia. Salen del mismo dataset y tienen la misma licencia (CC0).
+- La procedencia de cada icono está en `docs/assets/relics-px.json`.
+- Para regenerarlos: `DASKAI_DATASET=/ruta/_dataset python3 tools/atlas/relics.py`.
+  - Las búsquedas están en `tools/atlas/relicq.py` y la elección en `RP`.
+  - Para ver candidatos: `python3 tools/atlas/relicpick.py 0` (o `… 0 id1,id2`).
+
 ### ¿Se puede borrar `_dataset/`?
 
 Sí. El juego no lo lee: todo lo que usa ya está generado en `icons/items-px.png`, `icons/ui-px.png`, `js/data/gen/itemsPx.js`, `js/data/gen/iconsPx.js`. La procedencia queda en `docs/assets/*.json`. Sólo hace falta si quieres volver a elegir o cambiar iconos con `tools/atlas`: en ese caso, vuelve a descargar los `.parquet` desde Hugging Face. Los `row_id` guardados permiten encontrar exactamente los mismos iconos.

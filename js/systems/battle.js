@@ -102,6 +102,9 @@
       // Pasivas «al entrar» (mirada fiera, arranque…): efectos temporales de los dos
       st.timed = { ally: [], enemy: [] }; st.entryLog = [];
       this.applyEntry(st, 'ally', null); this.applyEntry(st, 'enemy', null);
+      // v5.46: Cuerno de guerra: empiezas con más ataque y ataque mágico
+      const horn = this.relic(st, 'startStage');
+      if (horn) { const n = horn.effect.n || 1; st.stages.ally.atk = Math.min(3, st.stages.ally.atk + n); st.stages.ally.matk = Math.min(3, st.stages.ally.matk + n); st.entryLog.push({ text: t('relics.proc.startStage', { relic: horn.name, name: DK.daskai.name(this.ally(st)) }), kind: 'good' }); }
       st.intent = this.enemyChoice(st);
       return st;
     },
@@ -130,6 +133,12 @@
       st.intent = this.enemyChoice(st);
       return st;
     },
+
+    /* ---------------- v5.46: reliquias con mecánica propia ---------------- */
+    /** La reliquia de ese tipo (sólo en expedición y para tu equipo) o null. */
+    relic(st, type) { return st.expedition && DK.relics ? DK.relics.get(type) : null; },
+    /** Texto corto cuando una reliquia hace algo (registro del combate). */
+    relicLog(st, ev, key, r, o = {}, kind = 'good') { this.push(st, ev, { text: t('relics.proc.' + key, Object.assign({ relic: r.name }, o)), kind, cat: 'dmg' }); },
 
     /* ---------------- Fases de jefe ---------------- */
     /** Fases del jefe de una zona (más una de furia con el pacto «Jefe furioso»). */
@@ -307,7 +316,12 @@
       // Reliquias y Mejoras de expedición: más daño para ti, menos daño recibido
       let bonus = 1, critP = C().critChance;
       if (st.expedition) {
-        if (side === 'ally') { bonus *= 1 + DK.relics.sum('dmg') + DK.daskai.houses(A).reduce((a, hh) => a + DK.relics.houseDmg(hh), 0) + DK.camp.value('fuerza'); critP += DK.relics.sum('crit'); }
+        if (side === 'ally') {
+          const hpA = A.cur ? A.cur.hp / Math.max(1, DK.daskai.stats(A).hp) : 1;
+          // v5.46: Daga del alba (primer golpe), Corazón de la ira (poca vida), Sello del matarreyes (jefes y mini jefes)
+          const extra = (!(st.opened && st.opened.ally) ? DK.relics.sum('firstStrike') : 0) + (hpA < 0.4 ? DK.relics.sum('lowHpDmg') : 0) + ((st.boss || st.elite) && T === st.enemy ? DK.relics.sum('bossDmg') : 0);
+          bonus *= 1 + DK.relics.sum('dmg') + DK.daskai.houses(A).reduce((a, hh) => a + DK.relics.houseDmg(hh), 0) + DK.camp.value('fuerza') + extra; critP += DK.relics.sum('crit') + DK.camp.value('punteria');
+        }
         else bonus *= Math.max(0.3, 1 - DK.relics.sum('defense') - DK.camp.value('coraza'));
       }
       // v4.74: equipamiento: +% daño (prefijos, legendarias) y -% daño recibido (sufijos)
@@ -346,10 +360,10 @@
     },
 
     /** Calcula el daño de un ataque de `side` contra el otro (o contra `o.target`). */
-    damage(st, side, move, { random = true, ignoreHouse = false, target, hideWeak = false } = {}) {
+    damage(st, side, move, { random = true, ignoreHouse = false, target, hideWeak = false, forceCrit = false } = {}) {
       const A = this.get(st, side);
       const f = this.factors(st, side, move, { ignoreHouse, target, hideWeak });
-      const crit = random && U.chance(f.critP);
+      const crit = forceCrit || (random && U.chance(f.critP));
       const dmg = this.rawDamage({
         power: move.power, kind: move.kind, attLevel: A.level, atk: f.atk, def: f.def,
         mult: f.mult * (crit ? (1 + (f.critDmg || 0)) * (1 - (f.critGuard || 0)) : 1), roll: random ? U.randf(0.88, 1) : 1, crit, burned: f.burned,
@@ -543,7 +557,10 @@
       const m = D.moves[moveId];
       if (this.blockedBy(st, side, ev)) return;
       const house = m.house || (m.kind === 'fisico' ? null : D.species[A.species].house);
-      if (m.kind === 'magico' && m.mp) A.cur.mp = Math.max(0, A.cur.mp - this.mpCost(A, moveId));
+      st.rc = st.rc || { atk: 0, mag: 0 }; // v5.46: cuenta de ataques de tu equipo en este combate (reliquias)
+      let freeMp = false;
+      if (side === 'ally' && m.kind === 'magico' && m.mp) { const hg = this.relic(st, 'freeEvery'); st.rc.mag++; if (hg && st.rc.mag % (hg.effect.n || 2) === 0) { freeMp = true; this.relicLog(st, ev, 'free', hg, {}, 'muted'); } }
+      if (m.kind === 'magico' && m.mp && !freeMp) A.cur.mp = Math.max(0, A.cur.mp - this.mpCost(A, moveId));
       if (side === 'enemy') DK.codex.recordMove(st.zoneId, A.species, moveId);
       else st.lastMove = moveId;
       this.push(st, ev, { text: t('battle.uses', { name: this.name(st, side), move: m.name }), anim: 'attack', side, cat: 'dmg', move: moveId, house, kind: m.kind });
@@ -558,13 +575,18 @@
       // v4.74: esquiva (equipamiento del que recibe)
       if (m.power > 0 && gT.dodge && U.chance(gT.dodge)) { this.push(st, ev, { text: t('battle.dodged', { name: this.name(st, other(side)) }), kind: 'muted', anim: 'miss', side: other(side), cat: 'dmg' }); return; }
       if (m.power > 0) {
-        const r = this.damage(st, side, m);
+        // v5.46: Ojo del cazador: cada n-ésimo ataque de tu equipo en este combate es crítico seguro
+        let sure = false;
+        if (side === 'ally') { st.rc.atk++; const eye = this.relic(st, 'critEvery'); if (eye && st.rc.atk % (eye.effect.n || 3) === 0) { sure = true; this.relicLog(st, ev, 'crit', eye, {}, 'warn'); } }
+        const r = this.damage(st, side, m, { forceCrit: sure });
         // v4.81: aguantar un golpe mortal con 1 PV (escudos; una vez por combate)
         st.endured = st.endured || {};
         if (r.dmg >= T.cur.hp && T.cur.hp > 1 && gT.endure && !st.endured[T.uid] && U.chance(gT.endure)) {
           st.endured[T.uid] = true; r.dmg = T.cur.hp - 1;
           this.push(st, ev, { text: t('battle.endure', { name: this.name(st, other(side)) }), kind: 'warn', cat: 'dmg' });
         }
+        // v5.46: Relicario del último aliento: una vez por combate, tu daskai aguanta un golpe mortal con 1 PV
+        if (side === 'enemy' && r.dmg >= T.cur.hp && T.cur.hp > 1 && !st.lastBreath) { const lb = this.relic(st, 'survive'); if (lb) { st.lastBreath = true; r.dmg = T.cur.hp - 1; this.relicLog(st, ev, 'survive', lb, { name: this.name(st, 'ally') }, 'level'); } }
         (st.opened = st.opened || {})[side] = true; // ya dio su primer golpe (botas)
         dealt = Math.min(r.dmg, T.cur.hp);
         T.cur.hp = Math.max(0, T.cur.hp - r.dmg);
@@ -601,6 +623,21 @@
           if (mana > 0) A.cur.mp += mana;
           const thorns = gT.thorns ? Math.min(Math.round(dealt * gT.thorns), A.cur.hp - 1) : 0;
           if (thorns > 0) { A.cur.hp -= thorns; this.push(st, ev, { text: t('battle.thorns', { name: this.name(st, other(side)), n: thorns }), kind: 'warn', anim: 'hit', side, amount: thorns, cat: 'dmg' }); }
+          // v5.46: reliquias: Copa carmesí (robo de vida), Rodela de espinas (devuelve daño), Cristal de almas y Hueso del festín (al derrotar)
+          if (side === 'ally' && A.cur.hp > 0) {
+            const cup = this.relic(st, 'lifesteal'), ls = cup ? Math.min(Math.round(dealt * cup.effect.pct), sA.hp - A.cur.hp) : 0;
+            if (ls > 0) { A.cur.hp += ls; this.push(st, ev, { text: t('relics.proc.lifesteal', { relic: cup.name, name: this.name(st, side), n: ls }), anim: 'heal', side, amount: ls, cat: 'dmg' }); }
+            if (T.cur.hp <= 0) {
+              const cm = this.relic(st, 'killMana'), mp = cm ? Math.min(Math.round(sA.mp * cm.effect.pct), sA.mp - A.cur.mp) : 0;
+              if (mp > 0) { A.cur.mp += mp; this.push(st, ev, { text: t('relics.proc.killMana', { relic: cm.name, n: mp }), anim: 'mana', side, amount: mp, cat: 'dmg' }); }
+              const kh = this.relic(st, 'killHeal'), hl = kh ? Math.min(Math.round(sA.hp * kh.effect.pct), sA.hp - A.cur.hp) : 0;
+              if (hl > 0) { A.cur.hp += hl; this.push(st, ev, { text: t('relics.proc.killHeal', { relic: kh.name, name: this.name(st, side), n: hl }), anim: 'heal', side, amount: hl, cat: 'dmg' }); }
+            }
+          }
+          if (side === 'enemy' && T.cur.hp > 0) {
+            const sp = this.relic(st, 'thorns'), th = sp ? Math.min(Math.round(dealt * sp.effect.pct), A.cur.hp - 1) : 0;
+            if (th > 0) { A.cur.hp -= th; this.push(st, ev, { text: t('relics.proc.thorns', { relic: sp.name, n: th }), kind: 'good', anim: 'hit', side, amount: th, cat: 'dmg' }); }
+          }
           // v4.81: festín (anillos): cura al derrotar al rival
           const feast = T.cur.hp <= 0 && gA.killHeal && A.cur.hp > 0 ? Math.min(Math.round(sA.hp * gA.killHeal), sA.hp - A.cur.hp) : 0;
           if (feast > 0) { A.cur.hp += feast; this.push(st, ev, { text: t('battle.feast', { name: this.name(st, side), n: feast }), anim: 'heal', side, amount: feast, cat: 'dmg' }); }
@@ -892,13 +929,16 @@
         out.gear = split.gear; // v4.74: piezas con su rareza
         out.coins = DK.expedition.active().loot.coins - coins0; // con la bonificación de reliquias
         // Reliquias que curan al ganar
-        const wh = DK.relics.sum('winHeal');
+        const wh = DK.relics.sum('winHeal') + DK.camp.value('auxilios'); // v5.46: + Primeros auxilios
         if (wh) DK.party.active().forEach((d) => { if (!DK.daskai.isFainted(d)) { const s = DK.daskai.stats(d); d.cur.hp = Math.min(s.hp, d.cur.hp + Math.round(s.hp * wh)); } });
         out.winHeal = wh;
         // Tras vencer a un rival de élite eliges una reliquia
         // Runas de expedición: élites a veces, jefes siempre (DK.runes)
         out.runes = DK.runes.drop(st.secret ? 'secret' : st.boss ? 'boss' : st.elite ? 'elite' : '');
-        if (st.elite) { DK.relics.offer(['raro', 'epico'], 3); const ex = DK.expedition.active(); if (ex && !(ex.relicChoice || []).length) DK.relics.offer(['comun', 'raro', 'epico'], 3); out.relicOffer = true; }
+        // v5.46: los mini jefes y los jefes sueltan una reliquia especial al azar (de todas; la corrupción la hace más rara)
+        if (st.elite || st.boss) { const rid = DK.relics.drop(st.boss ? 'boss' : 'elite'); if (rid) { DK.relics.give(rid); DK.expedition.logEvent('relic', { id: rid }); out.relic = rid; }
+          // v5.46: Relicario (mejora permanente): a veces suelta otra
+          if (U.chance(DK.camp.value('relicario'))) { const r2 = DK.relics.drop(st.boss ? 'boss' : 'elite'); if (r2) { DK.relics.give(r2); DK.expedition.logEvent('relic', { id: r2 }); out.relic2 = r2; } } }
       } else { out.drops.forEach((id) => DK.bag.add(id)); DK.wallet.add(out.coins, { silent: true }); }
 
       DK.store.state.stats.wins++;

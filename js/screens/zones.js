@@ -338,10 +338,10 @@
           tip: lv > max ? t('corruption.lockedTip', { n: lv - 1 }) : lv ? t('corruption.levelN', { n: lv }) : t('corruption.none'),
           onClick: () => { C.set(lv); DK.audio.sfx(lv ? 'select' : 'click'); refresh(); } }, lv > max ? DK.icon('lock', 10) : lv ? ROMAN[lv - 1] : '—');
         cells.push(cell('cor', 'skull', t('corruption.title'), h('div', { class: 'wt-pips egx-levels' }, (max > 0 ? [1, 2, 3, 4, 5] : [0, 1, 2, 3, 4, 5]).map(opt)),
-          def ? t('corruption.foes', { lv: def.levels, n: Math.round(def.stat * 100) }) : (max < C.levels().length ? t('corruption.help', { n: max }) : t('corruption.helpMax')), cur > 0));
+          def ? t('corruption.foes', { lv: def.levels, n: Math.round(def.stat * 100), hp: Math.round((def.hp || 0) * 100) }) : (max < C.levels().length ? t('corruption.help', { n: max }) : t('corruption.helpMax')), cur > 0));
         if (def) {
-          harder.push(t('corruption.foes', { lv: def.levels, n: Math.round(def.stat * 100) }), ...C.levels().slice(0, cur).map((l) => l.rule).filter(Boolean).map((r) => t('corruption.rule.' + r)));
-          better.push(t('corruption.rewardEmblems', { n: def.emblems }), '+' + Math.round(def.coins * 100) + '% ' + t('wt.coins'), t('corruption.rewardShiny', { n: Math.round(def.shiny * 100) }), t('corruption.rewardTier', { n: Math.round(def.tier * 100) }));
+          harder.push(t('corruption.foes', { lv: def.levels, n: Math.round(def.stat * 100), hp: Math.round((def.hp || 0) * 100) }), ...C.levels().slice(0, cur).map((l) => l.rule).filter(Boolean).map((r) => t('corruption.rule.' + r)));
+          better.push(t('corruption.rewardEmblems', { n: def.emblems }), '+' + Math.round(def.coins * 100) + '% ' + t('wt.coins'), t('corruption.rewardShiny', { n: Math.round(def.shiny * 100) }), t('corruption.rewardTier', { n: Math.round(def.tier * 100) }), t('corruption.rewardRelic'));
         }
       }
       if (DK.nightmare.available(n.zone) && n.kind !== 'abismo') {
@@ -353,7 +353,7 @@
       }
     }
     const eng = DK.engrave.list();
-    if (eng.length) cells.push(cell('engrave', 'amulet', t('engrave.title'), h('div', { class: 'wt-eng' }, eng.map((id) => h('span', { class: 'wt-eng-r', tip: V.relicText ? V.relicText(D.relics[id]) : '' }, DK.icon(D.relics[id].icon, 11), D.relics[id].name))), t('wt.engraveSub'), false));
+    if (eng.length) cells.push(cell('engrave', 'amulet', t('engrave.title'), h('div', { class: 'wt-eng' }, eng.map((id) => h('span', { class: 'wt-eng-r', tip: V.relicText ? V.relicText(D.relics[id]) : '' }, V.relicIcon(D.relics[id], 16), D.relics[id].name))), t('wt.engraveSub'), false));
     if (!cells.length) return null;
     return h('section', { class: 'wt-panel wt-rules' }, wtHead(t('wt.rules'), t('wt.rulesSub')),
       h('div', { class: 'wt-rgrid' + (cells.length === 1 ? ' one' : '') }, cells), extra,

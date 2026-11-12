@@ -269,12 +269,12 @@ module.exports = {
         const e = E.active(); const tn = e.map.rows.flat().find((n) => n.type === 'treasure') || Object.assign(e.map.rows[1][0], { type: 'treasure' }); e.pending = tn.id; DK.router.reset('expedition');
         const stage = !!document.querySelector('.ev-stage.chest-stage .ev-bubble h3') && document.querySelectorAll('.chest-stage .loot-card').length > 0;
         const tracks = ['boss_synth', 'boss_synth_rage', 'horde'].every((x) => DK.audio.has(x));
-        DK.ui.toast('prueba'); const tst = document.querySelector('.toast-host .toast'); const tw = tst ? tst.getBoundingClientRect().width : 999;
+        DK.ui.toast('prueba', { important: true }); const tst = document.querySelector('.toast-host .toast'); const tw = tst ? tst.getBoundingClientRect().width : 999;
         return { stage, tracks, tw };
       });
       check(r.stage, 'el cofre no usa el escenario');
       check(r.tracks, 'faltan pistas electrónicas');
-      check(r.tw < 300, 'el aviso sigue siendo grande: ' + r.tw);
+      check(r.tw <= 380, 'el aviso sigue siendo grande: ' + r.tw); // v5.46: todos del mismo ancho (≤ 360 px)
     }),
   }, {
     name: 'v5.18: atributos por forma (≈200/300/400/500, ~1000 a Nv.100), legendarios que se unen, objetos y piezas nuevas',

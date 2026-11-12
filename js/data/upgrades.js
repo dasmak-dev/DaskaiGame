@@ -30,6 +30,13 @@
  *   fenix       salvaciones extra de la muerte por expedición     (rules.maxRevives)
  *   runas       1: huecos de runas y runas de tier I · 2: tier II ·
  *               3: tier III (sin ella no caen runas)               (runes.maxTier)
+ *  v5.46
+ *   agilidad    +% de velocidad de tu equipo en expediciones      (daskai.mult)
+ *   punteria    + probabilidad de crítico en expediciones          (battle.factors)
+ *   auxilios    al ganar un combate de expedición, el equipo cura un % (battle.rewards)
+ *   cazador     + emblemas por cada jefe                           (expedition.bossEmblems)
+ *   relicario   probabilidad de que élites y jefes suelten otra reliquia (battle.rewards)
+ *   saqueador   + % del botín que conservas al volver desde una hoguera (expedition.campfireExit)
  *
  * Para añadir una mejora: añádela aquí, escribe sus textos en
  * lang → camp.up.<id>.{name,desc,effect} y lee DK.camp.value('<id>')
@@ -42,10 +49,14 @@
     { id: 'vigor', icon: 'heart', group: 'combat', levels: L([1, 0.08], [2, 0.16], [4, 0.25]) },
     { id: 'fuerza', icon: 'swords', group: 'combat', levels: L([1, 0.06], [3, 0.12], [5, 0.2]) },
     { id: 'coraza', icon: 'shield', group: 'combat', levels: L([1, 0.05], [3, 0.1], [5, 0.15]) },
+    { id: 'agilidad', icon: 'wind', group: 'combat', levels: L([2, 0.06], [4, 0.12], [7, 0.18]) },
+    { id: 'punteria', icon: 'target', group: 'combat', levels: L([2, 0.04], [4, 0.08], [7, 0.12]) },
+    { id: 'auxilios', icon: 'heart', group: 'combat', levels: L([2, 0.06], [4, 0.12], [7, 0.2]) },
     // Progreso
     { id: 'sabiduria', icon: 'star', group: 'progress', levels: L([1, 0.2], [2, 0.4], [4, 0.7]) },
     { id: 'mochila', icon: 'coin', group: 'progress', levels: L([1, 0.15], [2, 0.3], [4, 0.5]) },
     { id: 'atajo', icon: 'compass', group: 'progress', levels: L([3, 1], [6, 2]) },
+    { id: 'cazador', icon: 'crown', group: 'progress', levels: L([10, 1], [20, 2]) },
     // Expedición
     { id: 'equipaje', icon: 'bag', group: 'expedition', levels: L([1, 4], [2, 8], [3, 14]) },
     { id: 'provisiones', icon: 'flask', group: 'expedition', levels: L([1, 2], [1, 3], [2, 5]) },
@@ -56,6 +67,8 @@
     { id: 'comercio', icon: 'shop', group: 'expedition', levels: L([1, 1], [2, 2]) },
     { id: 'fenix', icon: 'sparkles', group: 'expedition', levels: L([4, 1], [8, 2]) },
     { id: 'runas', icon: 'rune', group: 'expedition', levels: L([2, 1], [6, 2], [12, 3]) },
+    { id: 'relicario', icon: 'amulet', group: 'expedition', levels: L([4, 0.15], [8, 0.3], [14, 0.5]) },
+    { id: 'saqueador', icon: 'pouch', group: 'expedition', levels: L([3, 0.1], [6, 0.2], [10, 0.3]) },
   ];
   DK.data.upgradeGroups = ['combat', 'progress', 'expedition'];
 })();
