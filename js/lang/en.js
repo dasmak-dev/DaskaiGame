@@ -32,7 +32,7 @@ DK.i18n.register('en', {
     load: 'Load game', loadDesc: 'Pick, export or import saves',
     settings: 'Settings', settingsDesc: 'Sound, accessibility, language...',
     exit: 'Exit', exitDesc: 'Close the game',
-    footer: 'v{v} · Autosaved in this browser',
+    cloudTiny: 'Cloud', footer: 'v{v} · Autosaved in this browser',
   },
   saves: {
     overwriteShort: 'Restart', slotN: 'Slot {n}', lastPlayed: 'Last played', emptyHint: 'Free for a new adventure.', inExpedition: 'Your team is still on an expedition', onExpedition: 'On expedition',

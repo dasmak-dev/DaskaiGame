@@ -33,7 +33,7 @@ DK.i18n.register('es', {
     load: 'Cargar partida', loadDesc: 'Elige, exporta o importa partidas',
     settings: 'Ajustes', settingsDesc: 'Sonido, accesibilidad, idioma...',
     exit: 'Salir', exitDesc: 'Cerrar el juego',
-    footer: 'v{v} · Guardado automático en este navegador',
+    cloudTiny: 'Nube', footer: 'v{v} · Guardado automático en este navegador',
   },
   saves: {
     overwriteShort: 'Reiniciar', slotN: 'Ranura {n}', lastPlayed: 'Última jugada', emptyHint: 'Libre para una aventura nueva.', inExpedition: 'Tu equipo sigue de expedición', onExpedition: 'En expedición',

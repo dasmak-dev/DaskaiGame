@@ -357,6 +357,13 @@ Se carga la última y sólo sobrescribe: paleta (piedra oscura, bronce, oro `--g
 - **Expedición:** al entrar en el mapa, el equipo, la mochila o un combate durante una expedición, `#zone-backdrop` (creado en `screens/expedition.js` con `screen:enter`) pinta detrás de todo la escena de la zona actual, oscurecida; `body.in-exp`.
 - **Combate:** la arena usa la escena de la zona (`components/scenes.js`, ahora con árboles muertos, ruinas, tumbas, cristales o tentáculos según la zona) y los **jefes tienen su propio fondo**: `DK.scenes.bossScene(zona, secreto)` → `boss_<escena>` (menhires bajo luna roja, bosque muerto, naufragio con tormenta, bosque de cristales, forja de lava, santuario con estatua, fauces del abismo, ruinas entre rayos) y `boss_secret` (cripta) para los jefes ocultos.
 
+### Cambios de la v5.48.1 — pie del menú principal más discreto
+
+- **Menú principal** (`screens/mainMenu.js → footer()`, estilos `.mm-*` al final de `css/screens.css`): las opciones del menú `'main'` (Ajustes, Recuperar de la nube, Ayuda, Salir y las que añadan otros módulos con `DK.menus.add('main', …)`) ya no son botones grandes que se partían en dos filas.
+  - Ahora son enlaces pequeños con icono en una sola línea, separados por un punto, con la versión debajo.
+  - Al pasar el ratón se iluminan. «Salir» se pone rojo.
+  - En el móvil se quitan los puntos y «Recuperar de la nube» pasa a «Nube» (`main.cloudTiny`), así caben las cuatro en una línea.
+
 ### Cambios de la v5.48.0 — piezas nuevas de los daskai, admin en el móvil y fichas del primer daskai de tamaño fijo
 
 - **Piezas nuevas** (`systems/looks.js`): los daskai que nacen ahora llevan la marca `NEW10_TAG = 0xac` en el byte bajo de la semilla (`rollLook`). `isNew9` también la acepta, así que tienen todo lo anterior. El bloque `isNew10` de `roll()` usa un azar aparte (`seed ^ 0x7a3c91e5`). Los daskai que ya existen no cambian.

@@ -35,6 +35,21 @@
     action: () => DK.app.exit(),
   });
 
+  /**
+   * v5.48.1: pie discreto bajo las ranuras: las opciones del menú 'main' como enlaces pequeños con icono,
+   * separados por un punto, y la versión debajo (antes eran botones grandes que se partían en dos filas).
+   */
+  function footer() {
+    const val = (v) => (typeof v === 'function' ? v() : v);
+    const items = DK.menus.items('main');
+    const links = [];
+    items.forEach((it, i) => {
+      if (i) links.push(h('span', { class: 'mm-dot', 'aria-hidden': 'true' }));
+      links.push(h('button', { class: 'mm-link' + (it.id === 'exit' ? ' quiet' : ''), type: 'button', tip: val(it.desc), 'data-id': it.id, onClick: () => DK.menus.activate(it) }, DK.icon(it.icon, 14), h('span', { class: 'mm-l' }, val(it.label)), it.id === 'cloud' ? h('span', { class: 'mm-s' }, t('main.cloudTiny')) : null));
+    });
+    return h('nav', { class: 'mm-foot' }, h('div', { class: 'mm-links' }, links), h('p', { class: 'mm-ver' }, t('main.footer', { v: DK.version })));
+  }
+
   /** Carga una ranura y entra en el juego. */
   function play(n) { if (DK.store.load(n)) DK.router.reset(DK.store.state.gameOver ? 'gameOver' : 'hub'); }
 
@@ -122,8 +137,7 @@
       return h('div', { class: 'screen main-menu' }, fileInput,
         h('div', { class: 'logo' }, showcase, h('h1', { class: 'logo-title' }, 'DASKAI'), h('p', { class: 'logo-sub' }, t('main.tagline'))),
         h('div', { class: 'main-slots' }, h('h3', { class: 'center' }, DK.icon('folder', 18), ' ', t('main.yourGames')), h('div', { class: 'slot-grid' }, slots)),
-        h('div', { class: 'main-menu-actions' }, DK.menus.render('main', { layout: 'row', hotkeys: false })),
-        h('p', { class: 'muted small center' }, t('main.footer', { v: DK.version })));
+        footer());
     },
   });
 
