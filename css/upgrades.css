@@ -111,3 +111,48 @@
   .um-tab small { display: none; }
   .um-tile { grid-template-columns: 40px minmax(0, 1fr) auto; }
 }
+
+/* =============================================================
+ * v5.47: «Equipar en…» (components/gearViews.js → V.equipPicker): cada hueco, una comparación clara
+ * ============================================================= */
+.ep2-slots { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; padding: 10px; }
+.ep2-slot { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: 12px; background: rgba(0,0,0,.18); border: 1px solid rgba(255,255,255,.08); min-width: 0; }
+.ep2-slot.best { border-color: rgba(74,222,128,.55); box-shadow: 0 0 0 1px rgba(74,222,128,.25) inset; }
+.ep2-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ep2-n { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 700; }
+.ep2-rec { display: inline-flex; gap: 4px; align-items: center; padding: 2px 8px; border-radius: 999px; background: rgba(34,197,94,.18); color: #86efac; font-size: .7rem; font-weight: 700; }
+.ep2-swap { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 6px; align-items: center; }
+.ep2-piece { display: flex; align-items: center; gap: 6px; min-width: 0; padding: 4px 6px; border-radius: 9px; background: rgba(255,255,255,.04); border: 1px solid color-mix(in srgb, var(--g, #888) 40%, transparent); font-size: .78rem; font-weight: 600; }
+.ep2-piece > span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--g, inherit); }
+.ep2-piece.free { border-style: dashed; border-color: rgba(255,255,255,.15); color: var(--muted); }
+.ep2-piece.free > span:last-child { color: var(--muted); }
+.ep2-piece.new { background: color-mix(in srgb, var(--g) 12%, transparent); }
+.ep2-to { color: var(--muted); display: grid; place-items: center; }
+.ep2-sum { display: flex; align-items: center; gap: 10px; font-size: .76rem; }
+.ep2-sum > span { display: inline-flex; align-items: center; gap: 3px; }
+.ep2-sum .up { color: #4ade80; } .ep2-sum .down { color: #f87171; }
+.ep2-sum > b { margin-left: auto; font-size: .95rem; font-variant-numeric: tabular-nums; }
+.ep2-table { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 10px; }
+.ep2-tr { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto 42px; align-items: center; gap: 4px; padding: 3px 6px; border-radius: 6px; font-size: .76rem; font-variant-numeric: tabular-nums; }
+.ep2-tr.up { background: rgba(34,197,94,.08); } .ep2-tr.down { background: rgba(239,68,68,.08); }
+.ep2-k { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+.ep2-from { color: var(--muted); }
+.ep2-tr .icon { opacity: .5; }
+.ep2-val { font-size: .8rem; }
+.ep2-d { text-align: right; font-weight: 800; }
+.ep2-tr.up .ep2-d { color: #4ade80; } .ep2-tr.down .ep2-d { color: #f87171; }
+.ep2-go { align-self: flex-end; }
+:root[data-theme="light"] .ep2-slot { background: #faf8f4; border-color: var(--border); }
+:root[data-theme="light"] .ep2-piece { background: #fff; }
+:root[data-theme="light"] .ep2-tr.up .ep2-d, :root[data-theme="light"] .ep2-sum .up { color: #15803d; }
+:root[data-theme="light"] .ep2-tr.down .ep2-d, :root[data-theme="light"] .ep2-sum .down { color: #b91c1c; }
+@media (max-width: 600px) {
+  .ep2-slots { grid-template-columns: 1fr; padding: 8px 4px; }
+  .ep2-table { grid-template-columns: 1fr; }
+}
+.modal.equip-picker { max-width: 100%; }
+.equip-picker .modal-body, .equip-picker .stack-s, .equip-picker .gear-tile, .equip-picker .gear-tile-main, .equip-picker .ep-body, .equip-picker .ep-sec, .equip-picker .ep-item { min-width: 0; max-width: 100%; }
+.equip-picker .gear-tile-sub, .equip-picker .gear-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.modal.equip-picker { min-width: 0; }
+.equip-picker .ep-search { min-width: 0; width: 100%; box-sizing: border-box; }
+.equip-picker .gear-tile-main > * { min-width: 0; }

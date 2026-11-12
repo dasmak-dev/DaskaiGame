@@ -127,7 +127,7 @@ module.exports = {
       const r = await p.evaluate(() => {
         const L = DK.looks, out = { grad: 0, eyes: 0, mouth: 0, skins: new Set(), tag: 0 };
         for (let i = 0; i < 300; i++) {
-          const look = L.rollLook('pyrex'); if ([0xaa, 0xab].includes(look.s & 0xff)) out.tag++; // v5.15: NEW9 (0xab) incluye todo lo de NEW8
+          const look = L.rollLook('pyrex'); if ([0xaa, 0xab, 0xac].includes(look.s & 0xff)) out.tag++; // v5.15: NEW9 (0xab) incluye todo lo de NEW8; v5.48: NEW10 (0xac) también
           const ind = L.ind('pyrex', look);
           if (ind.grad) out.grad++; if (['twinkle', 'brows', 'almond', 'dewy'].includes(ind.eyes)) out.eyes++; if (['fang1', 'blep', 'ohno', 'beam'].includes(ind.mouth)) out.mouth++;
           out.skins.add(ind.skin.slice(0, 4));

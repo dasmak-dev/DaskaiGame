@@ -181,7 +181,7 @@ module.exports = {
       const secs = await p.evaluate(() => [...document.querySelectorAll('.ep-sec > summary')].map((x) => x.textContent));
       check(secs.length >= 2 && /equipo/i.test(secs[0]) && secs.some((x) => /Caja/.test(x)), 'la ventana debería separar el equipo y las cajas: ' + secs.join(' | '));
       await p.evaluate(() => document.querySelector('.ep-row').click()); await sleep(300);
-      await p.evaluate(() => document.querySelector('.ep-slot .btn').click()); await sleep(400);
+      await p.evaluate(() => document.querySelector('.ep2-slot .ep2-go').click()); await sleep(400);
       const worn = await p.evaluate(() => { const d = DK.party.leader(); return !!(d.equip[0] && d.equip[0].base === 'garra_afilada'); });
       check(worn, 'no se equipa desde la ventana');
     }),

@@ -210,3 +210,10 @@ body.adm-body {
 .afr-st small { font-size: .7rem; }
 .adm-conv { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .abub.other { align-self: flex-end; background: rgba(96,165,250,.16); border-bottom-right-radius: 4px; }
+/* v5.47: móvil: la barra de pestañas de arriba ya no se estira cuando la sección tiene poco contenido */
+@media (max-width: 820px) {
+  .aw { grid-template-rows: auto 1fr; align-content: start; }
+  .an { align-self: start; align-items: stretch; height: auto !important; max-height: none; scrollbar-width: none; scroll-behavior: smooth; }
+  .an::-webkit-scrollbar { display: none; }
+  .adm-body .an-i { justify-content: center; min-width: 74px; }
+}

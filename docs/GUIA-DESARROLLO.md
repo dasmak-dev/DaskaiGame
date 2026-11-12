@@ -357,6 +357,36 @@ Se carga la última y sólo sobrescribe: paleta (piedra oscura, bronce, oro `--g
 - **Expedición:** al entrar en el mapa, el equipo, la mochila o un combate durante una expedición, `#zone-backdrop` (creado en `screens/expedition.js` con `screen:enter`) pinta detrás de todo la escena de la zona actual, oscurecida; `body.in-exp`.
 - **Combate:** la arena usa la escena de la zona (`components/scenes.js`, ahora con árboles muertos, ruinas, tumbas, cristales o tentáculos según la zona) y los **jefes tienen su propio fondo**: `DK.scenes.bossScene(zona, secreto)` → `boss_<escena>` (menhires bajo luna roja, bosque muerto, naufragio con tormenta, bosque de cristales, forja de lava, santuario con estatua, fauces del abismo, ruinas entre rayos) y `boss_secret` (cripta) para los jefes ocultos.
 
+### Cambios de la v5.48.0 — piezas nuevas de los daskai, admin en el móvil y fichas del primer daskai de tamaño fijo
+
+- **Piezas nuevas** (`systems/looks.js`): los daskai que nacen ahora llevan la marca `NEW10_TAG = 0xac` en el byte bajo de la semilla (`rollLook`). `isNew9` también la acepta, así que tienen todo lo anterior. El bloque `isNew10` de `roll()` usa un azar aparte (`seed ^ 0x7a3c91e5`). Los daskai que ya existen no cambian.
+  - Cuerpos (`BODIES10`, 16 %): `onion` (cebolla: bulbo con punta y gajos, parámetro nuevo `ribs`) y `slope` (rampa: ancha abajo y con la cabeza inclinada hacia atrás, parámetro nuevo `skew`). `evolveBody` los mantiene en todas las etapas, sin la firma ni el cuerpo maduro de la especie.
+  - Patas (`LEGS10`, 16 %): `stump` (patitas que pasan a tocones con raíces y musgo), `jelly` (filamentos de medusa que se mecen) y `ball` (bola rodante, capa de detrás). Tienen su altura en `LIFT`.
+  - Ojos (`EYES10`, 15 %): `odd` (de dos colores), `shy` (tímidos, mirando abajo con párpado) y `stare` (como platos). Los tres parpadean (`BLINK`).
+  - Bocas (`MOUTHS10`, 15 %): `bubblegum` (globo de chicle animado), `cheeky` (pícara con la lengua a un lado) y `chomp` (cascanueces).
+  - Brazos (`ARMS10`, 18 % de los que tienen brazos): `drill` (taladro), `boxing` (guante de boxeo) y `wand` (varita con estrella que brilla).
+  - Accesorios (`FINALS11`, 20 %): `viking` (casco con cuernos), `chef` (gorro de cocinero) y `bobbers` (diadema con antenas que botan). Van siempre delante y escalan con la cabeza. Con orejas o antenas altas (`TALL_EARS`) se cambian por un adorno del cuello o un farolillo.
+  - Nombres en `look.<cat>.<key>` de `es.js` y `en.js`. Salen en el Códice como el resto de rasgos.
+- **Admin en el móvil** (`css/admin.css`, `admin/admin.js → drawNav`): la barra de pestañas de arriba ya no se estira ni se descoloca en las demás pestañas. Mide lo mismo en todas, se desplaza a lo ancho sin barra visible y centra la pestaña activa al cambiar.
+- **Primer daskai** (`screens/newGame.js`, `css/game.css`): todas las piezas de la ficha tienen alto fijo, para que no salte de tamaño al cambiar de daskai:
+  - título y especie con «…»;
+  - casas y rol en una fila;
+  - línea de descripción, naturaleza y pasiva con 2 líneas como máximo;
+  - atributos en una rejilla fija.
+  - Probado con los 5 iniciales y con varias tiradas: escritorio 533 px y móvil 852 px siempre.
+
+### Cambios de la v5.47.1 — pantalla del primer daskai y ventana «Equipar en…»
+
+- **Primer daskai** (`screens/newGame.js`): vuelve a verse en dos columnas, con el escenario a la izquierda y la ficha a la derecha.
+  - Se había roto porque `.st-card` chocaba con las fichas del equipo del resumen (`juice.css`). La tarjeta ahora se llama `.sp-card`.
+- **Equipar en…** (`components/gearViews.js → V.equipPicker`, estilos `.ep2-*` en `css/upgrades.css`): al abrir un daskai, cada hueco es una tarjeta con:
+  - lo que lleva → la pieza nueva;
+  - el balance: cuántos atributos suben y bajan, y el cambio medio en %;
+  - una tabla con cada atributo (actual → nuevo y diferencia en verde o rojo);
+  - el botón «Equipar aquí» o «Cambiar».
+  - El hueco que más mejora en conjunto lleva la marca «Recomendado». No se pierde nada: buscador, secciones por equipo, entrenando y cajas, piezas puestas en miniatura y fichas al pasar el ratón.
+  - En el móvil cabe a lo ancho (`min-width: 0` en la ventana y el buscador).
+
 ### Cambios de la v5.47.0 — mejoras permanentes nuevas, ventana de Mejoras y avisos que no saturan
 
 - **Mejoras permanentes nuevas** (`data/upgrades.js` + `camp.up.*`):

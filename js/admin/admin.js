@@ -218,6 +218,8 @@
       NAV.map(([k, label, ic]) => el('a', { class: 'an-i' + (k === active ? ' on' : ''), href: '#' + k }, icon(ic, 15), el('span', null, label), badges[k] ? el('i', { class: 'an-badge' }, badges[k]) : null)),
       el('div', { class: 'an-foot' }, el('small', null, session && session.email ? session.email : ''), btn('Salir', logout, 'ghost asm', 'exit')));
     UI.active = active;
+    // v5.47: en el móvil la barra de pestañas se desplaza hasta la sección abierta
+    if (window.matchMedia('(max-width: 820px)').matches) requestAnimationFrame(() => { const on = UI.nav.querySelector('.an-i.on'); if (on) UI.nav.scrollTo({ left: on.offsetLeft - (UI.nav.clientWidth - on.offsetWidth) / 2 }); });
   }
   /** Pinta una sección ya hecha (sin esperas). */
   function shell(active, title, ...content) {

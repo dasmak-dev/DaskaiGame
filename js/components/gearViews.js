@@ -136,15 +136,41 @@
             h('span', { class: 'ep-main' }, h('b', null, DK.daskai.name(d)), h('small', null, `${t('common.lvl')} ${d.level}`, DK.training && DK.training.isTraining(d.uid) ? ' · ' + t('gear.inTraining') : '')),
             mini, DK.icon('chevronDown', 16));
           if (!isOpen) return h('div', { class: 'ep-item' }, head);
-          const slots = [...Array(DK.config.maxEquip).keys()].map((slot) => {
-            const e = d.equip[slot];
-            return h('div', { class: 'ep-slot' },
-              h('span', { class: 'ep-slot-h' }, h('b', null, t('gear.slotN', { n: slot + 1 })), e ? h('span', { class: 'ep-cur', style: { '--g': D.gear.rarities[e.rarity].color } }, DK.gear.name(e)) : h('span', { class: 'muted' }, t('gear.slotFree'))),
-              V.diffChips(DK.gear.preview(d, slot, p.uid)),
-              btn({ icon: 'gem', label: e ? t('gear.swapHere') : t('gear.equipHere'), size: 'sm', variant: e ? 'ghost' : 'primary', disabled: hasIt,
+          // v5.47: cada hueco es una comparación clara: lo que lleva → la pieza nueva, el balance (cuántos
+          // atributos suben y bajan y el cambio total en %) y una tabla con valor actual, nuevo y diferencia.
+          // El hueco que más mejora en conjunto lleva la marca «Recomendado».
+          const KS = [...D.statKeys, 'regen'];
+          const info = [...Array(DK.config.maxEquip).keys()].map((slot) => {
+            const diff = DK.gear.preview(d, slot, p.uid), rows = Object.entries(diff);
+            const score = rows.reduce((a, [, x]) => a + (x.from ? x.diff / Math.max(1, x.from) : Math.sign(x.diff) * 0.05), 0);
+            return { slot, diff, rows, score, up: rows.filter(([, x]) => x.diff > 0).length, down: rows.filter(([, x]) => x.diff < 0).length };
+          });
+          const best = info.slice().sort((a, b) => b.score - a.score)[0];
+          const sName = (k) => (D.stats[k] ? DK.tr('stats', D.stats[k], 'short') : k), sIcon = (k) => (D.stats[k] ? D.stats[k].icon : 'regen');
+          const slots = info.map(({ slot, diff, rows, score, up, down }) => {
+            const e = d.equip[slot], g = (x) => D.gear.rarities[x.rarity].color;
+            const ordered = rows.sort((a, b) => KS.indexOf(a[0]) - KS.indexOf(b[0]));
+            const pct = Math.round(score / Math.max(1, rows.length) * 1000) / 10;
+            return h('div', { class: 'ep2-slot' + (best && best.slot === slot && best.score > 0 && info.length > 1 ? ' best' : '') + (score >= 0 ? ' gain' : ' loss') },
+              h('div', { class: 'ep2-head' },
+                h('span', { class: 'ep2-n' }, t('gear.slotN', { n: slot + 1 })),
+                best && best.slot === slot && best.score > 0 && info.length > 1 ? h('span', { class: 'ep2-rec' }, DK.icon('star', 11), t('gear.recommended')) : null),
+              h('div', { class: 'ep2-swap' },
+                e ? h('span', { class: 'ep2-piece', style: { '--g': g(e) }, tip: DK.gear.name(e), tipNode: () => V.infoCard('gear', e) }, V.gearIcon(e, 26), h('span', null, DK.gear.name(e))) : h('span', { class: 'ep2-piece free' }, DK.icon('plus', 14), h('span', null, t('gear.slotFree'))),
+                h('span', { class: 'ep2-to' }, DK.icon('next', 14)),
+                h('span', { class: 'ep2-piece new', style: { '--g': g(p) } }, V.gearIcon(p, 26), h('span', null, name))),
+              h('div', { class: 'ep2-sum' },
+                up ? h('span', { class: 'up' }, DK.icon('arrowUp', 12), t('gear.statsUp', { n: up })) : null,
+                down ? h('span', { class: 'down' }, DK.icon('arrowDown', 12), t('gear.statsDown', { n: down })) : null,
+                rows.length ? h('b', { class: score >= 0 ? 'up' : 'down', tip: t('gear.netTip') }, (pct > 0 ? '+' : '') + pct + '%') : h('span', { class: 'muted' }, t('equip.noChange'))),
+              rows.length ? h('div', { class: 'ep2-table', role: 'table' }, ordered.map(([k, x]) => h('div', { class: 'ep2-tr ' + (x.diff > 0 ? 'up' : 'down'), role: 'row' },
+                h('span', { class: 'ep2-k' }, DK.icon(sIcon(k), 13), sName(k)),
+                h('span', { class: 'ep2-from' }, x.from), DK.icon('next', 11), h('b', { class: 'ep2-val' }, x.to),
+                h('span', { class: 'ep2-d' }, (x.diff > 0 ? '+' : '') + x.diff)))) : null,
+              btn({ icon: 'gem', label: e ? t('gear.swapHere') : t('gear.equipHere'), size: 'sm', variant: e ? 'tone' : 'primary', disabled: hasIt, cls: 'ep2-go',
                 onClick: () => { DK.gear.equip(d, slot, p.uid); DK.audio.sfx('thud'); DK.ui.toast(t('equip.done', { name: DK.daskai.name(d), item: name }), { icon: 'gem', kind: 'good' }); close(true); } }));
           });
-          return h('div', { class: 'ep-item open' }, head, h('div', { class: 'ep-slots-detail' }, slots));
+          return h('div', { class: 'ep-item open' }, head, h('div', { class: 'ep2-slots' }, slots));
         };
         const match = (d) => !q || DK.daskai.name(d).toLowerCase().includes(q) || D.species[d.species].name.toLowerCase().includes(q);
         const section = (title, icon, list, startOpen) => {

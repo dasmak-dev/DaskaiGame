@@ -105,11 +105,11 @@
         h('b', null, ds[k], pct ? h('small', { class: 'st-luck ' + (pct > 0 ? 'up' : 'down') }, (pct > 0 ? '+' : '') + pct + '%') : null),
         h('span', { class: 'st-stat-bar' }, h('i', { style: { width: Math.round((ds[k] / best[k]) * 100) + '%' } })));
     }));
-    const traits = h('div', { class: 'st-traits' }, V.natureInfo(dd), V.passiveInfo(dd), V.roleBadge(dd));
+    const traits = h('div', { class: 'st-traits' }, V.natureInfo(dd), V.passiveInfo(dd)); // (v5.47: el rasgo va junto al nombre para que la ficha no cambie de alto)
 
     const info = h('div', { class: 'st-info' },
       // v4.56: su nombre propio (systems/names.js); la especie, al lado en pequeño
-      h('div', { class: 'st-title' }, h('h2', null, DK.daskai.name(dd)), h('span', { class: 'dk-species' }, sp.name), V.housesBadge(dd)),
+      h('div', { class: 'st-title' }, h('h2', { tip: DK.daskai.name(dd) }, DK.daskai.name(dd)), h('span', { class: 'dk-species' }, sp.name), V.housesBadge(dd), V.roleBadge(dd)),
       h('div', { class: 'chips' },
         // v4.72: con doble casa cuentan las dos (eficacia multiplicada, como en combate)
         ...(() => {
@@ -138,7 +138,7 @@
     return h('div', { class: 'screen starter-screen' },
       h('p', { class: 'muted center st-intro' }, t('newGame.pickText', { name: params.name })),
       picker,
-      h('section', { class: 'card st-card', style: { '--c': D.houseColor(sp.house) } }, stage, info),
+      h('section', { class: 'card sp-card', style: { '--c': D.houseColor(sp.house) } }, stage, info),
       h('div', { class: 'st-actions' },
         btn({ icon: 'back', label: t('newGame.changeName'), variant: 'ghost', onClick: () => { params.step = 'name'; refresh(); } }),
         btn({ icon: 'check', label: t('newGame.choose', { name: DK.daskai.name(params.rolls[sp.id]) }), variant: 'primary', size: 'lg', onClick: start, hotkey: '↵', cls: 'st-go' })));
